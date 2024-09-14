@@ -16,7 +16,6 @@ Attributes:
     ReactiveValue: Union of Computed and Signal types.
     HasValue: Union of plain values, Computed, and Signal types.
     NestedValue: Recursive type for arbitrarily nested Signals.
-
 """
 
 from __future__ import annotations
@@ -833,15 +832,15 @@ def as_signal(val: HasValue[T]) -> Signal[T]:
 
 
 ReactiveValue: TypeAlias = Computed[T] | Signal[T]
-"""A reactive object that would return a value of type T when calling [`unref`][significant.unref]`(obj)`.
+"""A reactive object that would return a value of type T when calling [`unref`][signified.unref]`(obj)`.
 
-This type alias represents any reactive value, either a [`Computed`][significant.Computed] or
-a [`Signal`][significant.Signal].
+This type alias represents any reactive value, either a [`Computed`][signified.Computed] or
+a [`Signal`][signified.Signal].
 
 See Also:
-    * [`Computed`][significant.Computed]: The class representing computed reactive values.
-    * [`Signal`][significant.Signal]: The class representing mutable reactive values.
-    * [`unref`][significant.unref]: Function to dereference values.
+    * [`Computed`][signified.Computed]: The class representing computed reactive values.
+    * [`Signal`][signified.Signal]: The class representing mutable reactive values.
+    * [`unref`][signified.unref]: Function to dereference values.
 """
 
 HasValue: TypeAlias = T | Computed[T] | Signal[T]
@@ -851,9 +850,9 @@ This type alias represents any value that can be dereferenced, including
 plain values, Computed values, and Signals.
 
 See Also:
-    Computed: The class representing computed reactive values.
-    Signal: The class representing mutable reactive values.
-    unref: Function to dereference values.
+    * [`Computed`][signified.Computed]: The class representing computed reactive values.
+    * [`Signal`][signified.Signal]: The class representing mutable reactive values.
+    * [`unref`][signified.unref]: Function to dereference values.
 """
 
 
