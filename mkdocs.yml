@@ -1,9 +1,9 @@
 site_name: Significant
-site_url: https://significant.github.io
+site_url: https://dougmercer.github.io/significant
 repo_url: https://github.com/dougmercer/significant
 
 theme:
-  name: material  # You can use the default theme or install a custom one like "material"
+  name: material
   palette:
   - media: "(prefers-color-scheme)"
     toggle:
@@ -118,7 +118,6 @@ nav:
   - Usage: usage.md
   - API Reference: api_reference.md
   - Changelog: changes.md
-
 
 plugins:
   - search
