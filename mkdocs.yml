@@ -1,6 +1,6 @@
-site_name: Significant
-site_url: https://dougmercer.github.io/significant
-repo_url: https://github.com/dougmercer/significant
+site_name: Signified
+site_url: https://dougmercer.github.io/signified
+repo_url: https://github.com/dougmercer/signified
 
 theme:
   name: material

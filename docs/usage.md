@@ -3,7 +3,7 @@
 ## Simple Arithmetic
 
 ```python
-from significant import Signal
+from signified import Signal
 
 a = Signal(3)
 b = Signal(4)
@@ -21,7 +21,7 @@ assert c.value == 13
 ## A Computed Function
 
 ```python
-from significant import Signal, computed
+from signified import Signal, computed
 
 a = Signal(3)
 

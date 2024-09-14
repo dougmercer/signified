@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "significant"
+name = "signified"
 version = "0.1.0"
 dependencies = [
     "ipython",
@@ -120,7 +120,7 @@ exclude = '''
   | htmlcov
   | results
   | tests-reports
-  | significant.egg-info
+  | signified.egg-info
   | data
   | junk
   | \.egg
@@ -142,15 +142,15 @@ include_trailing_comma = true
 line_length = 120
 multi_line_output=3
 py_version = 312
-src_paths = ["significant.py", "tests"]
+src_paths = ["signified.py", "tests"]
 skip_glob = [ "**/.ipynb_checkpoints"]
 
 [tool.pytest.ini_options]
-addopts = "--doctest-modules --cov=significant.py --cov-report=html"
+addopts = "--doctest-modules --cov=signified.py --cov-report=html"
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 testpaths = [
 	"tests",
-    "significant.py"
+    "signified.py"
 ]
