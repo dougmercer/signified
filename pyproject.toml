@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "signified"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
     "ipython",
     "numpy",
+    "typing-extensions; python_version < '3.11'"
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.9"
 authors = [
     {name = "Doug Mercer", email = "mercer321@gmail.com"},
 ]
@@ -24,6 +25,9 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python",
 ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [project.urls]
 Homepage = "https://github.com/dougmercer/signified.git"
@@ -153,7 +157,7 @@ src_paths = ["signified.py", "tests"]
 skip_glob = [ "**/.ipynb_checkpoints"]
 
 [tool.pytest.ini_options]
-addopts = "--doctest-modules --cov=signified.py --cov-report=html"
+addopts = "--doctest-modules --cov=src/ --cov-report=xml --junitxml=junit/test-results.xml"
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]

@@ -24,17 +24,14 @@ import math
 import operator
 from contextlib import contextmanager
 from functools import wraps
+import sys
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Generator,
     Generic,
     Iterable,
     Protocol,
-    Self,
-    TypeAlias,
-    TypeGuard,
     TypeVar,
     Union,
     cast,
@@ -43,6 +40,18 @@ from typing import (
 
 import numpy as np
 from IPython.display import DisplayHandle, display
+
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias, TypeGuard
+
+else:
+    from typing_extensions import TypeAlias, TypeGuard
 
 __all__ = [
     "Variable",
@@ -164,6 +173,8 @@ class ReactiveMixIn(Generic[T]):
         return str(self.value)
 
     @overload
+    def __round__(self) -> Computed[int]: ...
+    @overload
     def __round__(self, ndigits: None) -> Computed[int]: ...
     @overload
     def __round__(self, ndigits: int) -> Computed[float]: ...
@@ -255,7 +266,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.and_)(self, other)
 
-    def __contains__(self, other: Any) -> Computed[bool]:
+    def contains(self, other: Any) -> Computed[bool]:
         """Return a Computed representing whether other is in self.
 
         Args:
@@ -831,7 +842,7 @@ def as_signal(val: HasValue[T]) -> Signal[T]:
     return cast(Signal[T], val) if isinstance(val, Variable) else Signal(val)
 
 
-ReactiveValue: TypeAlias = Computed[T] | Signal[T]
+ReactiveValue: TypeAlias = Union[Computed[T], Signal[T]]
 """A reactive object that would return a value of type T when calling [`unref`][signified.unref]`(obj)`.
 
 This type alias represents any reactive value, either a [`Computed`][signified.Computed] or
@@ -843,7 +854,7 @@ See Also:
     * [`unref`][signified.unref]: Function to dereference values.
 """
 
-HasValue: TypeAlias = T | Computed[T] | Signal[T]
+HasValue: TypeAlias = Union[T, Computed[T], Signal[T]]
 """This object would return a value of type T when calling `unref(obj)`.
 
 This type alias represents any value that can be dereferenced, including
@@ -867,90 +878,3 @@ def has_value(obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
         True if the object has a value of the specified type.
     """
     return isinstance(unref(obj), type_)
-
-
-if TYPE_CHECKING:
-
-    def blah() -> float:
-        return 1.1
-
-    def bloo() -> int:
-        return 1
-
-    a = Signal(1)
-    b = Signal(a)
-    c = Signal(b)
-    d = Signal(Signal(Signal(Signal(Signal(1.2)))))
-    e = Computed(blah)
-    f = Computed(bloo)
-
-    reveal_type(a)  # noqa
-    reveal_type(b)  # noqa
-    reveal_type(c)  # noqa
-    reveal_type(d)  # noqa
-    reveal_type(e)  # noqa
-
-    reveal_type(a._value)  # noqa
-    reveal_type(b._value)  # noqa
-    reveal_type(c._value)  # noqa
-    reveal_type(d._value)  # noqa
-    reveal_type(e._value)  # noqa
-
-    reveal_type(a.value)  # noqa
-    reveal_type(b.value)  # noqa
-    reveal_type(c.value)  # noqa
-    reveal_type(d.value)  # noqa
-    reveal_type(e.value)  # noqa
-
-    # These get cluttered up with Variable[...]
-    reveal_type(a + b)  # noqa
-    reveal_type((a + b) + c)  # noqa
-
-    # These are also cluttered/wrong.
-    x = (a + b) + d
-    reveal_type(x)  # noqa
-    reveal_type(unref(x))  # noqa
-
-    reveal_type(unref(e + 1.1))  # noqa
-    reveal_type(unref(1.1 + e))  # noqa
-    reveal_type(unref(b + c + 1 + f))  # noqa
-    reveal_type(unref(f + b + c + 1 + f))  # noqa
-    reveal_type(unref(e + e + d + 1.1))  # noqa
-    reveal_type(unref(d + e + e + 1.1))  # noqa
-
-    reveal_type(Signal(2) > 1)  # noqa
-    reveal_type(Signal(2) < 1)  # noqa
-    reveal_type(Signal(2) < 1)  # noqa
-
-    a_or_b = Signal(True).where(a, b)
-    reveal_type(a_or_b)  # noqa
-    reveal_type(unref(a_or_b))  # noqa
-
-    bb: Signal[int] | Computed[int] = Signal(Signal(2))
-    a_or_b_sig = Signal(Signal(True)).where(e, bb)
-    reveal_type(a_or_b_sig)  # noqa
-    reveal_type(unref(a_or_b_sig))  # noqa
-
-    a_or_b_mixed_signals = Signal(True).where(Signal(1.1), Signal(1))
-    reveal_type(a_or_b_mixed_signals)  # noqa
-    reveal_type(unref(a_or_b_mixed_signals))  # noqa
-
-    a_or_b_mixed_computed = Signal(True).where(e, f)  # noqa
-    reveal_type(a_or_b_mixed_computed)  # noqa
-    reveal_type(unref(a_or_b_mixed_computed))  # noqa
-
-    a_or_b_mixed_everything = Signal(True).where(e, Signal(1))
-    reveal_type(a_or_b_mixed_signals)  # noqa
-    reveal_type(unref(a_or_b_mixed_signals))  # noqa
-
-    a_or_b_mixed_computed = Signal(True).where(e, f)
-    reveal_type(a_or_b_mixed_computed)  # noqa
-    reveal_type(unref(a_or_b_mixed_computed))  # noqa
-
-    reveal_type(unref(Signal("abc")))  # noqa
-    reveal_type(unref(Computed(lambda: "abc")))  # noqa
-
-    reveal_type(unref(Signal([1, 2])))  # noqa
-    reveal_type(unref(Signal((1,))))  # noqa
-    reveal_type(unref(Signal(1)))  # noqa
-    reveal_type(unref(Signal((1,))))  # noqa
