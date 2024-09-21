@@ -57,14 +57,14 @@ Together, these data structures allow us to implement a wide variety of capabili
 
 Other reactive Python libraries don't really attempt to implement type hints (e.g., [param](https://param.holoviz.org/)).
 
-``signified`` is type hinted, and supports type narrowing even for nested reactive values.
+``signified`` is type hinted and supports type narrowing even for nested reactive values.
 
 ```python
 from signified import Signal
 
 a = Signal(1.0)
 b = Signal(Signal(Signal(2)))
-reveal_type(a + b)  # Computed[int | float]
+reveal_type(a + b)  # Computed[float | int]
 ```
 
 Unfortunately, for the time being, our type hints only work with ``pyright``.

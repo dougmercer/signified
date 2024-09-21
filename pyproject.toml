@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "signified"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
     "ipython",
     "numpy",
@@ -26,8 +26,8 @@ classifiers = [
     "Programming Language :: Python",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools.package-data]
+signified = ["py.typed"]
 
 [project.urls]
 Homepage = "https://github.com/dougmercer/signified.git"
