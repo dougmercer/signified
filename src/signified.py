@@ -25,6 +25,7 @@ import operator
 from contextlib import contextmanager
 from functools import wraps
 import sys
+from abc import ABC, abstractmethod
 from typing import (
     Any,
     Callable,
@@ -564,7 +565,7 @@ class ReactiveMixIn(Generic[T]):
         return ternary(a, b, self)
 
 
-class Variable(_HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
+class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
     """An abstract base class for reactive values.
 
     This class implements both the observer and observable pattern. Subclasses should
@@ -605,6 +606,7 @@ class Variable(_HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         """Represent the object in a way that shows the inner value."""
         return f"<{self.value}>"
 
+    @abstractmethod
     def update(self) -> None:
         """Update method to be overridden by subclasses.
 
