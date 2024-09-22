@@ -141,7 +141,7 @@ class ReactiveMixIn(Generic[T]):
         """
         if not callable(self.value):
             raise ValueError("Value is not callable.")
-        return computed(self.value)(*args, **kwargs).register(self)
+        return computed(self.value)(*args, **kwargs).observe(self)
 
     def __abs__(self) -> Computed[T]:
         """Return a Computed representing the absolute value of self.
@@ -597,6 +597,46 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         if observer in self._observers:
             self._observers.remove(observer)
 
+    def observe(self, items: Any) -> Self:
+        """Subscribe the observer (self) to all items that are Observable.
+
+        This method handles arbitrarily nested iterables.
+
+        Args:
+            items: A single item, an iterable, or a nested structure of items to potentially subscribe to.
+
+        Returns:
+            self
+        """
+        def _observe(item: Any) -> None:
+            if isinstance(item, Variable) and item is not self:
+                item.subscribe(self)
+            elif isinstance(item, Iterable) and not isinstance(item, str):
+                for sub_item in item:
+                    _observe(sub_item)
+
+        _observe(items)
+        return self
+
+    def unobserve(self, items: Any) -> Self:
+        """Unsubscribe the observer (self) from all items that are Observable.
+
+        Args:
+            items: A single item or an iterable of items to potentially unsubscribe from.
+
+        Returns:
+            self
+        """
+        def _unobserve(item: Any) -> None:
+            if isinstance(item, Variable) and item is not self:
+                item.subscribe(self)
+            elif isinstance(item, Iterable) and not isinstance(item, str):
+                for sub_item in item:
+                    _unobserve(sub_item)
+
+        _unobserve(items)
+        return self
+
     def notify_subscribers(self) -> None:
         """Notify all subscribers by calling their update method."""
         for subsciber in self._observers:
@@ -614,35 +654,6 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
             NotImplementedError: If not overridden by a subclass.
         """
         raise NotImplementedError("Update method should be overridden by subclasses")
-
-    def register_one(self, item: Any) -> Self:
-        """Subscribe self to item if item is a Subject and not self.
-
-        Args:
-            item: The item to potentially subscribe to.
-
-        Returns:
-            The instance itself.
-        """
-        if isinstance(item, Variable) and item is not self:
-            item.subscribe(self)
-        return self
-
-    def register(self, item: Any) -> Self:
-        """Subscribe self to all items.
-
-        Args:
-            item: The item or iterable of items to potentially subscribe to.
-
-        Returns:
-            The instance itself.
-        """
-        if not isinstance(item, Iterable) or isinstance(item, str):
-            self.register_one(item)
-        else:
-            for item_ in item:
-                self.register_one(item_)
-        return self
 
     def _ipython_display_(self) -> None:
         handle = display(self.value, display_id=True)
@@ -663,7 +674,7 @@ class Signal(Variable[NestedValue[T], T]):
     def __init__(self, value: NestedValue[T]) -> None:
         super().__init__()
         self._value: T = cast(T, value)
-        self.register(value)
+        self.observe(value)
 
     @property
     def value(self) -> T:
@@ -681,9 +692,11 @@ class Signal(Variable[NestedValue[T], T]):
         Args:
             new_value: The new value, which can also be a reactive variable.
         """
-        if new_value != self._value:
+        old_value = self._value
+        if new_value != old_value:
             self._value = cast(T, new_value)
-            self.register(new_value)
+            self.unobserve(old_value)
+            self.observe(new_value)
             self.notify_subscribers()
 
     @contextmanager
@@ -714,7 +727,7 @@ class Computed(Variable[T, T]):
 
     Args:
         compute_func: The function that computes the value.
-        dependencies: Dependencies to register.
+        dependencies: Dependencies to observe.
 
     Attributes:
         _f (Callable[[], T]): The function that computes the value.
@@ -724,8 +737,7 @@ class Computed(Variable[T, T]):
     def __init__(self, compute_func: Callable[[], T], dependencies: Any = None) -> None:
         super().__init__()
         self._f = compute_func
-        if dependencies is not None:
-            self.register(dependencies)
+        self.observe(dependencies)
         self.update()
 
     def update(self) -> None:
@@ -795,15 +807,12 @@ def computed(func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Computed[R]:
-        dependencies = [arg for arg in args if isinstance(arg, Variable)]
-        dependencies.extend(value for value in kwargs.values() if isinstance(value, Variable))
-
         def compute_func() -> R:
             resolved_args = tuple(unref(arg) for arg in args)
             resolved_kwargs = {key: unref(value) for key, value in kwargs.items()}
             return func(*resolved_args, **resolved_kwargs)
 
-        return Computed(compute_func, dependencies)
+        return Computed(compute_func, (*args, *kwargs.values()))
 
     return wrapper
 
