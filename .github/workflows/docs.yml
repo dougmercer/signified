@@ -1,10 +1,12 @@
 name: docs 
+
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
+
 permissions:
   contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
