@@ -122,7 +122,7 @@ class ReactiveMixIn(Generic[T]):
             return super().__getattribute__(name)
 
         if hasattr(self.value, name):
-            return Computed(lambda: getattr(self.value, name), [self])
+            return computed(getattr)(self, name)
         else:
             return super().__getattribute__(name)
 
