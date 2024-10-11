@@ -608,6 +608,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         Returns:
             self
         """
+
         def _observe(item: Any) -> None:
             if isinstance(item, Variable) and item is not self:
                 item.subscribe(self)
@@ -627,6 +628,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         Returns:
             self
         """
+
         def _unobserve(item: Any) -> None:
             if isinstance(item, Variable) and item is not self:
                 item.subscribe(self)
