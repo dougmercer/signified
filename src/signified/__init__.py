@@ -834,11 +834,9 @@ def reactive_method(*dep_names: str) -> Callable[[Callable[..., T]], Callable[..
     def decorator(func: Callable[..., T]) -> Callable[..., Computed[T]]:
         @wraps(func)
         def wrapper(self: Any, *args: Any, **kwargs: Any) -> Computed[T]:
-            # Collect dependencies from the object
-            dependencies = [getattr(self, name) for name in dep_names if hasattr(self, name)]
-            dependencies.extend(arg for arg in args if isinstance(arg, Variable))
-            dependencies.extend(value for value in kwargs.values() if isinstance(value, Variable))
-            return Computed(lambda: func(self, *args, **kwargs), dependencies)
+            object_deps = [getattr(self, name) for name in dep_names if hasattr(self, name)]
+            all_deps = (*object_deps, *args, *kwargs.values())
+            return Computed(lambda: func(self, *args, **kwargs), all_deps)
 
         return wrapper
 
