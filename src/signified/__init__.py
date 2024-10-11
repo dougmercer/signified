@@ -695,7 +695,11 @@ class Signal(Variable[NestedValue[T], T]):
             new_value: The new value, which can also be a reactive variable.
         """
         old_value = self._value
-        if new_value != old_value:
+        change = new_value != old_value
+        if isinstance(change, np.ndarray):
+            change = change.any()
+
+        if change:
             self._value = cast(T, new_value)
             self.unobserve(old_value)
             self.observe(new_value)
@@ -740,19 +744,17 @@ class Computed(Variable[T, T]):
         super().__init__()
         self._f = compute_func
         self.observe(dependencies)
-        self.update()
+        self._value = unref(self._f())
+        self.notify_subscribers()
 
     def update(self) -> None:
         """Update the value by evaluating the Computed's function."""
         new_value = unref(self._f())
-        try:
-            change = new_value != self._value
-            if isinstance(change, np.ndarray):
-                change = change.any()
-        except AttributeError:
-            change = False
+        change = new_value != self._value
+        if isinstance(change, np.ndarray):
+            change = change.any()
 
-        if not hasattr(self, "_value") or change:
+        if change:
             self._value: T = new_value
             self.notify_subscribers()
 
