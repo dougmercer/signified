@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "signified"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
     "ipython",
     "numpy",
@@ -77,7 +77,7 @@ exclude = [
 
 line-length = 120
 indent-width = 4
-target-version = "py312"
+target-version = "py39"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
@@ -120,41 +120,6 @@ docstring-code-format = false
 # enabled.
 docstring-code-line-length = "dynamic"
 
-[tool.black]
-target-version = ['py312']
-line_length = 120
-exclude = '''
-(
-	build
-  | docs
-  | envs
-  | htmlcov
-  | results
-  | tests-reports
-  | signified.egg-info
-  | data
-  | junk
-  | \.egg
-  | \.git
-  | \.mypy_cache
-  | \.pytest_cache
-  | \.hypothesis
-  | \.ipynb_checkpoints
-  | \.__pycache__
-)
-'''
-
-[tool.isort]
-known_third_party = ["tqdm"]
-profile = "black"
-case_sensitive = true
-combine_as_imports = true
-include_trailing_comma = true
-line_length = 120
-multi_line_output=3
-py_version = 312
-src_paths = ["signified.py", "tests"]
-skip_glob = [ "**/.ipynb_checkpoints"]
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules --cov=src/ --cov-report=xml --junitxml=junit/test-results.xml"
@@ -163,5 +128,9 @@ filterwarnings = [
 ]
 testpaths = [
 	"tests",
-    "signified.py"
+    "src"
 ]
+
+[tool.pydocstyle]
+convention = "google"
+add_ignore = ["D107"]

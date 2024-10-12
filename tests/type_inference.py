@@ -1,7 +1,7 @@
 import sys
 from typing import TypeVar, Union
 
-from signified import Signal, Computed, unref
+from signified import Signal, Computed, computed, unref
 
 if sys.version_info >= (3, 11):
     from typing import assert_type
@@ -98,3 +98,17 @@ def test_complex_expression_types():
     result = (a + b) * c
     assert_type(result, Computed[Numeric])
     assert_type(unref(result), Numeric)
+
+
+def test_call_inference():
+    class Person:
+        def __init__(self, name: str):
+            self.name = name
+
+        def __call__(self, formal=False) -> str:
+            return f"{'Greetings' if formal else 'Hi'}, I'm {self.name}!"
+
+    a = computed(lambda: Person("Doug"))()
+
+    assert_type(a, Computed[Person])
+    assert_type(a(), Computed[str])
