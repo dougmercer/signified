@@ -660,7 +660,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
     def _ipython_display_(self) -> None:
         handle = display(self.value, display_id=True)
         assert handle is not None
-        self.subscribe(IPythonObserver(self, handle))
+        IPythonObserver(self, handle)
 
 
 class Signal(Variable[NestedValue[T], T]):
@@ -786,6 +786,7 @@ class IPythonObserver:
     def __init__(self, me: Variable[Any, Any], handle: DisplayHandle):
         self.me = me
         self.handle = handle
+        me.subscribe(self)
 
     def update(self) -> None:
         self.handle.update(self.me.value)
@@ -794,6 +795,7 @@ class IPythonObserver:
 class Echo:
     def __init__(self, me: Variable[Any, Any]):
         self.me = me
+        me.subscribe(self)
 
     def update(self) -> None:
         print(self.me.value)
