@@ -1,4 +1,7 @@
-"""A reactive programming library for reactive values and functions.
+"""A reactive programming library for creating and managing reactive values and computations.
+
+This module provides tools for building reactive systems, where changes in one value
+automatically propagate to dependent values.
 
 Classes:
     Variable: Abstract base class for reactive values.
@@ -9,13 +12,13 @@ Functions:
     unref: Dereference a potentially reactive value.
     computed: Decorator to create a reactive value from a function.
     reactive_method: Decorator to create a reactive method.
-    as_signal: Convert a value to a Signal if it's not already a Variable.
+    as_signal: Convert a value to a [`Signal`][signified.Signal] if it's not already a reactive value.
     has_value: Type guard to check if an object has a value of a specific type.
 
 Attributes:
-    ReactiveValue: Union of Computed and Signal types.
+    ReactiveValue: Union of Computed and [`Signal`][signified.Signal] types.
     HasValue: Union of basic types and reactive types.
-    NestedValue: Recursive type for arbitrarily nested Signals.
+    NestedValue: Recursive type for arbitrarily nested reactive values.
 """
 
 from __future__ import annotations
@@ -84,8 +87,8 @@ class Observer(Protocol):
 class _HasValue(Generic[T]):
     """Dumb thing to make pyright happy.
 
-    Using multiple inheritance along with ReactiveMixIn in Variable allows PyRight to
-    properly narrow the generic type for Signal/Computed types.
+    Using multiple inheritance as done below somehow allows PyRight to properly
+    infer T as the type returned by the ``value`` method for reactive types.
     """
 
     @property
@@ -93,7 +96,7 @@ class _HasValue(Generic[T]):
 
 
 NestedValue: TypeAlias = Union[T, "_HasValue[NestedValue[T]]"]
-"""Insane recursive type hint to try to encode an arbitrarily nested Signals.
+"""Insane recursive type hint to try to encode an arbitrarily nested reactive values.
 
 E.g., ``float | Signal[float] | Signal[Signal[float]] | Signal[Signal[Signal[float]]].``
 """
@@ -108,7 +111,7 @@ class ReactiveMixIn(Generic[T]):
         ...
 
     def notify(self) -> None:
-        """Notify all observers by calling their update method."""
+        """Notify all observers by calling their ``update`` method."""
         ...
 
     @overload
@@ -118,13 +121,13 @@ class ReactiveMixIn(Generic[T]):
     def __getattr__(self, name: str) -> Computed[Any]: ...
 
     def __getattr__(self, name: str) -> Union[T, Computed[Any]]:
-        """Create a reactive value for retrieving an attribute from self.value.
+        """Create a reactive value for retrieving an attribute from ``self.value``.
 
         Args:
             name: The name of the attribute to access.
 
         Returns:
-            A reactive value representing the attribute access.
+            A reactive value for the attribute access.
 
         Raises:
             AttributeError: If the attribute doesn't exist.
@@ -161,14 +164,14 @@ class ReactiveMixIn(Generic[T]):
     @overload
     def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        """Create a reactive value for calling self.value(*args, **kwargs).
+        """Create a reactive value for calling `self.value(*args, **kwargs)`.
 
         Args:
             *args: Positional arguments to pass to the callable value.
             **kwargs: Keyword arguments to pass to the callable value.
 
         Returns:
-            A reactive value representing the function call.
+            A reactive value for the function call.
 
         Raises:
             ValueError: If the value is not callable.
@@ -200,10 +203,10 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(*args, **kwargs).observe([self, self.value])
 
     def __abs__(self) -> Computed[T]:
-        """Return a reactive value representing the absolute value of self.
+        """Return a reactive value for the absolute value of `self`.
 
         Returns:
-            A reactive value representing abs(self.value).
+            A reactive value for `abs(self.value)`.
 
         Example:
             ```py
@@ -220,13 +223,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(abs)(self)
 
     def bool(self) -> Computed[bool]:
-        """Return a reactive value representing the boolean value of self.
+        """Return a reactive value for the boolean value of `self`.
 
         Note:
             `__bool__` cannot be implemented to return a non-`bool`, so it is provided as a method.
 
         Returns:
-            A reactive value representing bool(self.value).
+            A reactive value for `bool(self.value)`.
 
         Example:
             ```py
@@ -243,13 +246,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(bool)(self)
 
     def __str__(self) -> str:
-        """Return a string representation of the current value.
+        """Return a string of the current value.
 
         Note:
-            This does not return a reactive value.
+            This is not reactive.
 
         Returns:
-            A string representation of self.value.
+            A string representation of `self.value`.
         """
         return str(self.value)
 
@@ -261,13 +264,13 @@ class ReactiveMixIn(Generic[T]):
     def __round__(self, ndigits: int) -> Computed[float]: ...
 
     def __round__(self, ndigits: int | None = None) -> Computed[int] | Computed[float]:
-        """Return a reactive value representing the rounded value of self.
+        """Return a reactive value for the rounded value of self.
 
         Args:
             ndigits: Number of decimal places to round to.
 
         Returns:
-            A reactive value representing round(self.value, ndigits).
+            A reactive value for `round(self.value, ndigits)`.
 
         Example:
             ```py
@@ -289,10 +292,10 @@ class ReactiveMixIn(Generic[T]):
             return cast(Computed[float], computed(round)(self, ndigits=ndigits))
 
     def __ceil__(self) -> Computed[int]:
-        """Return a reactive value representing the ceiling of self.
+        """Return a reactive value for the ceiling of `self`.
 
         Returns:
-            A reactive value representing math.ceil(self.value).
+            A reactive value for `math.ceil(self.value)`.
 
         Example:
             ```py
@@ -310,10 +313,10 @@ class ReactiveMixIn(Generic[T]):
         return cast(Computed[int], computed(math.ceil)(self))
 
     def __floor__(self) -> Computed[int]:
-        """Return a reactive value representing the floor of self.
+        """Return a reactive value for the floor of `self`.
 
         Returns:
-            A reactive value representing math.floor(self.value).
+            A reactive value for `math.floor(self.value)`.
 
         Example:
             ```py
@@ -331,10 +334,10 @@ class ReactiveMixIn(Generic[T]):
         return cast(Computed[int], computed(math.floor)(self))
 
     def __invert__(self) -> Computed[T]:
-        """Return a reactive value representing the bitwise inversion of self.
+        """Return a reactive value for the bitwise inversion of `self`.
 
         Returns:
-            A reactive value representing ~self.value.
+            A reactive value for `~self.value`.
 
         Example:
             ```py
@@ -351,10 +354,10 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.inv)(self)
 
     def __neg__(self) -> Computed[T]:
-        """Return a reactive value representing the negation of self.
+        """Return a reactive value for the negation of `self`.
 
         Returns:
-            A reactive value representing -self.value.
+            A reactive value for `-self.value`.
 
         Example:
             ```py
@@ -371,10 +374,10 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.neg)(self)
 
     def __pos__(self) -> Computed[T]:
-        """Return a reactive value representing the positive of self.
+        """Return a reactive value for the positive of self.
 
         Returns:
-            A reactive value representing +self.value.
+            A reactive value for `+self.value`.
 
         Example:
             ```py
@@ -391,10 +394,10 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.pos)(self)
 
     def __trunc__(self) -> Computed[T]:
-        """Return a reactive value representing the truncated value of self.
+        """Return a reactive value for the truncated value of `self`.
 
         Returns:
-            A reactive value representing math.trunc(self.value).
+            A reactive value for `math.trunc(self.value)`.
 
         Example:
             ```py
@@ -412,13 +415,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(math.trunc)(self)
 
     def __add__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing the sum of self and other.
+        """Return a reactive value for the sum of `self` and `other`.
 
         Args:
             other: The value to add.
 
         Returns:
-            A reactive value representing self.value + other.value.
+            A reactive value for `self.value + other.value`.
 
         Example:
             ```py
@@ -436,13 +439,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __and__(self, other: HasValue[Y]) -> Computed[bool]:
-        """Return a reactive value representing the logical AND of self and other.
+        """Return a reactive value for the bitwise AND of self and other.
 
         Args:
             other: The value to AND with.
 
         Returns:
-            A reactive value representing self.value and other.value.
+            A reactive value for `self.value & other.value`.
 
         Example:
             ```py
@@ -459,13 +462,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.and_)(self, other)
 
     def contains(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing whether other is in self.
+        """Return a reactive value for whether `other` is in `self`.
 
         Args:
             other: The value to check for containment.
 
         Returns:
-            A reactive value representing other in self.value.
+            A reactive value for `other in self.value`.
 
         Example:
             ```py
@@ -482,13 +485,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.contains)(self, other)
 
     def __divmod__(self, other: Any) -> Computed[tuple[float, float]]:
-        """Return a reactive value representing the divmod of self and other.
+        """Return a reactive value for the divmod of `self` and other.
 
         Args:
             other: The value to use as the divisor.
 
         Returns:
-            A reactive value representing divmod(self.value, other).
+            A reactive value for `divmod(self.value, other)`.
 
         Example:
             ```py
@@ -505,13 +508,13 @@ class ReactiveMixIn(Generic[T]):
         return cast(Computed[tuple[float, float]], computed(divmod)(self, other))
 
     def is_not(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing whether self is not other.
+        """Return a reactive value for whether `self` is not other.
 
         Args:
             other: The value to compare against.
 
         Returns:
-            A reactive value representing self.value is not other.
+            A reactive value for self.value is not other.
 
         Example:
             ```py
@@ -529,13 +532,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.is_not)(self, other)
 
     def eq(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing whether self equals other.
+        """Return a reactive value for whether `self` equals other.
 
         Args:
             other: The value to compare against.
 
         Returns:
-            A reactive value representing self.value == other.
+            A reactive value for self.value == other.
 
         Note:
             We can't overload `__eq__` because it interferes with basic Python operations.
@@ -555,13 +558,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.eq)(self, other)
 
     def __floordiv__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing the floor division of self by other.
+        """Return a reactive value for the floor division of `self` by other.
 
         Args:
             other: The value to use as the divisor.
 
         Returns:
-            A reactive value representing self.value // other.value.
+            A reactive value for self.value // other.value.
 
         Example:
             ```py
@@ -579,13 +582,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __ge__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing whether self is greater than or equal to other.
+        """Return a reactive value for whether `self` is greater than or equal to other.
 
         Args:
             other: The value to compare against.
 
         Returns:
-            A reactive value representing self.value >= other.
+            A reactive value for self.value >= other.
 
         Example:
             ```py
@@ -602,13 +605,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.ge)(self, other)
 
     def __gt__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing whether self is greater than other.
+        """Return a reactive value for whether `self` is greater than other.
 
         Args:
             other: The value to compare against.
 
         Returns:
-            A reactive value representing self.value > other.
+            A reactive value for self.value > other.
 
         Example:
             ```py
@@ -625,13 +628,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.gt)(self, other)
 
     def __le__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing whether self is less than or equal to other.
+        """Return a reactive value for whether `self` is less than or equal to `other`.
 
         Args:
             other: The value to compare against.
 
         Returns:
-            A reactive value representing self.value <= other.
+            A reactive value for `self.value <= other`.
 
         Example:
             ```py
@@ -648,13 +651,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.le)(self, other)
 
     def __lt__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing whether self is less than other.
+        """Return a reactive value for whether `self` is less than `other`.
 
         Args:
             other: The value to compare against.
 
         Returns:
-            A reactive value representing self.value < other.
+            A reactive value for `self.value < other`.
 
         Example:
             ```py
@@ -671,13 +674,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.lt)(self, other)
 
     def __lshift__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing self left-shifted by other.
+        """Return a reactive value for `self` left-shifted by `other`.
 
         Args:
             other: The number of positions to shift.
 
         Returns:
-            A reactive value representing self.value << other.value.
+            A reactive value for `self.value << other.value`.
 
         Example:
             ```py
@@ -695,13 +698,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __matmul__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing the matrix multiplication of self and other.
+        """Return a reactive value for the matrix multiplication of `self` and `other`.
 
         Args:
             other: The value to multiply with.
 
         Returns:
-            A reactive value representing self.value @ other.value.
+            A reactive value for `self.value @ other.value`.
 
         Example:
             ```py
@@ -720,13 +723,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __mod__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing self modulo other.
+        """Return a reactive value for `self` modulo `other`.
 
         Args:
             other: The divisor.
 
         Returns:
-            A reactive value representing self.value % other.value.
+            A reactive value for `self.value % other.value`.
 
         Example:
             ```py
@@ -744,13 +747,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __mul__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing the product of self and other.
+        """Return a reactive value for the product of `self` and `other`.
 
         Args:
             other: The value to multiply with.
 
         Returns:
-            A reactive value representing self.value * other.value.
+            A reactive value for `self.value * other.value`.
 
         Example:
             ```py
@@ -768,13 +771,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
-        """Return a reactive value representing whether self is not equal to other.
+        """Return a reactive value for whether `self` is not equal to `other`.
 
         Args:
             other: The value to compare against.
 
         Returns:
-            A reactive value representing self.value != other.
+            A reactive value for `self.value != other`.
 
         Example:
             ```py
@@ -791,13 +794,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.ne)(self, other)
 
     def __or__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing the logical OR of self and other.
+        """Return a reactive value for the bitwise OR of `self` and `other`.
 
         Args:
             other: The value to OR with.
 
         Returns:
-            A reactive value representing self.value or other.value.
+            A reactive value for `self.value or other.value`.
 
         Example:
             ```py
@@ -814,13 +817,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.or_)(self, other)
 
     def __rshift__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing self right-shifted by other.
+        """Return a reactive value for `self` right-shifted by `other`.
 
         Args:
             other: The number of positions to shift.
 
         Returns:
-            A reactive value representing self.value >> other.value.
+            A reactive value for `self.value >> other.value`.
 
         Example:
             ```py
@@ -838,13 +841,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __pow__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing self raised to the power of other.
+        """Return a reactive value for `self` raised to the power of `other`.
 
         Args:
             other: The exponent.
 
         Returns:
-            A reactive value representing self.value ** other.value.
+            A reactive value for `self.value ** other.value`.
 
         Example:
             ```py
@@ -862,13 +865,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __sub__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing the difference of self and other.
+        """Return a reactive value for the difference of `self` and `other`.
 
         Args:
             other: The value to subtract.
 
         Returns:
-            A reactive value representing self.value - other.value.
+            A reactive value for `self.value - other.value`.
 
         Example:
             ```py
@@ -886,13 +889,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __truediv__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing self divided by other.
+        """Return a reactive value for `self` divided by `other`.
 
         Args:
             other: The value to use as the divisor.
 
         Returns:
-            A reactive value representing self.value / other.value.
+            A reactive value for `self.value / other.value`.
 
         Example:
             ```py
@@ -910,13 +913,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(self, other)
 
     def __xor__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing the logical XOR of self and other.
+        """Return a reactive value for the bitwise XOR of `self` and `other`.
 
         Args:
             other: The value to XOR with.
 
         Returns:
-            A reactive value representing self.value ^ other.value.
+            A reactive value for `self.value ^ other.value`.
 
         Example:
             ```py
@@ -933,13 +936,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.xor)(self, other)
 
     def __radd__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing the sum of self and other.
+        """Return a reactive value for the sum of `self` and `other`.
 
         Args:
             other: The value to add.
 
         Returns:
-            A reactive value representing self.value + other.value.
+            A reactive value for `self.value + other.value`.
 
         Example:
             ```py
@@ -957,13 +960,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(other, self)
 
     def __rand__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing the logical AND of self and other.
+        """Return a reactive value for the bitwise AND of `self` and `other`.
 
         Args:
             other: The value to AND with.
 
         Returns:
-            A reactive value representing self.value and other.value.
+            A reactive value for `self.value and other.value`.
 
         Example:
             ```py
@@ -980,13 +983,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.and_)(other, self)
 
     def __rdivmod__(self, other: Any) -> Computed[tuple[float, float]]:
-        """Return a reactive value representing the divmod of self and other.
+        """Return a reactive value for the divmod of `self` and `other`.
 
         Args:
             other: The value to use as the numerator.
 
         Returns:
-            A reactive value representing divmod(other, self.value).
+            A reactive value for `divmod(other, self.value)`.
 
         Example:
             ```py
@@ -1003,13 +1006,13 @@ class ReactiveMixIn(Generic[T]):
         return cast(Computed[tuple[float, float]], computed(divmod)(other, self))
 
     def __rfloordiv__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing the floor division of other by self.
+        """Return a reactive value for the floor division of `other` by `self`.
 
         Args:
             other: The value to use as the numerator.
 
         Returns:
-            A reactive value representing other.value // self.value.
+            A reactive value for `other.value // self.value`.
 
         Example:
             ```py
@@ -1027,13 +1030,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(other, self)
 
     def __rmod__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing other modulo self.
+        """Return a reactive value for `other` modulo `self`.
 
         Args:
             other: The dividend.
 
         Returns:
-            A reactive value representing other.value % self.value.
+            A reactive value for `other.value % self.value`.
 
         Example:
             ```py
@@ -1051,13 +1054,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(other, self)
 
     def __rmul__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing the product of self and other.
+        """Return a reactive value for the product of `self` and `other`.
 
         Args:
             other: The value to multiply with.
 
         Returns:
-            A reactive value representing self.value * other.value.
+            A reactive value for `self.value * other.value`.
 
         Example:
             ```py
@@ -1075,13 +1078,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(other, self)
 
     def __ror__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing the logical OR of self and other.
+        """Return a reactive value for the bitwise OR of `self` and `other`.
 
         Args:
             other: The value to OR with.
 
         Returns:
-            A reactive value representing self.value or other.value.
+            A reactive value for `self.value or other.value`.
 
         Example:
             ```py
@@ -1098,13 +1101,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(operator.or_)(other, self)
 
     def __rpow__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing self raised to the power of other.
+        """Return a reactive value for `self` raised to the power of `other`.
 
         Args:
             other: The base.
 
         Returns:
-            A reactive value representing self.value ** other.value.
+            A reactive value for `self.value ** other.value`.
 
         Example:
             ```py
@@ -1122,13 +1125,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(other, self)
 
     def __rsub__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing the difference of self and other.
+        """Return a reactive value for the difference of `self` and `other`.
 
         Args:
             other: The value to subtract from.
 
         Returns:
-            A reactive value representing other.value - self.value.
+            A reactive value for `other.value - self.value`.
 
         Example:
             ```py
@@ -1146,13 +1149,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(other, self)
 
     def __rtruediv__(self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value representing self divided by other.
+        """Return a reactive value for `self` divided by `other`.
 
         Args:
             other: The value to use as the divisor.
 
         Returns:
-            A reactive value representing self.value / other.value.
+            A reactive value for `self.value / other.value`.
 
         Example:
             ```py
@@ -1170,13 +1173,13 @@ class ReactiveMixIn(Generic[T]):
         return computed(f)(other, self)
 
     def __rxor__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value representing the logical XOR of self and other.
+        """Return a reactive value for the bitwise XOR of `self` and `other`.
 
         Args:
             other: The value to XOR with.
 
         Returns:
-            A reactive value representing self.value ^ other.value.
+            A reactive value for `self.value ^ other.value`.
 
         Example:
             ```py
@@ -1192,14 +1195,14 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.xor)(other, self)
 
-    def __getitem__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value representing the item or slice of self.
+    def __getitem__(self, key: Any) -> Computed[Any]:
+        """Return a reactive value for the item or slice of `self`.
 
         Args:
-            other: The index or slice to retrieve.
+            key: The index or slice to retrieve.
 
         Returns:
-            A reactive value representing self.value[other].
+            A reactive value for `self.value[key]`.
 
         Example:
             ```py
@@ -1213,14 +1216,14 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        return computed(operator.getitem)(self, other)
+        return computed(operator.getitem)(self, key)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        """Set an attribute on the underlying self.value.
+        """Set an attribute on the underlying `self.value`.
 
         Note:
             It is necessary to set the attribute via the Signal, rather than the
-            underlying signal.value, to properly notify downstream observers
+            underlying `signal.value`, to properly notify downstream observers
             of changes. Reason being, mutable objects that, for example, fallback
             to id comparison for equality checks will appear as if nothing changed
             even if one of its attributes changed.
@@ -1255,11 +1258,11 @@ class ReactiveMixIn(Generic[T]):
             super().__setattr__(name, value)
 
     def __setitem__(self, key: Any, value: Any) -> None:
-        """Set an item on the underlying self.value.
+        """Set an item on the underlying `self.value`.
 
         Note:
             It is necessary to set the item via the Signal, rather than the
-            underlying signal.value, to properly notify downstream observers
+            underlying `signal.value`, to properly notify downstream observers
             of changes. Reason being, mutable objects that, for example, fallback
             to id comparison for equality checks will appear as if nothing changed
             even an element of the object is changed.
@@ -1285,14 +1288,14 @@ class ReactiveMixIn(Generic[T]):
             raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
 
     def where(self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
-        """Return a reactive value representing a if self is true, else b.
+        """Return a reactive value for `a` if `self` is `True`, else `b`.
 
         Args:
-            a: The value to return if self is true.
-            b: The value to return if self is false.
+            a: The value to return if `self` is `True`.
+            b: The value to return if `self` is `False`.
 
         Returns:
-            A reactive value representing a if self.value else b.
+            A reactive value for `a if self.value else b`.
 
         Example:
             ```py
@@ -1317,8 +1320,13 @@ class ReactiveMixIn(Generic[T]):
 class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
     """An abstract base class for reactive values.
 
-    This class implements both the observer and observable pattern. Subclasses should
-    implement the `update` method.
+    A reactive value is an object that can be observed by observer for changes and
+    can notify observers when its value changes. This class implements both the observer
+    and observable patterns.
+
+    This class implements both the observer and observable pattern.
+
+    Subclasses should implement the `update` method.
 
     Attributes:
         _observers (list[Observer]): List of observers subscribed to this variable.
@@ -1347,7 +1355,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
             self._observers.remove(observer)
 
     def observe(self, items: Any) -> Self:
-        """Subscribe the observer (self) to all items that are Observable.
+        """Subscribe the observer (`self`) to all items that are Observable.
 
         This method handles arbitrarily nested iterables.
 
@@ -1369,7 +1377,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         return self
 
     def unobserve(self, items: Any) -> Self:
-        """Unsubscribe the observer (self) from all items that are Observable.
+        """Unsubscribe the observer (`self`) from all items that are Observable.
 
         Args:
             items: A single item or an iterable of items to potentially unsubscribe from.
@@ -1414,6 +1422,15 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
 
 class Signal(Variable[NestedValue[T], T]):
     """A container that holds a reactive value.
+
+    Note:
+        A Signal is a Generic container with type ``T``. ``T`` is defined as the type
+        that would be returned by ``signal.value`` which automatically handles
+        unnesting reactive values. For example the below expression would be
+        inferred by ``pyright`` to be of type ``Signal[str]``.
+        ```py
+        Signal(Signal(Signal("abc")))  # Signal[str]
+        ```
 
     Args:
         value: The initial value of the signal, which can be a nested structure.
@@ -1635,13 +1652,13 @@ def reactive_method(*dep_names: str) -> Callable[[Callable[..., T]], Callable[..
 
 
 def as_signal(val: HasValue[T]) -> Signal[T]:
-    """Convert a value to a Signal if it's not already a Variable.
+    """Convert a value to a [`Signal`][signified.Signal] if it's not already a reactive value.
 
     Args:
         val: The value to convert.
 
     Returns:
-        The value as a Signal.
+        The value as a [`Signal`][signified.Signal] or the original reactive value.
 
     Example:
         ```py
@@ -1660,8 +1677,8 @@ This type alias represents any reactive value, either a [`Computed`][signified.C
 a [`Signal`][signified.Signal].
 
 See Also:
-    * [`Computed`][signified.Computed]: The class representing computed reactive values.
-    * [`Signal`][signified.Signal]: The class representing mutable reactive values.
+    * [`Computed`][signified.Computed]: The class for computed reactive values.
+    * [`Signal`][signified.Signal]: The class for mutable reactive values.
     * [`unref`][signified.unref]: Function to dereference values.
 """
 
@@ -1672,8 +1689,8 @@ This type alias represents any value that can be dereferenced, including
 plain values and reactive values.
 
 See Also:
-    * [`Computed`][signified.Computed]: The class representing computed reactive values.
-    * [`Signal`][signified.Signal]: The class representing mutable reactive values.
+    * [`Computed`][signified.Computed]: The class for computed reactive values.
+    * [`Signal`][signified.Signal]: The class for mutable reactive values.
     * [`unref`][signified.unref]: Function to dereference values.
 """
 
