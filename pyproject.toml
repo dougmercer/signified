@@ -130,3 +130,7 @@ testpaths = [
 	"tests",
     "src"
 ]
+
+[tool.pydocstyle]
+convention = "google"
+add_ignore = ["D107"]
