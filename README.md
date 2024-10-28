@@ -39,7 +39,7 @@ x.value = 10  # Will immediately notify x_squared, whose value will become 100.
 
 Here, `x_squared` became a reactive expression (more specifically, a `Computed` object) whose value is always equal to `x ** 2`. Neat!
 
-`signified`'s `Signal` object effective gives us a container which stores a value, and `Computed` gives us a container to store the current value of a function. In the above example, we generated the Computed object on-the-fly using overloaded Python operators like `**`, but we could have just as easily done,
+`signified`'s `Signal` object effectively gives us a container which stores a value, and `Computed` gives us a container to store the current value of a function. In the above example, we generated the Computed object on-the-fly using overloaded Python operators like `**`, but we could have just as easily done,
 
 ```python
 from signified import computed
