@@ -72,3 +72,15 @@ Unfortunately, for the time being, our type hints only work with ``pyright``.
 ## Read the docs!
 
 Checkout [https://dougmercer.github.io/signified](https://dougmercer.github.io/signified) to find out more.
+
+## Optional features
+
+`signified` has some support for numpy and IPython built in.
+
+Specify while installing like this, or just have numpy/ipython installed!
+
+```bash
+pip install signified[numpy] # just numpy
+pip install signified[ipython] # just ipython
+pip install signified[all] # both
+```

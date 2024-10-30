@@ -41,10 +41,26 @@ from typing import (
     Union,
     cast,
     overload,
+    TYPE_CHECKING,
 )
 
-import numpy as np
-from IPython.display import DisplayHandle, display
+try:
+    import numpy as np  # type: ignore
+
+    _NUMPY_AVAILABLE = True
+except ModuleNotFoundError:
+    _NUMPY_AVAILABLE = False
+
+
+try:
+    from IPython.display import (  # type: ignore
+        DisplayHandle,
+        display,
+    )
+
+    _IPY_AVAILABLE = True
+except ModuleNotFoundError:
+    _IPY_AVAILABLE = False
 
 
 if sys.version_info >= (3, 11):
@@ -92,7 +108,8 @@ class _HasValue(Generic[T]):
     """
 
     @property
-    def value(self) -> T: ...
+    def value(self) -> T:
+        raise NotImplementedError("subclasses should implement the value property")
 
 
 NestedValue: TypeAlias = Union[T, "_HasValue[NestedValue[T]]"]
@@ -108,11 +125,11 @@ class ReactiveMixIn(Generic[T]):
     @property
     def value(self) -> T:
         """The current value of the reactive object."""
-        ...
+        raise NotImplementedError("subclasses should implement the value property")
 
     def notify(self) -> None:
         """Notify all observers by calling their ``update`` method."""
-        ...
+        raise NotImplementedError("subclasses should implement the notify method")
 
     @overload
     def __getattr__(self, name: Literal["value", "_value"]) -> T: ...  # type: ignore
@@ -1415,6 +1432,10 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         raise NotImplementedError("Update method should be overridden by subclasses")
 
     def _ipython_display_(self) -> None:
+        if TYPE_CHECKING or not _IPY_AVAILABLE:
+            raise ModuleNotFoundError(
+                "Tried using optional feature involving IPython, but could not import IPython"
+            )
         handle = display(self.value, display_id=True)
         assert handle is not None
         IPythonObserver(self, handle)
@@ -1459,9 +1480,10 @@ class Signal(Variable[NestedValue[T], T]):
     def value(self, new_value: HasValue[T]) -> None:
         old_value = self._value
         change = new_value != old_value
-        if isinstance(change, np.ndarray):
-            change = change.any()
-        elif callable(old_value):
+        if not TYPE_CHECKING and _NUMPY_AVAILABLE:
+            if isinstance(change, np.ndarray):
+                change = change.any()
+        if callable(old_value):
             change = True
         if change:
             self._value = cast(T, new_value)
@@ -1527,9 +1549,10 @@ class Computed(Variable[T, T]):
         """Update the value by re-evaluating the function."""
         new_value = self.f()
         change = new_value != self._value
-        if isinstance(change, np.ndarray):
-            change = change.any()
-        elif callable(self._value):
+        if not TYPE_CHECKING and _NUMPY_AVAILABLE:
+            if isinstance(change, np.ndarray):
+                change = change.any()
+        if callable(self._value):
             change = True
 
         if change:
@@ -1566,14 +1589,16 @@ def unref(value: HasValue[T]) -> T:
     return cast(T, value)
 
 
-class IPythonObserver:
-    def __init__(self, me: Variable[Any, Any], handle: DisplayHandle):
-        self.me = me
-        self.handle = handle
-        me.subscribe(self)
+if not TYPE_CHECKING and _IPY_AVAILABLE:
 
-    def update(self) -> None:
-        self.handle.update(self.me.value)
+    class IPythonObserver:
+        def __init__(self, me: Variable[Any, Any], handle: DisplayHandle):
+            self.me = me
+            self.handle = handle
+            me.subscribe(self)
+
+        def update(self) -> None:
+            self.handle.update(self.me.value)
 
 
 class Echo:

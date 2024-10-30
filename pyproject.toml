@@ -5,26 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "signified"
 version = "0.1.5"
-dependencies = [
-    "ipython",
-    "numpy",
-    "typing-extensions; python_version < '3.11'"
-]
+dependencies = ["typing-extensions; python_version < '3.11'"]
 requires-python = ">=3.9"
-authors = [
-    {name = "Doug Mercer", email = "dougmerceryt@gmail.com"},
-]
-maintainers = [
-    {name = "Doug Mercer", email = "dougmerceryt@gmail.com"},
-]
+authors = [{ name = "Doug Mercer", email = "dougmerceryt@gmail.com" }]
+maintainers = [{ name = "Doug Mercer", email = "dougmerceryt@gmail.com" }]
 description = "Reactive Signals and Computed values."
 readme = "README.md"
-license = {file="LICENSE"}
+license = { file = "LICENSE" }
 keywords = ["reactive", "signals"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python",
 ]
+
+[project.optional-dependencies]
+numpy = ["numpy"]
+ipython = ["ipython"]
+all = ["numpy", "ipython"]
 
 [tool.setuptools.package-data]
 signified = ["py.typed"]
@@ -123,13 +120,8 @@ docstring-code-line-length = "dynamic"
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules --cov=src/ --cov-report=xml --junitxml=junit/test-results.xml"
-filterwarnings = [
-    "ignore::DeprecationWarning",
-]
-testpaths = [
-	"tests",
-    "src"
-]
+filterwarnings = ["ignore::DeprecationWarning"]
+testpaths = ["tests", "src"]
 
 [tool.pydocstyle]
 convention = "google"
