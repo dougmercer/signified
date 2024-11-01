@@ -142,7 +142,7 @@ def test_signal_bool() -> None:
     """Test boolean evaluation of Signal."""
     s1 = Signal(1)
     s2 = Signal(0)
-    s3 = Signal([])
+    s3 = Signal([])  # type: ignore[var-annotated]
     s4 = Signal([1, 2, 3])
 
     assert s1.bool().value == True  # noqa: E712
