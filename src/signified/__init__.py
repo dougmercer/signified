@@ -532,7 +532,7 @@ class Variable(ABC, Flattener[T]):
         f: Callable[[T, Y], T | Y] = operator.add
         return computed(f)(self, other)
 
-    def __and__(self, other: HasValue[Y]) -> Computed[bool]:
+    def __and__(self, other: HasValue[Y]) -> Computed[int]:
         """Return a reactive value for the bitwise AND of self and other.
 
         Args:
@@ -767,7 +767,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.lt)(self, other)
 
-    def __lshift__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __lshift__(self, other: int | HasValue[int]) -> Computed[int]:
         """Return a reactive value for `self` left-shifted by `other`.
 
         Args:
@@ -788,8 +788,7 @@ class Variable(ABC, Flattener[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.lshift
-        return computed(f)(self, other)
+        return cast(Computed[int], computed(operator.lshift)(self, other))
 
     def __matmul__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the matrix multiplication of `self` and `other`.
@@ -887,7 +886,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.ne)(self, other)
 
-    def __or__(self, other: Any) -> Computed[bool]:
+    def __or__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
 
         Args:
@@ -910,7 +909,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.or_)(self, other)
 
-    def __rshift__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __rshift__(self, other: int | HasValue[int]) -> Computed[int]:
         """Return a reactive value for `self` right-shifted by `other`.
 
         Args:
@@ -931,8 +930,7 @@ class Variable(ABC, Flattener[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.rshift
-        return computed(f)(self, other)
+        return cast(Computed[int], computed(operator.rshift)(self, other))
 
     def __pow__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` raised to the power of `other`.
@@ -1006,7 +1004,7 @@ class Variable(ABC, Flattener[T]):
         f: Callable[[T, Y], T | Y] = operator.truediv
         return computed(f)(self, other)
 
-    def __xor__(self, other: Any) -> Computed[bool]:
+    def __xor__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
 
         Args:
@@ -1053,7 +1051,7 @@ class Variable(ABC, Flattener[T]):
         f: Callable[[Y, T], T | Y] = operator.add
         return computed(f)(other, self)
 
-    def __rand__(self, other: Any) -> Computed[bool]:
+    def __rand__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise AND of `self` and `other`.
 
         Args:
@@ -1171,7 +1169,7 @@ class Variable(ABC, Flattener[T]):
         f: Callable[[Y, T], T | Y] = operator.mul
         return computed(f)(other, self)
 
-    def __ror__(self, other: Any) -> Computed[bool]:
+    def __ror__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
 
         Args:
@@ -1266,7 +1264,7 @@ class Variable(ABC, Flattener[T]):
         f: Callable[[Y, T], T | Y] = operator.truediv
         return computed(f)(other, self)
 
-    def __rxor__(self, other: Any) -> Computed[bool]:
+    def __rxor__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
 
         Args:
