@@ -216,12 +216,15 @@ class Variable(ABC, Flattener[T]):
         IPythonObserver(self, handle)
 
     @overload
-    def __getattr__(self, name: Literal["value", "_value"]) -> T: ...  # type: ignore
+    def __getattr__(self, name: Literal["value"]) -> T: ...  # type: ignore
+
+    @overload
+    def __getattr__(self, name: Literal["_value"]) -> HasValue[T]: ...  # type: ignore
 
     @overload
     def __getattr__(self, name: str) -> Computed[Any]: ...
 
-    def __getattr__(self, name: str) -> Union[T, Computed[Any]]:
+    def __getattr__(self, name: str) -> Any | T | HasValue[T] | Computed[Any]:
         """Create a reactive value for retrieving an attribute from ``self.value``.
 
         Args:
@@ -251,10 +254,11 @@ class Variable(ABC, Flattener[T]):
 
             ```
         """
-        if name in {"value", "_value"}:
-            return super().__getattribute__(name)
-
-        if hasattr(self.value, name):
+        if name == "value":
+            return cast(T, super().__getattribute__(name))
+        elif name == "_value":
+            return cast(HasValue[T], super().__getattribute__(name))
+        elif hasattr(self.value, name):
             return computed(getattr)(self, name)
         else:
             return super().__getattribute__(name)
