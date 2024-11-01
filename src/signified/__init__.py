@@ -23,6 +23,7 @@ Attributes:
 
 from __future__ import annotations
 
+import builtins
 import math
 import operator
 from contextlib import contextmanager
@@ -316,7 +317,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(abs)(self)
 
-    def bool(self) -> Computed[bool]:
+    def bool(self) -> Computed[builtins.bool]:
         """Return a reactive value for the boolean value of `self`.
 
         Note:
@@ -555,7 +556,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.and_)(self, other)
 
-    def contains(self, other: Any) -> Computed[bool]:
+    def contains(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `other` is in `self`.
 
         Args:
@@ -601,7 +602,7 @@ class Variable(ABC, Flattener[T]):
         """
         return cast(Computed[tuple[float, float]], computed(divmod)(self, other))
 
-    def is_not(self, other: Any) -> Computed[bool]:
+    def is_not(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is not other.
 
         Args:
@@ -625,7 +626,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.is_not)(self, other)
 
-    def eq(self, other: Any) -> Computed[bool]:
+    def eq(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` equals other.
 
         Args:
@@ -675,7 +676,7 @@ class Variable(ABC, Flattener[T]):
         f: Callable[[T, Y], T | Y] = operator.floordiv
         return computed(f)(self, other)
 
-    def __ge__(self, other: Any) -> Computed[bool]:
+    def __ge__(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is greater than or equal to other.
 
         Args:
@@ -698,7 +699,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.ge)(self, other)
 
-    def __gt__(self, other: Any) -> Computed[bool]:
+    def __gt__(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is greater than other.
 
         Args:
@@ -721,7 +722,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.gt)(self, other)
 
-    def __le__(self, other: Any) -> Computed[bool]:
+    def __le__(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is less than or equal to `other`.
 
         Args:
@@ -744,7 +745,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.le)(self, other)
 
-    def __lt__(self, other: Any) -> Computed[bool]:
+    def __lt__(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is less than `other`.
 
         Args:
@@ -863,7 +864,7 @@ class Variable(ABC, Flattener[T]):
         f: Callable[[T, Y], T | Y] = operator.mul
         return computed(f)(self, other)
 
-    def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
+    def __ne__(self, other: Any) -> Computed[builtins.bool]:  # type: ignore[override]
         """Return a reactive value for whether `self` is not equal to `other`.
 
         Args:
