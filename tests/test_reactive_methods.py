@@ -3,7 +3,7 @@ from signified import Signal
 import math
 
 
-def test_signal_arithmetic():
+def test_signal_arithmetic() -> None:
     """Test Signal arithmetic operations."""
     s1 = Signal(5)
     s2 = Signal(10)
@@ -15,7 +15,7 @@ def test_signal_arithmetic():
     assert sum_computed.value == 17
 
 
-def test_signal_comparison():
+def test_signal_comparison() -> None:
     """Test Signal comparison operations."""
     s1 = Signal(5)
     s2 = Signal(10)
@@ -27,7 +27,7 @@ def test_signal_comparison():
     assert gt_computed.value == False  # noqa: E712
 
 
-def test_signal_arithmetic_operations():
+def test_signal_arithmetic_operations() -> None:
     """Test various arithmetic operations on Signals."""
     s1 = Signal(5)
     s2 = Signal(3)
@@ -41,7 +41,7 @@ def test_signal_arithmetic_operations():
     assert (s1**s2).value == 125
 
 
-def test_signal_comparison_operations():
+def test_signal_comparison_operations() -> None:
     """Test comparison operations on Signals."""
     s1 = Signal(5)
     s2 = Signal(3)
@@ -54,7 +54,7 @@ def test_signal_comparison_operations():
     assert (s1 != s2).value == True  # noqa: E712
 
 
-def test_signal_boolean_operations():
+def test_signal_boolean_operations() -> None:
     """Test boolean operations on Signals."""
     s1 = Signal(True)
     s2 = Signal(False)
@@ -65,7 +65,7 @@ def test_signal_boolean_operations():
     assert (s1 ^ s1).value == False  # noqa: E712
 
 
-def test_signal_bitwise_operations():
+def test_signal_bitwise_operations() -> None:
     """Test bitwise operations on Signals."""
     s1 = Signal(0b0101)  # 5 in binary
     s2 = Signal(0b0011)  # 3 in binary
@@ -78,7 +78,7 @@ def test_signal_bitwise_operations():
     assert (s1 >> 1).value == 0b0010  # Right shift
 
 
-def test_signal_inplace_operations():
+def test_signal_inplace_operations() -> None:
     """Test in-place operations on Signals."""
     s = Signal(5)
 
@@ -92,11 +92,11 @@ def test_signal_inplace_operations():
     assert s.value == 5
 
 
-def test_signal_attribute_access():
+def test_signal_attribute_access() -> None:
     """Test attribute access on Signal containing an object."""
 
     class MyObj:
-        def __init__(self):
+        def __init__(self) -> None:
             self.x = 5
             self.y = 10
 
@@ -106,14 +106,14 @@ def test_signal_attribute_access():
     assert s.y.value == 10
 
 
-def test_signal_method_call():
+def test_signal_method_call() -> None:
     """Test method calls on Signal containing an object."""
 
     class MyObj:
-        def __init__(self, value):
+        def __init__(self, value: float) -> None:
             self.value = value
 
-        def double(self):
+        def double(self) -> float:
             return self.value * 2
 
     s = Signal(MyObj(5))
@@ -121,7 +121,7 @@ def test_signal_method_call():
     assert s.double().value == 10
 
 
-def test_signal_indexing():
+def test_signal_indexing() -> None:
     """Test indexing on Signal containing a sequence."""
     s = Signal([1, 2, 3, 4, 5])
 
@@ -130,7 +130,7 @@ def test_signal_indexing():
     assert s[1:4].value == [2, 3, 4]
 
 
-def test_signal_contains():
+def test_signal_contains() -> None:
     """Test 'in' operator on Signal containing a sequence."""
     s = Signal([1, 2, 3, 4, 5])
 
@@ -138,7 +138,7 @@ def test_signal_contains():
     assert s.contains(6).value == False  # noqa: E712
 
 
-def test_signal_bool():
+def test_signal_bool() -> None:
     """Test boolean evaluation of Signal."""
     s1 = Signal(1)
     s2 = Signal(0)
@@ -151,7 +151,7 @@ def test_signal_bool():
     assert s4.bool().value == True  # noqa: E712
 
 
-def test_signal_math_functions():
+def test_signal_math_functions() -> None:
     """Test math functions on Signals."""
     s = Signal(15.1)
 
@@ -164,7 +164,7 @@ def test_signal_math_functions():
     assert abs(s).value == 15.1
 
 
-def test_signal_where():
+def test_signal_where() -> None:
     """Test the 'where' method on Signals."""
     condition = Signal(True)
     s1 = Signal(5)

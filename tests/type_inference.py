@@ -13,7 +13,7 @@ T = TypeVar("T")
 Numeric = Union[int, float]
 
 
-def test_signal_types():
+def test_signal_types() -> None:
     a = Signal(1)
     assert_type(a, Signal[int])
     assert_type(a.value, int)
@@ -31,7 +31,7 @@ def test_signal_types():
     assert_type(d.value, float)
 
 
-def test_computed_types():
+def test_computed_types() -> None:
     def blah() -> float:
         return 1.1
 
@@ -47,21 +47,21 @@ def test_computed_types():
     assert_type(f.value, int)
 
 
-def test_arithmetic_types():
+def test_arithmetic_types() -> None:
     a = Signal(1)
     b = Signal(2)
     c = Signal(3.0)
 
     result = a + b
     assert_type(result, Computed[int])
-    assert_type(unref(result), int)
+    assert_type(result.value, int)
 
     result = a + c
     assert_type(result, Computed[Numeric])
-    assert_type(unref(result), Numeric)
+    assert_type(result.value, Numeric)
 
 
-def test_comparison_types():
+def test_comparison_types() -> None:
     a = Signal(1)
     b = Signal(Signal(Signal(2)))
 
@@ -70,7 +70,7 @@ def test_comparison_types():
     assert_type(unref(result), bool)
 
 
-def test_where_types():
+def test_where_types() -> None:
     a = Signal(1)
     b = Signal(2.0)
     condition = Signal(True)
@@ -80,7 +80,7 @@ def test_where_types():
     assert_type(unref(result), Numeric)
 
 
-def test_unref_types():
+def test_unref_types() -> None:
     a = Signal(1)
     b = Signal(Signal(2.0))
     c = Computed(lambda: "three")
@@ -90,7 +90,7 @@ def test_unref_types():
     assert_type(unref(c), str)
 
 
-def test_complex_expression_types():
+def test_complex_expression_types() -> None:
     a = Signal(1)
     b = Signal(2.0)
     c = Computed(lambda: 3)
@@ -100,12 +100,12 @@ def test_complex_expression_types():
     assert_type(unref(result), Numeric)
 
 
-def test_call_inference():
+def test_call_inference() -> None:
     class Person:
         def __init__(self, name: str):
             self.name = name
 
-        def __call__(self, formal=False) -> str:
+        def __call__(self, formal: bool=False) -> str:
             return f"{'Greetings' if formal else 'Hi'}, I'm {self.name}!"
 
     a = computed(lambda: Person("Doug"))()
