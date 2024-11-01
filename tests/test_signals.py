@@ -1,7 +1,8 @@
 from signified import Signal, Computed, unref
+from typing import Any
 
 
-def test_signal_basic():
+def test_signal_basic() -> None:
     """Test basic Signal functionality."""
     s = Signal(5)
     assert s.value == 5
@@ -10,7 +11,7 @@ def test_signal_basic():
     assert s.value == 10
 
 
-def test_signal_nested():
+def test_signal_nested() -> None:
     """Test nested Signal functionality."""
     s1 = Signal(5)
     s2 = Signal(s1)
@@ -22,7 +23,7 @@ def test_signal_nested():
     assert s3.value == 10
 
 
-def test_unref():
+def test_unref() -> None:
     """Test the unref function."""
     s = Signal(5)
     c = Computed(lambda: s.value * 2, dependencies=[s])
@@ -32,18 +33,18 @@ def test_unref():
     assert unref(15) == 15
 
 
-def test_signal_observer():
+def test_signal_observer() -> None:
     """Test Signal observer pattern."""
     s = Signal(5)
 
     class Appender:
         """An observer that appends values whenever a signal changes."""
 
-        def __init__(self, s: Signal):
+        def __init__(self, s: Signal[Any]) -> None:
             self.s = s
-            self.values = []
+            self.values: list[Any] = []
 
-        def update(self):
+        def update(self) -> None:
             self.values.append(self.s.value)
 
     appender = Appender(s)
@@ -55,7 +56,7 @@ def test_signal_observer():
     assert appender.values == [10, 15]
 
 
-def test_signal_context_manager():
+def test_signal_context_manager() -> None:
     """Test the Signal's context manager functionality."""
     s = Signal(5)
     t = Signal(s)

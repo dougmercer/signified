@@ -1,7 +1,7 @@
 from signified import Signal, Computed, computed
 
 
-def test_computed_basic():
+def test_computed_basic() -> None:
     """Test basic Computed functionality."""
     s = Signal(5)
     c = Computed(lambda: s.value * 2, dependencies=[s])
@@ -12,12 +12,12 @@ def test_computed_basic():
     assert c.value == 14
 
 
-def test_computed_decorator():
+def test_computed_decorator() -> None:
     """Test the @computed decorator."""
     s = Signal(5)
 
     @computed
-    def double_it(x):
+    def double_it(x: int) -> int:
         return x * 2
 
     c = double_it(s)
@@ -27,13 +27,13 @@ def test_computed_decorator():
     assert c.value == 14
 
 
-def test_computed_dependencies():
+def test_computed_dependencies() -> None:
     """Test Computed with multiple dependencies."""
     s1 = Signal(5)
     s2 = Signal(10)
 
     @computed
-    def add_em(a, b):
+    def add_em(a: int, b: int) -> int:
         return a + b
 
     c = add_em(s1, s2)
@@ -46,13 +46,13 @@ def test_computed_dependencies():
     assert c.value == 20
 
 
-def test_computed_with_nested_signals():
+def test_computed_with_nested_signals() -> None:
     """Test Computed with multiple nested Signals."""
     s1 = Signal(Signal(5))
     s2 = Signal(Signal(Signal(3)))
 
     @computed
-    def complex_computation(a, b):
+    def complex_computation(a: float, b: float) -> float:
         return a * b
 
     result = complex_computation(s1, s2)
@@ -62,7 +62,7 @@ def test_computed_with_nested_signals():
     assert result.value == 21
 
 
-def test_computed_chaining():
+def test_computed_chaining() -> None:
     """Test chaining of Computed values."""
     s = Signal(5)
     c1 = computed(lambda x: x * 2)(s)

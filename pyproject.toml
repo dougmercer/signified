@@ -134,3 +134,7 @@ testpaths = [
 [tool.pydocstyle]
 convention = "google"
 add_ignore = ["D107"]
+
+[tool.mypy]
+strict = true
+allow_redefinition = true

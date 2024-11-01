@@ -23,6 +23,7 @@ Attributes:
 
 from __future__ import annotations
 
+import builtins
 import math
 import operator
 from contextlib import contextmanager
@@ -53,10 +54,10 @@ else:
     from typing_extensions import Self
 
 if sys.version_info >= (3, 10):
-    from typing import TypeAlias, TypeGuard
+    from typing import TypeAlias, TypeGuard, ParamSpec
 
 else:
-    from typing_extensions import TypeAlias, TypeGuard
+    from typing_extensions import TypeAlias, TypeGuard, ParamSpec
 
 __all__ = [
     "Variable",
@@ -74,9 +75,25 @@ __all__ = [
 T = TypeVar("T")
 Y = TypeVar("Y")
 R = TypeVar("R")
-
 A = TypeVar("A")
 B = TypeVar("B")
+P = ParamSpec("P")
+
+
+class Deep(Generic[T]):
+    pass
+
+
+class Shallow(Generic[T]):
+    pass
+
+
+Nested: TypeAlias = Union[T, Deep["Nested[T]"]]
+
+
+class Flattener(Deep[Nested[T]], Shallow[T]):
+    @property
+    def value(self) -> T: ...  # type: ignore[empty-body]
 
 
 class Observer(Protocol):
@@ -84,43 +101,130 @@ class Observer(Protocol):
         pass
 
 
-class _HasValue(Generic[T]):
-    """Dumb thing to make pyright happy.
+class Variable(ABC, Flattener[T]):
+    """An abstract base class for reactive values.
 
-    Using multiple inheritance as done below somehow allows PyRight to properly
-    infer T as the type returned by the ``value`` method for reactive types.
+    A reactive value is an object that can be observed by observer for changes and
+    can notify observers when its value changes. This class implements both the observer
+    and observable patterns.
+
+    This class implements both the observer and observable pattern.
+
+    Subclasses should implement the `update` method.
+
+    Attributes:
+        _observers (list[Observer]): List of observers subscribed to this variable.
     """
 
-    @property
-    def value(self) -> T: ...
-
-
-NestedValue: TypeAlias = Union[T, "_HasValue[NestedValue[T]]"]
-"""Insane recursive type hint to try to encode an arbitrarily nested reactive values.
-
-E.g., ``float | Signal[float] | Signal[Signal[float]] | Signal[Signal[Signal[float]]].``
-"""
-
-
-class ReactiveMixIn(Generic[T]):
-    """Methods for easily creating reactive values."""
+    def __init__(self) -> None:
+        """Initialize the variable."""
+        self._observers: list[Observer] = []
+        self._value: Nested[T]
 
     @property
     def value(self) -> T:
-        """The current value of the reactive object."""
-        ...
+        """Get or set the current value.
+
+        When setting a value, observers will be notified if the value has changed.
+
+        Returns:
+            The current value (when getting).
+        """
+        return unref(self._value)
+
+    def subscribe(self, observer: Observer) -> None:
+        """Subscribe an observer to this variable.
+
+        Args:
+            observer: The observer to subscribe.
+        """
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def unsubscribe(self, observer: Observer) -> None:
+        """Unsubscribe an observer from this variable.
+
+        Args:
+            observer: The observer to unsubscribe.
+        """
+        if observer in self._observers:
+            self._observers.remove(observer)
+
+    def observe(self, items: Any) -> Self:
+        """Subscribe the observer (`self`) to all items that are Observable.
+
+        This method handles arbitrarily nested iterables.
+
+        Args:
+            items: A single item, an iterable, or a nested structure of items to potentially subscribe to.
+
+        Returns:
+            self
+        """
+
+        def _observe(item: Any) -> None:
+            if isinstance(item, Variable) and item is not self:
+                item.subscribe(self)
+            elif isinstance(item, Iterable) and not isinstance(item, str):
+                for sub_item in item:
+                    _observe(sub_item)
+
+        _observe(items)
+        return self
+
+    def unobserve(self, items: Any) -> Self:
+        """Unsubscribe the observer (`self`) from all items that are Observable.
+
+        Args:
+            items: A single item or an iterable of items to potentially unsubscribe from.
+
+        Returns:
+            self
+        """
+
+        def _unobserve(item: Any) -> None:
+            if isinstance(item, Variable) and item is not self:
+                item.subscribe(self)
+            elif isinstance(item, Iterable) and not isinstance(item, str):
+                for sub_item in item:
+                    _unobserve(sub_item)
+
+        _unobserve(items)
+        return self
 
     def notify(self) -> None:
-        """Notify all observers by calling their ``update`` method."""
-        ...
+        """Notify all observers by calling their update method."""
+        for observer in self._observers:
+            observer.update()
+
+    def __repr__(self) -> str:
+        """Represent the object in a way that shows the inner value."""
+        return f"<{self.value}>"
+
+    @abstractmethod
+    def update(self) -> None:
+        """Update method to be overridden by subclasses.
+
+        Raises:
+            NotImplementedError: If not overridden by a subclass.
+        """
+        raise NotImplementedError("Update method should be overridden by subclasses")
+
+    def _ipython_display_(self) -> None:
+        handle = display(self.value, display_id=True)  # type: ignore[no-untyped-call]
+        assert handle is not None
+        IPythonObserver(self, handle)
 
     @overload
-    def __getattr__(self, name: Literal["value", "_value"]) -> T: ...  # type: ignore
+    def __getattr__(self, name: Literal["value"]) -> T: ...  # type: ignore
+
+    @overload
+    def __getattr__(self, name: Literal["_value"]) -> HasValue[T]: ...  # type: ignore
 
     @overload
     def __getattr__(self, name: str) -> Computed[Any]: ...
 
-    def __getattr__(self, name: str) -> Union[T, Computed[Any]]:
+    def __getattr__(self, name: str) -> Any | T | HasValue[T] | Computed[Any]:
         """Create a reactive value for retrieving an attribute from ``self.value``.
 
         Args:
@@ -150,20 +254,16 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        if name in {"value", "_value"}:
-            return super().__getattribute__(name)
-
-        if hasattr(self.value, name):
+        if name == "value":
+            return cast(T, super().__getattribute__(name))
+        elif name == "_value":
+            return cast(HasValue[T], super().__getattribute__(name))
+        elif hasattr(self.value, name):
             return computed(getattr)(self, name)
         else:
             return super().__getattribute__(name)
 
-    @overload
-    def __call__(self: "ReactiveMixIn[Callable[..., R]]", *args: Any, **kwargs: Any) -> Computed[R]: ...
-
-    @overload
-    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self: Variable[Callable[P, R]], *args: P.args, **kwargs: P.kwargs) -> Computed[R]:
         """Create a reactive value for calling `self.value(*args, **kwargs)`.
 
         Args:
@@ -196,11 +296,10 @@ class ReactiveMixIn(Generic[T]):
         if not callable(self.value):
             raise ValueError("Value is not callable.")
 
-        def f(*args: Any, **kwargs: Any):
-            _f = getattr(self, "value")
-            return _f(*args, **kwargs)
+        def f(*args: P.args, **kwargs: P.kwargs) -> R:
+            return self.value(*args, **kwargs)
 
-        return computed(f)(*args, **kwargs).observe([self, self.value])
+        return computed(f)(*args, **kwargs).observe(self)
 
     def __abs__(self) -> Computed[T]:
         """Return a reactive value for the absolute value of `self`.
@@ -222,7 +321,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(abs)(self)
 
-    def bool(self) -> Computed[bool]:
+    def bool(self) -> Computed[builtins.bool]:
         """Return a reactive value for the boolean value of `self`.
 
         Note:
@@ -438,7 +537,7 @@ class ReactiveMixIn(Generic[T]):
         f: Callable[[T, Y], T | Y] = operator.add
         return computed(f)(self, other)
 
-    def __and__(self, other: HasValue[Y]) -> Computed[bool]:
+    def __and__(self, other: HasValue[Y]) -> Computed[int]:
         """Return a reactive value for the bitwise AND of self and other.
 
         Args:
@@ -461,7 +560,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.and_)(self, other)
 
-    def contains(self, other: Any) -> Computed[bool]:
+    def contains(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `other` is in `self`.
 
         Args:
@@ -507,7 +606,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return cast(Computed[tuple[float, float]], computed(divmod)(self, other))
 
-    def is_not(self, other: Any) -> Computed[bool]:
+    def is_not(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is not other.
 
         Args:
@@ -531,7 +630,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.is_not)(self, other)
 
-    def eq(self, other: Any) -> Computed[bool]:
+    def eq(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` equals other.
 
         Args:
@@ -581,7 +680,7 @@ class ReactiveMixIn(Generic[T]):
         f: Callable[[T, Y], T | Y] = operator.floordiv
         return computed(f)(self, other)
 
-    def __ge__(self, other: Any) -> Computed[bool]:
+    def __ge__(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is greater than or equal to other.
 
         Args:
@@ -604,7 +703,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.ge)(self, other)
 
-    def __gt__(self, other: Any) -> Computed[bool]:
+    def __gt__(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is greater than other.
 
         Args:
@@ -627,7 +726,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.gt)(self, other)
 
-    def __le__(self, other: Any) -> Computed[bool]:
+    def __le__(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is less than or equal to `other`.
 
         Args:
@@ -650,7 +749,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.le)(self, other)
 
-    def __lt__(self, other: Any) -> Computed[bool]:
+    def __lt__(self, other: Any) -> Computed[builtins.bool]:
         """Return a reactive value for whether `self` is less than `other`.
 
         Args:
@@ -673,7 +772,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.lt)(self, other)
 
-    def __lshift__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __lshift__(self, other: int | HasValue[int]) -> Computed[int]:
         """Return a reactive value for `self` left-shifted by `other`.
 
         Args:
@@ -694,8 +793,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.lshift
-        return computed(f)(self, other)
+        return cast(Computed[int], computed(operator.lshift)(self, other))
 
     def __matmul__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the matrix multiplication of `self` and `other`.
@@ -770,7 +868,7 @@ class ReactiveMixIn(Generic[T]):
         f: Callable[[T, Y], T | Y] = operator.mul
         return computed(f)(self, other)
 
-    def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
+    def __ne__(self, other: Any) -> Computed[builtins.bool]:  # type: ignore[override]
         """Return a reactive value for whether `self` is not equal to `other`.
 
         Args:
@@ -793,7 +891,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.ne)(self, other)
 
-    def __or__(self, other: Any) -> Computed[bool]:
+    def __or__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
 
         Args:
@@ -816,7 +914,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.or_)(self, other)
 
-    def __rshift__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __rshift__(self, other: int | HasValue[int]) -> Computed[int]:
         """Return a reactive value for `self` right-shifted by `other`.
 
         Args:
@@ -837,8 +935,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.rshift
-        return computed(f)(self, other)
+        return cast(Computed[int], computed(operator.rshift)(self, other))
 
     def __pow__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` raised to the power of `other`.
@@ -912,7 +1009,7 @@ class ReactiveMixIn(Generic[T]):
         f: Callable[[T, Y], T | Y] = operator.truediv
         return computed(f)(self, other)
 
-    def __xor__(self, other: Any) -> Computed[bool]:
+    def __xor__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
 
         Args:
@@ -959,7 +1056,7 @@ class ReactiveMixIn(Generic[T]):
         f: Callable[[Y, T], T | Y] = operator.add
         return computed(f)(other, self)
 
-    def __rand__(self, other: Any) -> Computed[bool]:
+    def __rand__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise AND of `self` and `other`.
 
         Args:
@@ -1077,7 +1174,7 @@ class ReactiveMixIn(Generic[T]):
         f: Callable[[Y, T], T | Y] = operator.mul
         return computed(f)(other, self)
 
-    def __ror__(self, other: Any) -> Computed[bool]:
+    def __ror__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
 
         Args:
@@ -1172,7 +1269,7 @@ class ReactiveMixIn(Generic[T]):
         f: Callable[[Y, T], T | Y] = operator.truediv
         return computed(f)(other, self)
 
-    def __rxor__(self, other: Any) -> Computed[bool]:
+    def __rxor__(self, other: Any) -> Computed[int]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
 
         Args:
@@ -1317,110 +1414,7 @@ class ReactiveMixIn(Generic[T]):
         return ternary(a, b, self)
 
 
-class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
-    """An abstract base class for reactive values.
-
-    A reactive value is an object that can be observed by observer for changes and
-    can notify observers when its value changes. This class implements both the observer
-    and observable patterns.
-
-    This class implements both the observer and observable pattern.
-
-    Subclasses should implement the `update` method.
-
-    Attributes:
-        _observers (list[Observer]): List of observers subscribed to this variable.
-    """
-
-    def __init__(self):
-        """Initialize the variable."""
-        self._observers: list[Observer] = []
-
-    def subscribe(self, observer: Observer) -> None:
-        """Subscribe an observer to this variable.
-
-        Args:
-            observer: The observer to subscribe.
-        """
-        if observer not in self._observers:
-            self._observers.append(observer)
-
-    def unsubscribe(self, observer: Observer) -> None:
-        """Unsubscribe an observer from this variable.
-
-        Args:
-            observer: The observer to unsubscribe.
-        """
-        if observer in self._observers:
-            self._observers.remove(observer)
-
-    def observe(self, items: Any) -> Self:
-        """Subscribe the observer (`self`) to all items that are Observable.
-
-        This method handles arbitrarily nested iterables.
-
-        Args:
-            items: A single item, an iterable, or a nested structure of items to potentially subscribe to.
-
-        Returns:
-            self
-        """
-
-        def _observe(item: Any) -> None:
-            if isinstance(item, Variable) and item is not self:
-                item.subscribe(self)
-            elif isinstance(item, Iterable) and not isinstance(item, str):
-                for sub_item in item:
-                    _observe(sub_item)
-
-        _observe(items)
-        return self
-
-    def unobserve(self, items: Any) -> Self:
-        """Unsubscribe the observer (`self`) from all items that are Observable.
-
-        Args:
-            items: A single item or an iterable of items to potentially unsubscribe from.
-
-        Returns:
-            self
-        """
-
-        def _unobserve(item: Any) -> None:
-            if isinstance(item, Variable) and item is not self:
-                item.subscribe(self)
-            elif isinstance(item, Iterable) and not isinstance(item, str):
-                for sub_item in item:
-                    _unobserve(sub_item)
-
-        _unobserve(items)
-        return self
-
-    def notify(self) -> None:
-        """Notify all observers by calling their update method."""
-        for observer in self._observers:
-            observer.update()
-
-    def __repr__(self) -> str:
-        """Represent the object in a way that shows the inner value."""
-        return f"<{self.value}>"
-
-    @abstractmethod
-    def update(self) -> None:
-        """Update method to be overridden by subclasses.
-
-        Raises:
-            NotImplementedError: If not overridden by a subclass.
-        """
-        raise NotImplementedError("Update method should be overridden by subclasses")
-
-    def _ipython_display_(self) -> None:
-        handle = display(self.value, display_id=True)
-        assert handle is not None
-        IPythonObserver(self, handle)
-
-
-class Signal(Variable[NestedValue[T], T]):
+class Signal(Variable[T]):
     """A container that holds a reactive value.
 
     Note:
@@ -1436,12 +1430,12 @@ class Signal(Variable[NestedValue[T], T]):
         value: The initial value of the signal, which can be a nested structure.
 
     Attributes:
-        _value (NestedValue[T]): The current value of the signal.
+        _value (Nested[T]): The current value of the signal.
     """
 
-    def __init__(self, value: NestedValue[T]) -> None:
+    def __init__(self, value: Nested[T]) -> None:
         super().__init__()
-        self._value: T = cast(T, value)
+        self._value = value
         self.observe(value)
 
     @property
@@ -1456,7 +1450,7 @@ class Signal(Variable[NestedValue[T], T]):
         return unref(self._value)
 
     @value.setter
-    def value(self, new_value: HasValue[T]) -> None:
+    def value(self, new_value: Nested[T]) -> None:
         old_value = self._value
         change = new_value != old_value
         if isinstance(change, np.ndarray):
@@ -1504,7 +1498,7 @@ class Signal(Variable[NestedValue[T], T]):
         self.notify()
 
 
-class Computed(Variable[T, T]):
+class Computed(Variable[T]):
     """A reactive value defined by a function.
 
     Args:
@@ -1533,7 +1527,7 @@ class Computed(Variable[T, T]):
             change = True
 
         if change:
-            self._value: T = new_value
+            self._value = new_value
             self.notify()
 
     @property
@@ -1546,7 +1540,7 @@ class Computed(Variable[T, T]):
         return unref(self._value)
 
 
-def unref(value: HasValue[T]) -> T:
+def unref(value: Nested[T]) -> T:
     """Dereference a value, resolving any nested reactive variables.
 
     Args:
@@ -1562,22 +1556,22 @@ def unref(value: HasValue[T]) -> T:
         2
     """
     while isinstance(value, Variable):
-        value = value._value
+        value = value._value  # pyright: ignore[reportAssignmentType]
     return cast(T, value)
 
 
 class IPythonObserver:
-    def __init__(self, me: Variable[Any, Any], handle: DisplayHandle):
+    def __init__(self, me: Variable[Any], handle: DisplayHandle):
         self.me = me
         self.handle = handle
         me.subscribe(self)
 
     def update(self) -> None:
-        self.handle.update(self.me.value)
+        self.handle.update(self.me.value)  # type: ignore[no-untyped-call]
 
 
 class Echo:
-    def __init__(self, me: Variable[Any, Any]):
+    def __init__(self, me: Variable[Any]):
         self.me = me
         me.subscribe(self)
 
@@ -1651,7 +1645,7 @@ def reactive_method(*dep_names: str) -> Callable[[Callable[..., T]], Callable[..
     return decorator
 
 
-def as_signal(val: HasValue[T]) -> Signal[T]:
+def as_signal(val: Nested[T]) -> Signal[T]:
     """Convert a value to a [`Signal`][signified.Signal] if it's not already a reactive value.
 
     Args:
@@ -1682,7 +1676,7 @@ See Also:
     * [`unref`][signified.unref]: Function to dereference values.
 """
 
-HasValue: TypeAlias = Union[T, Computed[T], Signal[T]]
+HasValue: TypeAlias = Union[Computed[T], Signal[T], Flattener[T]]
 """This object would return a value of type T when calling `unref(obj)`.
 
 This type alias represents any value that can be dereferenced, including
