@@ -47,6 +47,10 @@ from typing import (
 import numpy as np
 from IPython.display import DisplayHandle, display
 
+if sys.version_info >= (3, 13):
+    from typing import TypeIs
+else:
+    from typing_extensions import TypeIs
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -54,10 +58,10 @@ else:
     from typing_extensions import Self
 
 if sys.version_info >= (3, 10):
-    from typing import TypeAlias, TypeGuard, ParamSpec
+    from typing import TypeAlias, ParamSpec
 
 else:
-    from typing_extensions import TypeAlias, TypeGuard, ParamSpec
+    from typing_extensions import TypeAlias, ParamSpec
 
 __all__ = [
     "Variable",
@@ -92,8 +96,7 @@ Nested: TypeAlias = Union[T, Deep["Nested[T]"]]
 
 
 class Flattener(Deep[Nested[T]], Shallow[T]):
-    @property
-    def value(self) -> T: ...  # type: ignore[empty-body]
+    pass
 
 
 class Observer(Protocol):
@@ -119,7 +122,7 @@ class Variable(ABC, Flattener[T]):
     def __init__(self) -> None:
         """Initialize the variable."""
         self._observers: list[Observer] = []
-        self._value: Nested[T]
+        self._value: HasValue[T]
 
     @property
     def value(self) -> T:
@@ -772,7 +775,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.lt)(self, other)
 
-    def __lshift__(self, other: int | HasValue[int]) -> Computed[int]:
+    def __lshift__(self, other: HasValue[int]) -> Computed[int]:
         """Return a reactive value for `self` left-shifted by `other`.
 
         Args:
@@ -914,7 +917,7 @@ class Variable(ABC, Flattener[T]):
         """
         return computed(operator.or_)(self, other)
 
-    def __rshift__(self, other: int | HasValue[int]) -> Computed[int]:
+    def __rshift__(self, other: HasValue[int]) -> Computed[int]:
         """Return a reactive value for `self` right-shifted by `other`.
 
         Args:
@@ -1433,7 +1436,7 @@ class Signal(Variable[T]):
         _value (Nested[T]): The current value of the signal.
     """
 
-    def __init__(self, value: Nested[T]) -> None:
+    def __init__(self, value: HasValue[T]) -> None:
         super().__init__()
         self._value = value
         self.observe(value)
@@ -1450,7 +1453,7 @@ class Signal(Variable[T]):
         return unref(self._value)
 
     @value.setter
-    def value(self, new_value: Nested[T]) -> None:
+    def value(self, new_value: HasValue[T]) -> None:
         old_value = self._value
         change = new_value != old_value
         if isinstance(change, np.ndarray):
@@ -1464,7 +1467,7 @@ class Signal(Variable[T]):
             self.notify()
 
     @contextmanager
-    def at(self, value: T) -> Generator[None, None, None]:
+    def at(self, value: HasValue[T]) -> Generator[None, None, None]:
         """Temporarily set the signal to a given value within a context.
 
         Args:
@@ -1487,7 +1490,6 @@ class Signal(Variable[T]):
         """
         before = self.value
         try:
-            before = self.value
             self.value = value
             yield
         finally:
@@ -1540,7 +1542,7 @@ class Computed(Variable[T]):
         return unref(self._value)
 
 
-def unref(value: Nested[T]) -> T:
+def unref(value: HasValue[T]) -> T:
     """Dereference a value, resolving any nested reactive variables.
 
     Args:
@@ -1555,9 +1557,9 @@ def unref(value: Nested[T]) -> T:
         >>> unref(x)
         2
     """
-    while isinstance(value, Variable):
-        value = value._value  # pyright: ignore[reportAssignmentType]
-    return cast(T, value)
+    if isinstance(value, (Signal, Computed)):
+        value = cast(T, value.value)
+    return value
 
 
 class IPythonObserver:
@@ -1645,7 +1647,13 @@ def reactive_method(*dep_names: str) -> Callable[[Callable[..., T]], Callable[..
     return decorator
 
 
-def as_signal(val: Nested[T]) -> Signal[T]:
+# @overload
+# def as_signal(val: Signal[T]) -> Signal[T]: ...
+# @overload
+# def as_signal(val: Computed[T]) -> Computed[T]: ...
+# @overload
+# def as_signal(val: Flattener[T]) -> Signal[T]: ...
+def as_signal(val: HasValue[T]) -> Signal[T] | Computed[T]:
     """Convert a value to a [`Signal`][signified.Signal] if it's not already a reactive value.
 
     Args:
@@ -1661,7 +1669,11 @@ def as_signal(val: Nested[T]) -> Signal[T]:
         >>> as_signal(Signal(2))
         <2>
     """
-    return cast(Signal[T], val) if isinstance(val, Variable) else Signal(val)
+    # if isinstance(val, (Signal, Computed)):
+    #     return val
+    # else:
+    #     return Signal(val)
+    return val if isinstance(val, (Signal, Computed)) else Signal(val)
 
 
 ReactiveValue: TypeAlias = Union[Computed[T], Signal[T]]
@@ -1676,7 +1688,7 @@ See Also:
     * [`unref`][signified.unref]: Function to dereference values.
 """
 
-HasValue: TypeAlias = Union[Computed[T], Signal[T], Flattener[T]]
+HasValue: TypeAlias = Union[Computed[T], Signal[T], T]
 """This object would return a value of type T when calling `unref(obj)`.
 
 This type alias represents any value that can be dereferenced, including
@@ -1689,11 +1701,11 @@ See Also:
 """
 
 
-def has_value(obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
+def has_value(obj: Any, type_: type[T]) -> TypeIs[HasValue[T]]:
     """Check if an object has a value of a specific type.
 
     Note:
-        This serves as a TypeGuard to help support type narrowing.
+        This serves as a TypeIs to help support type narrowing.
 
     Args:
         obj: The object to check.
