@@ -45,8 +45,9 @@ from typing import (
     TYPE_CHECKING,
 )
 
-import numpy as np
-from IPython.display import DisplayHandle, display
+NUMPY_INSTALLED = importlib.util.find_spec("numpy") is not None
+if NUMPY_INSTALLED and not TYPE_CHECKING:
+    import numpy as np
 
 IPYTHON_INSTALLED = importlib.util.find_spec("IPython") is not None
 if IPYTHON_INSTALLED and not TYPE_CHECKING:
@@ -1465,9 +1466,10 @@ class Signal(Variable[NestedValue[T], T]):
     def value(self, new_value: HasValue[T]) -> None:
         old_value = self._value
         change = new_value != old_value
-        if isinstance(change, np.ndarray):
-            change = change.any()
-        elif callable(old_value):
+        if NUMPY_INSTALLED and not TYPE_CHECKING:
+            if isinstance(change, np.ndarray):
+                change = change.any()
+        if callable(old_value):
             change = True
         if change:
             self._value = cast(T, new_value)
@@ -1533,9 +1535,10 @@ class Computed(Variable[T, T]):
         """Update the value by re-evaluating the function."""
         new_value = self.f()
         change = new_value != self._value
-        if isinstance(change, np.ndarray):
-            change = change.any()
-        elif callable(self._value):
+        if NUMPY_INSTALLED and not TYPE_CHECKING:
+            if isinstance(change, np.ndarray):
+                change = change.any()
+        if callable(self._value):
             change = True
 
         if change:
