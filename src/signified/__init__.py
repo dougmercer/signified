@@ -23,6 +23,7 @@ Attributes:
 
 from __future__ import annotations
 
+import importlib.util
 import math
 import operator
 from contextlib import contextmanager
@@ -41,11 +42,15 @@ from typing import (
     Union,
     cast,
     overload,
+    TYPE_CHECKING,
 )
 
 import numpy as np
 from IPython.display import DisplayHandle, display
 
+IPYTHON_INSTALLED = importlib.util.find_spec("IPython") is not None
+if IPYTHON_INSTALLED and not TYPE_CHECKING:
+    from IPython.display import DisplayHandle, display
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -1414,10 +1419,11 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         """
         raise NotImplementedError("Update method should be overridden by subclasses")
 
-    def _ipython_display_(self) -> None:
-        handle = display(self.value, display_id=True)
-        assert handle is not None
-        IPythonObserver(self, handle)
+    if IPYTHON_INSTALLED and not TYPE_CHECKING:
+        def _ipython_display_(self) -> None:
+            handle = display(self.value, display_id=True)  # pyright: ignore[reportPossiblyUnboundVariable]
+            assert handle is not None
+            IPythonObserver(self, handle)
 
 
 class Signal(Variable[NestedValue[T], T]):
@@ -1565,15 +1571,15 @@ def unref(value: HasValue[T]) -> T:
         value = value._value
     return cast(T, value)
 
+if IPYTHON_INSTALLED and not TYPE_CHECKING:
+    class IPythonObserver:
+        def __init__(self, me: Variable[Any, Any], handle: DisplayHandle):
+            self.me = me
+            self.handle = handle
+            me.subscribe(self)
 
-class IPythonObserver:
-    def __init__(self, me: Variable[Any, Any], handle: DisplayHandle):
-        self.me = me
-        self.handle = handle
-        me.subscribe(self)
-
-    def update(self) -> None:
-        self.handle.update(self.me.value)
+        def update(self) -> None:
+            self.handle.update(self.me.value)
 
 
 class Echo:
