@@ -1,4 +1,4 @@
-from signified import Signal, Computed, has_value, unref, reactive_method, as_signal
+from signified import Computed, Signal, as_signal, has_value, reactive_method, unref
 
 
 def test_has_value():

@@ -1,4 +1,4 @@
-from signified import Signal, Computed, unref
+from signified import Computed, Signal, unref
 
 
 def test_signal_basic():

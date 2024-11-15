@@ -1,7 +1,7 @@
 import sys
 from typing import TypeVar, Union
 
-from signified import Signal, Computed, computed, unref
+from signified import Computed, Signal, computed, unref
 
 if sys.version_info >= (3, 11):
     from typing import assert_type
