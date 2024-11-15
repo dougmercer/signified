@@ -25,10 +25,10 @@ from __future__ import annotations
 
 import math
 import operator
-from contextlib import contextmanager
-from functools import wraps
 import sys
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
+from functools import wraps
 from typing import (
     Any,
     Callable,
@@ -46,17 +46,16 @@ from typing import (
 import numpy as np
 from IPython.display import DisplayHandle, display
 
-
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
 
 if sys.version_info >= (3, 10):
-    from typing import TypeAlias, TypeGuard, ParamSpec, Concatenate
+    from typing import Concatenate, ParamSpec, TypeAlias, TypeGuard
 
 else:
-    from typing_extensions import TypeAlias, TypeGuard, ParamSpec, Concatenate
+    from typing_extensions import Concatenate, ParamSpec, TypeAlias, TypeGuard
 
 __all__ = [
     "Variable",

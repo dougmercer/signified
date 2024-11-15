@@ -1,6 +1,6 @@
-from signified import Signal
-
 import math
+
+from signified import Signal
 
 
 def test_signal_arithmetic():
