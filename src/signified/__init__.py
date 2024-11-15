@@ -53,10 +53,10 @@ else:
     from typing_extensions import Self
 
 if sys.version_info >= (3, 10):
-    from typing import TypeAlias, TypeGuard
+    from typing import TypeAlias, TypeGuard, ParamSpec, Concatenate
 
 else:
-    from typing_extensions import TypeAlias, TypeGuard
+    from typing_extensions import TypeAlias, TypeGuard, ParamSpec, Concatenate
 
 __all__ = [
     "Variable",
@@ -77,6 +77,8 @@ R = TypeVar("R")
 
 A = TypeVar("A")
 B = TypeVar("B")
+
+P = ParamSpec("P")
 
 
 class Observer(Protocol):
@@ -1629,9 +1631,13 @@ def computed(func: Callable[..., R]) -> Callable[..., Computed[R]]:
     return wrapper
 
 
-def reactive_method(*dep_names: str) -> Callable[[Callable[..., T]], Callable[..., Computed[T]]]:
-    """Decorate the method to return a reactive value.
+# Note: `Any` is used to handle `self` in methods.
+InstanceMethod = Callable[Concatenate[Any, P], T]
+ReactiveMethod = Callable[Concatenate[Any, P], Computed[T]]
 
+
+def reactive_method(*dep_names: str) -> Callable[[InstanceMethod[P, T]], ReactiveMethod[P, T]]:
+    """Decorate the method to return a reactive value.
     Args:
         *dep_names: Names of object attributes to track as dependencies.
 
@@ -1639,7 +1645,7 @@ def reactive_method(*dep_names: str) -> Callable[[Callable[..., T]], Callable[..
         A decorator function.
     """
 
-    def decorator(func: Callable[..., T]) -> Callable[..., Computed[T]]:
+    def decorator(func: InstanceMethod[P, T]) -> ReactiveMethod[P, T]:
         @wraps(func)
         def wrapper(self: Any, *args: Any, **kwargs: Any) -> Computed[T]:
             object_deps = [getattr(self, name) for name in dep_names if hasattr(self, name)]
