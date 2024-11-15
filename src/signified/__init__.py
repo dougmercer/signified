@@ -1334,6 +1334,8 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         _observers (list[Observer]): List of observers subscribed to this variable.
     """
 
+    __slots__ = ["_observers"]
+
     def __init__(self):
         """Initialize the variable."""
         self._observers: list[Observer] = []
@@ -1441,6 +1443,8 @@ class Signal(Variable[NestedValue[T], T]):
         _value (NestedValue[T]): The current value of the signal.
     """
 
+    __slots__ = ["_value"]
+
     def __init__(self, value: NestedValue[T]) -> None:
         super().__init__()
         self._value: T = cast(T, value)
@@ -1517,6 +1521,8 @@ class Computed(Variable[T, T]):
         f (Callable[[], T]): The function that computes the value.
         _value (T): The current computed value.
     """
+
+    __slots__ = ["f", "_value"]
 
     def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
         super().__init__()
