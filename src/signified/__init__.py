@@ -42,6 +42,7 @@ from typing import (
     cast,
     overload,
 )
+from weakref import WeakSet
 
 import numpy as np
 from IPython.display import DisplayHandle, display
@@ -1337,7 +1338,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
 
     def __init__(self):
         """Initialize the variable."""
-        self._observers: list[Observer] = []
+        self._observers: WeakSet[Observer] = WeakSet()
 
     def subscribe(self, observer: Observer) -> None:
         """Subscribe an observer to this variable.
@@ -1346,7 +1347,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
             observer: The observer to subscribe.
         """
         if observer not in self._observers:
-            self._observers.append(observer)
+            self._observers.add(observer)
 
     def unsubscribe(self, observer: Observer) -> None:
         """Unsubscribe an observer from this variable.
@@ -1401,7 +1402,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
-        for observer in self._observers:
+        for observer in list(self._observers):
             observer.update()
 
     def __repr__(self) -> str:
