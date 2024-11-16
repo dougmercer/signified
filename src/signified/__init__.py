@@ -1391,7 +1391,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
 
         def _unobserve(item: Any) -> None:
             if isinstance(item, Variable) and item is not self:
-                item.subscribe(self)
+                item.unsubscribe(self)
             elif isinstance(item, Iterable) and not isinstance(item, str):
                 for sub_item in item:
                     _unobserve(sub_item)
