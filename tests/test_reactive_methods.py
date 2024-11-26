@@ -175,3 +175,10 @@ def test_signal_where():
 
     condition.value = False
     assert result.value == 10
+
+def test_len():
+    x = Signal("abcd")
+    result = x.len()
+    assert result.value == 4
+    x.value = "ab"
+    assert result.value == 2
