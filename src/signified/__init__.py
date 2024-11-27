@@ -36,6 +36,7 @@ from typing import (
     Generic,
     Iterable,
     Literal,
+    Optional,
     Protocol,
     TypeVar,
     Union,
@@ -1727,3 +1728,87 @@ def has_value(obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
         ```
     """
     return isinstance(unref(obj), type_)
+
+
+Cleanup = Callable[[], None]
+EffectFn = Callable[[], Optional[Cleanup]]
+
+
+def effect(func: Callable[..., Optional[Cleanup]]) -> Callable[..., Effect]:
+    """Decorate the function to create an effect that runs when dependencies change."""
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Effect:
+        def effect_fn() -> Optional[Cleanup]:
+            resolved_args = tuple(unref(arg) for arg in args)
+            resolved_kwargs = {key: unref(value) for key, value in kwargs.items()}
+            return func(*resolved_args, **resolved_kwargs)
+
+        return Effect(effect_fn, (*args, *kwargs.values()))
+
+    return wrapper
+
+
+class Effect:
+    __slots__ = ["f", "cleanup", "_dependencies"]
+
+    def __init__(self, f: Callable[[], Optional[Cleanup]], dependencies: Any = None) -> None:
+        self.f = f
+        self.cleanup = None
+        self._dependencies: list[Variable[Any, Any]] = []
+        self.observe(dependencies)
+        self.update()
+
+    def observe(self, items: Any) -> Self:
+        """Subscribe the observer (`self`) to all items that are Observable.
+
+        This method handles arbitrarily nested iterables.
+
+        Args:
+            items: A single item, an iterable, or a nested structure of items to potentially subscribe to.
+
+        Returns:
+            self
+        """
+
+        def _observe(item: Any) -> None:
+            if isinstance(item, Variable):
+                item.subscribe(self)
+                self._dependencies.append(item)
+            elif isinstance(item, Iterable) and not isinstance(item, str):
+                for sub_item in item:
+                    _observe(sub_item)
+
+        _observe(items)
+        return self
+
+    def unobserve(self, items: Any) -> Self:
+        """Unsubscribe the observer (`self`) from all items that are Observable.
+
+        Args:
+            items: A single item or an iterable of items to potentially unsubscribe from.
+
+        Returns:
+            self
+        """
+
+        def _unobserve(item: Any) -> None:
+            if isinstance(item, Variable):
+                item.unsubscribe(self)
+            elif isinstance(item, Iterable) and not isinstance(item, str):
+                for sub_item in item:
+                    _unobserve(sub_item)
+
+        _unobserve(items)
+        return self
+
+    def update(self) -> None:
+        if self.cleanup:
+            self.cleanup()
+        self.cleanup = self.f()
+
+    def dispose(self) -> None:
+        if self.cleanup:
+            self.cleanup()
+        self.unobserve(self._dependencies)
+        self._dependencies.clear()
