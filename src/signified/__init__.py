@@ -103,6 +103,28 @@ NestedValue: TypeAlias = Union[T, "_HasValue[NestedValue[T]]"]
 E.g., ``float | Signal[float] | Signal[Signal[float]] | Signal[Signal[Signal[float]]].``
 """
 
+# Module level state
+# Type for any function that can cleanup after itself
+Callback = Callable[..., Optional[Callable[[], None]]]
+
+# Module level state
+_global_callback: set[Callback] = set()
+
+
+def register_global_callback(callback: Callback) -> None:
+    """Register a callback that will be bound to all future reactive values."""
+    _global_callback.add(callback)
+
+
+def remove_global_callback(callback: Callback) -> None:
+    """Remove a global callback."""
+    _global_callback.remove(callback)
+
+
+def clear_global_callback() -> None:
+    """Remove all global callbacks."""
+    _global_callback.clear()
+
 
 class ReactiveMixIn(Generic[T]):
     """Methods for easily creating reactive values."""
@@ -1450,6 +1472,9 @@ class Signal(Variable[NestedValue[T], T]):
         self._value: T = cast(T, value)
         self.observe(value)
 
+        for effect_fn in _global_callback:
+            effect_fn(self)
+
     @property
     def value(self) -> T:
         """Get or set the current value.
@@ -1530,6 +1555,9 @@ class Computed(Variable[T, T]):
         self.observe(dependencies)
         self._value = unref(self.f())
         self.notify()
+
+        for effect_fn in _global_callback:
+            effect_fn(self)
 
     def update(self) -> None:
         """Update the value by re-evaluating the function."""
@@ -1734,8 +1762,18 @@ Cleanup = Callable[[], None]
 EffectFn = Callable[[], Optional[Cleanup]]
 
 
+def raw_effect(func: Callable[P, Optional[Cleanup]]) -> Callable[P, Effect]:
+    """Create an effect that passes arguments to the function as-is."""
+
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> Effect:
+        return Effect(lambda: func(*args, **kwargs), (*args, *kwargs.values()))
+
+    return wrapper
+
+
 def effect(func: Callable[..., Optional[Cleanup]]) -> Callable[..., Effect]:
-    """Decorate the function to create an effect that runs when dependencies change."""
+    """Create an effect that automatically handles dereferencing values."""
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Effect:
