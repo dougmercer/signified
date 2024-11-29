@@ -1630,8 +1630,8 @@ def computed(func: Callable[..., R]) -> Callable[..., Computed[R]]:
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Computed[R]:
         def compute_func() -> R:
-            resolved_args = tuple(unref(arg) for arg in args)
-            resolved_kwargs = {key: unref(value) for key, value in kwargs.items()}
+            resolved_args = tuple(deep_unref(arg) for arg in args)
+            resolved_kwargs = {key: deep_unref(value) for key, value in kwargs.items()}
             return func(*resolved_args, **resolved_kwargs)
 
         return Computed(compute_func, (*args, *kwargs.values()))
@@ -1732,3 +1732,61 @@ def has_value(obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
         ```
     """
     return isinstance(unref(obj), type_)
+
+
+def deep_unref(value: Any) -> Any:
+    """Recursively `unref` values potentially within containers.
+
+    Example:
+        ```py
+        >>> x = [Signal(1), Signal([Signal([1, 2, Signal(3)])])]
+        >>> deep_unref(x)
+        [1, [[1, 2, 3]]]
+
+        ```
+
+    Example:
+        ```py
+        >>> x = {Signal("a"): {Signal("b"): Signal("c")} }
+        >>> deep_unref(x)
+        {'a': {'b': 'c'}}
+
+        ```
+
+    Example:
+        ```py
+        >>> x = np.array([np.array([Signal(2), Signal(3)]), np.array([Signal(4), Signal(5)])])
+        >>> deep_unref(x)
+        array([[2, 3],
+               [4, 5]])
+
+        ```
+
+    Example:
+        ```py
+        >>> from collections import deque
+        >>> x = deque([Signal(10), Signal(2), Signal(3)])
+        >>> deep_unref(x)
+        deque([10, 2, 3])
+
+        ```
+    """
+    # Base case - if it's a reactive value, unref it
+    if isinstance(value, Variable):
+        return deep_unref(unref(value))
+
+    # For containers, recursively unref their elements
+    if isinstance(value, np.ndarray):
+        return np.array([deep_unref(item) for item in value])
+    if isinstance(value, dict):
+        return {deep_unref(unref(k)): deep_unref(unref(v)) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return type(value)(deep_unref(item) for item in value)
+    if isinstance(value, Iterable) and not isinstance(value, str):
+        try:
+            return type(value)(deep_unref(item) for item in value)  # pyright: ignore[reportCallIssue]
+        except TypeError:
+            return list(deep_unref(item) for item in value)
+
+    # For non-containers/non-reactive values, return as-is
+    return value
