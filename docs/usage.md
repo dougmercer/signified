@@ -21,7 +21,7 @@ print(greeting)  # "Hello, Bob"
 
 ### Computed Values
 
-Computed values are derived from other reactive values using functions or expressions:
+Computed values are derived from other reactive values. They can be constructed implicitly using overloaded Python operators or explicitly using the `computed` decorator.
 
 ```python
 from signified import Signal
@@ -29,6 +29,7 @@ from signified import Signal
 a = Signal(3)
 b = Signal(4)
 
+# c is a Computed object that will automatically update when a or b are updated
 c = (a ** 2 + b ** 2) ** 0.5
 
 print(c)  # 5
@@ -38,10 +39,6 @@ b.value = 12
 
 print(c)  # 13
 ```
-
-### The `@computed` Decorator
-
-For more complex calculations, use the `@computed` decorator:
 
 ```python
 from signified import Signal, computed
@@ -64,17 +61,96 @@ numbers.value = [2, 4, 6, 8, 10]
 print(result)  # {'sum': 30, 'mean': 6.0, 'min': 2, 'max': 10}
 ```
 
-## Working with Objects
+## Working with Data
 
-Signified works seamlessly with objects and their attributes:
+### Collections (Lists, Dicts, etc.)
+
+Signified handles collections like lists and dictionaries **somewhat well**, but there are currently [some rough edges](limitations.md).
+
+```python
+from signified import Signal, computed
+
+# Working with lists
+numbers = Signal([1, 2, 3, 4, 5])
+doubled = computed(lambda x: [n * 2 for n in x])(numbers)
+
+print(doubled)  # [2, 4, 6, 8, 10]
+numbers.value = [5, 6, 7]
+print(doubled)  # [10, 12, 14]
+
+# Modifying lists
+numbers[0] = 10  # Notifies observers
+print(numbers)  # [10, 6, 7]
+```
+
+```python
+from signified import Signal, computed
+
+# Working with dictionaries
+config = Signal({"theme": "dark", "fontSize": 14})
+theme = config["theme"]
+font_size = config["fontSize"]
+
+print(theme)      # "dark"
+print(font_size)  # 14
+
+config.value = {"theme": "light", "fontSize": 16}
+print(theme)      # "light"
+print(font_size)  # 16
+```
+
+### NumPy
+
+Signified integrates well with NumPy arrays:
+
+```python
+from signified import Signal
+import numpy as np
+
+matrix = Signal(np.array([[1, 2], [3, 4]]))
+vector = Signal(np.array([1, 1]))
+
+result = matrix @ vector  # Matrix multiplication
+
+print(result)  # array([3, 7])
+
+matrix.value = np.array([[2, 2], [4, 4]])
+print(result)  # array([4, 8])
+```
+
+## Other Topics
+
+### Conditional Logic
+
+Use the `where()` method for conditional computations:
 
 ```python
 from signified import Signal
 
+username = Signal(None)
+is_logged_in = username.is_not(None)
+
+message = is_logged_in.where(f"Welcome back, {username}!", "Please log in")
+
+print(message)  # "Please log in"
+username.value = "admin"
+print(message)  # "Welcome back, admin!"
+```
+
+### Reactive Attribute Access and Method Calls
+
+Signified supports reactively accessing attributes, properties, or methods on the underlying value.
+
+Here, we construct a simple class and show that we can create `Computed` objects that reactively track the value of attributes stored within he underlying object.
+
+```python
+from dataclasses import dataclass
+from signified import Signal
+
+@dataclass
 class Person:
-    def __init__(self, name: str, age: int):
-        self.name = name
-        self.age = age
+    name: str
+    age: int
 
     def greet(self):
         return f"Hello, I'm {self.name} and I'm {self.age} years old!"
@@ -99,82 +175,22 @@ print(age_display)  # 35
 print(greeting)     # "Hello, I'm Bob and I'm 35 years old!"
 ```
 
-## Collections and Iteration
-
-Signified handles collections like lists and dictionaries:
-
-```python
-from signified import Signal, computed
-
-# Working with lists
-numbers = Signal([1, 2, 3, 4, 5])
-doubled = computed(lambda x: [n * 2 for n in x])(numbers)
-
-print(doubled)  # [2, 4, 6, 8, 10]
-numbers.value = [5, 6, 7]
-print(doubled)  # [10, 12, 14]
-
-# Modifying lists
-numbers[0] = 10  # Notifies observers
-print(numbers)  # [10, 6, 7]
-
-# Working with dictionaries
-config = Signal({"theme": "dark", "fontSize": 14})
-theme = config["theme"]
-font_size = config["fontSize"]
-
-print(theme)      # "dark"
-print(font_size)  # 14
-
-config.value = {"theme": "light", "fontSize": 16}
-print(theme)      # "light"
-print(font_size)  # 16
-```
-
-## Conditional Logic
-
-Use the `where()` method for conditional computations:
-
-```python
-from signified import Signal
-
-username = Signal(None)
-is_logged_in = username.is_not(None)
-
-
-message = is_logged_in.where(
-    f"Welcome back, {username}!",
-    "Please log in"
-)
-
-print(message)  # "Please log in"
-username.value = "admin"
-print(message)  # "Welcome back, admin!"
-```
-
-## Method Chaining
-
-Signals support method chaining for complex transformations:
+Therefore, if the underlying object supports method chaining, we can easily create reactive values that apply several methods in sequence.
 
 ```python
 from signified import Signal
 
 text = Signal("  Hello, World!  ")
-processed = (
-    text
-    .strip()           # Remove whitespace
-    .lower()           # Convert to lowercase
-    .replace(",", "")  # Remove comma
-)
+processed = text.strip().lower().replace(",", "")
 
 print(processed.value)  # "hello world!"
 text.value = "  Goodbye, World!  "
 print(processed.value)  # "goodbye world!"
 ```
 
-## Reactive Methods
+### The reactive_method decorator
 
-Use `@reactive_method` to create class methods that react to changes in specific attributes:
+Use the `@reactive_method` decorator to turn a non-reactive method into a reactive one.
 
 ```python
 from dataclasses import dataclass
@@ -192,6 +208,8 @@ class Cart:
         self.items = Signal(items)
         self.tax_rate = Signal(0.125)
 
+    # Providing the names of the reactive values this method depends on tells
+    # signified to monitor them for updates
     @reactive_method('items', 'tax_rate')
     def total(self):
         subtotal = sum(item.price for item in self.items.value)
@@ -209,31 +227,12 @@ print(total_price)  # 505 (404 * 1.25)
 
 ```
 
-## Working with NumPy
-
-Signified integrates well with NumPy arrays:
-
-```python
-from signified import Signal
-import numpy as np
-
-matrix = Signal(np.array([[1, 2], [3, 4]]))
-vector = Signal(np.array([1, 1]))
-
-result = matrix @ vector  # Matrix multiplication
-
-print(result)  # array([3, 7])
-
-matrix.value = np.array([[2, 2], [4, 4]])
-print(result)  # array([4, 8])
-```
-
-## Understanding `unref`
+### Understanding `unref`
 
 The `unref` function is particularly useful when working with values that might be either reactive or non-reactive. This is common when writing functions that should handle both types transparently.
 
 ```python
-from signified import Signal, unref, HasValue
+from signified import HasValue, Signal, unref
 
 def process_data(value: HasValue[float]):
     # unref handles both reactive and non-reactive values
@@ -252,44 +251,3 @@ print(process_data(reactive_value))  # 10
 nested_value = Signal(Signal(Signal(6)))
 print(process_data(nested_value))   # 12
 ```
-
-## Performance Tips
-
-When working with multiple reactive values, using `@computed` with a function is generally more performant than building complex reactive expressions. Here's an example:
-
-```python
-from signified import Signal, computed
-import time
-
-n = 5
-
-# Method 1: Complex reactive expression
-start = time.perf_counter()
-signals1 = [Signal(i) for i in range(n)]
-result1 = sum(
-    (s2 > s1).where(s2, s1)
-    for s1, s2 in zip(signals1[:-1], signals1[1:])
-)
-signals1[0].value = 100  # Trigger update in expression
-print(f"Complex expression time: {time.perf_counter() - start:.4f}s")
-
-# Method 2: Computed function
-start = time.perf_counter()
-signals2 = [Signal(i) for i in range(n)]
-@computed
-def compute_conditional_sum(signals):
-    return sum(
-        s2 if s2 > s1 else s1
-        for s1, s2 in zip(signals[:-1], signals[1:])
-    )
-result2 = compute_conditional_sum(signals2)
-signals2[0].value = 100  # Trigger update in function
-print(f"Computed decorator time: {time.perf_counter() - start:.4f}s")
-
-print(result1, result2)
-```
-
-The computed function approach is typically faster because:
-1. It creates fewer intermediate reactive values
-2. It has a simpler dependency graph
-3. It reduces the number of observer notifications

@@ -118,7 +118,8 @@ nav:
   - Home: index.md
   - Usage: usage.md
   - API Reference: api_reference.md
-  - Changelog: changes.md
+  - Change Log: changes.md
+  - Limitations: limitations.md
 
 plugins:
   - search
