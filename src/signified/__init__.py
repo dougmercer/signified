@@ -1567,6 +1567,8 @@ def unref(value: HasValue[T]) -> T:
         >>> x = Signal(Signal(Signal(2)))
         >>> unref(x)
         2
+
+        ```
     """
     while isinstance(value, Variable):
         value = value._value
@@ -1601,7 +1603,7 @@ def computed(func: Callable[..., R]) -> Callable[..., Computed[R]]:
     Returns:
         A function that returns a reactive value.
 
-    Examples:
+    Example:
         ```py
         >>> x = Signal([1,2,3])
         >>> sum_x = computed(sum)(x)
@@ -1613,6 +1615,7 @@ def computed(func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
         ```
 
+    Example:
         ```py
         >>> @computed
         ... def my_add(x, y):
@@ -1677,6 +1680,8 @@ def as_signal(val: HasValue[T]) -> Signal[T]:
         <2>
         >>> as_signal(Signal(2))
         <2>
+
+        ```
     """
     return cast(Signal[T], val) if isinstance(val, Variable) else Signal(val)
 

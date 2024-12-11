@@ -16,7 +16,7 @@ A Python library for reactive programming (with kind-of working type narrowing).
 
 ## Getting started
 
-```bash
+```console
 pip install signified
 ```
 
@@ -69,6 +69,6 @@ reveal_type(a + b)  # Computed[float | int]
 
 Unfortunately, for the time being, our type hints only work with ``pyright``.
 
-## Read the docs!
+## Ready to learn more?
 
-Checkout [https://dougmercer.github.io/signified](https://dougmercer.github.io/signified) to find out more.
+Checkout the docs at [https://dougmercer.github.io/signified](https://dougmercer.github.io/signified) or watch [my YouTube video about the library](https://youtu.be/nkuXqx-6Xwc).
