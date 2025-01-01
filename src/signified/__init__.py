@@ -652,6 +652,9 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(operator.le)(self, other)
 
+    def len(self) -> Computed[int]:
+        return computed(len)(self)
+
     def __lt__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is less than `other`.
 
