@@ -71,3 +71,28 @@ def test_computed_chaining():
     assert c2.value == 13
     s.value = 10
     assert c2.value == 23
+
+
+def test_computed_container_with_reactive_values():
+    s = [1, Signal(2), Signal(3)]
+    result = computed(sum)(s)
+    assert result.value == 6
+    s[-1].value = 10
+    assert result.value == 13
+
+
+def test_computed_container_with_deeply_nestedreactive_values():
+    def flatten(lst):
+        result = []
+        for item in lst:
+            if isinstance(item, list):
+                result.extend(flatten(item))
+            else:
+                result.append(item)
+        return result
+
+    s = [1, [Signal(2), Signal([Signal(3), Signal([4, Signal(5)])])], Signal(6)]
+    result = computed(flatten)(s)
+    assert result.value == [1, 2, 3, 4, 5, 6]
+    s[1][0].value = 10
+    assert result.value == [1, 10, 3, 4, 5, 6]
