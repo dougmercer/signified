@@ -4,6 +4,7 @@ repo_url: https://github.com/dougmercer/signified
 
 theme:
   name: material
+  custom_dir: docs/overrides
   palette:
   - media: "(prefers-color-scheme)"
     toggle:
@@ -24,6 +25,7 @@ theme:
       icon: material/lightbulb-outline
       name: Switch to system preference
   features:
+    - announce.dismiss
     - content.code.annotate
     - content.code.copy
     - content.code.select
@@ -118,7 +120,8 @@ nav:
   - Home: index.md
   - Usage: usage.md
   - API Reference: api_reference.md
-  - Changelog: changes.md
+  - Change Log: changes.md
+  - Limitations: limitations.md
 
 plugins:
   - search
