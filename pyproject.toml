@@ -129,7 +129,6 @@ filterwarnings = [
 ]
 testpaths = [
 	"tests",
-    "src"
 ]
 
 [tool.pydocstyle]
