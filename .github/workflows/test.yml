@@ -21,6 +21,7 @@ jobs:
           pip install .
       - name: Test with pytest
         run: |
+          export PYTHONDONTWRITEBYTECODE=1
           pip install pytest pytest-cov
           pytest .
       - name: Run Pyright

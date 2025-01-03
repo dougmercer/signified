@@ -122,6 +122,7 @@ nav:
   - API Reference: api_reference.md
   - Change Log: changes.md
   - Limitations: limitations.md
+  - Plugins: plugins.md
 
 plugins:
   - search
