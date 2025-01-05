@@ -1,5 +1,34 @@
 # Change Log
 
+## 0.2.0
+
+New Features
+
+* Add a plugin system
+
+Performance
+
+* Use slots to save memory
+
+Bugfixes
+
+* Fix bug in unobserve method, replacing subscribe with unsubscribe
+* Add a deep_unref function to handle some nested signal edge cases
+
+Type Inference
+
+* Improve reactive_method's ability to properly infer types
+
+CI/CD
+
+* Make ruff actually enforce isort-like imports
+
+Docs
+
+* Improve Usage section of the docs
+* Add a Limitations page to the docs
+* Add a plugins page to the docs
+
 ## 0.1.5
 
 Features
