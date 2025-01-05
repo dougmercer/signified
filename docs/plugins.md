@@ -92,7 +92,7 @@ class ReactiveLogger:
         Args:
             value: The created reactive value
         """
-        self.logger.info(f"Created {self._name(value)} with value: {value.value}")
+        self.logger.info(f"Created {value:d}")
 
     @hookimpl
     def updated(self, value: Variable[Any, Any]) -> None:
@@ -101,7 +101,7 @@ class ReactiveLogger:
         Args:
             value: The updated reactive value
         """
-        self.logger.info(f"Updated {self._name(value)} to value: {value.value}")
+        self.logger.info(f"Updated {value:n} to {value.value}")
 
     @hookimpl
     def named(self, value: Variable[Any, Any]) -> None:
@@ -110,17 +110,12 @@ class ReactiveLogger:
         Args:
             value: The reactive value that was assigned a name.
         """
-        self.logger.info(f"Named {type(value).__name__}(id={id(value)}) as {self._name(value)}")
-
-    @staticmethod
-    def _name(value: Variable[Any, Any]) -> str:
-        return value.name if value.name != "" else f"{type(value).__name__}(id={id(value)})"
-
+        self.logger.info(f"Named {type(value).__name__}(id={id(value)}) as {value:n}")
 
 DEFAULT_LOGGING_PLUGIN = ReactiveLogger()
 pm.register(DEFAULT_LOGGING_PLUGIN)
 ```
 
-Here, we implement logging behavior for the `create`, `updated`, and `named` hooks.
+Here, we implement logging behavior for the `created`, `updated`, and `named` hooks.
 
-At the end, we create the plugin and register it to the plugin manager.
+Finally, at the end, we create the plugin and register it to the plugin manager.
