@@ -46,6 +46,8 @@ from typing import (
 import numpy as np
 from IPython.display import DisplayHandle, display
 
+from .plugins import pm
+
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
@@ -1338,6 +1340,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
     def __init__(self):
         """Initialize the variable."""
         self._observers: list[Observer] = []
+        self.__name = ""
 
     def subscribe(self, observer: Observer) -> None:
         """Subscribe an observer to this variable.
@@ -1422,6 +1425,28 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         assert handle is not None
         IPythonObserver(self, handle)
 
+    def add_name(self, name: str) -> Self:
+        self.__name = name
+        pm.hook.named(value=self)
+        return self
+
+    def __format__(self, format_spec: str) -> str:
+        """Format the variable with custom display options.
+
+        Format options:
+        :n  - just the name (or type+id if unnamed)
+        :d  - full debug info
+        empty - just the value in brackets (default)
+        """
+        if not format_spec:  # Default - just show value in brackets
+            return f"<{self.value}>"
+        if format_spec == "n":  # Name only
+            return self.__name if self.__name else f"{type(self).__name__}(id={id(self)})"
+        if format_spec == "d":  # Debug
+            name_part = f"name='{self.__name}', " if self.__name else ""
+            return f"{type(self).__name__}({name_part}value={self.value!r}, id={id(self)})"
+        return super().__format__(format_spec)  # Handles other format specs
+
 
 class Signal(Variable[NestedValue[T], T]):
     """A container that holds a reactive value.
@@ -1448,6 +1473,7 @@ class Signal(Variable[NestedValue[T], T]):
         super().__init__()
         self._value: T = cast(T, value)
         self.observe(value)
+        pm.hook.created(value=self)
 
     @property
     def value(self) -> T:
@@ -1458,6 +1484,7 @@ class Signal(Variable[NestedValue[T], T]):
         Returns:
             The current value (when getting).
         """
+        pm.hook.read(value=self)
         return unref(self._value)
 
     @value.setter
@@ -1470,6 +1497,7 @@ class Signal(Variable[NestedValue[T], T]):
             change = True
         if change:
             self._value = cast(T, new_value)
+            pm.hook.updated(value=self)
             self.unobserve(old_value)
             self.observe(new_value)
             self.notify()
@@ -1529,6 +1557,7 @@ class Computed(Variable[T, T]):
         self.observe(dependencies)
         self._value = unref(self.f())
         self.notify()
+        pm.hook.created(value=self)
 
     def update(self) -> None:
         """Update the value by re-evaluating the function."""
@@ -1541,6 +1570,7 @@ class Computed(Variable[T, T]):
 
         if change:
             self._value: T = new_value
+            pm.hook.updated(value=self)
             self.notify()
 
     @property
@@ -1550,6 +1580,7 @@ class Computed(Variable[T, T]):
         Returns:
             The current value.
         """
+        pm.hook.read(value=self)
         return unref(self._value)
 
 
