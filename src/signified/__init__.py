@@ -1808,7 +1808,7 @@ def deep_unref(value: Any) -> Any:
 
     # For containers, recursively unref their elements
     if isinstance(value, np.ndarray):
-        return np.array([deep_unref(item) for item in value])
+        return np.array([deep_unref(item) for item in value]).reshape(value.shape) if value.dtype == object else value
     if isinstance(value, dict):
         return {deep_unref(unref(k)): deep_unref(unref(v)) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
@@ -1817,7 +1817,8 @@ def deep_unref(value: Any) -> Any:
         try:
             return type(value)(deep_unref(item) for item in value)  # pyright: ignore[reportCallIssue]
         except TypeError:
-            return list(deep_unref(item) for item in value)
+            # This is not some plain old iterable initialized by *args. Just return as-is
+            return value
 
     # For non-containers/non-reactive values, return as-is
     return value
