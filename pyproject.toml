@@ -30,6 +30,14 @@ classifiers = [
 [tool.setuptools.package-data]
 signified = ["py.typed"]
 
+[project.optional-dependencies]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "mkdocs-material-extensions",
+]
+
 [project.urls]
 Homepage = "https://github.com/dougmercer/signified.git"
 Documentation = "https://dougmercer.github.io/signified"
