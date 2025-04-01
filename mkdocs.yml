@@ -119,7 +119,11 @@ extra:
 nav:
   - Home: index.md
   - Usage: usage.md
-  - API Reference: api_reference.md
+  - API Reference:
+    - Core: api/core.md
+    - IPython: api/display.md
+    - Types: api/types.md
+    - Plugins: api/plugins.md
   - Change Log: changes.md
   - Limitations: limitations.md
   - Plugins: plugins.md
