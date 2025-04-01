@@ -50,71 +50,72 @@ theme:
 
 markdown_extensions:
   # Python Markdown
-  abbr:
-  attr_list:
-  footnotes:
-  md_in_html:
-  tables:
-  toc:
-    permalink: true
-
-  # Python Markdown Extensions
-  pymdownx.betterem:
-    smart_enable: all
-  pymdownx.caret:
-  pymdownx.highlight:
-    line_spans: __span
-  pymdownx.inlinehilite:
-  pymdownx.keys:
-  pymdownx.mark:
-  pymdownx.snippets:
-  pymdownx.superfences:
-    custom_fences:
-    - name: mermaid
-      class: mermaid
-      format: !!python/name:pymdownx.superfences.fence_code_format
-  pymdownx.tilde:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  # - tables
+  - toc:
+      permalink: true
+  # - pymdownx.arithmatex:
+  #     generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  # - pymdownx.magiclink:
+  #     normalize_issue_symbols: true
+  #     repo_url_shorthand: true
+  #     user: dougmercer
+  #     repo: keyed
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
 
   # pymdownx blocks
-  pymdownx.blocks.admonition:
-    types:
-    - note
-    - attention
-    - caution
-    - danger
-    - error
-    - tip
-    - hint
-    - warning
-    # Custom types
-    - info
-    - check
-  pymdownx.blocks.details:
-  pymdownx.blocks.tab:
-    alternate_style: True
-
-extra:
-  mkdocstrings:
-    default_handler: python
-    handlers:
-      python:
-        docstring_style: google
-        options:
-          show_root_heading: true
-          show_if_no_docstring: true
-          inherited_members: true
-          members_order: source
-          separate_signature: true
-          filters:
-          - '!^_'
-          merge_init_into_class: true
-          signature_crossrefs: true
-          show_symbol_type_heading: true
-          show_symbol_type_toc: true
-          rendering:
-            show_source: false
-          selection:
-            docstring_style: google
+  - pymdownx.blocks.admonition:
+      types:
+        - note
+        - attention
+        - caution
+        - danger
+        - error
+        - tip
+        - hint
+        - warning
+        # Custom types
+        - info
+        - check
+  - pymdownx.blocks.details
+  - pymdownx.blocks.tab:
+      alternate_style: True
+  - pymdownx.details
+  - pymdownx.superfences
 
 nav:
   - Home: index.md
@@ -130,8 +131,24 @@ nav:
 
 plugins:
   - search
+  - autorefs
   - mkdocstrings:
+      default_handler: python
       handlers:
         python:
           paths: [src]
-  - autorefs
+          inventories:
+          - https://numpy.org/doc/stable/objects.inv
+          options:
+            docstring_style: google
+            show_if_no_docstring: true
+            inherited_members: true
+            members_order: source
+            filters:
+            - '!^_'
+            separate_signature: true
+            signature_crossrefs: true
+            show_symbol_type_toc: true
+            show_symbol_type_heading: true
+            show_root_heading: true
+            show_source: false
