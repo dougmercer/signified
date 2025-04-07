@@ -5,6 +5,11 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, Union
 
+if sys.version_info >= (3, 12):
+    from typing import TypeAliasType
+else:
+    from typing_extensions import TypeAliasType
+
 if sys.version_info >= (3, 10):
     from typing import ParamSpec, TypeAlias, TypeGuard
 else:
@@ -35,10 +40,10 @@ NestedValue: TypeAlias = Union[T, "_HasValue[NestedValue[T]]"]
 """Recursive type hint for arbitrarily nested reactive values."""
 
 
-ReactiveValue: TypeAlias = Union["Computed[T]", "Signal[T]"]
+ReactiveValue = TypeAliasType("ReactiveValue", Union["Computed[T]", "Signal[T]"], type_params=(T,))
 """A reactive object that would return a value of type T when calling unref(obj)."""
 
-HasValue: TypeAlias = Union[T, "Computed[T]", "Signal[T]"]
+HasValue = TypeAliasType("HasValue", Union[T, "Computed[T]", "Signal[T]"], type_params=(T,))
 """This object would return a value of type T when calling unref(obj)."""
 
 
