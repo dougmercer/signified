@@ -1227,3 +1227,58 @@ class ReactiveMixIn(Generic[T]):
             return a if self else b
 
         return ternary(a, b, self)
+
+    def raise_if(self, condition: Callable[[T], bool], exception: Exception | str | None = None) -> Computed[T]:
+        """Return a reactive value that raises an exception if a condition is met.
+
+        Args:
+            condition: A callable that takes the value of this object and returns a boolean.
+            exception: The exception to raise, or a string message to use in a ValueError.
+
+        Returns:
+            A computed value that raises an exception if the condition is true,
+            otherwise returns the value.
+
+        Raises:
+            Exception: The specified exception if the condition is true.
+            ValueError: With the provided message if condition is true and exception is a string.
+
+        Warning:
+            If an error condition is satisified the reactive system may become out-of-sync. In the below
+            "age" example, age will be sucessfully set to -5, but valid_age will remain 25 after the
+            exception is raised.
+
+        Example:
+            >>> age = Signal(25)
+            >>> valid_age = age.raise_if(lambda x: x < 0, "Age cannot be negative")
+            >>> valid_age.value
+            25
+
+            >>> age.value = -5  # doctest: +ELLIPSIS
+            Traceback (most recent call last):
+            ...
+            ValueError: Age cannot be negative
+
+        Example:
+            >>> temp = Signal(75)
+            >>> critical = temp.raise_if(lambda x: x > 100, RuntimeError("Temperature too high!"))
+            >>> critical.value
+            75
+
+            >>> temp.value = 120  # doctest: +ELLIPSIS
+            Traceback (most recent call last):
+            ...
+            RuntimeError: Temperature too high!
+        """
+        exception = "Error condition was satisfied" if exception is None else exception
+
+        @computed
+        def check_and_return(value) -> T:
+            if condition(value):
+                if isinstance(exception, str):
+                    raise ValueError(exception)
+                else:
+                    raise exception
+            return value
+
+        return check_and_return(self)
