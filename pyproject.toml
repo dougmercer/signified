@@ -6,9 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "signified"
 version = "0.2.4"
 dependencies = [
-    "ipython",
     "pluggy",
-    "typing-extensions; python_version < '3.11'"
+    "typing-extensions; python_version < '3.12'"
 ]
 requires-python = ">=3.9"
 authors = [
@@ -36,6 +35,7 @@ docs = [
     "mkdocstrings[python]",
     "mkdocs-material-extensions",
 ]
+ipython = ["ipython"]
 
 [project.urls]
 Homepage = "https://github.com/dougmercer/signified.git"
