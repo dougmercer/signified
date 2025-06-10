@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import Any, Callable, Generator, Iterable, Protocol, cast
 
-import numpy as np
 from IPython.display import display
 
 from .ops import ReactiveMixIn
@@ -19,6 +18,16 @@ if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+
+
+def _is_truthy(value: Any) -> bool:
+    """Convert a value to boolean, handling array-like objects."""
+    if hasattr(value, "any") and callable(getattr(value, "any")):
+        # Handle numpy arrays, pandas Series, etc.
+        return bool(value.any())
+    else:
+        # Handle regular Python values
+        return bool(value)
 
 
 class Observer(Protocol):
@@ -177,10 +186,7 @@ class Signal(Variable[NestedValue[T], T]):
     def value(self, new_value: HasValue[T]) -> None:
         old_value = self._value
         change = new_value != old_value
-        if isinstance(change, np.ndarray):
-            change = change.any()
-        elif callable(old_value):
-            change = True
+        change = _is_truthy(change) if not callable(old_value) else True
         if change:
             self._value = cast(T, new_value)
             pm.hook.updated(value=self)
@@ -221,11 +227,7 @@ class Computed(Variable[T, T]):
         """Update the value by re-evaluating the function."""
         new_value = self.f()
         change = new_value != self._value
-        if isinstance(change, np.ndarray):
-            change = change.any()
-        elif callable(self._value):
-            change = True
-
+        change = _is_truthy(change) if not callable(self._value) else True
         if change:
             self._value: T = new_value
             pm.hook.updated(value=self)
