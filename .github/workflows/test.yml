@@ -21,7 +21,7 @@ jobs:
           pip install .
       - name: Test with pytest
         run: |
-          pip install pytest pytest-cov
+          pip install pytest pytest-cov numpy
           pytest tests/ --doctest-modules --pyargs signified --cov=signified --cov-report=xml --junitxml=junit/test-results.xml
       - name: Run Pyright
         uses: jakebailey/pyright-action@v2

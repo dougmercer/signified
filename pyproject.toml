@@ -4,10 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "signified"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
     "ipython",
-    "numpy",
     "pluggy",
     "typing-extensions; python_version < '3.11'"
 ]
