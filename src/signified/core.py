@@ -7,8 +7,6 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import Any, Callable, Generator, Iterable, Protocol, cast
 
-from IPython.display import display
-
 from .ops import ReactiveMixIn
 from .plugins import pm
 from .types import HasValue, NestedValue, T, Y, _HasValue
@@ -136,7 +134,12 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         raise NotImplementedError("Update method should be overridden by subclasses")
 
     def _ipython_display_(self) -> None:
-        from .display import IPythonObserver
+        from .display import HAS_IPYTHON, IPythonObserver
+
+        if not HAS_IPYTHON:
+            return
+
+        from IPython.display import display  # pyright: ignore[reportMissingImports]
 
         handle = display(self.value, display_id=True)
         assert handle is not None
