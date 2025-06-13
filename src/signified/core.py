@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
-from typing import Any, Callable, Generator, Iterable, Protocol, cast
+from typing import Any, Callable, Protocol, cast
 
 from .ops import ReactiveMixIn
 from .plugins import pm
-from .types import HasValue, NestedValue, T, Y, _HasValue
+from .types import HasValue, NestedValue, OrderedWeakrefSet, T, Y, _HasValue
 from .utils import unref
 
 if sys.version_info >= (3, 11):
@@ -48,11 +49,11 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         _observers (list[Observer]): List of observers subscribed to this variable.
     """
 
-    __slots__ = ["_observers"]
+    __slots__ = ["_observers", "__name", "__weakref__"]
 
     def __init__(self):
         """Initialize the variable."""
-        self._observers: list[Observer] = []
+        self._observers = OrderedWeakrefSet()
         self.__name = ""
 
     def subscribe(self, observer: Observer) -> None:
@@ -61,8 +62,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         Args:
             observer: The observer to subscribe.
         """
-        if observer not in self._observers:
-            self._observers.append(observer)
+        self._observers.add(observer)
 
     def unsubscribe(self, observer: Observer) -> None:
         """Unsubscribe an observer from this variable.
@@ -71,7 +71,7 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
             observer: The observer to unsubscribe.
         """
         if observer in self._observers:
-            self._observers.remove(observer)
+            self._observers.discard(observer)
 
     def observe(self, items: Any) -> Self:
         """Subscribe the observer (`self`) to all items that are Observable.
