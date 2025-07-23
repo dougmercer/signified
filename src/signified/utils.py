@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable, Iterable, cast
 
-import numpy as np
-
 from .types import HasValue, P, R, T
+
+HAS_NUMPY = importlib.util.find_spec("numpy") is not None
+if HAS_NUMPY:
+    import numpy as np  # pyright: ignore[reportMissingImports]
+else:
+    np = None  # User doesn't have numpy installed
+
 
 if sys.version_info >= (3, 10):
     from typing import Concatenate
@@ -39,7 +45,8 @@ def deep_unref(value: Any) -> Any:
         return deep_unref(unref(value))
 
     # For containers, recursively unref their elements
-    if isinstance(value, np.ndarray):
+    if HAS_NUMPY and isinstance(value, np.ndarray):  # pyright: ignore[reportOptionalMemberAccess]
+        assert np is not None
         return np.array([deep_unref(item) for item in value]).reshape(value.shape) if value.dtype == object else value
     if isinstance(value, dict):
         return {deep_unref(unref(k)): deep_unref(unref(v)) for k, v in value.items()}
