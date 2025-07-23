@@ -81,6 +81,9 @@ class OrderedSet(collections.abc.MutableSet):
     def discard(self, value: Any) -> None:
         self._od.pop(value, None)
 
+    def copy(self):
+        return type(self)(self._od)
+
 
 class OrderedWeakrefSet(weakref.WeakSet):
     """Store weakrefs in a set.
