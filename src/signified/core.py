@@ -6,25 +6,14 @@ import importlib
 import importlib.util
 import math
 import operator
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Callable, Generic, Literal, Protocol, TypeVar, Union, cast, overload
+from typing import Any, Callable, Concatenate, Literal, Protocol, Self, TypeGuard, TypeVar, Union, cast, overload
 
 from .plugins import pm
 from .types import HasValue, OrderedWeakrefSet, ReactiveValue
-
-if sys.version_info >= (3, 10):
-    from typing import Concatenate, ParamSpec, TypeGuard
-else:
-    from typing_extensions import Concatenate, ParamSpec, TypeGuard
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 HAS_NUMPY = importlib.util.find_spec("numpy") is not None
 if HAS_NUMPY:
@@ -47,15 +36,12 @@ __all__ = [
     "as_signal",
 ]
 
-T = TypeVar("T")
 Y = TypeVar("Y")
-R = TypeVar("R")
 A = TypeVar("A")
 B = TypeVar("B")
-P = ParamSpec("P")
 
 
-def computed(func: Callable[..., R]) -> Callable[..., Computed[R]]:
+def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
     """Decorate the function to return a reactive value."""
 
     @wraps(func)
@@ -70,7 +56,7 @@ def computed(func: Callable[..., R]) -> Callable[..., Computed[R]]:
     return wrapper
 
 
-class ReactiveMixIn(Generic[T]):
+class ReactiveMixIn[T]:
     """Methods for easily creating reactive values."""
 
     @property
@@ -127,7 +113,7 @@ class ReactiveMixIn(Generic[T]):
             return super().__getattribute__(name)
 
     @overload
-    def __call__(self: "ReactiveMixIn[Callable[..., R]]", *args: Any, **kwargs: Any) -> Computed[R]: ...
+    def __call__[R](self: "ReactiveMixIn[Callable[..., R]]", *args: Any, **kwargs: Any) -> Computed[R]: ...
 
     @overload
     def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
@@ -254,10 +240,10 @@ class ReactiveMixIn(Generic[T]):
         """
         if ndigits is None or ndigits == 0:
             # When ndigits is None or 0, round returns an integer
-            return cast("Computed[int]", computed(round)(self, ndigits=ndigits))
+            return computed(round)(self, ndigits=ndigits)
         else:
             # Otherwise, float
-            return cast("Computed[float]", computed(round)(self, ndigits=ndigits))
+            return computed(round)(self, ndigits=ndigits)
 
     def __ceil__(self) -> Computed[int]:
         """Return a reactive value for the ceiling of `self`.
@@ -299,7 +285,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        return cast("Computed[int]", computed(math.floor)(self))
+        return computed(math.floor)(self)
 
     def __invert__(self) -> Computed[T]:
         """Return a reactive value for the bitwise inversion of `self`.
@@ -403,8 +389,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.add
-        return computed(f)(self, other)
+        return computed(operator.add)(self, other)
 
     def __and__(self, other: HasValue[Y]) -> Computed[bool]:
         """Return a reactive value for the bitwise AND of self and other.
@@ -473,7 +458,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        return cast("Computed[tuple[float, float]]", computed(divmod)(self, other))
+        return computed(divmod)(self, other)
 
     def is_not(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is not other.
@@ -547,8 +532,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.floordiv
-        return computed(f)(self, other)
+        return computed(operator.floordiv)(self, other)
 
     def __ge__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is greater than or equal to other.
@@ -663,8 +647,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.lshift
-        return computed(f)(self, other)
+        return computed(operator.lshift)(self, other)
 
     def __matmul__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the matrix multiplication of `self` and `other`.
@@ -688,8 +671,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.matmul
-        return computed(f)(self, other)
+        return computed(operator.matmul)(self, other)
 
     def __mod__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` modulo `other`.
@@ -712,8 +694,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.mod
-        return computed(f)(self, other)
+        return computed(operator.mod)(self, other)
 
     def __mul__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the product of `self` and `other`.
@@ -736,8 +717,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.mul
-        return computed(f)(self, other)
+        return computed(operator.mul)(self, other)
 
     def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
         """Return a reactive value for whether `self` is not equal to `other`.
@@ -806,8 +786,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.rshift
-        return computed(f)(self, other)
+        return computed(operator.rshift)(self, other)
 
     def __pow__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` raised to the power of `other`.
@@ -830,8 +809,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.pow
-        return computed(f)(self, other)
+        return computed(operator.pow)(self, other)
 
     def __sub__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the difference of `self` and `other`.
@@ -854,8 +832,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.sub
-        return computed(f)(self, other)
+        return computed(operator.sub)(self, other)
 
     def __truediv__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` divided by `other`.
@@ -878,8 +855,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[T, Y], T | Y] = operator.truediv
-        return computed(f)(self, other)
+        return computed(operator.truediv)(self, other)
 
     def __xor__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
@@ -925,8 +901,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[Y, T], T | Y] = operator.add
-        return computed(f)(other, self)
+        return computed(operator.add)(other, self)
 
     def __rand__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for the bitwise AND of `self` and `other`.
@@ -972,7 +947,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        return cast("Computed[tuple[float, float]]", computed(divmod)(other, self))
+        return computed(divmod)(other, self)
 
     def __rfloordiv__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the floor division of `other` by `self`.
@@ -995,8 +970,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[Y, T], T | Y] = operator.floordiv
-        return computed(f)(other, self)
+        return computed(operator.floordiv)(other, self)
 
     def __rmod__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `other` modulo `self`.
@@ -1019,8 +993,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[Y, T], T | Y] = operator.mod
-        return computed(f)(other, self)
+        return computed(operator.mod)(other, self)
 
     def __rmul__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the product of `self` and `other`.
@@ -1043,8 +1016,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[Y, T], T | Y] = operator.mul
-        return computed(f)(other, self)
+        return computed(operator.mul)(other, self)
 
     def __ror__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
@@ -1090,8 +1062,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[Y, T], T | Y] = operator.pow
-        return computed(f)(other, self)
+        return computed(operator.pow)(other, self)
 
     def __rsub__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the difference of `self` and `other`.
@@ -1114,8 +1085,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[Y, T], T | Y] = operator.sub
-        return computed(f)(other, self)
+        return computed(operator.sub)(other, self)
 
     def __rtruediv__(self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` divided by `other`.
@@ -1138,8 +1108,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        f: Callable[[Y, T], T | Y] = operator.truediv
-        return computed(f)(other, self)
+        return computed(operator.truediv)(other, self)
 
     def __rxor__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
@@ -1300,7 +1269,7 @@ class Observer(Protocol):
         pass
 
 
-class Variable(ABC, ReactiveMixIn[T]):
+class Variable[T](ABC, ReactiveMixIn[T]):
     """An abstract base class for reactive values.
 
     A reactive value is an object that can be observed by observer for changes and
@@ -1444,20 +1413,20 @@ class Variable(ABC, ReactiveMixIn[T]):
         return super().__format__(format_spec)  # Handles other format specs
 
 
-def unref(value: HasValue[T]) -> T:
+def unref[T](value: HasValue[T]) -> T:
     """Dereference a value, resolving any nested reactive variables."""
     current: Any = value
     while isinstance(current, Variable):
         current = current._value
-    return cast(T, current)
+    return current
 
 
-def has_value(obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
+def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
     """Check if an object has a value of a specific type."""
     return isinstance(unref(obj), type_)
 
 
-class Signal(Variable[T]):
+class Signal[T](Variable[T]):
     """A container that holds a reactive value."""
 
     __slots__ = ["_value"]
@@ -1509,7 +1478,7 @@ class Signal(Variable[T]):
         self.notify()
 
 
-class Computed(Variable[T]):
+class Computed[T](Variable[T]):
     """A reactive value defined by a function."""
 
     __slots__ = ["f", "_value"]
@@ -1576,12 +1545,11 @@ def deep_unref(value: Any) -> Any:
     return value
 
 
-# Note: `Any` is used to handle `self` in methods.
-InstanceMethod = Callable[Concatenate[Any, P], T]
-ReactiveMethod = Callable[Concatenate[Any, P], Computed[T]]
+type InstanceMethod[**P, T] = Callable[Concatenate[Any, P], T]
+type ReactiveMethod[**P, T] = Callable[Concatenate[Any, P], Computed[T]]
 
 
-def reactive_method(*dep_names: str) -> Callable[[InstanceMethod[P, T]], ReactiveMethod[P, T]]:
+def reactive_method[**P, T](*dep_names: str) -> Callable[[InstanceMethod[P, T]], ReactiveMethod[P, T]]:
     """Decorate the method to return a reactive value."""
 
     def decorator(func: InstanceMethod[P, T]) -> ReactiveMethod[P, T]:
@@ -1596,6 +1564,6 @@ def reactive_method(*dep_names: str) -> Callable[[InstanceMethod[P, T]], Reactiv
     return decorator
 
 
-def as_signal(val: HasValue[T]) -> Signal[T]:
+def as_signal[T](val: HasValue[T]) -> Signal[T]:
     """Convert a value to a Signal if it's not already a reactive value."""
     return cast(Signal[T], val) if isinstance(val, Variable) else Signal(val)

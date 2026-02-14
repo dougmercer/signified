@@ -3,35 +3,21 @@
 from __future__ import annotations
 
 import collections.abc
-import sys
 import weakref
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, TypeVar, Union
-
-if sys.version_info >= (3, 12):
-    from typing import TypeAliasType
-else:
-    from typing_extensions import TypeAliasType
-
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
+from typing import TYPE_CHECKING, Any, Iterable, Iterator
 
 if TYPE_CHECKING:
     from .core import Computed, Signal
 
 __all__ = ["NestedValue", "HasValue", "ReactiveValue", "OrderedWeakrefSet"]
 
-# Type variables
-T = TypeVar("T")
-
-ReactiveValue = TypeAliasType("ReactiveValue", Union["Computed[T]", "Signal[T]"], type_params=(T,))
+type ReactiveValue[T] = Computed[T] | Signal[T]
 """A reactive object that would return a value of type T when calling unref(obj)."""
 
-NestedValue: TypeAlias = Union[T, "ReactiveValue[NestedValue[T]]"]
+type NestedValue[T] = T | ReactiveValue[NestedValue[T]]
 """Recursive type hint for arbitrarily nested reactive values."""
 
-HasValue = TypeAliasType("HasValue", Union[T, "ReactiveValue[T]"], type_params=(T,))
+type HasValue[T] = T | ReactiveValue[T]
 """This object would return a value of type T when calling unref(obj)."""
 
 

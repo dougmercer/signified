@@ -5,10 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "signified"
 version = "0.2.6"
-dependencies = [
-    "typing-extensions; python_version < '3.12'"
-]
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     {name = "Doug Mercer", email = "dougmerceryt@gmail.com"},
 ]
@@ -86,7 +83,7 @@ exclude = [
 
 line-length = 120
 indent-width = 4
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
@@ -149,3 +146,6 @@ project-includes = [
     "**/*.py*",
     "**/*.ipynb",
 ]
+
+[tool.pyright]
+pythonVersion = "3.12"
