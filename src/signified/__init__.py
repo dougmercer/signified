@@ -21,9 +21,8 @@ Attributes:
     NestedValue: Recursive type for arbitrarily nested reactive values.
 """
 
-from .core import Computed, Signal, Variable
-from .types import HasValue, NestedValue, ReactiveValue, has_value
-from .utils import as_signal, computed, reactive_method, unref
+from .core import Computed, Signal, Variable, as_signal, computed, has_value, reactive_method, unref
+from .types import HasValue, NestedValue, ReactiveValue
 
 __all__ = [
     "Variable",

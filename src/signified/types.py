@@ -13,12 +13,14 @@ else:
     from typing_extensions import TypeAliasType
 
 if sys.version_info >= (3, 10):
-    from typing import ParamSpec, TypeAlias, TypeGuard
+    from typing import ParamSpec, TypeAlias
 else:
-    from typing_extensions import ParamSpec, TypeAlias, TypeGuard
+    from typing_extensions import ParamSpec, TypeAlias
 
 if TYPE_CHECKING:
     from .core import Computed, Signal
+
+__all__ = ["NestedValue", "HasValue", "ReactiveValue", "OrderedWeakrefSet"]
 
 # Type variables
 T = TypeVar("T")
@@ -47,13 +49,6 @@ ReactiveValue = TypeAliasType("ReactiveValue", Union["Computed[T]", "Signal[T]"]
 
 HasValue = TypeAliasType("HasValue", Union[T, "Computed[T]", "Signal[T]"], type_params=(T,))
 """This object would return a value of type T when calling unref(obj)."""
-
-
-def has_value(obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
-    """Check if an object has a value of a specific type."""
-    from .utils import unref
-
-    return isinstance(unref(obj), type_)
 
 
 class OrderedSet(collections.abc.MutableSet):

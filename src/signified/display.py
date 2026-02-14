@@ -12,6 +12,9 @@ else:
     DisplayHandle = Any
 
 
+__all__ = ["IPythonObserver"]
+
+
 class IPythonObserver:
     """Observer that updates IPython display when value changes.
 
