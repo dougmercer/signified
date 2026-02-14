@@ -20,13 +20,13 @@ Additional hooks may be added in the future. If you have a good idea for a plugi
 To create a plugin:
 
 1. Create a class that will contain your hook implementations
-2. Implement any desired hooks using the `@hookimpl` decorator (available from `signified.plugin`)
-3. Register your plugin with the global plugin manager `pm` (also available in `signified.plugin`)
+2. Implement any desired hooks using the `@hookimpl` decorator (available from `signified.plugins`)
+3. Register your plugin with the global plugin manager `pm` (also available in `signified.plugins`)
 
 Here's a minimal example:
 
 ```python
-from signified.plugin import hookimpl, pm
+from signified.plugins import hookimpl, pm
 from signified import ReactiveValue
 from typing import Any
 
@@ -43,10 +43,10 @@ pm.register(plugin)
 
 ## Plugin Management
 
-The library maintains a global plugin manager instance in `signified.plugin.pm`. Plugins can be registered and unregistered at runtime:
+The library maintains a global plugin manager instance in `signified.plugins.pm`. Plugins can be registered and unregistered at runtime:
 
 ```python
-from signified.plugin import pm
+from signified.plugins import pm
 
 # Register a plugin
 pm.register(my_plugin)
@@ -66,7 +66,7 @@ import logging
 from typing import Any
 
 from signified import Variable
-from signified.plugin import hookimpl, pm
+from signified.plugins import hookimpl, pm
 
 
 class ReactiveLogger:

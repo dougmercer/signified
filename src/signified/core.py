@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import math
 import operator
@@ -10,15 +11,15 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Callable, Generic, Literal, Protocol, Union, cast, overload
+from typing import Any, Callable, Generic, Literal, Protocol, TypeVar, Union, cast, overload
 
 from .plugins import pm
-from .types import A, B, HasValue, NestedValue, OrderedWeakrefSet, P, R, T, Y, _HasValue
+from .types import HasValue, OrderedWeakrefSet, ReactiveValue
 
 if sys.version_info >= (3, 10):
-    from typing import Concatenate, TypeGuard
+    from typing import Concatenate, ParamSpec, TypeGuard
 else:
-    from typing_extensions import Concatenate, TypeGuard
+    from typing_extensions import Concatenate, ParamSpec, TypeGuard
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -45,6 +46,13 @@ __all__ = [
     "reactive_method",
     "as_signal",
 ]
+
+T = TypeVar("T")
+Y = TypeVar("Y")
+R = TypeVar("R")
+A = TypeVar("A")
+B = TypeVar("B")
+P = ParamSpec("P")
 
 
 def computed(func: Callable[..., R]) -> Callable[..., Computed[R]]:
@@ -182,7 +190,7 @@ class ReactiveMixIn(Generic[T]):
         """
         return computed(abs)(self)
 
-    def bool(self) -> Computed[bool]:
+    def as_bool(self) -> Computed[bool]:
         """Return a reactive value for the boolean value of `self`.
 
         Note:
@@ -194,7 +202,7 @@ class ReactiveMixIn(Generic[T]):
         Example:
             ```py
             >>> s = Signal(1)
-            >>> result = s.bool()
+            >>> result = s.as_bool()
             >>> result.value
             True
             >>> s.value = 0
@@ -270,7 +278,7 @@ class ReactiveMixIn(Generic[T]):
 
             ```
         """
-        return cast("Computed[int]", computed(math.ceil)(self))
+        return computed(math.ceil)(self)
 
     def __floor__(self) -> Computed[int]:
         """Return a reactive value for the floor of `self`.
@@ -1292,7 +1300,7 @@ class Observer(Protocol):
         pass
 
 
-class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
+class Variable(ABC, ReactiveMixIn[T]):
     """An abstract base class for reactive values.
 
     A reactive value is an object that can be observed by observer for changes and
@@ -1345,8 +1353,12 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         def _observe(item: Any) -> None:
             if isinstance(item, Variable) and item is not self:
                 item.subscribe(self)
-            elif isinstance(item, Iterable) and not isinstance(item, str):
-                for sub_item in item:
+            elif not isinstance(item, str):
+                try:
+                    iterator = iter(item)
+                except TypeError:
+                    return
+                for sub_item in iterator:
                     _observe(sub_item)
 
         _observe(items)
@@ -1365,8 +1377,12 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         def _unobserve(item: Any) -> None:
             if isinstance(item, Variable) and item is not self:
                 item.unsubscribe(self)
-            elif isinstance(item, Iterable) and not isinstance(item, str):
-                for sub_item in item:
+            elif not isinstance(item, str):
+                try:
+                    iterator = iter(item)
+                except TypeError:
+                    return
+                for sub_item in iterator:
                     _unobserve(sub_item)
 
         _unobserve(items)
@@ -1396,7 +1412,10 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
         if not HAS_IPYTHON:
             return
 
-        from IPython.display import display  # pyright: ignore[reportMissingImports]
+        try:
+            display = importlib.import_module("IPython.display").display
+        except ImportError:
+            return
 
         handle = display(self.value, display_id=True)
         assert handle is not None
@@ -1427,9 +1446,10 @@ class Variable(ABC, _HasValue[Y], ReactiveMixIn[T]):  # type: ignore[misc]
 
 def unref(value: HasValue[T]) -> T:
     """Dereference a value, resolving any nested reactive variables."""
-    while isinstance(value, Variable):
-        value = value._value
-    return cast(T, value)
+    current: Any = value
+    while isinstance(current, Variable):
+        current = current._value
+    return cast(T, current)
 
 
 def has_value(obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
@@ -1437,14 +1457,20 @@ def has_value(obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
     return isinstance(unref(obj), type_)
 
 
-class Signal(Variable[NestedValue[T], T]):
+class Signal(Variable[T]):
     """A container that holds a reactive value."""
 
     __slots__ = ["_value"]
 
-    def __init__(self, value: NestedValue[T]) -> None:
+    @overload
+    def __init__(self, value: ReactiveValue[T]) -> None: ...
+
+    @overload
+    def __init__(self, value: T) -> None: ...
+
+    def __init__(self, value: HasValue[T]) -> None:
         super().__init__()
-        self._value: T = cast(T, value)
+        self._value: HasValue[T] = value
         self.observe(value)
         pm.hook.created(value=self)
 
@@ -1462,7 +1488,7 @@ class Signal(Variable[NestedValue[T], T]):
         else:
             change = _is_truthy(new_value != old_value)
         if change:
-            self._value = cast(T, new_value)
+            self._value = new_value
             pm.hook.updated(value=self)
             self.unobserve(old_value)
             self.observe(new_value)
@@ -1483,7 +1509,7 @@ class Signal(Variable[NestedValue[T], T]):
         self.notify()
 
 
-class Computed(Variable[T, T]):
+class Computed(Variable[T]):
     """A reactive value defined by a function."""
 
     __slots__ = ["f", "_value"]
@@ -1533,7 +1559,7 @@ def deep_unref(value: Any) -> Any:
         return deep_unref(unref(value))
 
     # For containers, recursively unref their elements
-    if HAS_NUMPY and isinstance(value, np.ndarray):  # pyright: ignore[reportOptionalMemberAccess]
+    if np is not None and isinstance(value, np.ndarray):
         assert np is not None
         return np.array([deep_unref(item) for item in value]).reshape(value.shape) if value.dtype == object else value
     if isinstance(value, dict):
@@ -1541,8 +1567,9 @@ def deep_unref(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return type(value)(deep_unref(item) for item in value)
     if isinstance(value, Iterable) and not isinstance(value, str):
+        constructor: Any = type(value)
         try:
-            return type(value)(deep_unref(item) for item in value)  # pyright: ignore[reportCallIssue]
+            return constructor(deep_unref(item) for item in value)
         except TypeError:
             return value
 
@@ -1559,12 +1586,12 @@ def reactive_method(*dep_names: str) -> Callable[[InstanceMethod[P, T]], Reactiv
 
     def decorator(func: InstanceMethod[P, T]) -> ReactiveMethod[P, T]:
         @wraps(func)
-        def wrapper(self: Any, *args: Any, **kwargs: Any) -> Computed[T]:
+        def wrapper(self: Any, *args: P.args, **kwargs: P.kwargs) -> Computed[T]:
             object_deps = [getattr(self, name) for name in dep_names if hasattr(self, name)]
             all_deps = (*object_deps, *args, *kwargs.values())
             return Computed(lambda: func(self, *args, **kwargs), all_deps)
 
-        return wrapper
+        return cast(ReactiveMethod[P, T], wrapper)
 
     return decorator
 

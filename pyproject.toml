@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "signified"
 version = "0.2.6"
 dependencies = [
-    "pluggy",
     "typing-extensions; python_version < '3.12'"
 ]
 requires-python = ">=3.9"
@@ -29,6 +28,7 @@ classifiers = [
 signified = ["py.typed"]
 
 [project.optional-dependencies]
+plugins = ["pluggy"]
 docs = [
     "mkdocs",
     "mkdocs-material",
@@ -36,6 +36,7 @@ docs = [
     "mkdocs-material-extensions",
 ]
 ipython = ["ipython"]
+test = ["pytest", "pytest-coverage", "numpy", "pluggy"]
 
 [project.urls]
 Homepage = "https://github.com/dougmercer/signified.git"
@@ -142,3 +143,9 @@ testpaths = [
 [tool.pydocstyle]
 convention = "google"
 add_ignore = ["D107"]
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]

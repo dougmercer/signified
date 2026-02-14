@@ -145,10 +145,10 @@ def test_signal_bool():
     s3 = Signal([])
     s4 = Signal([1, 2, 3])
 
-    assert s1.bool().value == True  # noqa: E712
-    assert s2.bool().value == False  # noqa: E712
-    assert s3.bool().value == False  # noqa: E712
-    assert s4.bool().value == True  # noqa: E712
+    assert s1.as_bool().value == True  # noqa: E712
+    assert s2.as_bool().value == False  # noqa: E712
+    assert s3.as_bool().value == False  # noqa: E712
+    assert s4.as_bool().value == True  # noqa: E712
 
 
 def test_signal_math_functions():

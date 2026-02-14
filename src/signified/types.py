@@ -5,7 +5,7 @@ from __future__ import annotations
 import collections.abc
 import sys
 import weakref
-from typing import TYPE_CHECKING, Any, Generic, Iterable, Iterator, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, TypeVar, Union
 
 if sys.version_info >= (3, 12):
     from typing import TypeAliasType
@@ -13,9 +13,9 @@ else:
     from typing_extensions import TypeAliasType
 
 if sys.version_info >= (3, 10):
-    from typing import ParamSpec, TypeAlias
+    from typing import TypeAlias
 else:
-    from typing_extensions import ParamSpec, TypeAlias
+    from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
     from .core import Computed, Signal
@@ -24,30 +24,14 @@ __all__ = ["NestedValue", "HasValue", "ReactiveValue", "OrderedWeakrefSet"]
 
 # Type variables
 T = TypeVar("T")
-Y = TypeVar("Y")
-R = TypeVar("R")
-
-A = TypeVar("A")
-B = TypeVar("B")
-
-P = ParamSpec("P")
-
-
-class _HasValue(Generic[T]):
-    """Class to make pyright happy with type inference."""
-
-    @property
-    def value(self) -> T: ...
-
-
-NestedValue: TypeAlias = Union[T, "_HasValue[NestedValue[T]]"]
-"""Recursive type hint for arbitrarily nested reactive values."""
-
 
 ReactiveValue = TypeAliasType("ReactiveValue", Union["Computed[T]", "Signal[T]"], type_params=(T,))
 """A reactive object that would return a value of type T when calling unref(obj)."""
 
-HasValue = TypeAliasType("HasValue", Union[T, "Computed[T]", "Signal[T]"], type_params=(T,))
+NestedValue: TypeAlias = Union[T, "ReactiveValue[NestedValue[T]]"]
+"""Recursive type hint for arbitrarily nested reactive values."""
+
+HasValue = TypeAliasType("HasValue", Union[T, "ReactiveValue[T]"], type_params=(T,))
 """This object would return a value of type T when calling unref(obj)."""
 
 
@@ -67,8 +51,8 @@ class OrderedSet(collections.abc.MutableSet):
     def __iter__(self) -> Iterator:
         return iter(self._od)
 
-    def __contains__(self, value: Any) -> bool:
-        return value in self._od
+    def __contains__(self, x: Any) -> bool:
+        return x in self._od
 
     def add(self, value: Any) -> None:
         self._od[value] = None
