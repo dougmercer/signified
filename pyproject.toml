@@ -26,14 +26,17 @@ signified = ["py.typed"]
 
 [project.optional-dependencies]
 plugins = ["pluggy"]
+ipython = ["ipython"]
+
+[dependency-groups]
 docs = [
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",
     "mkdocs-material-extensions",
 ]
-ipython = ["ipython"]
 test = ["pytest", "pytest-coverage", "numpy", "pluggy"]
+lint = ["pyright"]
 
 [project.urls]
 Homepage = "https://github.com/dougmercer/signified.git"
