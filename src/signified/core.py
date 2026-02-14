@@ -1291,6 +1291,18 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         self._observers = OrderedWeakrefSet()
         self.__name = ""
 
+    @staticmethod
+    def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
+        """Yield `Variable` instances found in arbitrarily nested containers."""
+        if isinstance(item, Variable):
+            yield item
+            return
+        if isinstance(item, str):
+            return
+        if isinstance(item, Iterable):
+            for sub_item in item:
+                yield from Variable._iter_variables(sub_item)
+
     def subscribe(self, observer: Observer) -> None:
         """Subscribe an observer to this variable.
 
@@ -1319,18 +1331,9 @@ class Variable[T](ABC, ReactiveMixIn[T]):
             self
         """
 
-        def _observe(item: Any) -> None:
-            if isinstance(item, Variable) and item is not self:
+        for item in self._iter_variables(items):
+            if item is not self:
                 item.subscribe(self)
-            elif not isinstance(item, str):
-                try:
-                    iterator = iter(item)
-                except TypeError:
-                    return
-                for sub_item in iterator:
-                    _observe(sub_item)
-
-        _observe(items)
         return self
 
     def unobserve(self, items: Any) -> Self:
@@ -1343,23 +1346,14 @@ class Variable[T](ABC, ReactiveMixIn[T]):
             self
         """
 
-        def _unobserve(item: Any) -> None:
-            if isinstance(item, Variable) and item is not self:
+        for item in self._iter_variables(items):
+            if item is not self:
                 item.unsubscribe(self)
-            elif not isinstance(item, str):
-                try:
-                    iterator = iter(item)
-                except TypeError:
-                    return
-                for sub_item in iterator:
-                    _unobserve(sub_item)
-
-        _unobserve(items)
         return self
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
-        for observer in self._observers:
+        for observer in tuple(self._observers):
             observer.update()
 
     def __repr__(self) -> str:
