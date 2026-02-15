@@ -1,54 +1,94 @@
+---
+hide:
+  - navigation
+---
 # Change Log
+
+This page summarizes key changes by diffing adjacent tagged releases.
+
+## 0.2.7
+
+- Significantly improve type inference for a variety of methods.
+- Disable plugins by default (now enabled via environment variable, `SIGNIFIED_ENABLE_HOOKS=1`)
+- Several performance improvements.
+- Expand documentation.
+- Migrate CI to `uv`
+
+Breaking Changes:
+- Plugins now disabled by default.
+- Renamed `OrderedSet` and `OrderedWeakRefSet` to `_OrderedSet` and `_OrderedWeakRefSet`. (You shouldn't be using these anyways...)
+
+## 0.2.6
+
+- Fixed packaging so NumPy is truly optional.
+- Fixed Python 3.14 compatibility behavior.
+- Expanded/updated CI test matrix for newer Python versions.
+
+## 0.2.5
+
+- Improved weak-reference handling in the reactive observer internals.
+- Updated core/type integration around weakref sets.
+- Minor release metadata/version updates.
+
+## 0.2.4
+
+- Made IPython an optional dependency.
+- Removed hard NumPy dependency from base install requirements.
+- Updated core/display logic to support optional imports.
+
+## 0.2.3
+
+- Fixed runtime typing issue for generic forward references (`ReactiveValue`/`HasValue` usage).
+- Added/expanded API documentation pages and MkDocs configuration.
+- Updated docs deployment workflow.
+
+## 0.2.2
+
+- Refactored the implementation into smaller modules (`core`, `ops`, `display`, `types`, `utils`).
+- Removed old monolithic implementation layout.
+- Updated docs/test scaffolding to match the split structure.
+
+## 0.2.1
+
+- Fixed `deep_unref` behavior to avoid coercing unknown iterables into lists.
+- Minor packaging/version metadata adjustments.
 
 ## 0.2.0
 
-New Features
-
-* Add a plugin system
-
-Performance
-
-* Use slots to save memory
-
-Bugfixes
-
-* Fix bug in unobserve method, replacing subscribe with unsubscribe
-* Add a deep_unref function to handle some nested signal edge cases
-
-Type Inference
-
-* Improve reactive_method's ability to properly infer types
-
-CI/CD
-
-* Make ruff actually enforce isort-like imports
-
-Docs
-
-* Improve Usage section of the docs
-* Add a Limitations page to the docs
-* Add a plugins page to the docs
+- Added plugin system support (`signified.plugins`) and plugin examples.
+- Added `deep_unref`, memory/performance cleanup (`__slots__`), and typing improvements.
+- Substantially expanded docs (`usage`, `limitations`, `plugins`, changelog, theme updates).
 
 ## 0.1.5
 
-Features
-
-* Added ``__setitem__`` and ``__setattr`` methods for generating reactive values.
-
-Docs
-
-* Added examples to docstrings (in doctest format).
-
-Bug Fixes
-
-* Under several conditions, Reactive values generated from ``__call__`` and ``__getitem__`` weren't updating when an upstream observable was updated.
-
-Typing
-
-* Improve type inference for ``__call__`` generated reactive values.
+- Major expansion of core reactive implementation and type-inference coverage.
+- Improved observe/unobserve and change-detection robustness.
+- Added release/docs workflow improvements and changelog updates.
 
 ## 0.1.4
-Minor changes to packaging and documentation
+
+- Repackaged project into `src/signified/` package layout.
+- Ensured `py.typed` ships from package directory.
+- Minor README/metadata cleanup.
+
+## 0.1.3
+
+- Improved README and docs landing content.
+- Fixed MkDocs configuration issues.
+- Minor source and metadata tweaks.
+
+## 0.1.2
+
+- Added support for Python versions `>=3.9` (at that time).
+- Added broad tests for signals/computed/reactive methods/type inference.
+- Added/updated CI test workflow and moved to `src/` source layout.
 
 ## 0.1.1
-Initial release.
+
+- Fixed package naming/docs after rename.
+- Updated project URLs and version metadata.
+- Updated changelog entries for the rename transition.
+
+## 0.1.0
+
+- Initial tagged release as `signified`.

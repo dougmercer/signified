@@ -55,7 +55,39 @@ class _ReactiveSupportsGetItem[KeyT, ValueT](Protocol):
 
 
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
-    """Decorate the function to return a reactive value."""
+    """Wrap a function so calls produce a reactive ``Computed`` result.
+
+    The returned wrapper accepts plain values, reactive values, or nested
+    containers that include reactive values. On each recomputation, arguments
+    are normalized with :func:`deep_unref`, so ``func`` receives plain Python
+    values.
+
+    The created :class:`Computed` subscribes to reactive dependencies found in
+    ``args`` and ``kwargs`` at call time. When any dependency updates, the
+    function is re-evaluated and subscribers are notified.
+
+    Args:
+        func: Function that computes a derived value from its inputs.
+
+    Returns:
+        A wrapper that returns a :class:`Computed` when called.
+
+    Example:
+        ```py
+        >>> @computed
+        ... def total(price, quantity):
+        ...     return price * quantity
+        >>> price = Signal(10)
+        >>> quantity = Signal(2)
+        >>> subtotal = total(price, quantity)
+        >>> subtotal.value
+        20
+        >>> quantity.value = 3
+        >>> subtotal.value
+        30
+
+        ```
+    """
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Computed[R]:
@@ -580,7 +612,6 @@ class ReactiveMixIn[T]:
 
         Example:
             ```py
-            >>> from signified import Signal
             >>> s = Signal(10)
             >>> result = s.eq(10)
             >>> result.value
@@ -1634,7 +1665,26 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
 
 def unref[T](value: HasValue[T]) -> T:
-    """Dereference a value, resolving any nested reactive variables."""
+    """Resolve a value by unwrapping reactive containers until plain data remains.
+
+    This utility repeatedly unwraps :class:`Variable` objects by following
+    their internal ``_value`` references, allowing callers to operate on the
+    underlying Python value regardless of nesting depth.
+
+    Args:
+        value: Plain value, reactive value, or nested reactive value.
+
+    Returns:
+        The fully unwrapped value.
+
+    Example:
+        ```py
+        >>> nested = Signal(Signal(5))
+        >>> unref(nested)
+        5
+
+        ```
+    """
     current: Any = value
     while isinstance(current, Variable):
         current = current._value
@@ -1642,12 +1692,64 @@ def unref[T](value: HasValue[T]) -> T:
 
 
 def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
-    """Check if an object has a value of a specific type."""
+    """Check whether an object's resolved value is an instance of ``type_``.
+
+    This helper is a typed guard around :func:`unref`. It is useful when code
+    accepts either plain values or reactive values and needs a narrowed type
+    before continuing.
+
+    Args:
+        obj: Value to inspect. May be plain or reactive.
+        type_: Expected resolved value type.
+
+    Returns:
+        ``True`` if ``unref(obj)`` is an instance of ``type_``; otherwise
+        ``False``.
+
+    Example:
+        ```py
+        >>> candidate = Signal(42)
+        >>> has_value(candidate, int)
+        True
+        >>> has_value(candidate, str)
+        False
+
+        ```
+    """
     return isinstance(unref(obj), type_)
 
 
 class Signal[T](Variable[T]):
-    """A container that holds a reactive value."""
+    """Mutable source-of-truth reactive value.
+
+    ``Signal`` stores a value and notifies subscribers when that value changes.
+    It is typically used for application state that should be observed by
+    derived :class:`Computed` values.
+
+    The ``value`` property is read/write:
+    - reading ``value`` returns the resolved plain value
+    - assigning ``value`` updates dependencies and notifies observers when the
+      value changed
+
+    Signals can also proxy mutation operations (for example ``__setattr__`` and
+    ``__setitem__``) so in-place updates on wrapped objects can still trigger
+    reactivity.
+
+    Args:
+        value: Initial value to wrap. May be plain or reactive.
+
+    Example:
+        ```py
+        >>> count = Signal(1)
+        >>> doubled = count * 2
+        >>> doubled.value
+        2
+        >>> count.value = 3
+        >>> doubled.value
+        6
+
+        ```
+    """
 
     __slots__ = ["_value"]
 
@@ -1699,7 +1801,33 @@ class Signal[T](Variable[T]):
 
 
 class Computed[T](Variable[T]):
-    """A reactive value defined by a function."""
+    """Read-only reactive value derived from a computation.
+
+    ``Computed`` recalculates its value whenever one of its observed
+    dependencies updates. In most usage, instances are created implicitly via
+    :func:`computed`, operator overloads, or helper APIs such as
+    :func:`reactive_method`.
+
+    Unlike :class:`Signal`, ``Computed.value`` is read-only and is updated by
+    re-running the stored function.
+
+    Args:
+        f: Zero-argument function used to compute the current value.
+        dependencies: Dependencies to observe. May be a single item or nested
+            container structure.
+
+    Example:
+        ```py
+        >>> count = Signal(2)
+        >>> squared = Computed(lambda: count.value ** 2, dependencies=count)
+        >>> squared.value
+        4
+        >>> count.value = 5
+        >>> squared.value
+        25
+
+        ```
+    """
 
     __slots__ = ["f", "_value"]
 
@@ -1738,7 +1866,34 @@ _SCALAR_TYPES = {int, float, str, bool, type(None)}
 
 
 def deep_unref(value: Any) -> Any:
-    """Recursively `unref` values potentially within containers."""
+    """Recursively resolve reactive values within nested containers.
+
+    ``deep_unref`` is the structural counterpart to :func:`unref`. It unwraps
+    reactive values that appear inside supported containers while preserving the
+    container type where practical.
+
+    Supported behavior:
+    - scalar primitives are returned unchanged
+    - reactive values are unwrapped recursively
+    - ``dict``, ``list``, and ``tuple`` contents are recursively unwrapped
+    - generic iterables are reconstructed when possible; otherwise returned as-is
+    - ``numpy.ndarray`` values with ``dtype=object`` are recursively unwrapped
+      element-wise
+
+    Args:
+        value: Any value, possibly containing reactive values.
+
+    Returns:
+        Value with reactive nodes recursively replaced by plain values.
+
+    Example:
+        ```py
+        >>> payload = {"a": Signal(1), "b": [Signal(2), 3]}
+        >>> deep_unref(payload)
+        {'a': 1, 'b': [2, 3]}
+
+        ```
+    """
     # Fast path for common scalar types (faster than isinstance check)
     if type(value) in _SCALAR_TYPES:
         return value
@@ -1770,7 +1925,42 @@ type ReactiveMethod[**P, T] = Callable[Concatenate[Any, P], Computed[T]]
 
 
 def reactive_method[**P, T](*dep_names: str) -> Callable[[InstanceMethod[P, T]], ReactiveMethod[P, T]]:
-    """Decorate the method to return a reactive value."""
+    """Decorate an instance method so calls return a ``Computed`` value.
+
+    The decorated method keeps its original call signature but now returns a
+    reactive value. Dependencies include:
+    - instance attributes named in ``dep_names`` (when present), and
+    - call-time ``args`` and ``kwargs``.
+
+    This is useful for class APIs where a derived value depends on reactive
+    fields owned by ``self``.
+
+    Args:
+        *dep_names: Attribute names on ``self`` to observe as dependencies.
+
+    Returns:
+        A decorator that transforms an instance method into one that returns
+        :class:`Computed`.
+
+    Example:
+        ```py
+        >>> from signified import Signal, reactive_method
+        >>> class Counter:
+        ...     def __init__(self):
+        ...         self.count = Signal(1)
+        ...     @reactive_method("count")
+        ...     def doubled(self):
+        ...         return self.count.value * 2
+        >>> c = Counter()
+        >>> result = c.doubled()
+        >>> result.value
+        2
+        >>> c.count.value = 4
+        >>> result.value
+        8
+
+        ```
+    """
 
     def decorator(func: InstanceMethod[P, T]) -> ReactiveMethod[P, T]:
         @wraps(func)
@@ -1785,5 +1975,30 @@ def reactive_method[**P, T](*dep_names: str) -> Callable[[InstanceMethod[P, T]],
 
 
 def as_signal[T](val: HasValue[T]) -> Signal[T]:
-    """Convert a value to a Signal if it's not already a reactive value."""
+    """Normalize a value to a signal-compatible reactive object.
+
+    If ``val`` is already reactive, it is returned unchanged to avoid wrapping
+    an existing reactive node. Otherwise a new :class:`Signal` is created.
+
+    Args:
+        val: Plain value or reactive value.
+
+    Returns:
+        A reactive value suitable for APIs expecting ``Signal``-like behavior.
+
+    Note:
+        Existing reactive values are returned as-is at runtime, including
+        ``Computed`` instances.
+
+    Example:
+        ```py
+        >>> from signified import Signal, as_signal
+        >>> as_signal(3).value
+        3
+        >>> s = Signal(4)
+        >>> as_signal(s) is s
+        True
+
+        ```
+    """
     return cast(Signal[T], val) if isinstance(val, Variable) else Signal(val)

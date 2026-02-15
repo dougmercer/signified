@@ -43,7 +43,7 @@ Homepage = "https://github.com/dougmercer/signified.git"
 Documentation = "https://dougmercer.github.io/signified"
 Repository = "https://github.com/dougmercer/signified.git"
 Issues = "https://github.com/dougmercer/signified/issues"
-Changelog = "https://dougmercer.github.io/signified/changelog"
+Changelog = "https://dougmercer.github.io/signified/changes/"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.

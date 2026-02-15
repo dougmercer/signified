@@ -53,7 +53,7 @@ x_squared = power(x, 2)  # equivalent to the above
 
 Together, these data structures allow us to implement a wide variety of capabilities. In particular, I wrote this library to make my to-be-released animation library easier to maintain and more fun to work with.
 
-## ... what do you mean by "kind of working type narrowing"?
+## ... what do you mean by "kind-of working type narrowing"?
 
 Other reactive Python libraries don't really attempt to implement type hints (e.g., [param](https://param.holoviz.org/)).
 
@@ -64,10 +64,10 @@ from signified import Signal
 
 a = Signal(1.0)
 b = Signal(Signal(Signal(2)))
-reveal_type(a + b)  # Computed[float | int]
+reveal_type(a + b)  # Computed[float]
 ```
 
-Unfortunately, for the time being, our type hints only work with ``pyright``.
+Unfortunately, our type hints only work with ``pyright``.
 
 ## Ready to learn more?
 
