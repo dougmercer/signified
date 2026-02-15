@@ -1,3 +1,7 @@
+---
+hide:
+  - navigation
+---
 # Writing Plugins
 
 Signified provides a plugin system built on top of [pluggy](https://pluggy.readthedocs.io/).

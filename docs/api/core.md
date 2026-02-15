@@ -1,3 +1,0 @@
-# Core
-
-::: signified.core

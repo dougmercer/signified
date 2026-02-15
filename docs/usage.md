@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Usage Guide
 
 Because this package relies so heavily on overriding "magic methods", the API documentation for this package makes it hard to get an idea of how `signified` works. This page gives a crash course through several usage examples.

@@ -122,9 +122,7 @@ nav:
   - Usage: usage.md
   - Magic Methods: magic-methods.md
   - Plugins: plugins.md
-  - API Reference:
-    - Core: api/core.md
-    - Plugins: api/plugins.md
+  - API Reference: api.md
   - Change Log: changes.md
   - Limitations: limitations.md
 

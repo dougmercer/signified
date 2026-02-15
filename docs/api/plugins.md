@@ -1,3 +1,0 @@
-# Plugins API
-
-::: signified.plugins

@@ -1,3 +1,7 @@
+---
+hide:
+  - navigation
+---
 # Change Log
 
 This page summarizes key changes by diffing adjacent tagged releases.

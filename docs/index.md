@@ -1,3 +1,7 @@
+---
+hide:
+  - navigation
+---
 # Signified
 
 A Python library for reactive programming (with kind-of working type narrowing).
@@ -64,6 +68,6 @@ print(x_squared.value)  # 100
 ## Ready to learn more?
 
 - Read this first: [Usage Guide](usage.md)
-- Full API docs: [Core API](api/core.md)
+- Full API docs: [Core API](api.md)
 - Quick look at avilable operators: [Magic Methods and Operators](magic-methods.md)
 - Extending `signified` with plugins: [Plugins](plugins.md)

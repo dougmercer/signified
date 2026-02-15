@@ -1,3 +1,7 @@
+---
+hide:
+  - navigation
+---
 # Known Limitations
 
 ## Type Inference
