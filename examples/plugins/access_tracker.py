@@ -65,7 +65,7 @@ class AccessTracker:
 
     def __init__(self):
         self.stats: Dict[int, AccessStats] = defaultdict(AccessStats)
-        self._variables: WeakValueDictionary[int, Variable[Any, Any]] = WeakValueDictionary()
+        self._variables: WeakValueDictionary[int, Variable[Any]] = WeakValueDictionary()
 
     def cleanup(self) -> None:
         """Clear stats."""
@@ -73,22 +73,22 @@ class AccessTracker:
         self._variables.clear()
 
     @hookimpl
-    def created(self, value: Variable[Any, Any]) -> None:
+    def created(self, value: Variable[Any]) -> None:
         """Track creation of new reactive values."""
         self.stats[id(value)].add_event(EventType.CREATE, unref(value))
         self._variables[id(value)] = value
 
     @hookimpl
-    def updated(self, value: Variable[Any, Any]) -> None:
+    def updated(self, value: Variable[Any]) -> None:
         """Track modifications to reactive values."""
         self.stats[id(value)].add_event(EventType.WRITE, unref(value))
 
     @hookimpl
-    def read(self, value: Variable[Any, Any]) -> None:
+    def read(self, value: Variable[Any]) -> None:
         """Record a read access to a reactive value."""
         self.stats[id(value)].add_event(EventType.READ, unref(value))
 
-    def get_stats(self, value: Variable[Any, Any]) -> AccessStats:
+    def get_stats(self, value: Variable[Any]) -> AccessStats:
         """Get access statistics for a specific reactive value."""
         return self.stats[id(value)]
 

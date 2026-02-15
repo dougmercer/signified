@@ -4,12 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "signified"
-version = "0.2.6"
-dependencies = [
-    "pluggy",
-    "typing-extensions; python_version < '3.12'"
-]
-requires-python = ">=3.9"
+version = "0.2.7"
+requires-python = ">=3.12"
 authors = [
     {name = "Doug Mercer", email = "dougmerceryt@gmail.com"},
 ]
@@ -29,13 +25,18 @@ classifiers = [
 signified = ["py.typed"]
 
 [project.optional-dependencies]
+plugins = ["pluggy"]
+ipython = ["ipython"]
+
+[dependency-groups]
 docs = [
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",
     "mkdocs-material-extensions",
 ]
-ipython = ["ipython"]
+test = ["pytest", "pytest-coverage", "numpy", "pluggy"]
+lint = ["pyright"]
 
 [project.urls]
 Homepage = "https://github.com/dougmercer/signified.git"
@@ -85,7 +86,7 @@ exclude = [
 
 line-length = 120
 indent-width = 4
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
@@ -142,3 +143,12 @@ testpaths = [
 [tool.pydocstyle]
 convention = "google"
 add_ignore = ["D107"]
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
+
+[tool.pyright]
+pythonVersion = "3.12"

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import importlib.util
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 HAS_IPYTHON = importlib.util.find_spec("IPython") is not None
-if TYPE_CHECKING and HAS_IPYTHON:
-    from IPython.display import DisplayHandle  # pyright: ignore[reportMissingImports]
-else:
-    DisplayHandle = Any
+DisplayHandle = Any
+
+
+__all__ = ["IPythonObserver"]
 
 
 class IPythonObserver:

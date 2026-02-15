@@ -1,12 +1,7 @@
-import sys
-from typing import TypeVar, Union
+from math import floor
+from typing import TypeVar, Union, assert_type
 
-from signified import Computed, Signal, computed, unref
-
-if sys.version_info >= (3, 11):
-    from typing import assert_type
-else:
-    from typing_extensions import assert_type
+from signified import Computed, Signal, computed, reactive_method, unref
 
 T = TypeVar("T")
 
@@ -61,6 +56,44 @@ def test_arithmetic_types():
     assert_type(unref(result), Numeric)
 
 
+def test_reverse_arithmetic_types():
+    a = Signal(10)
+    b = Signal(2.0)
+
+    result = 15 - a
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+    result = 15 - b
+    assert_type(result, Computed[Numeric])
+    assert_type(unref(result), Numeric)
+
+
+def test_round_floor_divmod_types():
+    a = Signal(10)
+    b = Signal(3.14159)
+
+    result = round(a)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+    result = round(b, 2)
+    assert_type(result, Computed[float])
+    assert_type(unref(result), float)
+
+    result = floor(b)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+    result = divmod(a, 3)
+    assert_type(result, Computed[tuple[float, float]])
+    assert_type(unref(result), tuple[float, float])
+
+    result = divmod(10, a)
+    assert_type(result, Computed[tuple[float, float]])
+    assert_type(unref(result), tuple[float, float])
+
+
 def test_comparison_types():
     a = Signal(1)
     b = Signal(Signal(Signal(2)))
@@ -112,3 +145,19 @@ def test_call_inference():
 
     assert_type(a, Computed[Person])
     assert_type(a(), Computed[str])
+
+
+def test_reactive_method_inference():
+    class Counter:
+        def __init__(self) -> None:
+            self.value = Signal(1)
+
+        @reactive_method("value")
+        def plus(self, delta: int) -> int:
+            return self.value.value + delta
+
+    counter = Counter()
+    result = counter.plus(2)
+
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
