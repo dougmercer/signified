@@ -56,7 +56,7 @@ markdown_extensions:
   - def_list
   - footnotes
   - md_in_html
-  # - tables
+  - tables
   - toc:
       permalink: true
   # - pymdownx.arithmatex:
@@ -120,12 +120,13 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Usage: usage.md
+  - Magic Methods: magic-methods.md
+  - Plugins: plugins.md
   - API Reference:
     - Core: api/core.md
     - Plugins: api/plugins.md
   - Change Log: changes.md
   - Limitations: limitations.md
-  - Plugins: plugins.md
 
 plugins:
   - search
@@ -143,7 +144,7 @@ plugins:
             inherited_members: true
             members_order: source
             filters:
-            - '!^_'
+            - '!^_[^_]'
             separate_signature: true
             signature_crossrefs: true
             show_symbol_type_toc: true

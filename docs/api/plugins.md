@@ -1,3 +1,3 @@
-# Display
+# Plugins API
 
 ::: signified.plugins

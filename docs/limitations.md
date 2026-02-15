@@ -2,14 +2,14 @@
 
 ## Type Inference
 
-This library's type hints do not work with `mypy`, but they do work relatively well with `pyright`.
+This library's type hints do not work with `mypy`, but they do work well with `pyright`.
 
-## Methods on Mutable Collection
+## In-Place Mutation of Mutable Collections
 
-When working with collections like `list`s, methods that mutate the underlying object don't trigger `signified` to notify observers:
+When working with values like `list` and `dict`, mutating via methods on the underlying object does not automatically notify observers.
 
 ```python
-from signified import Signal
+from signified import Signal, computed
 
 # This won't work as expected
 numbers = Signal([1, 2, 3])
@@ -27,4 +27,16 @@ print(sum_numbers.value)  # 10
 # 2. Create a new list with the existing values
 numbers.value = numbers.value + [4]
 print(sum_numbers.value) # 10
+
+# 3. For lists/dicts, use __setitem__ on the signal
+numbers[0] = 99
+print(sum_numbers.value)  # 108
+```
+
+## Plugin Hooks Are Opt-In
+
+Plugin hooks are disabled by default. To enable hook execution, install the plugin extra and set:
+
+```bash
+SIGNIFIED_ENABLE_HOOKS=1
 ```
