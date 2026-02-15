@@ -10,10 +10,10 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Callable, Concatenate, Literal, Protocol, Self, TypeGuard, TypeVar, Union, cast, overload
+from typing import Any, Callable, Concatenate, Literal, Protocol, Self, TypeGuard, Union, cast, overload
 
 from .plugins import pm
-from .types import HasValue, OrderedWeakrefSet, ReactiveValue
+from .types import HasValue, ReactiveValue, _OrderedWeakrefSet
 
 if importlib.util.find_spec("numpy") is not None:
     import numpy as np  # pyright: ignore[reportMissingImports]
@@ -1220,7 +1220,7 @@ class ReactiveMixIn[T]:
         else:
             raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
 
-    def where[A,B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
+    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
         """Return a reactive value for `a` if `self` is `True`, else `b`.
 
         Args:
@@ -1283,7 +1283,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     def __init__(self):
         """Initialize the variable."""
-        self._observers = OrderedWeakrefSet()
+        self._observers = _OrderedWeakrefSet()
         self.__name = ""
 
     @staticmethod
@@ -1365,9 +1365,9 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         raise NotImplementedError("Update method should be overridden by subclasses")
 
     def _ipython_display_(self) -> None:
-        from .display import HAS_IPYTHON, IPythonObserver
+        from .display import _HAS_IPYTHON, IPythonObserver
 
-        if not HAS_IPYTHON:
+        if not _HAS_IPYTHON:
             return
 
         try:

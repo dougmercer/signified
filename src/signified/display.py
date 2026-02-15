@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib.util
 from typing import Any
 
-HAS_IPYTHON = importlib.util.find_spec("IPython") is not None
+_HAS_IPYTHON = importlib.util.find_spec("IPython") is not None
 DisplayHandle = Any
 
 
@@ -19,7 +19,7 @@ class IPythonObserver:
     """
 
     def __init__(self, me: Any, handle: DisplayHandle):  # type: ignore
-        if not HAS_IPYTHON:
+        if not _HAS_IPYTHON:
             raise ImportError("IPython is required for IPythonObserver but is not installed")
 
         self.me = me
@@ -27,5 +27,5 @@ class IPythonObserver:
         me.subscribe(self)
 
     def update(self) -> None:
-        if HAS_IPYTHON and hasattr(self.handle, "update"):
+        if _HAS_IPYTHON and hasattr(self.handle, "update"):
             self.handle.update(self.me.value)

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Iterator
 if TYPE_CHECKING:
     from .core import Computed, Signal
 
-__all__ = ["NestedValue", "HasValue", "ReactiveValue", "OrderedWeakrefSet"]
+__all__ = ["NestedValue", "HasValue", "ReactiveValue"]
 
 type ReactiveValue[T] = Computed[T] | Signal[T]
 """A reactive object that would return a value of type T when calling unref(obj)."""
@@ -21,7 +21,7 @@ type HasValue[T] = T | ReactiveValue[T]
 """This object would return a value of type T when calling unref(obj)."""
 
 
-class OrderedSet(collections.abc.MutableSet):
+class _OrderedSet(collections.abc.MutableSet):
     """Used to implement a WeakRefSet.
 
     Yoinked from a Raymond Hettinger stackoverflow post:
@@ -50,7 +50,7 @@ class OrderedSet(collections.abc.MutableSet):
         return type(self)(self._od)
 
 
-class OrderedWeakrefSet(weakref.WeakSet):
+class _OrderedWeakrefSet(weakref.WeakSet):
     """Store weakrefs in a set.
 
     Yoinked from a Raymond Hettinger stackoverflow post:
@@ -59,6 +59,6 @@ class OrderedWeakrefSet(weakref.WeakSet):
 
     def __init__(self, values: Iterable = ()) -> None:
         super().__init__()
-        self.data = OrderedSet()
+        self.data = _OrderedSet()
         for elem in values:
             self.add(elem)

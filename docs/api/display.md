@@ -1,3 +1,0 @@
-# Display
-
-::: signified.display
