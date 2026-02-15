@@ -15,8 +15,7 @@ from typing import Any, Callable, Concatenate, Literal, Protocol, Self, TypeGuar
 from .plugins import pm
 from .types import HasValue, OrderedWeakrefSet, ReactiveValue
 
-HAS_NUMPY = importlib.util.find_spec("numpy") is not None
-if HAS_NUMPY:
+if importlib.util.find_spec("numpy") is not None:
     import numpy as np  # pyright: ignore[reportMissingImports]
 else:
     np = None  # User doesn't have numpy installed
@@ -35,10 +34,6 @@ __all__ = [
     "reactive_method",
     "as_signal",
 ]
-
-Y = TypeVar("Y")
-A = TypeVar("A")
-B = TypeVar("B")
 
 
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
@@ -368,7 +363,7 @@ class ReactiveMixIn[T]:
         """
         return computed(math.trunc)(self)
 
-    def __add__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __add__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the sum of `self` and `other`.
 
         Args:
@@ -391,7 +386,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.add)(self, other)
 
-    def __and__(self, other: HasValue[Y]) -> Computed[bool]:
+    def __and__[Y](self, other: HasValue[Y]) -> Computed[bool]:
         """Return a reactive value for the bitwise AND of self and other.
 
         Args:
@@ -511,7 +506,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.eq)(self, other)
 
-    def __floordiv__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __floordiv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the floor division of `self` by other.
 
         Args:
@@ -626,7 +621,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.lt)(self, other)
 
-    def __lshift__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __lshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` left-shifted by `other`.
 
         Args:
@@ -649,7 +644,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.lshift)(self, other)
 
-    def __matmul__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __matmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the matrix multiplication of `self` and `other`.
 
         Args:
@@ -673,7 +668,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.matmul)(self, other)
 
-    def __mod__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __mod__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` modulo `other`.
 
         Args:
@@ -696,7 +691,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.mod)(self, other)
 
-    def __mul__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __mul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the product of `self` and `other`.
 
         Args:
@@ -765,7 +760,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.or_)(self, other)
 
-    def __rshift__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __rshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` right-shifted by `other`.
 
         Args:
@@ -788,7 +783,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.rshift)(self, other)
 
-    def __pow__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __pow__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` raised to the power of `other`.
 
         Args:
@@ -811,7 +806,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.pow)(self, other)
 
-    def __sub__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __sub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the difference of `self` and `other`.
 
         Args:
@@ -834,7 +829,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.sub)(self, other)
 
-    def __truediv__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __truediv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` divided by `other`.
 
         Args:
@@ -880,7 +875,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.xor)(self, other)
 
-    def __radd__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __radd__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the sum of `self` and `other`.
 
         Args:
@@ -949,7 +944,7 @@ class ReactiveMixIn[T]:
         """
         return computed(divmod)(other, self)
 
-    def __rfloordiv__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __rfloordiv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the floor division of `other` by `self`.
 
         Args:
@@ -972,7 +967,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.floordiv)(other, self)
 
-    def __rmod__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __rmod__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `other` modulo `self`.
 
         Args:
@@ -995,7 +990,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.mod)(other, self)
 
-    def __rmul__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __rmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the product of `self` and `other`.
 
         Args:
@@ -1041,7 +1036,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.or_)(other, self)
 
-    def __rpow__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __rpow__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` raised to the power of `other`.
 
         Args:
@@ -1064,7 +1059,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.pow)(other, self)
 
-    def __rsub__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __rsub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the difference of `self` and `other`.
 
         Args:
@@ -1087,7 +1082,7 @@ class ReactiveMixIn[T]:
         """
         return computed(operator.sub)(other, self)
 
-    def __rtruediv__(self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __rtruediv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` divided by `other`.
 
         Args:
@@ -1225,7 +1220,7 @@ class ReactiveMixIn[T]:
         else:
             raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
 
-    def where(self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
+    def where[A,B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
         """Return a reactive value for `a` if `self` is `True`, else `b`.
 
         Args:
