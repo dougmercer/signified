@@ -6,7 +6,7 @@ hide:
 
 This page summarizes key changes by diffing adjacent tagged releases.
 
-## 0.3.0
+## 0.2.7
 
 - Significantly improve type inference for a variety of methods.
 - Disable plugins by default (now enabled via environment variable, `SIGNIFIED_ENABLE_HOOKS=1`)
