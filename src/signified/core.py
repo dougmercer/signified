@@ -1283,7 +1283,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     def __init__(self):
         """Initialize the variable."""
-        self._observers = _OrderedWeakrefSet()
+        self._observers = _OrderedWeakrefSet[Observer]()
         self.__name = ""
 
     @staticmethod
