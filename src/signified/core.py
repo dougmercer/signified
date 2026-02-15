@@ -74,7 +74,6 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
     Example:
         ```py
-        >>> from signified import Signal, computed
         >>> @computed
         ... def total(price, quantity):
         ...     return price * quantity
@@ -613,7 +612,6 @@ class ReactiveMixIn[T]:
 
         Example:
             ```py
-            >>> from signified import Signal
             >>> s = Signal(10)
             >>> result = s.eq(10)
             >>> result.value
@@ -1681,7 +1679,6 @@ def unref[T](value: HasValue[T]) -> T:
 
     Example:
         ```py
-        >>> from signified import Signal, unref
         >>> nested = Signal(Signal(5))
         >>> unref(nested)
         5
@@ -1711,12 +1708,12 @@ def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
 
     Example:
         ```py
-        >>> from signified import Signal, has_value
         >>> candidate = Signal(42)
         >>> has_value(candidate, int)
         True
         >>> has_value(candidate, str)
         False
+
         ```
     """
     return isinstance(unref(obj), type_)
@@ -1743,7 +1740,6 @@ class Signal[T](Variable[T]):
 
     Example:
         ```py
-        >>> from signified import Signal
         >>> count = Signal(1)
         >>> doubled = count * 2
         >>> doubled.value
@@ -1822,7 +1818,6 @@ class Computed[T](Variable[T]):
 
     Example:
         ```py
-        >>> from signified import Signal, Computed
         >>> count = Signal(2)
         >>> squared = Computed(lambda: count.value ** 2, dependencies=count)
         >>> squared.value
@@ -1893,7 +1888,6 @@ def deep_unref(value: Any) -> Any:
 
     Example:
         ```py
-        >>> from signified import Signal, deep_unref
         >>> payload = {"a": Signal(1), "b": [Signal(2), 3]}
         >>> deep_unref(payload)
         {'a': 1, 'b': [2, 3]}
