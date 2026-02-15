@@ -1,6 +1,12 @@
 site_name: Signified
-site_url: https://dougmercer.github.io/signified
+site_url: https://dougmercer.github.io/signified/
 repo_url: https://github.com/dougmercer/signified
+
+extra:
+  version:
+    provider: mike
+    default: latest
+    alias: true
 
 theme:
   name: material
