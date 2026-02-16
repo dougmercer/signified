@@ -2,9 +2,6 @@ from collections.abc import Callable
 from typing import Any, get_origin, get_args
 import builtins
 
-import sys
-sys.path.append('../../src')
-
 from signified.core import computed, Signal
 
 # Computed wrappers (signature is consumed this way, so maybe change?)
@@ -64,13 +61,3 @@ class int(_SignalWrapper[builtins.int]): ...
 class str(_SignalWrapper[builtins.str]): ...
 class frozenset(_SignalWrapper[builtins.frozenset]): ...
 
-
-if __name__ == '__main__':
-    x = list([1,2,3])
-    y = sum(x)
-    
-    x.value.append(4)
-    assert y.value == 10, y.value
-    
-    x.value.pop()
-    assert y.value == 6, y.value
