@@ -5,6 +5,29 @@ import builtins
 
 from signified.core import computed, Signal
 
+__all__ = (
+    # builtin funcs
+    'sum',
+    'min',
+    'max',
+    'all',
+    'any',
+    'pow',
+    'range',
+    'memoryview',
+    'slice',
+    'bool',
+    
+    # builtin types
+    'list',
+    'dict',
+    'set',
+    'tuple',
+    'int',
+    'str',
+    'frozenset',
+)
+
 # Computed wrappers (signature is consumed this way, so maybe change?)
 sum = computed(builtins.sum)
 min = computed(builtins.min)
