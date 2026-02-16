@@ -2,6 +2,7 @@ from collections.abc import Callable
 from typing import Any, get_origin, get_args
 import builtins
 
+
 from signified.core import computed, Signal
 
 # Computed wrappers (signature is consumed this way, so maybe change?)
@@ -74,3 +75,28 @@ class tuple[T](_SignalWrapper[builtins.tuple[T]]): ...
 class int(_SignalWrapper[builtins.int]): ...
 class str(_SignalWrapper[builtins.str]): ...
 class frozenset(_SignalWrapper[builtins.frozenset]): ...
+
+
+if __name__ == '__main__':
+    print(
+        """Setup:
+
+x: list[int] = list(range(5))
+y = Signal(x[0] >= 3).where(max(x), min(x))
+z = sum(x)
+j = z**y
+k = range(y)
+
+"""
+)
+    x: list[int] = list(range(5))
+    y = Signal(x[0] >= 3).where(max(x), min(x))
+    z = sum(x)
+    j = z**y
+    k = range(y)
+    print('Initial Values')
+    print(f'{x=}, {y=}, {z=}, {j=}, {k=}')
+    
+    print('\nsort x')
+    x.value.sort(reverse=True) # type: ignore
+    print(f'{x=}, {y=}, {z=}, {j=}, {k=}')
