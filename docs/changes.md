@@ -4,7 +4,25 @@ hide:
 ---
 # Change Log
 
-This page summarizes key changes by diffing adjacent tagged releases.
+## 0.3.0
+
+- Add rx namespace which includes several methods.
+  - map (new)
+  - tap (new)
+  - len (new)
+  - is_ (new)
+  - is_not
+  - in_ (new)
+  - contains
+  - eq
+  - where
+
+Deprecated:
+  - `x.as_bool(...)` - Will eventually be removed entirely. Use `computed(bool)(x)` instead.
+  - `x.contains(...)` - Use `x.rx.contains` instead.
+  - `x.eq(...)` - Use `x.rx.eq` instead
+  - `x.where(...)` - Use `x.rx.where` instead
+  - `x.is_not(...)` - Use `x.rx.is_not` instead
 
 ## 0.2.7
 
