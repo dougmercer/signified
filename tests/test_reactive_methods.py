@@ -179,10 +179,10 @@ def test_signal_where():
     assert result.value == 10
 
 
-def test_signal_rx_map():
-    """Test reactive transforms via signal.rx.map."""
+def test_signal_rx_apply():
+    """Test reactive transforms via signal.rx.apply."""
     s = Signal(2)
-    doubled = s.rx.map(lambda x: x * 2)
+    doubled = s.rx.apply(lambda x: x * 2)
 
     assert doubled.value == 4
     s.value = 5

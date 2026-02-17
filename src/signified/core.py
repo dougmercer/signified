@@ -119,7 +119,7 @@ class _RxOps[T]:
     def __init__(self, source: "ReactiveMixIn[T]") -> None:
         self._source = source
 
-    def map[R](self, fn: Callable[[T], R]) -> Computed[R]:
+    def apply[R](self, fn: Callable[[T], R]) -> Computed[R]:
         """Return a reactive value by applying ``fn`` to ``self._source``.
 
         Args:
@@ -131,7 +131,7 @@ class _RxOps[T]:
         Example:
             ```py
             >>> s = Signal(4)
-            >>> doubled = s.rx.map(lambda x: x * 2)
+            >>> doubled = s.rx.apply(lambda x: x * 2)
             >>> doubled.value
             8
             >>> s.value = 5

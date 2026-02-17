@@ -75,8 +75,8 @@ def test_as_bool():
     assert_type(unref(result), bool)
 
 
-def test_rx_map():
-    result = Signal(2).rx.map(lambda x: x * 2)
+def test_rx_apply():
+    result = Signal(2).rx.apply(lambda x: x * 2)
     assert_type(result, Computed[int])
     assert_type(unref(result), int)
 
