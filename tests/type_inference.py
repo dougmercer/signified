@@ -133,6 +133,22 @@ def test_rx_map():
     assert_type(unref(result), list[str])
 
 
+def test_rx_filter():
+    # filter type is inferred from fn sig
+    # test that changing fn sig changes inferred type
+    def fn1(i: int) -> bool:
+        return i == 2
+    result = Signal([1, 2, 3]).rx.filter(fn1)
+    assert_type(result, Computed[list[int]])
+    assert_type(unref(result), list[int])
+    
+    def fn2(i: str) -> bool:
+        return i == 'a'
+    result = Signal(['a', 'b', 'c']).rx.filter(fn2)
+    assert_type(result, Computed[list[str]])
+    assert_type(unref(result), list[str])
+
+
 def test_str():
     result = str(Signal(1))
     assert_type(result, str)

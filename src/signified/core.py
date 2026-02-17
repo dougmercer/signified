@@ -397,6 +397,35 @@ class _RxOps[T]:
         
         return _map(fn, self._source)
 
+    def filter[V](self, fn: Callable[[V], bool]) -> Computed[list[V]]:
+        """Return a reactive value with a filter applied to an iterable ``self._source``
+        
+        Args:
+            fn: The filter function to apply to the computed ``filter`` call
+
+        Example:
+            ```py
+            >>> s = Signal([1,2,3,4,5])
+            >>> y = s.rx.filter(lambda i: i % 2 == 0)
+            >>> y.value
+            [2,4]
+            >>> s.value = s.value + [6]
+            >>> y.value
+            [2,4,6]
+
+            ```
+
+        Raises:
+            ValueError: If the filtered value is not iterable
+        """
+        if not isinstance(self._source.value, Iterable):
+            raise ValueError(f'Reactive filtering requires value to be iterable')
+
+        @computed
+        def _filter(fn: Callable[[V], bool], iterable: Iterable[V]) -> list[V]:
+            return list(filter(fn, iterable))
+
+        return _filter(fn, self._source)
 class ReactiveMixIn[T]:
     """Methods for easily creating reactive values."""
 
