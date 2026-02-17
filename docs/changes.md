@@ -7,7 +7,7 @@ hide:
 ## 0.3.0
 
 - Add rx namespace which includes several methods.
-  - map (new)
+  - apply (new)
   - tap (new)
   - len (new)
   - is_ (new)
@@ -16,6 +16,9 @@ hide:
   - contains
   - eq
   - where
+  - map (new) [iterable values only]
+  - filter (new) [iterable values only]
+  - reduce (new) [iterable values only]
 
 Deprecated:
   - `x.as_bool(...)` - Will eventually be removed entirely. Use `computed(bool)(x)` instead.
