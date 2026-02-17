@@ -123,14 +123,14 @@ def test_rx_map():
     def fn1(i: int) -> float:
         return i / 2
     result = Signal([1, 2, 3]).rx.map(fn1)
-    assert_type(result, Computed[list[float]])
-    assert_type(unref(result), list[float])
+    assert_type(result, Computed[map[float]])
+    assert_type(unref(result), map[float])
     
     def fn2(i: int) -> str:
         return f'{i * 2}'
     result = Signal([1, 2, 3]).rx.map(fn2)
-    assert_type(result, Computed[list[str]])
-    assert_type(unref(result), list[str])
+    assert_type(result, Computed[map[str]])
+    assert_type(unref(result), map[str])
 
 
 def test_rx_filter():
@@ -139,14 +139,14 @@ def test_rx_filter():
     def fn1(i: int) -> bool:
         return i == 2
     result = Signal([1, 2, 3]).rx.filter(fn1)
-    assert_type(result, Computed[list[int]])
-    assert_type(unref(result), list[int])
+    assert_type(result, Computed[filter[int]])
+    assert_type(unref(result), filter[int])
     
     def fn2(i: str) -> bool:
         return i == 'a'
     result = Signal(['a', 'b', 'c']).rx.filter(fn2)
-    assert_type(result, Computed[list[str]])
-    assert_type(unref(result), list[str])
+    assert_type(result, Computed[filter[str]])
+    assert_type(unref(result), filter[str])
 
 
 def test_rx_reduce():

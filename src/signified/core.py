@@ -364,7 +364,7 @@ class _RxOps[T]:
         """
         return computed(bool)(self._source)
 
-    def map[R, V](self, fn: Callable[[V], R]) -> Computed[list[R]]:
+    def map[R, V](self, fn: Callable[[V], R]) -> Computed[map[R]]:
         """Return a reactive value by mapping ``fn`` to an iterable``self._source``.
 
         Args:
@@ -391,13 +391,9 @@ class _RxOps[T]:
         if not isinstance(self._source.value, Iterable):
             raise ValueError(f'Reactive mapping requires value to be iterable')
         
-        @computed
-        def _map(fn: Callable[[V], R], iterable: Iterable[V]) -> list[R]:
-            return list(map(fn, iterable))
-        
-        return _map(fn, self._source)
+        return computed(map)(fn, self._source)
 
-    def filter[V](self, fn: Callable[[V], bool]) -> Computed[list[V]]:
+    def filter[V](self, fn: Callable[[V], bool]) -> Computed[filter[V]]:
         """Return a reactive value with a filter applied to an iterable ``self._source``
         
         Args:
@@ -421,11 +417,7 @@ class _RxOps[T]:
         if not isinstance(self._source.value, Iterable):
             raise ValueError(f'Reactive filtering requires value to be iterable')
 
-        @computed
-        def _filter(fn: Callable[[V], bool], iterable: Iterable[V]) -> list[V]:
-            return list(filter(fn, iterable))
-
-        return _filter(fn, self._source)
+        return computed(filter)(fn, self._source.value)
 
     def reduce[V](self, fn: Callable[[V, V], V], initial: V | Signal[V] | None = None) -> Computed[V]:
         """Return a reactive value for the reduction of an iterable ``self._source``.
