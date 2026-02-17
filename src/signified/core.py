@@ -10,7 +10,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
-from functools import wraps
+from functools import wraps, reduce
 from typing import Any, Callable, Concatenate, Literal, Protocol, Self, SupportsIndex, TypeGuard, Union, cast, overload
 
 from .plugins import pm
@@ -363,6 +363,43 @@ class _RxOps[T]:
             ```
         """
         return computed(bool)(self._source)
+
+    def reduce[V](self, func: Callable[[V, V], V], initial: V | Signal[V] | None = None) -> Computed[V]:
+        """Return a reactive value for the reduction of an iterable ``self._source``.
+        
+        Args:
+            func: A reducer function that will be passed to the computed ``reduce`` call
+            initial: Optional value or Computed value to use as the initial reducer value
+        
+        Note:
+            if ``self._source`` is not iterable, it will be passed to the reducer as a single element
+        
+        Example:
+            ```py
+            >>> s = Signal([1,1,1,1,1])
+            >>> x = Signal(1)
+            >>> y = s.reduce(lambda i, j: i + j)
+            >>> z = s.reduce(lambda i, j: i + j, initial=x)
+            >>> y.value
+            5
+            >>> z.value
+            6
+            >>> s.value = s.value + [1]
+            >>> x.value = -1
+            >>> y.value
+            6
+            >>> z.value
+            6
+            ```
+        """
+        _iter = self._source
+        if not isinstance(self._source, Iterable):
+            _iter = [_iter]
+            
+        if initial is not None:
+            return computed(reduce)(func, _iter, initial)
+        else:
+            return computed(reduce)(func, _iter)
 
 
 class ReactiveMixIn[T]:

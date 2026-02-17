@@ -248,6 +248,22 @@ def test_signal_rx_in():
     assert result.value == True  # noqa: E712
 
 
+def test_signal_rx_reduce():
+    """Test reactive reduction via signal.rx.reduce."""
+    iterable = Signal([1,2,3,4,5])
+    initial = Signal(1)
+    reducer = iterable.rx.reduce(lambda i, j: i + j)
+    reducer_initial = iterable.rx.reduce(lambda i, j: i + j, initial=initial)
+    
+    assert reducer.value == sum(iterable.value)
+    assert reducer_initial.value == sum(iterable.value) + initial.value
+    initial.value = 10
+    assert reducer_initial.value == sum(iterable.value) + initial.value
+    iterable.value = iterable.value + [6]
+    assert reducer.value == sum(iterable.value)
+    assert reducer_initial.value == sum(iterable.value) + initial.value
+
+
 def test_legacy_non_dunder_methods_emit_deprecation_warning():
     """Test that legacy non-dunder methods warn and still function."""
     s = Signal([1, 2, 3])
