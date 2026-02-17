@@ -149,6 +149,28 @@ def test_rx_filter():
     assert_type(unref(result), list[str])
 
 
+def test_rx_reduce():
+    # reduce type is inferred from fn sig
+    # test that changing fn sig changes inferred type
+    def fn1(j: int, i: int) -> int:
+        return i * j
+    result = Signal([1, 2, 3]).rx.reduce(fn1)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+    
+    def fn2(j: float, i: float) -> float:
+        return i * j
+    result = Signal([1.0, 2.0, 3.0]).rx.reduce(fn2)
+    assert_type(result, Computed[float])
+    assert_type(unref(result), float)
+    
+    def fn3(j: str, i: str) -> str:
+        return f'{i + j}'
+    result = Signal(['a', 'b', 'c']).rx.reduce(fn3)
+    assert_type(result, Computed[str])
+    assert_type(unref(result), str)
+
+
 def test_str():
     result = str(Signal(1))
     assert_type(result, str)
