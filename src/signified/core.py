@@ -371,16 +371,18 @@ class _RxOps[T]:
             fn: Function to be mapped to the values if the iterable source
 
         Returns:
-            A reactive value for ``map(fn, source.value)``.
+            A reactive `map` object for ``map(fn, source.value)``.
 
         Example:
             ```py
             >>> s = Signal([2, 4, 6])
             >>> doubled = s.rx.map(lambda x: x * 2)
-            >>> doubled.value
+            >>> doubled.value  # Lazy map object
+            <map object at 0x...>
+            >>> list(doubled.value)
             [4, 8, 12]
             >>> s.value = [5, 10, 20]
-            >>> doubled.value
+            >>> list(doubled.value)
             [10, 20, 40]
 
             ```
@@ -399,14 +401,19 @@ class _RxOps[T]:
         Args:
             fn: The filter function to apply to the computed ``filter`` call
 
+        Returns:
+            A reactive `filter` object for ``filter(fn, source.value)``.
+
         Example:
             ```py
             >>> s = Signal([1,2,3,4,5])
             >>> y = s.rx.filter(lambda i: i % 2 == 0)
-            >>> y.value
+            >>> y.value  # Lazy filter object
+            <filter object at 0x...>
+            >>> list(y.value)
             [2,4]
             >>> s.value = s.value + [6]
-            >>> y.value
+            >>> list(y.value)
             [2,4,6]
 
             ```
