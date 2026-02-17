@@ -252,8 +252,12 @@ def test_signal_rx_reduce():
     """Test reactive reduction via signal.rx.reduce."""
     iterable = Signal([1,2,3,4,5])
     initial = Signal(1)
-    reducer = iterable.rx.reduce(lambda i, j: i + j)
-    reducer_initial = iterable.rx.reduce(lambda i, j: i + j, initial=initial)
+    
+    def add(i: int, j: int) -> int:
+        return i + j
+    
+    reducer = iterable.rx.reduce(add)
+    reducer_initial = iterable.rx.reduce(add, initial=initial)
     
     assert reducer.value == sum(iterable.value)
     assert reducer_initial.value == sum(iterable.value) + initial.value
@@ -262,6 +266,10 @@ def test_signal_rx_reduce():
     iterable.value = iterable.value + [6]
     assert reducer.value == sum(iterable.value)
     assert reducer_initial.value == sum(iterable.value) + initial.value
+    
+    with pytest.raises(ValueError):
+        s = Signal(1)
+        s.rx.reduce(add)
 
 
 def test_legacy_non_dunder_methods_emit_deprecation_warning():
