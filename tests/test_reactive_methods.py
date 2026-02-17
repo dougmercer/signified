@@ -256,9 +256,9 @@ def test_signal_rx_map():
 
     evens = iterable.rx.map(is_even)
 
-    assert evens.value == list(map(is_even, iterable.value))
+    assert list(evens.value) == list(map(is_even, iterable.value))
     iterable.value = iterable.value + [6]
-    assert evens.value == list(map(is_even, iterable.value))
+    assert list(evens.value) == list(map(is_even, iterable.value))
 
     with pytest.raises(ValueError):
         s = Signal(1)
@@ -273,9 +273,9 @@ def test_signal_rx_filter():
 
     evens = iterable.rx.filter(is_even)
 
-    assert evens.value == list(filter(is_even, iterable.value))
+    assert list(evens.value) == list(filter(is_even, iterable.value))
     iterable.value = iterable.value + [6]
-    assert evens.value == list(filter(is_even, iterable.value))
+    assert list(evens.value) == list(filter(is_even, iterable.value))
 
     with pytest.raises(ValueError):
         s = Signal(1)
