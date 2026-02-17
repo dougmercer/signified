@@ -117,6 +117,22 @@ def test_rx_in():
     assert_type(unref(result), bool)
 
 
+def test_rx_map():
+    # map type is inferred from fn sig
+    # test that changing fn sig changes inferred type
+    def fn1(i: int) -> float:
+        return i / 2
+    result = Signal([1, 2, 3]).rx.map(fn1)
+    assert_type(result, Computed[list[float]])
+    assert_type(unref(result), list[float])
+    
+    def fn2(i: int) -> str:
+        return f'{i * 2}'
+    result = Signal([1, 2, 3]).rx.map(fn2)
+    assert_type(result, Computed[list[str]])
+    assert_type(unref(result), list[str])
+
+
 def test_str():
     result = str(Signal(1))
     assert_type(result, str)

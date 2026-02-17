@@ -248,6 +248,23 @@ def test_signal_rx_in():
     assert result.value == True  # noqa: E712
 
 
+def test_signal_rx_map():
+    """Test reactive mapping via signal.rx.map"""
+    iterable = Signal([1,2,3,4,5])
+    def is_even(i: int) -> bool:
+        return i % 2 == 0
+
+    evens = iterable.rx.map(is_even)
+
+    assert evens.value == list(map(is_even, iterable.value))
+    iterable.value = iterable.value + [6]
+    assert evens.value == list(map(is_even, iterable.value))
+
+    with pytest.raises(ValueError):
+        s = Signal(1)
+        s.rx.map(is_even)
+
+
 def test_legacy_non_dunder_methods_emit_deprecation_warning():
     """Test that legacy non-dunder methods warn and still function."""
     s = Signal([1, 2, 3])

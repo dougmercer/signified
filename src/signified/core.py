@@ -364,6 +364,38 @@ class _RxOps[T]:
         """
         return computed(bool)(self._source)
 
+    def map[R, V](self, fn: Callable[[V], R]) -> Computed[list[R]]:
+        """Return a reactive value by mapping ``fn`` to an iterable``self._source``.
+
+        Args:
+            fn: Function to be mapped to the values if the iterable source
+
+        Returns:
+            A reactive value for ``map(fn, source.value)``.
+
+        Example:
+            ```py
+            >>> s = Signal([2, 4, 6])
+            >>> doubled = s.rx.map(lambda x: x * 2)
+            >>> doubled.value
+            [4, 8, 12]
+            >>> s.value = [5, 10, 20]
+            >>> doubled.value
+            [10, 20, 40]
+
+            ```
+        
+        Raises:
+            ValueError: If the mapped value is not iterable
+        """
+        if not isinstance(self._source.value, Iterable):
+            raise ValueError(f'Reactive mapping requires value to be iterable')
+        
+        @computed
+        def _map(fn: Callable[[V], R], iterable: Iterable[V]) -> list[R]:
+            return list(map(fn, iterable))
+        
+        return _map(fn, self._source)
 
 class ReactiveMixIn[T]:
     """Methods for easily creating reactive values."""
