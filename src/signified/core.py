@@ -417,7 +417,7 @@ class _RxOps[T]:
         if not isinstance(self._source.value, Iterable):
             raise ValueError(f'Reactive filtering requires value to be iterable')
 
-        return computed(filter)(fn, self._source.value)
+        return computed(filter)(fn, self._source)
 
     def reduce[V](self, fn: Callable[[V, V], V], initial: V | Signal[V] | None = None) -> Computed[V]:
         """Return a reactive value for the reduction of an iterable ``self._source``.
