@@ -450,6 +450,7 @@ REACTIVE_DUNDERS = frozenset({
     "__truediv__",
     "__xor__",
     "__radd__",
+    "__rand__",
     "__rdivmod__",
     "__rfloordiv__",
     "__rmod__",
@@ -1354,6 +1355,8 @@ class ReactiveMixIn[T]:
                 ```
             """
             return core.computed(operator.add)(other, self)
+
+    if '__rand__' in REACTIVE_DUNDERS:
 
         def __rand__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
             """Return a reactive value for the bitwise AND of `self` and `other`.
