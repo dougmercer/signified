@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import Protocol
+from typing import Any, Protocol, runtime_checkable
 from weakref import WeakKeyDictionary
 
 from .types import _OrderedWeakrefSet as weakset
@@ -36,14 +36,13 @@ class VariableStore:
     def add(self, observable: Observable) -> None:
         if observable in self.tree:
             return
-
         self.tree[observable] = observable._observers
         self.version[observable] = 0
 
     def observers_of(self, observable: Observable) -> weakset[Observable]:
         _observers = weakset[Observable]()
         def _get_observers(observable: Observable):
-            for observer in observable._observers:
+            for observer in self.tree.get(observable, []):
                 _observers.add(observer)
                 _get_observers(observer)
         _get_observers(observable)
@@ -52,7 +51,8 @@ class VariableStore:
     def mark_dirty(self, observable: Observable) -> None:
         self.version[observable] += 1
         for observer in self.observers_of(observable):
-            self.version[observer] += 1
+            if observer in self.version:
+                self.version[observer] += 1
 
     def is_dirty(self, observable: Observable) -> bool:
         return self.version[observable] != 0
