@@ -131,7 +131,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         if isinstance(item, Variable):
             yield item
             return
-        if isinstance(item, str):
+        if isinstance(item, (str, map, filter)):
             return
         if isinstance(item, Iterable):
             for sub_item in item:
