@@ -113,6 +113,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     Attributes:
         _observers (list[Observer]): List of observers subscribed to this variable.
+        _store (VariableStore): A variable store used to handle dependency updating
     """
 
     __slots__ = ["_observers", "__name", "__weakref__"]
@@ -188,9 +189,12 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         """Notify all observers by calling their update method."""
         self.store.propogate(self)
 
+    def __str__(self) -> str:
+        return f"<{self.value}>"
+
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
-        return self.__name if self.__name else f"<{self.value}>"
+        return f"{self:n}"
 
     @abstractmethod
     def update(self) -> None:
@@ -232,7 +236,8 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         if not format_spec:  # Default - just show value in brackets
             return f"<{self.value}>"
         if format_spec == "n":  # Name only
-            return self.__name if self.__name else f"{type(self).__name__}(id={id(self)})"
+            _ident = self.__name if self.__name else f"{type(self).__name__}(id={id(self)})"
+            return f"{_ident}: <{self.value}>"
         if format_spec == "d":  # Debug
             name_part = f"name='{self.__name}', " if self.__name else ""
             return f"{type(self).__name__}({name_part}value={self.value!r}, id={id(self)})"
