@@ -31,10 +31,7 @@ __all__ = ('ReactiveMixIn', )
 if TYPE_CHECKING:
     from signified.types import HasValue
     from signified.core import Computed
-    
-    type ReactiveInt = ReactiveMixIn[int] | ReactiveMixIn[bool]
-    type ReactiveNumeric = ReactiveInt | ReactiveMixIn[float]
-    
+        
     type ComputedInt = Computed[int] | Computed[bool]
     type ComputedNumeric = ComputedInt | Computed[float]
 
@@ -61,9 +58,9 @@ class _ReactiveSupportsGetItem[KeyT, ValueT](Protocol):
 
 
 def _warn_deprecated_alias(method: str, replacement: str) -> None:
-    """Warn that a legacy `ReactiveMixIn` helper method is deprecated."""
+    """Warn that a legacy `HasValue` helper method is deprecated."""
     warnings.warn(
-        f"`ReactiveMixIn.{method}()` is deprecated; use `{replacement}` instead.",
+        f"`HasValue.{method}()` is deprecated; use `{replacement}` instead.",
         DeprecationWarning,
         stacklevel=3,
     )
@@ -322,7 +319,7 @@ class _RxOps[T]:
         """
         return core.computed(bool)(self._source)
 
-    def map[R, V](self, fn: Callable[[HasValue[V]], R]) -> Computed[map[R]]:
+    def map[R, V](self, fn: Callable[[V], R]) -> Computed[map[R]]:
         """Return a reactive value by mapping ``fn`` to an iterable``self._source``.
 
         Args:
@@ -353,7 +350,7 @@ class _RxOps[T]:
         
         return core.computed(map)(fn, self._source)
 
-    def filter[V](self, fn: Callable[[HasValue[V]], bool]) -> Computed[filter[V]]:
+    def filter[V](self, fn: Callable[[V], bool]) -> Computed[filter[V]]:
         """Return a reactive value with a filter applied to an iterable ``self._source``
         
         Args:
@@ -384,7 +381,7 @@ class _RxOps[T]:
 
         return core.computed(filter)(fn, self._source)
 
-    def reduce[V](self, fn: Callable[[HasValue[V], HasValue[V]], HasValue[V]], initial: HasValue[V] | None = None) -> Computed[V]:
+    def reduce[V](self, fn: Callable[[V, V], V], initial: V | None = None) -> Computed[V]:
         """Return a reactive value for the reduction of an iterable ``self._source``.
 
         Args:
@@ -420,1341 +417,1486 @@ class _RxOps[T]:
         else:
             return core.computed(reduce)(fn, self._source)
 
+# Mixin Configuration
+ALLOW_DEPRECATED = True
+REACTIVE_DUNDERS = frozenset({
+    "__getattr__",
+    "__call__",
+    "__abs__",
+    "__str__",
+    "__round__",
+    "__ceil__",
+    "__floor__",
+    "__invert__",
+    "__neg__",
+    "__pos__",
+    "__trunc__",
+    "__add__",
+    "__divmod__",
+    "__floordiv__",
+    "__ge__",
+    "__gt__",
+    "__le__",
+    "__lt__",
+    "__lshift__",
+    "__matmul__",
+    "__mod__",
+    "__mul__",
+    "__ne__",
+    "__or__",
+    "__rshift__",
+    "__pow__",
+    "__sub__",
+    "__truediv__",
+    "__xor__",
+    "__radd__",
+    "__rdivmod__",
+    "__rfloordiv__",
+    "__rmod__",
+    "__rmul__",
+    "__ror__",
+    "__rpow__",
+    "__rsub__",
+    "__rtruediv__",
+    "__rxor__",
+    "__iter__",
+    "__getitem__",
+    "__setattr__",
+    "__setitem__",
+})
 
 class ReactiveMixIn[T]:
     """Methods for easily creating reactive values."""
-
+    
     @property
     def value(self) -> T:
         """The current value of the reactive object."""
         ...
-
-    def notify(self) -> None:
-        """Notify all observers by calling their ``update`` method."""
-        ...
-
-    @overload
-    def __getattr__(self, name: Literal["value", "_value"]) -> T: ...  # type: ignore
-    @overload
-    def __getattr__(self, name: str) -> Computed[Any]: ...
-
-    def __getattr__(self, name: str) -> T | Computed[Any]:
-        """Create a reactive value for retrieving an attribute from ``self.value``.
-
-        Args:
-            name: The name of the attribute to access.
-
-        Returns:
-            A reactive value for the attribute access.
-
-        Raises:
-            AttributeError: If the attribute doesn't exist.
-
-        Note:
-            Type inference is poor whenever `__getattr__` is used.
-
-        Example:
-            ```py
-            >>> class Person:
-            ...     def __init__(self, name):
-            ...         self.name = name
-            >>> s = Signal(Person("Alice"))
-            >>> result = s.name
-            >>> result.value
-            'Alice'
-            >>> s.value = Person("Bob")
-            >>> result.value
-            'Bob'
-
-            ```
-        """
-        if name in {"value", "_value"}:
-            return super().__getattribute__(name)
-
-        if hasattr(self.value, name):
-            return core.computed(getattr)(self, name)
-        else:
-            return super().__getattribute__(name)
-
-    def __call__[**P, R](self: ReactiveMixIn[Callable[P, R]], *args: P.args, **kwargs: P.kwargs) -> Computed[R]:
-        """Create a reactive value for calling `self.value(*args, **kwargs)`.
-
-        Args:
-            *args: Positional arguments to pass to the callable value.
-            **kwargs: Keyword arguments to pass to the callable value.
-
-        Returns:
-            A reactive value for the function call.
-
-        Raises:
-            ValueError: If the value is not callable.
-
-        Example:
-            ```py
-            >>> class Person:
-            ...     def __init__(self, name):
-            ...         self.name = name
-            ...     def greet(self):
-            ...         return f"Hi, I'm {self.name}!"
-            >>> s = Signal(Person("Alice"))
-            >>> result = s.greet()
-            >>> result.value
-            "Hi, I'm Alice!"
-            >>> s.name = "Bob"
-            >>> result.value
-            "Hi, I'm Bob!"
-
-            ```
-        """
-        if not callable(self.value):
-            raise ValueError("Value is not callable.")
-
-        def f(*args: Any, **kwargs: Any):
-            _f = getattr(self, "value")
-            return _f(*args, **kwargs)
-
-        return core.computed(f)(*args, **kwargs).observe([self, self.value])
-
-    @overload
-    def __abs__(self: ReactiveMixIn[complex]) -> Computed[float]: ...
-    @overload
-    def __abs__(self: ReactiveMixIn[bool]) -> Computed[int]: ...
-    @overload
-    def __abs__(self) -> Computed[T]: ...
-
-    def __abs__(self) -> Computed[T] | Computed[float] | Computed[int]:
-        """Return a reactive value for the absolute value of `self`.
-
-        Returns:
-            A reactive value for `abs(self.value)`.
-
-        Example:
-            ```py
-            >>> s = Signal(-5)
-            >>> result = abs(s)
-            >>> result.value
-            5
-            >>> s.value = -10
-            >>> result.value
-            10
-
-            ```
-        """
-        return core.computed(abs)(self)
-
-    def as_bool(self) -> Computed[bool]:
-        """Return a reactive value for the boolean value of `self`.
-
-        Deprecated:
-            Will be removed in a future release. Use `core.computed(bool)(self)`.
-
-        Note:
-            `__bool__` cannot be implemented to return a non-`bool`, so it is provided as a method.
-
-        Returns:
-            A reactive value for `bool(self.value)`.
-
-        Example:
-            ```py
-            >>> s = Signal(1)
-            >>> result = s.as_bool()
-            >>> result.value
-            True
-            >>> s.value = 0
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("as_bool", "self.rx.as_bool()")
-        return self.rx.as_bool()
 
     @cached_property
     def rx(self) -> _RxOps[T]:
         """Access reactive helper operations in a dedicated namespace."""
         return _RxOps(self)
 
-    def __str__(self) -> str:
-        """Return a string of the current value.
+    def notify(self) -> None:
+        """Notify all observers by calling their ``update`` method."""
+        ...
 
-        Note:
-            This is not reactive.
+    if '__getattr__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __getattr__(self, name: Literal["value", "_value"]) -> T: ...  # type: ignore
+        @overload
+        def __getattr__(self, name: str) -> Computed[Any]: ...
 
-        Returns:
-            A string representation of `self.value`.
-        """
-        return str(self.value)
+        def __getattr__(self, name: str) -> T | Computed[Any]:
+            """Create a reactive value for retrieving an attribute from ``self.value``.
 
-    @overload
-    def __round__(self: ReactiveNumeric) -> Computed[int]: ...
-    @overload
-    def __round__(self: ReactiveNumeric, ndigits: None) -> Computed[int]: ...
-    @overload
-    def __round__(self: ReactiveInt, ndigits: int) -> Computed[int]: ...
-    @overload
-    def __round__(self: ReactiveMixIn[float], ndigits: int) -> Computed[float]: ...
-    @overload
-    def __round__(self, ndigits: int | None = None) -> Computed[int] | Computed[float]: ...
+            Args:
+                name: The name of the attribute to access.
 
-    def __round__(self, ndigits: int | None = None) -> Computed[int] | Computed[float]:
-        """Return a reactive value for the rounded value of self.
+            Returns:
+                A reactive value for the attribute access.
 
-        Args:
-            ndigits: Number of decimal places to round to.
+            Raises:
+                AttributeError: If the attribute doesn't exist.
 
-        Returns:
-            A reactive value for `round(self.value, ndigits)`.
+            Note:
+                Type inference is poor whenever `__getattr__` is used.
 
-        Example:
-            ```py
-            >>> s = Signal(3.14159)
-            >>> result = round(s, 2)
-            >>> result.value
-            3.14
-            >>> s.value = 2.71828
-            >>> result.value
-            2.72
-
-            ```
-        """
-        if ndigits is None or ndigits == 0:
-            # When ndigits is None or 0, round returns an integer
-            return core.computed(round)(self, ndigits=ndigits)
-        else:
-            # Otherwise, float
-            return core.computed(round)(self, ndigits=ndigits)
-
-    def __ceil__(self) -> Computed[int]:
-        """Return a reactive value for the ceiling of `self`.
-
-        Returns:
-            A reactive value for `math.ceil(self.value)`.
-
-        Example:
-            ```py
-            >>> from math import ceil
-            >>> s = Signal(3.14)
-            >>> result = ceil(s)
-            >>> result.value
-            4
-            >>> s.value = 2.01
-            >>> result.value
-            3
-
-            ```
-        """
-        return core.computed(math.ceil)(self)
-
-    def __floor__(self) -> Computed[int]:
-        """Return a reactive value for the floor of `self`.
-
-        Returns:
-            A reactive value for `math.floor(self.value)`.
-
-        Example:
-            ```py
-            >>> from math import floor
-            >>> s = Signal(3.99)
-            >>> result = floor(s)
-            >>> result.value
-            3
-            >>> s.value = 4.01
-            >>> result.value
-            4
-
-            ```
-        """
-        return core.computed(math.floor)(self)
-
-    @overload
-    def __invert__(self: ReactiveMixIn[bool]) -> Computed[int]: ...
-    @overload
-    def __invert__(self) -> Computed[T]: ...
-
-    def __invert__(self) -> Computed[T] | Computed[int]:
-        """Return a reactive value for the bitwise inversion of `self`.
-
-        Returns:
-            A reactive value for `~self.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(5)
-            >>> result = ~s
-            >>> result.value
-            -6
-            >>> s.value = -3
-            >>> result.value
-            2
-
-            ```
-        """
-        return core.computed(operator.inv)(self)
-
-    @overload
-    def __neg__(self: ReactiveMixIn[bool]) -> Computed[int]: ...
-    @overload
-    def __neg__(self) -> Computed[T]: ...
-
-    def __neg__(self) -> Computed[T] | Computed[int]:
-        """Return a reactive value for the negation of `self`.
-
-        Returns:
-            A reactive value for `-self.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(5)
-            >>> result = -s
-            >>> result.value
-            -5
-            >>> s.value = -3
-            >>> result.value
-            3
-
-            ```
-        """
-        return core.computed(operator.neg)(self)
-
-    @overload
-    def __pos__(self: ReactiveMixIn[bool]) -> Computed[int]: ...
-    @overload
-    def __pos__(self) -> Computed[T]: ...
-
-    def __pos__(self) -> Computed[T] | Computed[int]:
-        """Return a reactive value for the positive of self.
-
-        Returns:
-            A reactive value for `+self.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(-5)
-            >>> result = +s
-            >>> result.value
-            -5
-            >>> s.value = 3
-            >>> result.value
-            3
-
-            ```
-        """
-        return core.computed(operator.pos)(self)
-
-    @overload
-    def __trunc__(self: ReactiveNumeric) -> Computed[int]: ...
-    @overload
-    def __trunc__(self) -> Computed[T]: ...
-
-    def __trunc__(self) -> Computed[T] | Computed[int]:
-        """Return a reactive value for the truncated value of `self`.
-
-        Returns:
-            A reactive value for `math.trunc(self.value)`.
-
-        Example:
-            ```py
-            >>> from math import trunc
-            >>> s = Signal(3.99)
-            >>> result = trunc(s)
-            >>> result.value
-            3
-            >>> s.value = -4.01
-            >>> result.value
-            -4
-
-            ```
-        """
-        return core.computed(math.trunc)(self)
-
-    @overload
-    def __add__(self: ReactiveMixIn[float], other: HasNumeric) -> Computed[float]: ...
-    @overload
-    def __add__(self: ReactiveInt, other: HasValue[float]) -> Computed[float]: ...
-    @overload
-    def __add__[Y, R](self: _ReactiveSupportsAdd[Y, R], other: HasValue[Y]) -> Computed[R]: ...
-    @overload
-    def __add__(self, other: Any) -> Computed[Any]: ...
-
-    def __add__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for the sum of `self` and `other`.
-
-        Args:
-            other: The value to add.
-
-        Returns:
-            A reactive value for `self.value + other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(5)
-            >>> result = s + 3
-            >>> result.value
-            8
-            >>> s.value = 10
-            >>> result.value
-            13
-
-            ```
-        """
-        return core.computed(operator.add)(self, other)
-
-    def __and__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for the bitwise AND of self and other.
-
-        Args:
-            other: The value to AND with.
-
-        Returns:
-            A reactive value for `self.value & other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(True)
-            >>> result = s & False
-            >>> result.value
-            False
-            >>> s.value = True
-            >>> result.value
-            False
-
-            ```
-        """
-        return core.computed(operator.and_)(self, other)
-
-    def contains(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `other` is in `self`.
-
-        Deprecated:
-            Use ``self.rx.contains(other)`` instead.
-
-        Args:
-            other: The value to check for containment.
-
-        Returns:
-            A reactive value for `other in self.value`.
-
-        Example:
-            ```py
-            >>> s = Signal([1, 2, 3, 4])
-            >>> result = s.contains(3)
-            >>> result.value
-            True
-            >>> s.value = [5, 6, 7, 8]
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("contains", "self.rx.contains(other)")
-        return self.rx.contains(other)
-
-    @overload
-    def __divmod__(self: ReactiveInt, other: HasInt) -> Computed[tuple[int, int]]: ...
-    @overload
-    def __divmod__(self: ReactiveMixIn[float], other: ReactiveNumeric) -> Computed[tuple[float, float]]: ...
-    
-    def __divmod__(self, other) -> Computed[tuple[int, int]] | Computed[tuple[float, float]]:
-        """Return a reactive value for the divmod of `self` and other.
-
-        Args:
-            other: The value to use as the divisor.
-
-        Returns:
-            A reactive value for `divmod(self.value, other)`.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> result = divmod(s, 3)
-            >>> result.value
-            (3, 1)
-            >>> s.value = 20
-            >>> result.value
-            (6, 2)
-
-            ```
-        """
-        return core.computed(divmod)(self, other)
-
-    def eq(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` equals other.
-
-        Deprecated:
-            Use ``self.rx.eq(other)`` instead.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for self.value == other.
-
-        Note:
-            We can't overload `__eq__` because it interferes with basic Python operations.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> result = s.eq(10)
-            >>> result.value
-            True
-            >>> s.value = 25
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("eq", "self.rx.eq(other)")
-        return self.rx.eq(other)
-
-    @overload
-    def __floordiv__(self: ReactiveMixIn[bool], other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
-    @overload
-    def __floordiv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __floordiv__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for the floor division of `self` by other.
-
-        Args:
-            other: The value to use as the divisor.
-
-        Returns:
-            A reactive value for self.value // other.value.
-
-        Example:
-            ```py
-            >>> s = Signal(20)
-            >>> result = s // 3
-            >>> result.value
-            6
-            >>> s.value = 25
-            >>> result.value
-            8
-
-            ```
-        """
-        return core.computed(operator.floordiv)(self, other)
-
-    def __ge__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` is greater than or equal to other.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for self.value >= other.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> result = s >= 5
-            >>> result.value
-            True
-            >>> s.value = 3
-            >>> result.value
-            False
-
-            ```
-        """
-        return core.computed(operator.ge)(self, other)
-
-    def __gt__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` is greater than other.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for self.value > other.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> result = s > 5
-            >>> result.value
-            True
-            >>> s.value = 3
-            >>> result.value
-            False
-
-            ```
-        """
-        return core.computed(operator.gt)(self, other)
-
-    def __le__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` is less than or equal to `other`.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for `self.value <= other`.
-
-        Example:
-            ```py
-            >>> s = Signal(5)
-            >>> result = s <= 5
-            >>> result.value
-            True
-            >>> s.value = 6
-            >>> result.value
-            False
-
-            ```
-        """
-        return core.computed(operator.le)(self, other)
-
-    def __lt__(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` is less than `other`.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for `self.value < other`.
-
-        Example:
-            ```py
-            >>> s = Signal(5)
-            >>> result = s < 10
-            >>> result.value
-            True
-            >>> s.value = 15
-            >>> result.value
-            False
-
-            ```
-        """
-        return core.computed(operator.lt)(self, other)
-
-    def __lshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for `self` left-shifted by `other`.
-
-        Args:
-            other: The number of positions to shift.
-
-        Returns:
-            A reactive value for `self.value << other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(8)
-            >>> result = s << 2
-            >>> result.value
-            32
-            >>> s.value = 3
-            >>> result.value
-            12
-
-            ```
-        """
-        return core.computed(operator.lshift)(self, other)
-
-    def __matmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for the matrix multiplication of `self` and `other`.
-
-        Args:
-            other: The value to multiply with.
-
-        Returns:
-            A reactive value for `self.value @ other.value`.
-
-        Example:
-            ```py
-            >>> import numpy as np
-            >>> s = Signal(np.array([1, 2]))
-            >>> result = s @ np.array([[1, 2], [3, 4]])
-            >>> result.value
-            array([ 7, 10])
-            >>> s.value = np.array([2, 3])
-            >>> result.value
-            array([11, 16])
-
-            ```
-        """
-        return core.computed(operator.matmul)(self, other)
-
-    @overload
-    def __mod__(self: ReactiveInt, other: HasInt) -> Computed[int]: ...
-    @overload
-    def __mod__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __mod__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for `self` modulo `other`.
-
-        Args:
-            other: The divisor.
-
-        Returns:
-            A reactive value for `self.value % other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(17)
-            >>> result = s % 5
-            >>> result.value
-            2
-            >>> s.value = 23
-            >>> result.value
-            3
-
-            ```
-        """
-        return core.computed(operator.mod)(self, other)
-
-    @overload
-    def __mul__(self: ReactiveMixIn[str], other: HasInt) -> Computed[str]: ...
-    @overload
-    def __mul__[V](self: ReactiveMixIn[list[V]], other: HasInt) -> Computed[list[V]]: ...
-    @overload
-    def __mul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __mul__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for the product of `self` and `other`.
-
-        Args:
-            other: The value to multiply with.
-
-        Returns:
-            A reactive value for `self.value * other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(4)
-            >>> result = s * 3
-            >>> result.value
-            12
-            >>> s.value = 5
-            >>> result.value
-            15
-
-            ```
-        """
-        return core.computed(operator.mul)(self, other)
-
-    def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
-        """Return a reactive value for whether `self` is not equal to `other`.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for `self.value != other`.
-
-        Example:
-            ```py
-            >>> s = Signal(5)
-            >>> result = s != 5
-            >>> result.value
-            False
-            >>> s.value = 6
-            >>> result.value
-            True
-
-            ```
-        """
-        return core.computed(operator.ne)(self, other)
-
-    def __or__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for the bitwise OR of `self` and `other`.
-
-        Args:
-            other: The value to OR with.
-
-        Returns:
-            A reactive value for `self.value or other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(False)
-            >>> result = s | True
-            >>> result.value
-            True
-            >>> s.value = True
-            >>> result.value
-            True
-
-            ```
-        """
-        return core.computed(operator.or_)(self, other)
-
-    def __rshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for `self` right-shifted by `other`.
-
-        Args:
-            other: The number of positions to shift.
-
-        Returns:
-            A reactive value for `self.value >> other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(32)
-            >>> result = s >> 2
-            >>> result.value
-            8
-            >>> s.value = 24
-            >>> result.value
-            6
-
-            ```
-        """
-        return core.computed(operator.rshift)(self, other)
-
-    @overload
-    def __pow__(self: ReactiveInt, other: ReactiveInt) -> Computed[int]: ...
-    @overload
-    def __pow__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __pow__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for `self` raised to the power of `other`.
-
-        Args:
-            other: The exponent.
-
-        Returns:
-            A reactive value for `self.value ** other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(2)
-            >>> result = s ** 3
-            >>> result.value
-            8
-            >>> s.value = 3
-            >>> result.value
-            27
-
-            ```
-        """
-        return core.computed(operator.pow)(self, other)
-
-    def __sub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for the difference of `self` and `other`.
-
-        Args:
-            other: The value to subtract.
-
-        Returns:
-            A reactive value for `self.value - other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> result = s - 3
-            >>> result.value
-            7
-            >>> s.value = 15
-            >>> result.value
-            12
-
-            ```
-        """
-        return core.computed(operator.sub)(self, other)
-
-    @overload
-    def __truediv__(self: ReactiveNumeric, other: HasNumeric) -> Computed[float]: ...
-    @overload
-    def __truediv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __truediv__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for `self` divided by `other`.
-
-        Args:
-            other: The value to use as the divisor.
-
-        Returns:
-            A reactive value for `self.value / other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(20)
-            >>> result = s / 4
-            >>> result.value
-            5.0
-            >>> s.value = 30
-            >>> result.value
-            7.5
-
-            ```
-        """
-        return core.computed(operator.truediv)(self, other)
-
-    def __xor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for the bitwise XOR of `self` and `other`.
-
-        Args:
-            other: The value to XOR with.
-
-        Returns:
-            A reactive value for `self.value ^ other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(True)
-            >>> result = s ^ False
-            >>> result.value
-            True
-            >>> s.value = False
-            >>> result.value
-            False
-
-            ```
-        """
-        return core.computed(operator.xor)(self, other)
-
-    @overload
-    def __radd__(self: ReactiveMixIn[float], other: HasNumeric) -> Computed[float]: ...
-    @overload
-    def __radd__[R](self: ReactiveMixIn[T], other: HasValue[_SupportsAdd[T, R]]) -> Computed[R]: ...
-    @overload
-    def __radd__(self, other: Any) -> Computed[Any]: ...
-
-    def __radd__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for the sum of `self` and `other`.
-
-        Args:
-            other: The value to add.
-
-        Returns:
-            A reactive value for `self.value + other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(5)
-            >>> result = 3 + s
-            >>> result.value
-            8
-            >>> s.value = 10
-            >>> result.value
-            13
-
-            ```
-        """
-        return core.computed(operator.add)(other, self)
-
-    def __rand__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for the bitwise AND of `self` and `other`.
-
-        Args:
-            other: The value to AND with.
-
-        Returns:
-            A reactive value for `self.value and other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(True)
-            >>> result = False & s
-            >>> result.value
-            False
-            >>> s.value = True
-            >>> result.value
-            False
-
-            ```
-        """
-        return core.computed(operator.and_)(other, self)
-
-    @overload
-    def __rdivmod__(self: ReactiveInt, other: HasInt) -> Computed[tuple[int, int]]: ...
-    @overload
-    def __rdivmod__(self: ReactiveMixIn[float], other: HasInt) -> Computed[tuple[float, float]]: ...
-
-    def __rdivmod__(self, other: Any) -> Computed[tuple[int, int]] | Computed[tuple[float, float]]:
-        """Return a reactive value for the divmod of `self` and `other`.
-
-        Args:
-            other: The value to use as the numerator.
-
-        Returns:
-            A reactive value for `divmod(other, self.value)`.
-
-        Example:
-            ```py
-            >>> s = Signal(3)
-            >>> result = divmod(10, s)
-            >>> result.value
-            (3, 1)
-            >>> s.value = 4
-            >>> result.value
-            (2, 2)
-
-            ```
-        """
-        return core.computed(divmod)(other, self)
-
-    @overload
-    def __rfloordiv__(self: ReactiveInt, other: HasInt) -> Computed[int]: ...
-    @overload
-    def __rfloordiv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __rfloordiv__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for the floor division of `other` by `self`.
-
-        Args:
-            other: The value to use as the numerator.
-
-        Returns:
-            A reactive value for `other.value // self.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(3)
-            >>> result = 10 // s
-            >>> result.value
-            3
-            >>> s.value = 4
-            >>> result.value
-            2
-
-            ```
-        """
-        return core.computed(operator.floordiv)(other, self)
-
-    @overload
-    def __rmod__(self: ReactiveInt, other: HasInt) -> Computed[int]: ...
-    @overload
-    def __rmod__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __rmod__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for `other` modulo `self`.
-
-        Args:
-            other: The dividend.
-
-        Returns:
-            A reactive value for `other.value % self.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(3)
-            >>> result = 10 % s
-            >>> result.value
-            1
-            >>> s.value = 4
-            >>> result.value
-            2
-
-            ```
-        """
-        return core.computed(operator.mod)(other, self)
-
-    @overload
-    def __rmul__(self: ReactiveMixIn[str], other: HasValue[int]) -> Computed[str]: ...
-    @overload
-    def __rmul__[V](self: ReactiveMixIn[list[V]], other: HasValue[int]) -> Computed[list[V]]: ...
-    @overload
-    def __rmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __rmul__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for the product of `self` and `other`.
-
-        Args:
-            other: The value to multiply with.
-
-        Returns:
-            A reactive value for `self.value * other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(4)
-            >>> result = 3 * s
-            >>> result.value
-            12
-            >>> s.value = 5
-            >>> result.value
-            15
-
-            ```
-        """
-        return core.computed(operator.mul)(other, self)
-
-    def __ror__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for the bitwise OR of `self` and `other`.
-
-        Args:
-            other: The value to OR with.
-
-        Returns:
-            A reactive value for `self.value or other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(False)
-            >>> result = True | s
-            >>> result.value
-            True
-            >>> s.value = True
-            >>> result.value
-            True
-
-            ```
-        """
-        return core.computed(operator.or_)(other, self)
-
-    @overload
-    def __rpow__(self: ReactiveInt, other: HasInt) -> Computed[int]: ...
-    @overload
-    def __rpow__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __rpow__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for `self` raised to the power of `other`.
-
-        Args:
-            other: The base.
-
-        Returns:
-            A reactive value for `self.value ** other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(2)
-            >>> result = 3 ** s
-            >>> result.value
-            9
-            >>> s.value = 3
-            >>> result.value
-            27
-
-            ```
-        """
-        return core.computed(operator.pow)(other, self)
-
-    def __rsub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for the difference of `self` and `other`.
-
-        Args:
-            other: The value to subtract from.
-
-        Returns:
-            A reactive value for `other.value - self.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> result = 15 - s
-            >>> result.value
-            5
-            >>> s.value = 15
-            >>> result.value
-            0
-
-            ```
-        """
-        return core.computed(operator.sub)(other, self)
-
-    @overload
-    def __rtruediv__(self: ReactiveNumeric, other: HasNumeric) -> Computed[float]: ...
-    @overload
-    def __rtruediv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
-
-    def __rtruediv__(self, other: Any) -> Computed[Any]:
-        """Return a reactive value for `self` divided by `other`.
-
-        Args:
-            other: The value to use as the divisor.
-
-        Returns:
-            A reactive value for `self.value / other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(2)
-            >>> result = 30 / s
-            >>> result.value
-            15.0
-            >>> s.value = 3
-            >>> result.value
-            10.0
-
-            ```
-        """
-        return core.computed(operator.truediv)(other, self)
-
-    def __rxor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
-        """Return a reactive value for the bitwise XOR of `self` and `other`.
-
-        Args:
-            other: The value to XOR with.
-
-        Returns:
-            A reactive value for `self.value ^ other.value`.
-
-        Example:
-            ```py
-            >>> s = Signal(True)
-            >>> result = False ^ s
-            >>> result.value
-            True
-            >>> s.value = False
-            >>> result.value
-            False
-
-            ```
-        """
-        return core.computed(operator.xor)(other, self)
-
-    @overload
-    def __getitem__[V](self: ReactiveMixIn[list[V]], key: slice) -> Computed[list[V]]: ...
-    @overload
-    def __getitem__[V](self: ReactiveMixIn[tuple[V, ...]], key: slice) -> Computed[tuple[V, ...]]: ...
-    @overload
-    def __getitem__(self: ReactiveMixIn[str], key: slice) -> Computed[str]: ...
-    @overload
-    def __getitem__[V](self: ReactiveMixIn[Sequence[V]], key: HasValue[SupportsIndex | int]) -> Computed[V]: ...
-    @overload
-    def __getitem__[K, V](self: ReactiveMixIn[dict[K, V]], key: HasValue[K]) -> Computed[V]: ...
-    @overload
-    def __getitem__[K, V](self: _ReactiveSupportsGetItem[K, V], key: HasValue[K]) -> Computed[V]: ...
-    @overload
-    def __getitem__(self, key: Any) -> Computed[Any]: ...
-
-    def __getitem__(self, key: Any) -> Computed[Any]:
-        """Return a reactive value for the item or slice of `self`.
-
-        Args:
-            key: The index or slice to retrieve.
-
-        Returns:
-            A reactive value for `self.value[key]`.
-
-        Example:
-            ```py
-            >>> s = Signal([1, 2, 3, 4, 5])
-            >>> result = s[2]
-            >>> result.value
-            3
-            >>> s.value = [10, 20, 30, 40, 50]
-            >>> result.value
-            30
-
-            ```
-        """
-        return core.computed(operator.getitem)(self, key)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Set an attribute on the underlying `self.value`.
-
-        Note:
-            It is necessary to set the attribute via the Signal, rather than the
-            underlying `signal.value`, to properly notify downstream observers
-            of changes. Reason being, mutable objects that, for example, fallback
-            to id comparison for equality checks will appear as if nothing changed
-            even if one of its attributes changed.
-
-        Args:
-            name: The name of the attribute to access.
-            value: The value to set it to.
-
-        Example:
-            ```py
+            Example:
+                ```py
                 >>> class Person:
-                ...    def __init__(self, name: str):
-                ...        self.name = name
-                ...    def greet(self) -> str:
-                ...        return f"Hi, I'm {self.name}!"
+                ...     def __init__(self, name):
+                ...         self.name = name
+                >>> s = Signal(Person("Alice"))
+                >>> result = s.name
+                >>> result.value
+                'Alice'
+                >>> s.value = Person("Bob")
+                >>> result.value
+                'Bob'
+
+                ```
+            """
+            if name in {"value", "_value"}:
+                return super().__getattribute__(name)
+
+            if hasattr(self.value, name):
+                return core.computed(getattr)(self, name)
+            else:
+                return super().__getattribute__(name)
+
+    if '__call__' in REACTIVE_DUNDERS: 
+        
+        def __call__[**P, R](self: ReactiveMixIn[Callable[P, R]], *args: P.args, **kwargs: P.kwargs) -> Computed[R]:
+            """Create a reactive value for calling `self.value(*args, **kwargs)`.
+
+            Args:
+                *args: Positional arguments to pass to the callable value.
+                **kwargs: Keyword arguments to pass to the callable value.
+
+            Returns:
+                A reactive value for the function call.
+
+            Raises:
+                ValueError: If the value is not callable.
+
+            Example:
+                ```py
+                >>> class Person:
+                ...     def __init__(self, name):
+                ...         self.name = name
+                ...     def greet(self):
+                ...         return f"Hi, I'm {self.name}!"
                 >>> s = Signal(Person("Alice"))
                 >>> result = s.greet()
                 >>> result.value
                 "Hi, I'm Alice!"
-                >>> s.name = "Bob"  # Modify attribute on Person instance through the reactive value s
+                >>> s.name = "Bob"
                 >>> result.value
                 "Hi, I'm Bob!"
 
-            ```
-        """
-        if name == "_value" or not hasattr(self, "_value"):
-            super().__setattr__(name, value)
-        elif hasattr(self.value, name):
-            setattr(self.value, name, value)
-            self.notify()
-        else:
-            super().__setattr__(name, value)
+                ```
+            """
+            if not callable(self.value):
+                raise ValueError("Value is not callable.")
 
-    def __setitem__(self, key: Any, value: Any) -> None:
-        """Set an item on the underlying `self.value`.
+            def f(*args: Any, **kwargs: Any):
+                _f = getattr(self, "value")
+                return _f(*args, **kwargs)
 
-        Note:
-            It is necessary to set the item via the Signal, rather than the
-            underlying `signal.value`, to properly notify downstream observers
-            of changes. Reason being, mutable objects that, for example, fallback
-            to id comparison for equality checks will appear as if nothing changed
-            even an element of the object is changed.
+            return core.computed(f)(*args, **kwargs).observe([self, self.value])
 
-        Args:
-            key: The key to change.
-            value: The value to set it to.
+    if '__abs__' in REACTIVE_DUNDERS: 
+        
+        @overload
+        def __abs__(self: HasValue[complex]) -> Computed[float]: ...
+        @overload
+        def __abs__(self: HasValue[bool]) -> Computed[int]: ...
+        @overload
+        def __abs__(self) -> Computed[T]: ...
 
-        Example:
-            ```py
-            >>> s = Signal([1, 2, 3])
-            >>> result = core.computed(sum)(s)
-            >>> result.value
-            6
-            >>> s[1] = 4
-            >>> result.value
-            8
-        """
-        if isinstance(self.value, (list, dict)):
-            self.value[key] = value
-            self.notify()
-        else:
-            raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
+        def __abs__(self) -> Computed[T] | ComputedNumeric:
+            """Return a reactive value for the absolute value of `self`.
 
-    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
-        """Return a reactive value for `a` if `self` is `True`, else `b`.
+            Returns:
+                A reactive value for `abs(self.value)`.
 
-        Deprecated:
-            Use ``self.rx.where(a, b)`` instead.
+            Example:
+                ```py
+                >>> s = Signal(-5)
+                >>> result = abs(s)
+                >>> result.value
+                5
+                >>> s.value = -10
+                >>> result.value
+                10
 
-        Args:
-            a: The value to return if `self` is `True`.
-            b: The value to return if `self` is `False`.
+                ```
+            """
+            return core.computed(abs)(self)
 
-        Returns:
-            A reactive value for `a if self.value else b`.
+    if '__str__' in REACTIVE_DUNDERS:
+        
+        def __str__(self) -> str:
+            """Return a string of the current value.
 
-        Example:
-            ```py
-            >>> condition = Signal(True)
-            >>> result = condition.where("Yes", "No")
-            >>> result.value
-            'Yes'
-            >>> condition.value = False
-            >>> result.value
-            'No'
+            Note:
+                This is not reactive.
 
-            ```
-        """
-        _warn_deprecated_alias("where", "self.rx.where(a, b)")
-        return self.rx.where(a, b)
+            Returns:
+                A string representation of `self.value`.
+            """
+            return str(self.value)
 
-    def is_not(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` is not other.
+    if '__round__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __round__(self: HasNumeric) -> Computed[int]: ...
+        @overload
+        def __round__(self: HasNumeric, ndigits: None) -> Computed[int]: ...
+        @overload
+        def __round__(self: ReactiveMixIn[int] | ReactiveMixIn[bool], ndigits: HasInt) -> Computed[int]: ...
+        @overload
+        def __round__(self: HasNumeric, ndigits: HasInt) -> Computed[float]: ...
+        @overload
+        def __round__(self, ndigits: HasInt | None = None) -> Computed[int] | Computed[float]: ...
 
-        Deprecated:
-            Use ``self.rx.is_not(other)`` instead.
+        def __round__(self, ndigits: HasInt | None = None) -> Computed[int] | Computed[float]:
+            """Return a reactive value for the rounded value of self.
 
-        Args:
-            other: The value to compare against.
+            Args:
+                ndigits: Number of decimal places to round to.
 
-        Returns:
-            A reactive value for self.value is not other.
+            Returns:
+                A reactive value for `round(self.value, ndigits)`.
 
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> other = None
-            >>> result = s.is_not(other)
-            >>> result.value
-            True
-            >>> s.value = None
-            >>> result.value
-            False
+            Example:
+                ```py
+                >>> s = Signal(3.14159)
+                >>> result = round(s, 2)
+                >>> result.value
+                3.14
+                >>> s.value = 2.71828
+                >>> result.value
+                2.72
 
-            ```
-        """
-        _warn_deprecated_alias("is_not", "self.rx.is_not(other)")
-        return self.rx.is_not(other)
+                ```
+            """
+            if ndigits is None or ndigits == 0:
+                # When ndigits is None or 0, round returns an integer
+                return core.computed(round)(self, ndigits=ndigits)
+            else:
+                # Otherwise, float
+                return core.computed(round)(self, ndigits=ndigits)
 
+    if '__ceil__' in REACTIVE_DUNDERS:
+
+        def __ceil__(self) -> Computed[int]:
+            """Return a reactive value for the ceiling of `self`.
+
+            Returns:
+                A reactive value for `math.ceil(self.value)`.
+
+            Example:
+                ```py
+                >>> from math import ceil
+                >>> s = Signal(3.14)
+                >>> result = ceil(s)
+                >>> result.value
+                4
+                >>> s.value = 2.01
+                >>> result.value
+                3
+
+                ```
+            """
+            return core.computed(math.ceil)(self)
+
+    if '__floor__' in REACTIVE_DUNDERS:
+        
+        def __floor__(self) -> Computed[int]:
+            """Return a reactive value for the floor of `self`.
+
+            Returns:
+                A reactive value for `math.floor(self.value)`.
+
+            Example:
+                ```py
+                >>> from math import floor
+                >>> s = Signal(3.99)
+                >>> result = floor(s)
+                >>> result.value
+                3
+                >>> s.value = 4.01
+                >>> result.value
+                4
+
+                ```
+            """
+            return core.computed(math.floor)(self)
+
+    if '__invert__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __invert__(self: HasValue[bool]) -> Computed[int]: ...
+        @overload
+        def __invert__(self) -> Computed[T]: ...
+
+        def __invert__(self) -> Computed[T] | Computed[int]:
+            """Return a reactive value for the bitwise inversion of `self`.
+
+            Returns:
+                A reactive value for `~self.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(5)
+                >>> result = ~s
+                >>> result.value
+                -6
+                >>> s.value = -3
+                >>> result.value
+                2
+
+                ```
+            """
+            return core.computed(operator.inv)(self)
+
+    if '__neg__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __neg__(self: HasValue[bool]) -> Computed[int]: ...
+        @overload
+        def __neg__(self) -> Computed[T]: ...
+
+        def __neg__(self) -> Computed[T] | Computed[int]:
+            """Return a reactive value for the negation of `self`.
+
+            Returns:
+                A reactive value for `-self.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(5)
+                >>> result = -s
+                >>> result.value
+                -5
+                >>> s.value = -3
+                >>> result.value
+                3
+
+                ```
+            """
+            return core.computed(operator.neg)(self)
+
+    if '__pos__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __pos__(self: HasValue[bool]) -> Computed[int]: ...
+        @overload
+        def __pos__(self) -> Computed[T]: ...
+
+        def __pos__(self) -> Computed[T] | Computed[int]:
+            """Return a reactive value for the positive of self.
+
+            Returns:
+                A reactive value for `+self.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(-5)
+                >>> result = +s
+                >>> result.value
+                -5
+                >>> s.value = 3
+                >>> result.value
+                3
+
+                ```
+            """
+            return core.computed(operator.pos)(self)
+
+    if '__trunc__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __trunc__(self: HasNumeric) -> Computed[int]: ...
+        @overload
+        def __trunc__(self) -> Computed[T]: ...
+
+        def __trunc__(self) -> Computed[T] | Computed[int]:
+            """Return a reactive value for the truncated value of `self`.
+
+            Returns:
+                A reactive value for `math.trunc(self.value)`.
+
+            Example:
+                ```py
+                >>> from math import trunc
+                >>> s = Signal(3.99)
+                >>> result = trunc(s)
+                >>> result.value
+                3
+                >>> s.value = -4.01
+                >>> result.value
+                -4
+
+                ```
+            """
+            return core.computed(math.trunc)(self)
+
+    if '__add__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __add__(self: HasValue[float], other: HasNumeric) -> Computed[float]: ...
+        @overload
+        def __add__(self: HasInt, other: HasValue[float]) -> Computed[float]: ...
+        @overload
+        def __add__[Y, R](self: _ReactiveSupportsAdd[Y, R], other: HasValue[Y]) -> Computed[R]: ...
+        @overload
+        def __add__(self, other: Any) -> Computed[Any]: ...
+
+        def __add__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for the sum of `self` and `other`.
+
+            Args:
+                other: The value to add.
+
+            Returns:
+                A reactive value for `self.value + other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(5)
+                >>> result = s + 3
+                >>> result.value
+                8
+                >>> s.value = 10
+                >>> result.value
+                13
+
+                ```
+            """
+            return core.computed(operator.add)(self, other)
+
+        def __and__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for the bitwise AND of self and other.
+
+            Args:
+                other: The value to AND with.
+
+            Returns:
+                A reactive value for `self.value & other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(True)
+                >>> result = s & False
+                >>> result.value
+                False
+                >>> s.value = True
+                >>> result.value
+                False
+
+                ```
+            """
+            return core.computed(operator.and_)(self, other)
+
+    if '__divmod__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __divmod__(self: HasInt, other: HasInt) -> Computed[tuple[int, int]]: ...
+        @overload
+        def __divmod__(self: ReactiveMixIn[float], other: HasNumeric) -> Computed[tuple[float, float]]: ...
+        @overload
+        def __divmod__(self: ReactiveMixIn[int], other: HasValue[float]) -> Computed[tuple[float, float]]: ...
+        
+        def __divmod__(self, other) -> Computed[tuple[int, int]] | Computed[tuple[float, float]]:
+            """Return a reactive value for the divmod of `self` and other.
+
+            Args:
+                other: The value to use as the divisor.
+
+            Returns:
+                A reactive value for `divmod(self.value, other)`.
+
+            Example:
+                ```py
+                >>> s = Signal(10)
+                >>> result = divmod(s, 3)
+                >>> result.value
+                (3, 1)
+                >>> s.value = 20
+                >>> result.value
+                (6, 2)
+
+                ```
+            """
+            return core.computed(divmod)(self, other)
+
+    if '__floordiv__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __floordiv__(self: HasValue[bool], other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
+        @overload
+        def __floordiv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __floordiv__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for the floor division of `self` by other.
+
+            Args:
+                other: The value to use as the divisor.
+
+            Returns:
+                A reactive value for self.value // other.value.
+
+            Example:
+                ```py
+                >>> s = Signal(20)
+                >>> result = s // 3
+                >>> result.value
+                6
+                >>> s.value = 25
+                >>> result.value
+                8
+
+                ```
+            """
+            return core.computed(operator.floordiv)(self, other)
+
+    if '__ge__' in REACTIVE_DUNDERS:
+        
+        def __ge__(self, other: Any) -> Computed[bool]:
+            """Return a reactive value for whether `self` is greater than or equal to other.
+
+            Args:
+                other: The value to compare against.
+
+            Returns:
+                A reactive value for self.value >= other.
+
+            Example:
+                ```py
+                >>> s = Signal(10)
+                >>> result = s >= 5
+                >>> result.value
+                True
+                >>> s.value = 3
+                >>> result.value
+                False
+
+                ```
+            """
+            return core.computed(operator.ge)(self, other)
+
+    if '__gt__' in REACTIVE_DUNDERS:
+
+        def __gt__(self, other: Any) -> Computed[bool]:
+            """Return a reactive value for whether `self` is greater than other.
+
+            Args:
+                other: The value to compare against.
+
+            Returns:
+                A reactive value for self.value > other.
+
+            Example:
+                ```py
+                >>> s = Signal(10)
+                >>> result = s > 5
+                >>> result.value
+                True
+                >>> s.value = 3
+                >>> result.value
+                False
+
+                ```
+            """
+            return core.computed(operator.gt)(self, other)
+
+    if '__le__' in REACTIVE_DUNDERS:
+        
+        def __le__(self, other: Any) -> Computed[bool]:
+            """Return a reactive value for whether `self` is less than or equal to `other`.
+
+            Args:
+                other: The value to compare against.
+
+            Returns:
+                A reactive value for `self.value <= other`.
+
+            Example:
+                ```py
+                >>> s = Signal(5)
+                >>> result = s <= 5
+                >>> result.value
+                True
+                >>> s.value = 6
+                >>> result.value
+                False
+
+                ```
+            """
+            return core.computed(operator.le)(self, other)
+
+    if '__lt__' in REACTIVE_DUNDERS:
+        
+        def __lt__(self, other: Any) -> Computed[bool]:
+            """Return a reactive value for whether `self` is less than `other`.
+
+            Args:
+                other: The value to compare against.
+
+            Returns:
+                A reactive value for `self.value < other`.
+
+            Example:
+                ```py
+                >>> s = Signal(5)
+                >>> result = s < 10
+                >>> result.value
+                True
+                >>> s.value = 15
+                >>> result.value
+                False
+
+                ```
+            """
+            return core.computed(operator.lt)(self, other)
+
+    if '__lshift__' in REACTIVE_DUNDERS:
+        
+        def __lshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for `self` left-shifted by `other`.
+
+            Args:
+                other: The number of positions to shift.
+
+            Returns:
+                A reactive value for `self.value << other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(8)
+                >>> result = s << 2
+                >>> result.value
+                32
+                >>> s.value = 3
+                >>> result.value
+                12
+
+                ```
+            """
+            return core.computed(operator.lshift)(self, other)
+
+    if '__matmul__' in REACTIVE_DUNDERS:
+        
+        def __matmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for the matrix multiplication of `self` and `other`.
+
+            Args:
+                other: The value to multiply with.
+
+            Returns:
+                A reactive value for `self.value @ other.value`.
+
+            Example:
+                ```py
+                >>> import numpy as np
+                >>> s = Signal(np.array([1, 2]))
+                >>> result = s @ np.array([[1, 2], [3, 4]])
+                >>> result.value
+                array([ 7, 10])
+                >>> s.value = np.array([2, 3])
+                >>> result.value
+                array([11, 16])
+
+                ```
+            """
+            return core.computed(operator.matmul)(self, other)
+
+    if '__mod__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __mod__(self: HasInt, other: HasInt) -> Computed[int]: ...
+        @overload
+        def __mod__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __mod__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for `self` modulo `other`.
+
+            Args:
+                other: The divisor.
+
+            Returns:
+                A reactive value for `self.value % other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(17)
+                >>> result = s % 5
+                >>> result.value
+                2
+                >>> s.value = 23
+                >>> result.value
+                3
+
+                ```
+            """
+            return core.computed(operator.mod)(self, other)
+
+    if '__mul__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __mul__(self: HasValue[str], other: HasInt) -> Computed[str]: ...
+        @overload
+        def __mul__[V](self: HasValue[list[V]], other: HasInt) -> Computed[list[V]]: ...
+        @overload
+        def __mul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __mul__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for the product of `self` and `other`.
+
+            Args:
+                other: The value to multiply with.
+
+            Returns:
+                A reactive value for `self.value * other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(4)
+                >>> result = s * 3
+                >>> result.value
+                12
+                >>> s.value = 5
+                >>> result.value
+                15
+
+                ```
+            """
+            return core.computed(operator.mul)(self, other)
+
+    if '__ne__' in REACTIVE_DUNDERS:
+        
+        def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
+            """Return a reactive value for whether `self` is not equal to `other`.
+
+            Args:
+                other: The value to compare against.
+
+            Returns:
+                A reactive value for `self.value != other`.
+
+            Example:
+                ```py
+                >>> s = Signal(5)
+                >>> result = s != 5
+                >>> result.value
+                False
+                >>> s.value = 6
+                >>> result.value
+                True
+
+                ```
+            """
+            return core.computed(operator.ne)(self, other)
+
+    if '__or__' in REACTIVE_DUNDERS:
+        
+        def __or__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for the bitwise OR of `self` and `other`.
+
+            Args:
+                other: The value to OR with.
+
+            Returns:
+                A reactive value for `self.value or other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(False)
+                >>> result = s | True
+                >>> result.value
+                True
+                >>> s.value = True
+                >>> result.value
+                True
+
+                ```
+            """
+            return core.computed(operator.or_)(self, other)
+
+    if '__rshift__' in REACTIVE_DUNDERS:
+        
+        def __rshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for `self` right-shifted by `other`.
+
+            Args:
+                other: The number of positions to shift.
+
+            Returns:
+                A reactive value for `self.value >> other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(32)
+                >>> result = s >> 2
+                >>> result.value
+                8
+                >>> s.value = 24
+                >>> result.value
+                6
+
+                ```
+            """
+            return core.computed(operator.rshift)(self, other)
+
+    if '__pow__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __pow__(self: HasInt, other: HasInt) -> Computed[int]: ...
+        @overload
+        def __pow__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __pow__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for `self` raised to the power of `other`.
+
+            Args:
+                other: The exponent.
+
+            Returns:
+                A reactive value for `self.value ** other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(2)
+                >>> result = s ** 3
+                >>> result.value
+                8
+                >>> s.value = 3
+                >>> result.value
+                27
+
+                ```
+            """
+            return core.computed(operator.pow)(self, other)
+
+    if '__sub__' in REACTIVE_DUNDERS:
+        
+        def __sub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for the difference of `self` and `other`.
+
+            Args:
+                other: The value to subtract.
+
+            Returns:
+                A reactive value for `self.value - other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(10)
+                >>> result = s - 3
+                >>> result.value
+                7
+                >>> s.value = 15
+                >>> result.value
+                12
+
+                ```
+            """
+            return core.computed(operator.sub)(self, other)
+
+    if '__truediv__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __truediv__(self: HasNumeric, other: HasNumeric) -> Computed[float]: ...
+        @overload
+        def __truediv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __truediv__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for `self` divided by `other`.
+
+            Args:
+                other: The value to use as the divisor.
+
+            Returns:
+                A reactive value for `self.value / other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(20)
+                >>> result = s / 4
+                >>> result.value
+                5.0
+                >>> s.value = 30
+                >>> result.value
+                7.5
+
+                ```
+            """
+            return core.computed(operator.truediv)(self, other)
+
+    if '__xor__' in REACTIVE_DUNDERS:
+        
+        def __xor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for the bitwise XOR of `self` and `other`.
+
+            Args:
+                other: The value to XOR with.
+
+            Returns:
+                A reactive value for `self.value ^ other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(True)
+                >>> result = s ^ False
+                >>> result.value
+                True
+                >>> s.value = False
+                >>> result.value
+                False
+
+                ```
+            """
+            return core.computed(operator.xor)(self, other)
+
+    if '__radd__' in REACTIVE_DUNDERS:
+
+        @overload
+        def __radd__(self: HasValue[float], other: HasNumeric) -> Computed[float]: ...
+        @overload
+        def __radd__[R](self: HasValue[T], other: HasValue[_SupportsAdd[T, R]]) -> Computed[R]: ...
+        @overload
+        def __radd__(self, other: Any) -> Computed[Any]: ...
+
+        def __radd__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for the sum of `self` and `other`.
+
+            Args:
+                other: The value to add.
+
+            Returns:
+                A reactive value for `self.value + other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(5)
+                >>> result = 3 + s
+                >>> result.value
+                8
+                >>> s.value = 10
+                >>> result.value
+                13
+
+                ```
+            """
+            return core.computed(operator.add)(other, self)
+
+        def __rand__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for the bitwise AND of `self` and `other`.
+
+            Args:
+                other: The value to AND with.
+
+            Returns:
+                A reactive value for `self.value and other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(True)
+                >>> result = False & s
+                >>> result.value
+                False
+                >>> s.value = True
+                >>> result.value
+                False
+
+                ```
+            """
+            return core.computed(operator.and_)(other, self)
+
+    if '__rdivmod__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __rdivmod__(self: HasInt, other: HasInt) -> Computed[tuple[int, int]]: ...
+        @overload
+        def __rdivmod__(self: ReactiveMixIn[float], other: HasNumeric) -> Computed[tuple[float, float]]: ...
+        @overload
+        def __rdivmod__(self: ReactiveMixIn[int], other: HasValue[float]) -> Computed[tuple[float, float]]: ...
+
+        def __rdivmod__(self, other: Any) -> Computed[tuple[int, int]] | Computed[tuple[float, float]]:
+            """Return a reactive value for the divmod of `self` and `other`.
+
+            Args:
+                other: The value to use as the numerator.
+
+            Returns:
+                A reactive value for `divmod(other, self.value)`.
+
+            Example:
+                ```py
+                >>> s = Signal(3)
+                >>> result = divmod(10, s)
+                >>> result.value
+                (3, 1)
+                >>> s.value = 4
+                >>> result.value
+                (2, 2)
+
+                ```
+            """
+            return core.computed(divmod)(other, self)
+
+    if '__rfloordiv__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __rfloordiv__(self: HasInt, other: HasInt) -> Computed[int]: ...
+        @overload
+        def __rfloordiv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __rfloordiv__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for the floor division of `other` by `self`.
+
+            Args:
+                other: The value to use as the numerator.
+
+            Returns:
+                A reactive value for `other.value // self.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(3)
+                >>> result = 10 // s
+                >>> result.value
+                3
+                >>> s.value = 4
+                >>> result.value
+                2
+
+                ```
+            """
+            return core.computed(operator.floordiv)(other, self)
+
+    if '__rmod__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __rmod__(self: HasInt, other: HasInt) -> Computed[int]: ...
+        @overload
+        def __rmod__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __rmod__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for `other` modulo `self`.
+
+            Args:
+                other: The dividend.
+
+            Returns:
+                A reactive value for `other.value % self.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(3)
+                >>> result = 10 % s
+                >>> result.value
+                1
+                >>> s.value = 4
+                >>> result.value
+                2
+
+                ```
+            """
+            return core.computed(operator.mod)(other, self)
+
+    if '__rmul__' in REACTIVE_DUNDERS:
+        @overload
+        def __rmul__(self: HasValue[str], other: HasValue[int]) -> Computed[str]: ...
+        @overload
+        def __rmul__[V](self: HasValue[list[V]], other: HasValue[int]) -> Computed[list[V]]: ...
+        @overload
+        def __rmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __rmul__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for the product of `self` and `other`.
+
+            Args:
+                other: The value to multiply with.
+
+            Returns:
+                A reactive value for `self.value * other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(4)
+                >>> result = 3 * s
+                >>> result.value
+                12
+                >>> s.value = 5
+                >>> result.value
+                15
+
+                ```
+            """
+            return core.computed(operator.mul)(other, self)
+
+    if '__ror__' in REACTIVE_DUNDERS:
+        
+        def __ror__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for the bitwise OR of `self` and `other`.
+
+            Args:
+                other: The value to OR with.
+
+            Returns:
+                A reactive value for `self.value or other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(False)
+                >>> result = True | s
+                >>> result.value
+                True
+                >>> s.value = True
+                >>> result.value
+                True
+
+                ```
+            """
+            return core.computed(operator.or_)(other, self)
+
+    if '__rpow__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __rpow__(self: HasInt, other: HasInt) -> Computed[int]: ...
+        @overload
+        def __rpow__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __rpow__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for `self` raised to the power of `other`.
+
+            Args:
+                other: The base.
+
+            Returns:
+                A reactive value for `self.value ** other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(2)
+                >>> result = 3 ** s
+                >>> result.value
+                9
+                >>> s.value = 3
+                >>> result.value
+                27
+
+                ```
+            """
+            return core.computed(operator.pow)(other, self)
+
+    if '__rsub__' in REACTIVE_DUNDERS:
+        
+        def __rsub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for the difference of `self` and `other`.
+
+            Args:
+                other: The value to subtract from.
+
+            Returns:
+                A reactive value for `other.value - self.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(10)
+                >>> result = 15 - s
+                >>> result.value
+                5
+                >>> s.value = 15
+                >>> result.value
+                0
+
+                ```
+            """
+            return core.computed(operator.sub)(other, self)
+
+    if '__rtruediv__' in REACTIVE_DUNDERS:
+        
+        @overload
+        def __rtruediv__(self: HasNumeric, other: HasNumeric) -> Computed[float]: ...
+        @overload
+        def __rtruediv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+        def __rtruediv__(self, other: Any) -> Computed[Any]:
+            """Return a reactive value for `self` divided by `other`.
+
+            Args:
+                other: The value to use as the divisor.
+
+            Returns:
+                A reactive value for `self.value / other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(2)
+                >>> result = 30 / s
+                >>> result.value
+                15.0
+                >>> s.value = 3
+                >>> result.value
+                10.0
+
+                ```
+            """
+            return core.computed(operator.truediv)(other, self)
+
+    if '__rxor__' in REACTIVE_DUNDERS:
+        
+        def __rxor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+            """Return a reactive value for the bitwise XOR of `self` and `other`.
+
+            Args:
+                other: The value to XOR with.
+
+            Returns:
+                A reactive value for `self.value ^ other.value`.
+
+            Example:
+                ```py
+                >>> s = Signal(True)
+                >>> result = False ^ s
+                >>> result.value
+                True
+                >>> s.value = False
+                >>> result.value
+                False
+
+                ```
+            """
+            return core.computed(operator.xor)(other, self)
+
+    if '__iter__' in REACTIVE_DUNDERS:
+    
+        def __iter__[V](self: ReactiveMixIn[Iterable[V]]) -> Iterable[V]:
+            return iter(self.value)
+
+    if '__getitem__' in REACTIVE_DUNDERS:
+        
+        # list __getitem__
+        @overload
+        def __getitem__[V](self: HasValue[list[V]], key: slice | Computed[slice]) -> Computed[list[V]]: ...
+        @overload
+        def __getitem__[V](self: HasValue[tuple[V, ...]], key: slice | Computed[slice]) -> Computed[tuple[V, ...]]: ...
+        @overload
+        def __getitem__[V](self: HasValue[list[V]], key: HasValue[int] | HasValue[SupportsIndex]) -> Computed[V]: ...
+        @overload
+        def __getitem__[V](self: HasValue[tuple[V]], key: HasValue[int] | HasValue[SupportsIndex]) -> Computed[V]: ...
+        @overload
+        def __getitem__[V](self: HasValue[str], key: HasValue[int] | HasValue[SupportsIndex]) -> Computed[str]: ...
+        
+        # dict __getitem__
+        @overload
+        def __getitem__[K, V](self: HasValue[dict[K, V]], key: HasValue[K]) -> Computed[V]: ...
+        @overload
+        def __getitem__[K, V](self: _ReactiveSupportsGetItem[K, V], key: HasValue[K]) -> Computed[V]: ...
+        @overload
+        def __getitem__(self, key: Any) -> Computed[Any]: ...
+
+        def __getitem__(self, key: Any) -> Computed[Any]:
+            """Return a reactive value for the item or slice of `self`.
+
+            Args:
+                key: The index or slice to retrieve.
+
+            Returns:
+                A reactive value for `self.value[key]`.
+
+            Example:
+                ```py
+                >>> s = Signal([1, 2, 3, 4, 5])
+                >>> result = s[2]
+                >>> result.value
+                3
+                >>> s.value = [10, 20, 30, 40, 50]
+                >>> result.value
+                30
+
+                ```
+            """
+            return core.computed(operator.getitem)(self, key)
+
+    if '__setattr__' in REACTIVE_DUNDERS:
+        
+        def __setattr__(self, name: str, value: Any) -> None:
+            """Set an attribute on the underlying `self.value`.
+
+            Note:
+                It is necessary to set the attribute via the Signal, rather than the
+                underlying `signal.value`, to properly notify downstream observers
+                of changes. Reason being, mutable objects that, for example, fallback
+                to id comparison for equality checks will appear as if nothing changed
+                even if one of its attributes changed.
+
+            Args:
+                name: The name of the attribute to access.
+                value: The value to set it to.
+
+            Example:
+                ```py
+                    >>> class Person:
+                    ...    def __init__(self, name: str):
+                    ...        self.name = name
+                    ...    def greet(self) -> str:
+                    ...        return f"Hi, I'm {self.name}!"
+                    >>> s = Signal(Person("Alice"))
+                    >>> result = s.greet()
+                    >>> result.value
+                    "Hi, I'm Alice!"
+                    >>> s.name = "Bob"  # Modify attribute on Person instance through the reactive value s
+                    >>> result.value
+                    "Hi, I'm Bob!"
+
+                ```
+            """
+            if name == "_value" or not hasattr(self, "_value"):
+                super().__setattr__(name, value)
+            elif hasattr(self.value, name):
+                setattr(self.value, name, value)
+                self.notify()
+            else:
+                super().__setattr__(name, value)
+
+    if '__setitem__' in REACTIVE_DUNDERS:
+        
+        def __setitem__(self, key: Any, value: Any) -> None:
+            """Set an item on the underlying `self.value`.
+
+            Note:
+                It is necessary to set the item via the Signal, rather than the
+                underlying `signal.value`, to properly notify downstream observers
+                of changes. Reason being, mutable objects that, for example, fallback
+                to id comparison for equality checks will appear as if nothing changed
+                even an element of the object is changed.
+
+            Args:
+                key: The key to change.
+                value: The value to set it to.
+
+            Example:
+                ```py
+                >>> s = Signal([1, 2, 3])
+                >>> result = core.computed(sum)(s)
+                >>> result.value
+                6
+                >>> s[1] = 4
+                >>> result.value
+                8
+            """
+            if isinstance(self.value, (list, dict)):
+                self.value[key] = value
+                self.notify()
+            else:
+                raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
+
+    if ALLOW_DEPRECATED:
+        
+        def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
+            """Return a reactive value for `a` if `self` is `True`, else `b`.
+
+            Deprecated:
+                Use ``self.rx.where(a, b)`` instead.
+
+            Args:
+                a: The value to return if `self` is `True`.
+                b: The value to return if `self` is `False`.
+
+            Returns:
+                A reactive value for `a if self.value else b`.
+
+            Example:
+                ```py
+                >>> condition = Signal(True)
+                >>> result = condition.where("Yes", "No")
+                >>> result.value
+                'Yes'
+                >>> condition.value = False
+                >>> result.value
+                'No'
+
+                ```
+            """
+            _warn_deprecated_alias("where", "self.rx.where(a, b)")
+            return self.rx.where(a, b)
+
+        def is_not(self, other: Any) -> Computed[bool]:
+            """Return a reactive value for whether `self` is not other.
+
+            Deprecated:
+                Use ``self.rx.is_not(other)`` instead.
+
+            Args:
+                other: The value to compare against.
+
+            Returns:
+                A reactive value for self.value is not other.
+
+            Example:
+                ```py
+                >>> s = Signal(10)
+                >>> other = None
+                >>> result = s.is_not(other)
+                >>> result.value
+                True
+                >>> s.value = None
+                >>> result.value
+                False
+
+                ```
+            """
+            _warn_deprecated_alias("is_not", "self.rx.is_not(other)")
+            return self.rx.is_not(other)
+
+        def as_bool(self) -> Computed[bool]:
+            """Return a reactive value for the boolean value of `self`.
+
+            Deprecated:
+                Will be removed in a future release. Use `core.computed(bool)(self)`.
+
+            Note:
+                `__bool__` cannot be implemented to return a non-`bool`, so it is provided as a method.
+
+            Returns:
+                A reactive value for `bool(self.value)`.
+
+            Example:
+                ```py
+                >>> s = Signal(1)
+                >>> result = s.as_bool()
+                >>> result.value
+                True
+                >>> s.value = 0
+                >>> result.value
+                False
+
+                ```
+            """
+            _warn_deprecated_alias("as_bool", "self.rx.as_bool()")
+            return self.rx.as_bool()
+
+        def contains(self, other: Any) -> Computed[bool]:
+            """Return a reactive value for whether `other` is in `self`.
+
+            Deprecated:
+                Use ``self.rx.contains(other)`` instead.
+
+            Args:
+                other: The value to check for containment.
+
+            Returns:
+                A reactive value for `other in self.value`.
+
+            Example:
+                ```py
+                >>> s = Signal([1, 2, 3, 4])
+                >>> result = s.contains(3)
+                >>> result.value
+                True
+                >>> s.value = [5, 6, 7, 8]
+                >>> result.value
+                False
+
+                ```
+            """
+            _warn_deprecated_alias("contains", "self.rx.contains(other)")
+            return self.rx.contains(other)
+
+        def eq(self, other: Any) -> Computed[bool]:
+            """Return a reactive value for whether `self` equals other.
+
+            Deprecated:
+                Use ``self.rx.eq(other)`` instead.
+
+            Args:
+                other: The value to compare against.
+
+            Returns:
+                A reactive value for self.value == other.
+
+            Note:
+                We can't overload `__eq__` because it interferes with basic Python operations.
+
+            Example:
+                ```py
+                >>> s = Signal(10)
+                >>> result = s.eq(10)
+                >>> result.value
+                True
+                >>> s.value = 25
+                >>> result.value
+                False
+
+                ```
+            """
+            _warn_deprecated_alias("eq", "self.rx.eq(other)")
+            return self.rx.eq(other)
