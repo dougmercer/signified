@@ -15,6 +15,7 @@ from typing import Any, Callable, Concatenate, Literal, Protocol, Self, Supports
 
 from .plugins import pm
 from .types import HasValue, ReactiveValue, _OrderedWeakrefSet
+from .store import VariableStore
 
 if importlib.util.find_spec("numpy") is not None:
     import numpy as np  # pyright: ignore[reportMissingImports]
@@ -35,6 +36,10 @@ __all__ = [
     "reactive_method",
     "as_signal",
 ]
+
+
+# Global state for tracking variable deps
+V_STORE = VariableStore()
 
 
 class _SupportsAdd[OtherT, ResultT](Protocol):
@@ -1925,13 +1930,15 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     __slots__ = ["_observers", "__name", "__weakref__"]
 
-    def __init__(self):
+    def __init__(self, *, _store=V_STORE):
         """Initialize the variable."""
         self._observers = _OrderedWeakrefSet[Observer]()
         self.__name = ""
+        self.store = _store
+        self.store.add(self)
 
     @staticmethod
-    def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
+    def _iter_variables(item: Any) -> Generator[Variable[Any]]:
         """Yield `Variable` instances found in arbitrarily nested containers."""
         if isinstance(item, Variable):
             yield item
@@ -1992,12 +1999,11 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
-        for observer in tuple(self._observers):
-            observer.update()
+        self.store.propogate(self)
 
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
-        return f"<{self.value}>"
+        return self.__name if self.__name else f"<{self.value}>"
 
     @abstractmethod
     def update(self) -> None:
@@ -2155,17 +2161,11 @@ class Signal[T](Variable[T]):
 
     @value.setter
     def value(self, new_value: HasValue[T]) -> None:
-        old_value = self._value
-        if callable(old_value):
-            change = True
-        else:
-            change = _is_truthy(new_value != old_value)
-        if change:
-            self._value = new_value
-            pm.hook.updated(value=self)
-            self.unobserve(old_value)
-            self.observe(new_value)
-            self.notify()
+        self.unobserve(self._value)
+        self._value = new_value
+        self.observe(new_value)
+        self.store.mark_dirty(self)
+        self.store.propogate(self)
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
@@ -2213,7 +2213,7 @@ class Computed[T](Variable[T]):
 
     __slots__ = ["f", "_value"]
 
-    def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
+    def __init__(self, f: Callable[..., T], dependencies: Any = None) -> None:
         super().__init__()
         self.f = f
         self.observe(dependencies)
@@ -2224,14 +2224,14 @@ class Computed[T](Variable[T]):
     def update(self) -> None:
         """Update the value by re-evaluating the function."""
         new_value = self.f()
-        if callable(self._value):
-            change = True
-        else:
-            change = _is_truthy(new_value != self._value)
-        if change:
-            self._value: T = new_value
+        if (
+            _is_truthy(new_value != self._value)
+            or isinstance(self._value, (Generator, Callable))
+        ):
+            self.store.mark_dirty(self)
+            self._value = new_value
+            self.store.propogate(self)
             pm.hook.updated(value=self)
-            self.notify()
 
     @property
     def value(self) -> T:
