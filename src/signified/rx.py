@@ -125,7 +125,7 @@ class _RxOps[T]:
             ```
         """
 
-        @computed
+        @core.computed
         def _tap(value: T) -> T:
             fn(value)
             return value
@@ -293,7 +293,7 @@ class _RxOps[T]:
             ```
         """
 
-        @computed
+        @core.computed
         def ternary(a: A, b: B, condition: Any) -> A | B:
             return a if condition else b
 
