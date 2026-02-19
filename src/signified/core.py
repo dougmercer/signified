@@ -354,9 +354,10 @@ class Signal[T](Variable[T]):
     @value.setter
     def value(self, new_value: HasValue[T]) -> None:
         self.unobserve(self._value)
+        if _differs(self._value, new_value):
+            self.store.mark_dirty(self)
         self._value = new_value
         self.observe(new_value)
-        self.store.mark_dirty(self)
         self.store.propogate(self)
 
     @contextmanager
@@ -418,9 +419,9 @@ class Computed[T](Variable[T]):
         new_value = self.f()
         if _differs(new_value, self._value):
             self.store.mark_dirty(self)
-            self._value = new_value
-            self.store.propogate(self)
-            pm.hook.updated(value=self)
+        self._value = new_value
+        self.store.propogate(self)
+        pm.hook.updated(value=self)
 
     @property
     def value(self) -> T:
@@ -443,8 +444,10 @@ def _differs(obj: Any, other: Any) -> bool:
         return True
     
     # Check hash
-    if hasattr(obj, '__hash__') and hasattr(other, '__hash__'):
+    try:
         return hash(obj) != hash(other)
+    except TypeError:
+        pass
     
     # Check != (with catch for np.any())
     if res := (deep_unref(obj) != deep_unref(other)):
