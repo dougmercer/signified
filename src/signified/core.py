@@ -416,10 +416,7 @@ class Computed[T](Variable[T]):
     def update(self) -> None:
         """Update the value by re-evaluating the function."""
         new_value = self.f()
-        if (
-            _is_truthy(new_value != self._value)
-            or isinstance(self._value, (Generator, Callable))
-        ):
+        if _differs(new_value, self._value):
             self.store.mark_dirty(self)
             self._value = new_value
             self.store.propogate(self)
@@ -438,6 +435,29 @@ class Computed[T](Variable[T]):
 
 _SCALAR_TYPES = {int, float, str, bool, type(None)}
 
+
+def _differs(obj: Any, other: Any) -> bool:
+    """Compare arbitrary objects and return True if they differ"""
+    # Check Type
+    if type(obj) != type(other):
+        return True
+    
+    # Check != (with catch for np.any())
+    if res := (deep_unref(obj) != deep_unref(other)):
+        if res not in [True, False]:
+            return getattr(res, 'any', lambda: True)()
+        return res
+    
+    # Check hash
+    if hasattr(obj, '__hash__') and hasattr(other, '__hash__'):
+        return hash(obj) != hash(other)
+    
+    # Check attribute __dict__ values
+    if hasattr(obj, '__dict__') and hasattr(other, '__dict__'):
+        return tuple(obj.__dict__.values()) != tuple(other.__dict__.values())
+    
+    return True
+    
 
 def deep_unref(value: Any) -> Any:
     """Recursively resolve reactive values within nested containers.
