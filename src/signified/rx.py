@@ -11,6 +11,7 @@ from functools import (
     reduce,
 )
 
+from collections.abc import Generator
 from typing import (
     Callable, 
     Iterable, 
@@ -461,6 +462,7 @@ REACTIVE_DUNDERS = frozenset({
     "__rtruediv__",
     "__rxor__",
     "__iter__",
+    "__next__",
     "__getitem__",
     "__setattr__",
     "__setitem__",
@@ -1643,6 +1645,11 @@ class ReactiveMixIn[T]:
     
         def __iter__[V](self: ReactiveMixIn[Iterable[V]]) -> Iterable[V]:
             return iter(self.value)
+
+    if '__next__' in REACTIVE_DUNDERS:
+        
+        def __next__[V](self: ReactiveMixIn[Generator[V, Any, Any]]) -> Computed[V]:
+            return core.computed(next)(self.value)
 
     if '__getitem__' in REACTIVE_DUNDERS:
         
