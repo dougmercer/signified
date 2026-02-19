@@ -186,7 +186,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         return self
 
     def notify(self) -> None:
-        """Notify all observers by calling their update method."""
+        """Mark all observers as dirty and in need of re-computation"""
         self.store.propogate(self)
 
     def __str__(self) -> str:
@@ -194,7 +194,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
-        return f"{self:n}"
+        return f"{self._value}"
 
     @abstractmethod
     def update(self) -> None:
@@ -349,8 +349,6 @@ class Signal[T](Variable[T]):
     def value(self) -> T:
         """Get or set the current value."""
         pm.hook.read(value=self)
-        if self.store.is_dirty(self):
-            self.update()
         return unref(self._value)
 
     @value.setter
@@ -359,25 +357,15 @@ class Signal[T](Variable[T]):
         if _differs(self._value, new_value):
             self._value = new_value
             self.observe(new_value)
-            self.store.mark_dirty(self)
             for greedy_observer in self.store.greedy_observers(self):
-                # Since user Observers only need to implement the update
-                # method, we don't really have a way to tell where in the 
-                # dependency tree they are. 
-                #
-                # The Appender test is a good example of this since the 
-                # side effect of the variable change is what we're after 
-                #
-                # "greedy" observers are defined as observers that are 
-                # directly subscribed to and *don't* have a version record 
-                # in the VariableStore. 
-                #print(f'notifying greedy observer {greedy_observer}')
                 greedy_observer.update()
+            self.store.mark_dirty(self)
+            self.store.propogate(self)
+            self.store.mark_clean(self)
         else:
             self._value = new_value
             self.observe(new_value)
             self.store.mark_clean(self)
-        self.update()
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
@@ -390,7 +378,7 @@ class Signal[T](Variable[T]):
             self.value = before
 
     def update(self) -> None:
-        """Update the signal and notify subscribers."""
+        """Mark all subscribers as dirty and in need of re-computation"""
         self.notify()
 
 

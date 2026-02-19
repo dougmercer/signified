@@ -50,7 +50,6 @@ class VariableStore:
         for observable, subscribers in self.subscriptions.items():
             if observer in subscribers:
                 _dependencies.add(observable)
-                _dependencies |= self.dependencies_of(observable)
         return _dependencies
 
     def greedy_observers(self, observable: Observable) -> weakset[Observer]:
@@ -62,7 +61,6 @@ class VariableStore:
             if observable not in self.version:
                 continue
             self.version[observable] += 1
-            self.mark_dirty(*self.observers_of(observable))
 
     def mark_clean(self, *observables: Observable) -> None:
         for observable in observables:
