@@ -373,8 +373,10 @@ class Signal[T](Variable[T]):
                 # in the VariableStore. 
                 #print(f'notifying greedy observer {greedy_observer}')
                 greedy_observer.update()
-        self._value = new_value
-        self.observe(new_value)
+        else:
+            self._value = new_value
+            self.observe(new_value)
+            self.store.mark_clean(self)
         self.update()
 
     @contextmanager
