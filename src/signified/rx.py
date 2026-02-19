@@ -381,7 +381,7 @@ class _RxOps[T]:
 
         return core.computed(filter)(fn, self._source)
 
-    def reduce[V](self, fn: Callable[[V, V], V], initial: V | None = None) -> Computed[V]:
+    def reduce[R, V](self, fn: Callable[[V, V], R], initial: V | None = None) -> Computed[R]:
         """Return a reactive value for the reduction of an iterable ``self._source``.
 
         Args:
