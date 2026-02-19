@@ -37,7 +37,7 @@ class VariableStore:
         if observable in self.tree:
             return
         self.tree[observable] = observable._observers
-        self.version[observable] = 0
+        self.mark_clean(observable)
 
     def observers_of(self, observable: Observable) -> weakset[Observable]:
         _observers = weakset[Observable]()
@@ -54,6 +54,9 @@ class VariableStore:
             if observer in self.version:
                 self.version[observer] += 1
 
+    def mark_clean(self, observable: Observable) -> None:
+        self.version[observable] = 0
+
     def is_dirty(self, observable: Observable) -> bool:
         return self.version[observable] != 0
 
@@ -63,5 +66,5 @@ class VariableStore:
 
         for observer in self.observers_of(variable):
             observer.update()
-        self.version[variable] = 0
+        self.mark_clean(variable)
 
