@@ -442,15 +442,15 @@ def _differs(obj: Any, other: Any) -> bool:
     if type(obj) != type(other):
         return True
     
+    # Check hash
+    if hasattr(obj, '__hash__') and hasattr(other, '__hash__'):
+        return hash(obj) != hash(other)
+    
     # Check != (with catch for np.any())
     if res := (deep_unref(obj) != deep_unref(other)):
         if res not in [True, False]:
             return getattr(res, 'any', lambda: True)()
         return res
-    
-    # Check hash
-    if hasattr(obj, '__hash__') and hasattr(other, '__hash__'):
-        return hash(obj) != hash(other)
     
     # Check attribute __dict__ values
     if hasattr(obj, '__dict__') and hasattr(other, '__dict__'):
