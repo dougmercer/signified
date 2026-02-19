@@ -1681,22 +1681,11 @@ def _track_read(variable: Variable[Any]) -> None:
     if not _COMPUTE_STACK:
         return
     owner = _COMPUTE_STACK[-1]
-    if owner is not variable:
-        owner._register_dependency(variable)
-
-
-def _object_is(left: Any, right: Any) -> bool:
-    if left is right:
-        if isinstance(left, float) and isinstance(right, float) and left == 0.0 and right == 0.0:
-            return math.copysign(1.0, left) == math.copysign(1.0, right)
-        return True
-    if isinstance(left, float) and isinstance(right, float):
-        if math.isnan(left) and math.isnan(right):
-            return True
-    try:
-        return _is_truthy(left == right)
-    except Exception:
-        return False
+    if owner is variable:
+        return
+    owner_impl = getattr(owner, "_impl", None)
+    if owner_impl is not None:
+        owner_impl.register_dependency(variable)
 
 
 def unref[T](value: HasValue[T]) -> T:
@@ -1724,7 +1713,7 @@ def unref[T](value: HasValue[T]) -> T:
     current: Any = value
     while isinstance(current, Variable):
         if isinstance(current, Computed):
-            current._ensure_uptodate()
+            current._impl.ensure_uptodate()
         current = current._value
     return current
 
@@ -1830,8 +1819,7 @@ class Signal[T](Variable[T]):
     @value.setter
     def value(self, new_value: HasValue[T]) -> None:
         old_value = self._value
-        change = _has_changed(old_value, new_value)
-        if change:
+        if _has_changed(old_value, new_value):
             self._value = new_value
             self._version += 1
             pm.hook.updated(value=self)
@@ -1853,6 +1841,94 @@ class Signal[T](Variable[T]):
         """Update the signal and notify subscribers."""
         self._version += 1
         self.notify()
+
+
+class _ComputedImpl:
+    """Internal state and dependency tracking for :class:`Computed`."""
+
+    __slots__ = ["_owner", "_deps", "_next_deps", "_dirty", "_has_value", "_is_computing", "_dep_versions"]
+
+    def __init__(self, owner: "Computed[Any]") -> None:
+        self._owner = owner
+        self._deps = _OrderedWeakrefSet[Variable[Any]]()
+        self._next_deps: _OrderedWeakrefSet[Variable[Any]] | None = None
+        self._dirty = True
+        self._has_value = False
+        self._is_computing = False
+        self._dep_versions: dict[int, int] = {}
+
+    def register_dependency(self, dependency: Variable[Any]) -> None:
+        if self._next_deps is not None and dependency is not self._owner:
+            self._next_deps.add(dependency)
+
+    def refresh(self) -> None:
+        owner = self._owner
+        if self._is_computing:
+            raise RuntimeError("Cycle detected while evaluating Computed")
+
+        previous_value = owner._value
+        had_value = self._has_value
+
+        # 1) Evaluate with dependency tracking enabled.
+        self._is_computing = True
+        self._next_deps = _OrderedWeakrefSet[Variable[Any]]()
+        _COMPUTE_STACK.append(owner)
+        try:
+            next_value = owner.f()
+        finally:
+            popped = _COMPUTE_STACK.pop()
+            assert popped is owner
+            next_deps = self._next_deps
+            self._next_deps = None
+            self._is_computing = False
+
+        # 2) Reconcile subscriptions against the dependency set from this run.
+        assert next_deps is not None
+        for dep in tuple(self._deps):
+            if dep not in next_deps:
+                dep.unsubscribe(owner)
+        for dep in tuple(next_deps):
+            if dep not in self._deps:
+                dep.subscribe(owner)
+        self._deps = next_deps
+        self._dep_versions = {id(dep): dep._version for dep in tuple(next_deps)}
+
+        # 3) Commit value/version if the computed result actually changed.
+        self._dirty = False
+        self._has_value = True
+        if not had_value or _has_changed(previous_value, next_value):
+            owner._value = next_value
+            owner._version += 1
+            pm.hook.updated(value=owner)
+
+    def dependencies_changed(self) -> bool:
+        """Return True when any dependency has a newer observed version."""
+        for dep in tuple(self._deps):
+            if isinstance(dep, Computed):
+                dep._impl.ensure_uptodate()
+            if self._dep_versions.get(id(dep), -1) != dep._version:
+                return True
+        return False
+
+    def ensure_uptodate(self) -> None:
+        # Fast path 1: already fresh.
+        if not self._dirty and self._has_value:
+            return
+
+        # Fast path 2: dirty marker is stale, but dependency versions unchanged.
+        if self._has_value and not self.dependencies_changed():
+            self._dirty = False
+            return
+
+        # Slow path: recompute and reconcile dependencies.
+        self.refresh()
+
+    def invalidate(self) -> bool:
+        """Mark stale and return True when this call changed the marker."""
+        if self._dirty:
+            return False
+        self._dirty = True
+        return True
 
 
 class Computed[T](Variable[T]):
@@ -1885,18 +1961,13 @@ class Computed[T](Variable[T]):
         ```
     """
 
-    __slots__ = ["f", "_value", "_deps", "_next_deps", "_dirty", "_has_value", "_is_computing", "_dep_versions"]
+    __slots__ = ["f", "_value", "_impl"]
 
     def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
         super().__init__()
         self.f = f
         self._value: Any = None
-        self._deps = _OrderedWeakrefSet[Variable[Any]]()
-        self._next_deps: _OrderedWeakrefSet[Variable[Any]] | None = None
-        self._dirty = True
-        self._has_value = False
-        self._is_computing = False
-        self._dep_versions: dict[int, int] = {}
+        self._impl = _ComputedImpl(self)
 
         if dependencies is not None:
             warnings.warn(
@@ -1908,67 +1979,10 @@ class Computed[T](Variable[T]):
 
         pm.hook.created(value=self)
 
-    def _register_dependency(self, dependency: Variable[Any]) -> None:
-        if self._next_deps is not None and dependency is not self:
-            self._next_deps.add(dependency)
-
-    def _refresh(self) -> None:
-        if self._is_computing:
-            raise RuntimeError("Cycle detected while evaluating Computed")
-
-        previous_value = self._value
-        had_value = self._has_value
-
-        self._is_computing = True
-        self._next_deps = _OrderedWeakrefSet[Variable[Any]]()
-        _COMPUTE_STACK.append(self)
-        try:
-            next_value = self.f()
-        finally:
-            popped = _COMPUTE_STACK.pop()
-            assert popped is self
-            next_deps = self._next_deps
-            self._next_deps = None
-            self._is_computing = False
-
-        assert next_deps is not None
-        for dep in tuple(self._deps):
-            if dep not in next_deps:
-                dep.unsubscribe(self)
-        for dep in tuple(next_deps):
-            if dep not in self._deps:
-                dep.subscribe(self)
-        self._deps = next_deps
-        self._dep_versions = {id(dep): dep._version for dep in tuple(next_deps)}
-
-        self._dirty = False
-        self._has_value = True
-        if not had_value or _has_changed(previous_value, next_value):
-            self._value = next_value
-            self._version += 1
-            pm.hook.updated(value=self)
-
-    def _dependencies_changed(self) -> bool:
-        for dep in tuple(self._deps):
-            if isinstance(dep, Computed):
-                dep._ensure_uptodate()
-            if self._dep_versions.get(id(dep), -1) != dep._version:
-                return True
-        return False
-
-    def _ensure_uptodate(self) -> None:
-        if not self._dirty and self._has_value:
-            return
-        if self._dirty and self._has_value and not self._dependencies_changed():
-            self._dirty = False
-            return
-        self._refresh()
-
     def update(self) -> None:
         """Mark this computed stale and propagate invalidation."""
-        if self._dirty:
+        if not self._impl.invalidate():
             return
-        self._dirty = True
         self.notify()
 
     @property
@@ -1976,7 +1990,7 @@ class Computed[T](Variable[T]):
         """Get the current value, recomputing lazily when stale."""
         pm.hook.read(value=self)
         _track_read(self)
-        self._ensure_uptodate()
+        self._impl.ensure_uptodate()
         return unref(self._value)
 
 
