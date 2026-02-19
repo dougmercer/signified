@@ -12,6 +12,18 @@ def test_computed_basic():
     assert c.value == 14
 
 
+def test_computed_object():
+    class Item:
+        def __init__(self, name: str) -> None:
+            self.name = name
+    
+    s = Signal(Item('foo'))
+    c = s.name
+    assert c.value == 'foo'
+    s.value = Item('bar')
+    assert c.value == 'bar'
+
+
 def test_computed_decorator():
     """Test the @computed decorator."""
     s = Signal(5)
