@@ -131,7 +131,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         if isinstance(item, Variable):
             yield item
             return
-        if isinstance(item, (str, map, filter)):
+        if isinstance(item, (str, map, filter, Generator)):
             return
         if isinstance(item, Iterable):
             for sub_item in item:
@@ -433,7 +433,7 @@ class Computed[T](Variable[T]):
 # Utility functions that depend on the core types above
 # ---------------------------------------------------------------------------
 
-_SCALAR_TYPES = {int, float, str, bool, type(None)}
+_SCALAR_TYPES = {int, float, str, bool, type(None), map, filter}
 
 
 def _differs(obj: Any, other: Any) -> bool:
@@ -457,7 +457,7 @@ def _differs(obj: Any, other: Any) -> bool:
         return tuple(obj.__dict__.values()) != tuple(other.__dict__.values())
     
     return True
-    
+
 
 def deep_unref(value: Any) -> Any:
     """Recursively resolve reactive values within nested containers.
@@ -504,7 +504,7 @@ def deep_unref(value: Any) -> Any:
         return {deep_unref(unref(k)): deep_unref(unref(v)) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return type(value)(deep_unref(item) for item in value)
-    if isinstance(value, Iterable) and not isinstance(value, str):
+    if isinstance(value, Iterable) and not isinstance(value, (str, Generator)):
         constructor: Any = type(value)
         try:
             return constructor(deep_unref(item) for item in value)
