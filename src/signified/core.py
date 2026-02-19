@@ -437,28 +437,64 @@ class Computed[T](Variable[T]):
 _SCALAR_TYPES = {int, float, str, bool, type(None), map, filter}
 
 
+def _id_eq(obj: Any, other: Any) -> bool:
+    return obj is other
+
+def _type_eq(obj: Any, other: Any) -> bool:
+    return type(obj) == type(other)
+
+def _hash_eq(obj: Any, other: Any) -> bool:
+    try:
+        return hash(obj) == hash(other)
+    except TypeError:
+        return True
+
+def _dict_eq(obj: Any, other: Any) -> bool:
+    try:
+        return tuple(obj.__dict__.values()) == tuple(other.__dict__.values())
+    except AttributeError:
+        return False
+
+def _slots_eq(obj: Any, other: Any) -> bool:
+    try:
+        return tuple(getattr(obj, s) for s in obj.__slots__) == tuple(getattr(other, s) for s in other.__slots__)
+    except AttributeError:
+        return False
+
+def _eq_eq(obj: Any, other: Any) -> bool:
+    equal = obj == other
+    if equal not in [True, False]:
+        # Special case for np.array
+        equal = bool(getattr(equal, 'all', lambda: False).__call__())
+    return equal
+
 def _differs(obj: Any, other: Any) -> bool:
     """Compare arbitrary objects and return True if they differ"""
-    # Check Type
-    if type(obj) != type(other):
+    
+    obj = deep_unref(obj)
+    other = deep_unref(other)
+    
+    # same object (deep_unref makes sure this only checks scalars)
+    if _id_eq(obj, other):
+        return False
+    
+    # different type (inverted to allow same type to continue)
+    if not _type_eq(obj, other):
         return True
     
-    # Check hash
-    try:
-        return hash(obj) != hash(other)
-    except TypeError:
-        pass
+    # different __hash__ (inverted to allow unhashables to continue)
+    if not _hash_eq(obj, other):
+        return True
     
-    # Check != (with catch for np.any())
-    if res := (deep_unref(obj) != deep_unref(other)):
-        if res not in [True, False]:
-            return getattr(res, 'any', lambda: True)()
-        return res
+    # __dict__ and __slot__ values are equal
+    if _dict_eq(obj, other) and _slots_eq(obj, other):
+        return False
     
-    # Check attribute __dict__ values
-    if hasattr(obj, '__dict__') and hasattr(other, '__dict__'):
-        return tuple(obj.__dict__.values()) != tuple(other.__dict__.values())
+    # obj.__eq__(other)
+    if _eq_eq(obj, other):
+        return False
     
+    # assume different if no other check has passed
     return True
 
 
