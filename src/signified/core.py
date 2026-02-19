@@ -349,16 +349,33 @@ class Signal[T](Variable[T]):
     def value(self) -> T:
         """Get or set the current value."""
         pm.hook.read(value=self)
+        if self.store.is_dirty(self):
+            self.update()
         return unref(self._value)
 
     @value.setter
     def value(self, new_value: HasValue[T]) -> None:
         self.unobserve(self._value)
         if _differs(self._value, new_value):
+            self._value = new_value
+            self.observe(new_value)
             self.store.mark_dirty(self)
+            for greedy_observer in self.store.greedy_observers(self):
+                # Since user Observers only need to implement the update
+                # method, we don't really have a way to tell where in the 
+                # dependency tree they are. 
+                #
+                # The Appender test is a good example of this since the 
+                # side effect of the variable change is what we're after 
+                #
+                # "greedy" observers are defined as observers that are 
+                # directly subscribed to and *don't* have a version record 
+                # in the VariableStore. 
+                #print(f'notifying greedy observer {greedy_observer}')
+                greedy_observer.update()
         self._value = new_value
         self.observe(new_value)
-        self.store.propogate(self)
+        self.update()
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
@@ -411,7 +428,6 @@ class Computed[T](Variable[T]):
         self.f = f
         self.observe(dependencies)
         self._value = unref(self.f())
-        self.notify()
         pm.hook.created(value=self)
 
     def update(self) -> None:
@@ -420,13 +436,17 @@ class Computed[T](Variable[T]):
         if _differs(new_value, self._value):
             self.store.mark_dirty(self)
         self._value = new_value
-        self.store.propogate(self)
         pm.hook.updated(value=self)
 
     @property
     def value(self) -> T:
         """Get the current value."""
         pm.hook.read(value=self)
+        if self.store.is_dirty(self):
+            for dep in self.store.dependencies_of(self):
+                dep.update()
+            self.update()
+        self.store.mark_clean(self)
         return unref(self._value)
 
 
