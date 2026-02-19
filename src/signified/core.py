@@ -432,10 +432,12 @@ class Computed[T](Variable[T]):
 
     def update(self) -> None:
         """Update the value by re-evaluating the function."""
+        for dep in self.store.dependencies_of(self):
+            if self.store.is_dirty(dep):
+                dep.update()
         new_value = self.f()
-        if _differs(new_value, self._value):
-            self.store.mark_dirty(self)
         self._value = new_value
+        self.store.mark_clean(self)
         pm.hook.updated(value=self)
 
     @property
@@ -443,10 +445,7 @@ class Computed[T](Variable[T]):
         """Get the current value."""
         pm.hook.read(value=self)
         if self.store.is_dirty(self):
-            for dep in self.store.dependencies_of(self):
-                dep.update()
             self.update()
-        self.store.mark_clean(self)
         return unref(self._value)
 
 
