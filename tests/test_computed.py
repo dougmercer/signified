@@ -108,3 +108,28 @@ def test_computed_container_with_deeply_nestedreactive_values():
     assert result.value == [1, 2, 3, 4, 5, 6]
     s[1][0].value = 10
     assert result.value == [1, 10, 3, 4, 5, 6]
+
+
+# TODO: This is a very hacky test. A more practical use for 
+# this pattern would be some sort of generator cache that can 
+# be accessed witout touching the generator
+def test_computed_generator_signaling():
+    def conversation():
+        log: list[str] = []
+        while True:
+            response = yield log.copy()
+            if response is not None:
+                log.append(response)
+    
+    s = Signal(conversation())
+    next(s.value)
+    y = next(s)
+    s.send('hello')
+    y.update()
+    assert len(y.value) == 1
+    s.send('hello')
+    s.send('hello')
+    s.send('hello')
+    y.update()
+    assert len(y.value) == 4
+    
