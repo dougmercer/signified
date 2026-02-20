@@ -11,7 +11,7 @@ from typing import Any, Callable, Concatenate, Self, TypeGuard, cast, overload
 
 from .plugins import pm
 from .rx import ReactiveMixIn
-from .store import Observable, Observer, VariableStore
+from .store import Observable, Observer, SyncStore
 from .types import HasValue, ReactiveValue, _OrderedWeakrefSet
 
 if importlib.util.find_spec("numpy") is not None:
@@ -35,7 +35,7 @@ __all__ = [
 
 
 # Global state for tracking variable deps
-V_STORE = VariableStore()
+V_STORE = SyncStore()
 
 
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
