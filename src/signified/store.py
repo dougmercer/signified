@@ -27,7 +27,7 @@ class Observable(Protocol):
 class VariableStore:
     def __init__(self) -> None:
         self.subscriptions: weakdict[Observable, weakset[Observable]] = weakdict()
-        self.version: weakdict[Observable, int] = weakdict()
+        self.version: weakdict[Observable | Observer, int] = weakdict()
 
     def __repr__(self) -> str:
         return repr(self.subscriptions)
@@ -36,8 +36,8 @@ class VariableStore:
         self.subscriptions[observable] = observable._observers
         self.mark_clean(observable)
 
-    def observers_of(self, observable: Observable) -> weakset[Observable]:
-        _observers = weakset[Observable]()
+    def observers_of(self, observable: Observable) -> weakset[Observable | Observer]:
+        _observers = weakset[Observable | Observer]()
         def _get_observers(observable: Observable):
             for observer in self.subscriptions.get(observable, []):
                 _observers.add(observer)
@@ -56,7 +56,7 @@ class VariableStore:
         """Get observers that don't participate in a dependency chain that can be lazily updated"""
         return weakset(o for o in self.subscriptions[observable] if o not in self.version)
 
-    def mark_dirty(self, *observables: Observable) -> None:
+    def mark_dirty(self, *observables: Observable | Observer) -> None:
         for observable in observables:
             if observable not in self.version:
                 continue
