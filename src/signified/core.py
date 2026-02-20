@@ -11,7 +11,7 @@ from typing import Any, Callable, Concatenate, Protocol, Self, TypeGuard, cast, 
 
 from .plugins import pm
 from .rx import ReactiveMixIn
-from .store import VariableStore
+from .store import Observer, Observable, VariableStore
 from .types import HasValue, ReactiveValue, _OrderedWeakrefSet
 
 if importlib.util.find_spec("numpy") is not None:
@@ -83,20 +83,6 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
         return Computed(compute_func, (*args, *kwargs.values()))
 
     return wrapper
-
-
-def _is_truthy(value: Any) -> bool:
-    """Convert a value to boolean, handling array-like objects."""
-    try:
-        return bool(value)
-    except ValueError:
-        # Handle numpy arrays, pandas Series, etc.
-        return bool(value.any())
-
-
-class Observer(Protocol):
-    def update(self) -> None:
-        pass
 
 
 class Variable[T](ABC, ReactiveMixIn[T]):
@@ -186,15 +172,15 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     def notify(self) -> None:
         """Mark all observers as dirty and in need of re-computation"""
-        self.store.mark_dirty(self)
-        self.store.propagate(self)
+        self.mark_dirty()
+        self.propogate()
 
     def __str__(self) -> str:
         return f"<{self.value}>"
 
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
-        return f"{self._value}"
+        return f"{self._value}" + " <dirty>"*self.is_dirty()
 
     @abstractmethod
     def update(self) -> None:
@@ -243,6 +229,30 @@ class Variable[T](ABC, ReactiveMixIn[T]):
             return f"{type(self).__name__}({name_part}value={self.value!r}, id={id(self)})"
         return super().__format__(format_spec)  # Handles other format specs
 
+    def is_dirty(self) -> bool:
+        return self.store.is_dirty(self)
+    
+    def mark_clean(self) -> None:
+        return self.store.mark_clean(self)
+    
+    def dependencies(self) -> _OrderedWeakrefSet[Observable]:
+        return self.store.dependencies_of(self)
+
+    def all_observers(self) -> _OrderedWeakrefSet[Observer | Observable]:
+        return self.store.observers_of(self)
+
+    def greedy_observers(self) -> _OrderedWeakrefSet[Observer]:
+        return self.store.greedy_observers(self)
+
+    def mark_dirty(self) -> None:
+        return self.store.mark_dirty(self)
+        
+    def propogate(self) -> None:
+        return self.store.propagate(self)
+    
+    @property
+    def version(self) -> int:
+        return self.store.version[self]
 
 def unref[T](value: HasValue[T]) -> T:
     """Resolve a value by unwrapping reactive containers until plain data remains.
@@ -357,14 +367,14 @@ class Signal[T](Variable[T]):
         if _differs(self._value, new_value):
             self._value = new_value
             self.observe(new_value)
-            for greedy_observer in self.store.greedy_observers(self):
+            for greedy_observer in self.greedy_observers():
                 greedy_observer.update()
             self.update()
-            self.store.mark_clean(self)
+            self.mark_clean()
         else:
             self._value = new_value
             self.observe(new_value)
-            self.store.mark_clean(self)
+            self.mark_clean()
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
@@ -421,19 +431,19 @@ class Computed[T](Variable[T]):
 
     def update(self) -> None:
         """Update the value by re-evaluating the function."""
-        for dep in self.store.dependencies_of(self):
+        for dep in self.dependencies():
             if self.store.is_dirty(dep):
                 dep.update()
         new_value = self.f()
         self._value = new_value
-        self.store.mark_clean(self)
+        self.mark_clean()
         pm.hook.updated(value=self)
 
     @property
     def value(self) -> T:
         """Get the current value."""
         pm.hook.read(value=self)
-        if self.store.is_dirty(self):
+        if self.is_dirty():
             self.update()
         return unref(self._value)
 
