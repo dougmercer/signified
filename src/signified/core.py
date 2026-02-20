@@ -359,8 +359,7 @@ class Signal[T](Variable[T]):
             self.observe(new_value)
             for greedy_observer in self.store.greedy_observers(self):
                 greedy_observer.update()
-            self.store.mark_dirty(self)
-            self.store.propogate(self)
+            self.notify()
             self.store.mark_clean(self)
         else:
             self._value = new_value
