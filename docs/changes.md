@@ -6,6 +6,9 @@ hide:
 
 ## 0.3.0
 
+- Add lazy evaluation of Variables
+- Add `store` module that implements lazy evaluation
+
 - Add rx namespace which includes several methods.
   - apply (new)
   - tap (new)
