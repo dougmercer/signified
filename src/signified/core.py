@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Callable, Concatenate, Protocol, Self, TypeGuard, cast, overload
+from typing import Any, Callable, Concatenate, Self, TypeGuard, cast, overload
 
 from .plugins import pm
 from .rx import ReactiveMixIn
