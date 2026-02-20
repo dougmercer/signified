@@ -11,7 +11,7 @@ from typing import Any, Callable, Concatenate, Self, TypeGuard, cast, overload
 
 from .plugins import pm
 from .rx import ReactiveMixIn
-from .store import Observer, Observable, VariableStore
+from .store import Observable, Observer, VariableStore
 from .types import HasValue, ReactiveValue, _OrderedWeakrefSet
 
 if importlib.util.find_spec("numpy") is not None:
