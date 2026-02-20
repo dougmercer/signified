@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-
+import importlib.util
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
@@ -10,11 +10,10 @@ from functools import wraps
 from typing import Any, Callable, Concatenate, Protocol, Self, TypeGuard, cast, overload
 
 from .plugins import pm
-from .types import HasValue, ReactiveValue, _OrderedWeakrefSet
-from .store import VariableStore
 from .rx import ReactiveMixIn
+from .store import VariableStore
+from .types import HasValue, ReactiveValue, _OrderedWeakrefSet
 
-import importlib.util
 if importlib.util.find_spec("numpy") is not None:
     import numpy as np
 else:
@@ -187,6 +186,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     def notify(self) -> None:
         """Mark all observers as dirty and in need of re-computation"""
+        self.store.mark_dirty(self)
         self.store.propogate(self)
 
     def __str__(self) -> str:
@@ -472,7 +472,7 @@ def _slots_eq(obj: Any, other: Any) -> bool:
 
 def _eq_eq(obj: Any, other: Any) -> bool:
     equal = obj == other
-    if equal not in [True, False]:
+    if type(equal) not in [bool, int]:
         # Special case for np.array
         equal = bool(getattr(equal, 'all', lambda: False).__call__())
     return equal

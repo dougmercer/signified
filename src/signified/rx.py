@@ -5,23 +5,20 @@ from __future__ import annotations
 import math
 import operator
 import warnings
-
+from collections.abc import Generator
 from functools import (
-    cached_property, 
+    cached_property,
     reduce,
 )
-
-from collections.abc import Generator
 from typing import (
-    Callable, 
-    Iterable, 
-    Literal, 
-    Any, 
-    Protocol, 
-    Sequence, 
-    SupportsIndex, 
-    overload, 
     TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Literal,
+    Protocol,
+    SupportsIndex,
+    overload,
 )
 
 from signified import core
@@ -30,8 +27,8 @@ __all__ = ('ReactiveMixIn', )
 
 
 if TYPE_CHECKING:
-    from signified.types import HasValue
     from signified.core import Computed
+    from signified.types import HasValue
         
     type ComputedInt = Computed[int] | Computed[bool]
     type ComputedNumeric = ComputedInt | Computed[float]
@@ -347,7 +344,7 @@ class _RxOps[T]:
             ValueError: If the mapped value is not iterable
         """
         if not isinstance(self._source.value, Iterable):
-            raise ValueError(f'Reactive mapping requires value to be iterable')
+            raise ValueError('Reactive mapping requires value to be iterable')
         
         return core.computed(map)(fn, self._source)
 
@@ -367,10 +364,10 @@ class _RxOps[T]:
             >>> y.value  # Lazy filter object
             <filter object at 0x...>
             >>> list(y.value)
-            [2,4]
+            [2, 4]
             >>> s.value = s.value + [6]
             >>> list(y.value)
-            [2,4,6]
+            [2, 4, 6]
 
             ```
 
@@ -378,7 +375,7 @@ class _RxOps[T]:
             ValueError: If the filtered value is not iterable
         """
         if not isinstance(self._source.value, Iterable):
-            raise ValueError(f'Reactive filtering requires value to be iterable')
+            raise ValueError('Reactive filtering requires value to be iterable')
 
         return core.computed(filter)(fn, self._source)
 
@@ -404,14 +401,14 @@ class _RxOps[T]:
             >>> y.value
             6
             >>> z.value
-            6
+            5
 
             ```
         Raises:
             ValueError: If the filtered value is not iterable
         """
         if not isinstance(self._source.value, Iterable):
-            raise ValueError(f'Reactive reducing requires value to be iterable')
+            raise ValueError('Reactive reducing requires value to be iterable')
 
         if initial is not None:
             return core.computed(reduce)(fn, self._source, initial)
@@ -1070,7 +1067,7 @@ class ReactiveMixIn[T]:
                 >>> s = Signal(np.array([1, 2]))
                 >>> result = s @ np.array([[1, 2], [3, 4]])
                 >>> result.value
-                array([ 7, 10])
+                array([7, 10])
                 >>> s.value = np.array([2, 3])
                 >>> result.value
                 array([11, 16])
@@ -1756,7 +1753,7 @@ class ReactiveMixIn[T]:
             Example:
                 ```py
                 >>> s = Signal([1, 2, 3])
-                >>> result = core.computed(sum)(s)
+                >>> result = computed(sum)(s)
                 >>> result.value
                 6
                 >>> s[1] = 4
