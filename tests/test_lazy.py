@@ -1,4 +1,6 @@
-from signified import Computed, Signal, computed
+from signified import Signal
+from signified.core import Computed, computed
+
 
 def test_lazy_access():
     a = Signal(1000)
@@ -19,6 +21,7 @@ def test_lazy_access():
     b.value = 1
     # Evaluate c
     assert c.value == 1
+    
     
 def test_lazy_versioning():
     a = Signal('a')
@@ -46,3 +49,31 @@ def test_lazy_versioning():
     assert store.version[c] == 0
     assert store.version[d] == 0
     assert store.version[z] == 0
+    
+    
+def test_lazy_computed_basic():
+    """Test basic Computed functionality."""
+    s = Signal(5)
+    c = Computed(lambda: s.value * 2, dependencies=[s])
+
+    assert c.value == 10
+
+    s.value = 7
+    assert c._value == 10
+    assert c.value == 14
+    
+    
+def test_lazy_computed_decorator():
+    """Test the @computed decorator."""
+    s = Signal(5)
+
+    @computed
+    def double_it(x):
+        return x * 2
+
+    c = double_it(s)
+    assert c.value == 10
+
+    s.value = 7
+    assert c._value == 10
+    assert c.value == 14
