@@ -126,11 +126,21 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Usage: usage.md
+  - Playground: playground.md
   - Magic Methods: magic-methods.md
   - Plugins: plugins.md
   - API Reference: api.md
   - Change Log: changes.md
   - Limitations: limitations.md
+
+extra_css:
+  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css
+  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js
+  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js
+  - assets/playground.js
 
 plugins:
   - search
