@@ -69,7 +69,7 @@ class VariableStore:
     def is_dirty(self, observable: Observable) -> bool:
         return self.version[observable] != 0
 
-    def propogate(self, variable: Observable) -> None:
+    def propagate(self, variable: Observable) -> None:
         if not self.is_dirty(variable):
             return
         self.mark_dirty(*self.observers_of(variable))

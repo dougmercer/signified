@@ -187,7 +187,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
     def notify(self) -> None:
         """Mark all observers as dirty and in need of re-computation"""
         self.store.mark_dirty(self)
-        self.store.propogate(self)
+        self.store.propagate(self)
 
     def __str__(self) -> str:
         return f"<{self.value}>"
