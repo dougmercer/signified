@@ -22,8 +22,8 @@ Attributes:
 """
 
 from .core import (
-    Computed, 
-    Signal, 
+    Computed,
+    Signal,
     Variable,
     as_signal,
     computed,

@@ -449,7 +449,7 @@ def _id_eq(obj: Any, other: Any) -> bool:
     return obj is other
 
 def _type_eq(obj: Any, other: Any) -> bool:
-    return type(obj) == type(other)
+    return type(obj) is type(other)
 
 def _hash_eq(obj: Any, other: Any) -> bool:
     try:
