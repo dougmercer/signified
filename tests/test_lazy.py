@@ -52,7 +52,6 @@ def test_lazy_versioning():
     
     
 def test_lazy_computed_basic():
-    """Test basic Computed functionality."""
     s = Signal(5)
     c = Computed(lambda: s.value * 2, dependencies=[s])
 
@@ -64,7 +63,6 @@ def test_lazy_computed_basic():
     
     
 def test_lazy_computed_decorator():
-    """Test the @computed decorator."""
     s = Signal(5)
 
     @computed
@@ -77,3 +75,15 @@ def test_lazy_computed_decorator():
     s.value = 7
     assert c._value == 10
     assert c.value == 14
+    
+    
+def test_lazy_prevents_div_by_zero():
+    s = Signal(10)
+    y = Signal(1)
+    c = s / y
+    
+    y.value = 0
+    assert c._value == 10.0
+    y.value = 10
+    assert c.value == 1.0
+    
