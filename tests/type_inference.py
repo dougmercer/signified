@@ -75,6 +75,102 @@ def test_as_bool():
     assert_type(unref(result), bool)
 
 
+def test_rx_apply():
+    result = Signal(2).rx.apply(lambda x: x * 2)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+
+def test_rx_tap():
+    result = Signal(2).rx.tap(lambda x: x + 1)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+
+def test_rx_len():
+    result = Signal([1, 2, 3]).rx.len()
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+
+def test_rx_is():
+    result = Signal(10).rx.is_(10)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_is_not():
+    result = Signal(10).rx.is_not(None)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_eq():
+    result = Signal(10).rx.eq(10)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_in():
+    result = Signal("a").rx.in_("cat")
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_map():
+    # map type is inferred from fn sig
+    # test that changing fn sig changes inferred type
+    def fn1(i: int) -> float:
+        return i / 2
+    result = Signal([1, 2, 3]).rx.map(fn1)
+    assert_type(result, Computed[map[float]])
+    assert_type(unref(result), map[float])
+    
+    def fn2(i: int) -> str:
+        return f'{i * 2}'
+    result = Signal([1, 2, 3]).rx.map(fn2)
+    assert_type(result, Computed[map[str]])
+    assert_type(unref(result), map[str])
+
+
+def test_rx_filter():
+    # filter type is inferred from fn sig
+    # test that changing fn sig changes inferred type
+    def fn1(i: int) -> bool:
+        return i == 2
+    result = Signal([1, 2, 3]).rx.filter(fn1)
+    assert_type(result, Computed[filter[int]])
+    assert_type(unref(result), filter[int])
+    
+    def fn2(i: str) -> bool:
+        return i == 'a'
+    result = Signal(['a', 'b', 'c']).rx.filter(fn2)
+    assert_type(result, Computed[filter[str]])
+    assert_type(unref(result), filter[str])
+
+
+def test_rx_reduce():
+    # reduce type is inferred from fn sig
+    # test that changing fn sig changes inferred type
+    def fn1(j: int, i: int) -> int:
+        return i * j
+    result = Signal([1, 2, 3]).rx.reduce(fn1)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+    
+    def fn2(j: float, i: float) -> float:
+        return i * j
+    result = Signal([1.0, 2.0, 3.0]).rx.reduce(fn2)
+    assert_type(result, Computed[float])
+    assert_type(unref(result), float)
+    
+    def fn3(j: str, i: str) -> str:
+        return f'{i + j}'
+    result = Signal(['a', 'b', 'c']).rx.reduce(fn3)
+    assert_type(result, Computed[str])
+    assert_type(unref(result), str)
+
+
 def test_str():
     result = str(Signal(1))
     assert_type(result, str)

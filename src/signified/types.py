@@ -40,6 +40,9 @@ class _OrderedSet[T](collections.abc.MutableSet[T]):
     def __contains__(self, x: Hashable) -> bool:
         return x in self._od
 
+    def __repr__(self) -> str:
+        return '{'+f'{", ".join(map(repr, list(self)))}'+'}'
+
     def add(self, value: T) -> None:
         self._od[value] = None
 
@@ -62,3 +65,6 @@ class _OrderedWeakrefSet[T](weakref.WeakSet[T]):
         self.data = _OrderedSet[T]()
         for elem in values:
             self.add(elem)
+            
+    def __repr__(self) -> str:
+        return '{'+f'{", ".join(map(repr, list(self)))}'+'}'
