@@ -1070,7 +1070,7 @@ class ReactiveMixIn[T]:
                 array([ 7, 10])
                 >>> s.value = np.array([2, 3])
                 >>> result.value
-                array([ 11, 16])
+                array([11, 16])
 
                 ```
             """
