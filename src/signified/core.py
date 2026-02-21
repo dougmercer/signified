@@ -1729,8 +1729,18 @@ def unref[T](value: HasValue[T]) -> T:
 
 
 def _has_changed(previous: Any, current: Any) -> bool:
+    """Best-effort change detection for assignments into reactive values.
+
+    This function is intentionally fail-open: if comparison is ambiguous or
+    raises, we treat the value as changed to avoid missing invalidations.
+    """
+    # Compare callables by identity to avoid invoking custom `__eq__` logic and
+    # to preserve stable references as unchanged.
     if callable(previous) or callable(current):
-        return True
+        return previous is not current
+    # Reactive wrappers compare by identity rather than value equality.
+    # Distinct wrapper objects should invalidate even if they currently resolve
+    # to equal values.
     if isinstance(previous, Variable) or isinstance(current, Variable):
         return previous is not current
 
@@ -1744,6 +1754,7 @@ def _has_changed(previous: Any, current: Any) -> bool:
         # all-elements semantics before negating.
         return not _coerce_to_bool(current == previous)
     except Exception:
+        # Fail-open for exotic/buggy equality implementations.
         return True
 
 

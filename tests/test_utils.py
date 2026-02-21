@@ -134,6 +134,38 @@ def test_has_changed_treats_nan_as_unchanged():
     assert _has_changed(nan, nan) is False
 
 
+def test_has_changed_same_callable_reference_is_unchanged():
+    def fn():
+        return 1
+
+    assert _has_changed(fn, fn) is False
+
+
+def test_has_changed_distinct_callables_are_changed():
+    def left():
+        return 1
+
+    def right():
+        return 1
+
+    assert _has_changed(left, right) is True
+
+
+def test_has_changed_callable_objects_use_identity_not_eq():
+    class CallableAlwaysEqual:
+        def __call__(self):
+            return 1
+
+        def __eq__(self, other):
+            return True
+
+    first = CallableAlwaysEqual()
+    second = CallableAlwaysEqual()
+
+    assert _has_changed(first, first) is False
+    assert _has_changed(first, second) is True
+
+
 def test_has_changed_with_broken_eq_is_treated_as_changed():
     class BrokenEq:
         def __eq__(self, other):  # pragma: no cover - explicit error path
