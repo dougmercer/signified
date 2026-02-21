@@ -4,88 +4,102 @@ hide:
 ---
 # Change Log
 
-This page summarizes key changes by diffing adjacent tagged releases.
+This page summarizes notable changes across releases.
 
 ## 0.3.0
 
-- Reworked `Computed` to use dynamic dependency tracking with lazy recomputation on read.
-- Added dependency version tracking so stale markers can be cleared without unnecessary downstream recomputes when derived values stay the same.
-- Improved change detection for `Signal.value` updates:
-  - callables now use identity checks,
-  - ambiguous array-like equality uses all-elements semantics, and
-  - `NaN -> NaN` is treated as unchanged.
-- Improved mutation invalidation/versioning for `Signal` attribute/item assignments and aligned `deep_unref`/`unref` behavior with runtime dependency tracking.
-- Fixed an IPython display observer lifetime bug where observers could be garbage-collected too early.
-- Added an interactive docs Playground page (Pyodide + Web Worker + CodeMirror) and updated docs publish triggers for both `v*` and `*.*.*` tags.
+### Dependency Tracking
 
-Deprecations:
-- `Computed(..., dependencies=...)` is deprecated and ignored; dependencies are inferred from reactive reads during evaluation.
-- `@reactive_method(...)` is deprecated; use `@computed` instead (dependency-name arguments are ignored).
+`Computed` now tracks its dependencies automatically at runtime — no need to declare them upfront. Values are only recomputed when actually read, and if a recomputed value turns out to be unchanged, downstream computeds won't needlessly re-run.
+
+### Change Detection
+
+Signified is smarter about deciding when a `Signal`'s value has actually changed:
+
+- Functions are compared by identity rather than equality.
+- Arrays are compared element-by-element.
+- Assigning `NaN` to a signal that already holds `NaN` is treated as no change.
+
+Mutating a signal's contents (e.g. setting an attribute or index) now also correctly invalidates downstream computeds, and `unref`/`deep_unref` align with how dependencies are tracked at runtime.
+
+### Bug Fixes
+
+Fixed a bug in the IPython/Jupyter display integration where display observers could be garbage-collected before they had a chance to update.
+
+### Documentation
+
+Added an interactive Playground to the docs, powered by Pyodide and CodeMirror, so you can try `signified` right in your browser.
+
+!!! warning "Deprecations"
+
+    - `Computed(..., dependencies=...)` — the `dependencies` argument is now ignored. Dependencies are automatically inferred from reactive reads during evaluation.
+    - `@reactive_method(...)` — use `@computed` instead. Any dependency-name arguments are also ignored.
 
 ## 0.2.7
 
-- Significantly improve type inference for a variety of methods.
-- Disable plugins by default (now enabled via environment variable, `SIGNIFIED_ENABLE_HOOKS=1`)
+- Significantly improved type inference across a wide range of methods.
+- Plugins are now disabled by default — set `SIGNIFIED_ENABLE_HOOKS=1` to re-enable them.
 - Several performance improvements.
-- Expand documentation.
-- Migrate CI to `uv`
+- Expanded documentation.
+- Migrated CI to `uv`.
 
-Breaking Changes:
-- Plugins now disabled by default.
-- Renamed `OrderedSet` and `OrderedWeakRefSet` to `_OrderedSet` and `_OrderedWeakRefSet`. (You shouldn't be using these anyways...)
+!!! danger "Breaking Changes"
+
+    - Plugins are now disabled by default.
+    - `OrderedSet` and `OrderedWeakRefSet` have been renamed to `_OrderedSet` and `_OrderedWeakRefSet`. These were always internal types.
 
 ## 0.2.6
 
 - Fixed packaging so NumPy is truly optional.
-- Fixed Python 3.14 compatibility behavior.
-- Expanded/updated CI test matrix for newer Python versions.
+- Fixed Python 3.14 compatibility.
+- Expanded the CI test matrix to cover newer Python versions.
 
 ## 0.2.5
 
 - Improved weak-reference handling in the reactive observer internals.
 - Updated core/type integration around weakref sets.
-- Minor release metadata/version updates.
+- Minor release metadata updates.
 
 ## 0.2.4
 
 - Made IPython an optional dependency.
-- Removed hard NumPy dependency from base install requirements.
-- Updated core/display logic to support optional imports.
+- Removed the hard NumPy dependency from the base install.
+- Updated core/display logic to handle optional imports.
 
 ## 0.2.3
 
-- Fixed runtime typing issue for generic forward references (`ReactiveValue`/`HasValue` usage).
-- Added/expanded API documentation pages and MkDocs configuration.
+- Fixed a runtime typing issue for generic forward references (`ReactiveValue`/`HasValue`).
+- Added and expanded API documentation pages and updated MkDocs configuration.
 - Updated docs deployment workflow.
 
 ## 0.2.2
 
-- Refactored the implementation into smaller modules (`core`, `ops`, `display`, `types`, `utils`).
-- Removed old monolithic implementation layout.
-- Updated docs/test scaffolding to match the split structure.
+- Refactored the implementation into smaller, focused modules: `core`, `ops`, `display`, `types`, and `utils`.
+- Removed the old monolithic layout.
+- Updated docs and test scaffolding to match.
 
 ## 0.2.1
 
-- Fixed `deep_unref` behavior to avoid coercing unknown iterables into lists.
-- Minor packaging/version metadata adjustments.
+- Fixed `deep_unref` to avoid coercing unknown iterables into lists.
+- Minor packaging and version metadata adjustments.
 
 ## 0.2.0
 
-- Added plugin system support (`signified.plugins`) and plugin examples.
-- Added `deep_unref`, memory/performance cleanup (`__slots__`), and typing improvements.
-- Substantially expanded docs (`usage`, `limitations`, `plugins`, changelog, theme updates).
+- Added a plugin system (`signified.plugins`) with examples.
+- Added `deep_unref`, memory/performance improvements via `__slots__`, and typing improvements.
+- Substantially expanded docs: usage guides, limitations, plugin docs, changelog, and theme updates.
 
 ## 0.1.5
 
-- Major expansion of core reactive implementation and type-inference coverage.
+- Major expansion of the core reactive implementation and type-inference coverage.
 - Improved observe/unobserve and change-detection robustness.
-- Added release/docs workflow improvements and changelog updates.
+- Release and docs workflow improvements.
 
 ## 0.1.4
 
-- Repackaged project into `src/signified/` package layout.
-- Ensured `py.typed` ships from package directory.
-- Minor README/metadata cleanup.
+- Repackaged the project into a `src/signified/` layout.
+- Ensured `py.typed` is included in the package.
+- Minor README and metadata cleanup.
 
 ## 0.1.3
 
@@ -95,13 +109,13 @@ Breaking Changes:
 
 ## 0.1.2
 
-- Added support for Python versions `>=3.9` (at that time).
-- Added broad tests for signals/computed/reactive methods/type inference.
-- Added/updated CI test workflow and moved to `src/` source layout.
+- Added support for Python 3.9+.
+- Added broad tests for signals, computed values, reactive methods, and type inference.
+- Added CI test workflow and moved to a `src/` layout.
 
 ## 0.1.1
 
-- Fixed package naming/docs after rename.
+- Fixed package naming and docs after the project rename.
 - Updated project URLs and version metadata.
 - Updated changelog entries for the rename transition.
 
