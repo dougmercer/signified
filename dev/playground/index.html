@@ -8,29 +8,31 @@
       
       
       
-        <link rel="canonical" href="https://dougmercer.github.io/signified/dev/">
+        <link rel="canonical" href="https://dougmercer.github.io/signified/dev/playground/">
       
       
+        <link rel="prev" href="../usage/">
       
-        <link rel="next" href="usage/">
+      
+        <link rel="next" href="../magic-methods/">
       
       
         
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
     
     
       
-        <title>Signified</title>
+        <title>Playground - Signified</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -49,13 +51,13 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
     
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#signified" class="md-skip">
+        <a href="#playground" class="md-skip">
           Skip to content
         </a>
       
@@ -124,7 +126,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="Signified" class="md-header__button md-logo" aria-label="Signified" data-md-component="logo">
+    <a href=".." title="Signified" class="md-header__button md-logo" aria-label="Signified" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -144,7 +146,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Playground
             
           </span>
         </div>
@@ -264,11 +266,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="." class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -287,7 +287,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="usage/" class="md-tabs__link">
+      <a href="../usage/" class="md-tabs__link">
         
   
   
@@ -304,9 +304,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="playground/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -325,7 +327,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="magic-methods/" class="md-tabs__link">
+      <a href="../magic-methods/" class="md-tabs__link">
         
   
   
@@ -344,7 +346,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="plugins/" class="md-tabs__link">
+      <a href="../plugins/" class="md-tabs__link">
         
   
   
@@ -363,7 +365,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="api/" class="md-tabs__link">
+      <a href="../api/" class="md-tabs__link">
         
   
   
@@ -382,7 +384,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="changes/" class="md-tabs__link">
+      <a href="../changes/" class="md-tabs__link">
         
   
   
@@ -401,7 +403,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="limitations/" class="md-tabs__link">
+      <a href="../limitations/" class="md-tabs__link">
         
   
   
@@ -444,7 +446,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="Signified" class="md-nav__button md-logo" aria-label="Signified" data-md-component="logo">
+    <a href=".." title="Signified" class="md-nav__button md-logo" aria-label="Signified" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -471,37 +473,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -517,70 +492,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#quickstart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quickstart
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-care" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why Care?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#mental-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mental Model
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ready-to-learn-more" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Ready to learn more?
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -592,7 +503,7 @@
   
   
     <li class="md-nav__item">
-      <a href="usage/" class="md-nav__link">
+      <a href="../usage/" class="md-nav__link">
         
   
   
@@ -616,10 +527,19 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="playground/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -635,6 +555,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -646,7 +567,7 @@
   
   
     <li class="md-nav__item">
-      <a href="magic-methods/" class="md-nav__link">
+      <a href="../magic-methods/" class="md-nav__link">
         
   
   
@@ -673,7 +594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugins/" class="md-nav__link">
+      <a href="../plugins/" class="md-nav__link">
         
   
   
@@ -700,7 +621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -727,7 +648,7 @@
   
   
     <li class="md-nav__item">
-      <a href="changes/" class="md-nav__link">
+      <a href="../changes/" class="md-nav__link">
         
   
   
@@ -754,7 +675,7 @@
   
   
     <li class="md-nav__item">
-      <a href="limitations/" class="md-nav__link">
+      <a href="../limitations/" class="md-nav__link">
         
   
   
@@ -796,58 +717,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#quickstart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quickstart
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#why-care" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why Care?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#mental-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mental Model
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ready-to-learn-more" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Ready to learn more?
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -878,62 +747,162 @@
   
 
 
-<h1 id="signified">Signified<a class="headerlink" href="#signified" title="Permanent link">&para;</a></h1>
-<p>A Python library for reactive programming (with kind-of working type narrowing).</p>
-<h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>signified
-</span></code></pre></div>
-<h2 id="why-care">Why Care?<a class="headerlink" href="#why-care" title="Permanent link">&para;</a></h2>
-<p><code>signified</code> is built around two core types:</p>
-<ul>
-<li><code>Signal</code>: mutable reactive state</li>
-<li><code>Computed</code>: derived reactive state</li>
-</ul>
-<p>If you update a <code>Signal</code>, dependent <code>Computed</code> values update automatically.</p>
-<p><code>Signal</code> and <code>Computed</code> follow both the <code>Observer</code> and <code>Observable</code> design patterns:</p>
-<ul>
-<li>reactive values can subscribe to upstream values</li>
-<li>upstream changes notify and propagate through dependent computations</li>
-</ul>
-<p>That allows you to write declarative expressions that stay up-to-date, even as underlying values change:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">x_squared</span> <span class="o">=</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">x_squared</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 9</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">x_squared</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 100</span>
-</span></code></pre></div>
-<p>Above, we used <code>signified</code>'s rich set of overloaded operators build a <code>Computed</code> object on-the-fly.</p>
-<p>Alternatively, you can accomplish the same thing with <code>@computed</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">computed</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nd">@computed</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">power</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">exponent</span><span class="p">):</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">return</span> <span class="n">base</span> <span class="o">**</span> <span class="n">exponent</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">x_squared</span> <span class="o">=</span> <span class="n">power</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">x_squared</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 9</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">x_squared</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 100</span>
-</span></code></pre></div>
-<h2 id="mental-model">Mental Model<a class="headerlink" href="#mental-model" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Wrap changing data in <code>Signal</code>.</li>
-<li>Build derived values with overloaded Python operators or <code>@computed</code>.</li>
-<li>Read reactive outputs from <code>.value</code>.</li>
-<li>Update the <code>.value</code> of <code>Signal</code>s to trigger updates.</li>
-</ol>
-<h2 id="ready-to-learn-more">Ready to learn more?<a class="headerlink" href="#ready-to-learn-more" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Read this first: <a href="usage/">Usage Guide</a></li>
-<li>Full API docs: <a href="api/">Core API</a></li>
-<li>Quick look at avilable operators: <a href="magic-methods/">Magic Methods and Operators</a></li>
-<li>Extending <code>signified</code> with plugins: <a href="plugins/">Plugins</a></li>
-</ul>
+<h1 id="playground">Playground<a class="headerlink" href="#playground" title="Permanent link">&para;</a></h1>
+<p>Run Python snippets directly in your browser with a Web Worker powered by Pyodide.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This page downloads Pyodide at runtime and attempts to install <code>signified</code> with <code>micropip</code>.</p>
+</div>
+<p>Use the example dropdown to load snippets, then press <code>Ctrl+Enter</code> (or <code>Cmd+Enter</code> on macOS) to run.</p>
+<div class="signified-playground" data-signified-playground>
+  <label for="signified-playground-code" class="signified-playground-label-code">Code</label>
+  <label class="signified-playground-label-output">Output</label>
+  <div class="signified-playground-editor">
+    <textarea id="signified-playground-code" data-playground-code spellcheck="false">from signified import Signal
+
+x = Signal(2)
+double = 2 * x
+
+print("double:", double.value)
+x.value = 5
+print("double:", double.value)
+</textarea>
+  </div>
+  <div class="signified-playground-output" data-playground-output aria-live="polite"></div>
+  <div class="signified-playground-controls">
+    <button type="button" class="md-button md-button--primary" data-playground-run disabled>Run</button>
+    <button type="button" class="md-button" data-playground-reset>Reset</button>
+    <button type="button" class="md-button" data-playground-clear>Clear</button>
+    <span class="signified-playground-status" data-playground-status aria-live="polite">Loading interpreter...</span>
+  </div>
+  <div class="signified-playground-examples">
+    <label for="signified-playground-example">Example</label>
+    <select id="signified-playground-example" data-playground-example>
+      <option value="basic">Basic Signal</option>
+      <option value="decorator">Computed Decorator</option>
+      <option value="collections">Collections and Mutation</option>
+      <option value="where">Conditional where()</option>
+      <option value="method-chain">Method Chaining</option>
+    </select>
+  </div>
+</div>
+
+<style>
+.signified-playground {
+  --playground-pane-height: 16rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto var(--playground-pane-height) auto;
+  grid-template-areas:
+    "label-code  label-output"
+    "editor      output"
+    "controls    examples";
+  column-gap: 0.75rem;
+  row-gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.signified-playground-label-code   { grid-area: label-code; }
+.signified-playground-label-output { grid-area: label-output; }
+.signified-playground-editor       { grid-area: editor; overflow: hidden; align-self: stretch; min-height: 0; }
+.signified-playground-output       { grid-area: output; align-self: stretch; min-height: 0; }
+.signified-playground-controls     { grid-area: controls; align-self: center; }
+.signified-playground-examples     { grid-area: examples; align-self: center; }
+
+.signified-playground-editor textarea {
+  width: 100%;
+  height: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  box-sizing: border-box;
+  font-family: var(--md-code-font-family);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--md-code-fg-color);
+  background: var(--md-code-bg-color);
+  overflow-y: auto;
+}
+
+.signified-playground .CodeMirror {
+  height: 100%;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  box-sizing: border-box;
+  font-family: var(--md-code-font-family);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.signified-playground-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.signified-playground-status {
+  font-size: 0.75rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.signified-playground-status.error {
+  color: var(--md-accent-fg-color);
+}
+
+.signified-playground-examples {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.signified-playground-examples label {
+  white-space: nowrap;
+}
+
+.signified-playground-examples select {
+  flex: 1 1 auto;
+  width: auto;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+}
+
+.signified-playground-output {
+  height: 100%;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-y: auto;
+  font-family: var(--md-code-font-family);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--md-code-fg-color);
+  background: var(--md-code-bg-color);
+}
+
+@media (max-width: 600px) {
+  .signified-playground {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto var(--playground-pane-height) auto auto var(--playground-pane-height) auto;
+    grid-template-areas:
+      "label-code"
+      "editor"
+      "controls"
+      "label-output"
+      "output"
+      "examples";
+  }
+}
+</style>
 
 
 
@@ -977,15 +946,31 @@
       
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
+          
+          <a href="../usage/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Usage">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Usage
+              </div>
+            </div>
+          </a>
+        
         
           
-          <a href="usage/" class="md-footer__link md-footer__link--next" aria-label="Next: Usage">
+          <a href="../magic-methods/" class="md-footer__link md-footer__link--next" aria-label="Next: Magic Methods">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Usage
+                Magic Methods
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1024,16 +1009,16 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
       
-        <script src="assets/playground.js"></script>
+        <script src="../assets/playground.js"></script>
       
     
   </body>
