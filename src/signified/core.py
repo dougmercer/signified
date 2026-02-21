@@ -1675,16 +1675,25 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
 
 _COMPUTE_STACK: list[Any] = []
+"""Internal state that supports inferring reactive dependencies.
+
+When a reactive value is read, we attach that read to the Computed at the
+top of this stack so dependency subscriptions can be reconciled on refresh.
+"""
 
 
 def _track_read(variable: Variable[Any]) -> None:
+    """Register `variable` as a dependency of the currently computing Computed."""
     if not _COMPUTE_STACK:
+        # Reads outside Computed evaluation do not participate in dependency tracking.
         return
     owner = _COMPUTE_STACK[-1]
     if owner is variable:
+        # Ignore self-reads to avoid self-dependency loops.
         return
     owner_impl = getattr(owner, "_impl", None)
     if owner_impl is not None:
+        # Add this read for the current refresh run.
         owner_impl.register_dependency(variable)
 
 
