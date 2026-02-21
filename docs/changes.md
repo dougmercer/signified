@@ -26,6 +26,8 @@ Mutating a signal's contents (e.g. setting an attribute or index) now also corre
 
 Added `Signal.rx` namespace which includes several methods:
 
+  - map (new)
+  - peek (new)
   - len (new)
   - is_ (new)
   - is_not

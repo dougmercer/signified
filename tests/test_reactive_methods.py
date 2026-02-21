@@ -179,6 +179,28 @@ def test_signal_where():
     assert result.value == 10
 
 
+def test_signal_rx_map():
+    """Test reactive transforms via signal.rx.map."""
+    s = Signal(2)
+    doubled = s.rx.map(lambda x: x * 2)
+
+    assert doubled.value == 4
+    s.value = 5
+    assert doubled.value == 10
+
+
+def test_signal_rx_peek():
+    """Test side effects via signal.rx.peek."""
+    seen: list[int] = []
+    s = Signal(1)
+    passthrough = s.rx.peek(lambda x: seen.append(x))
+
+    assert passthrough.value == 1
+    s.value = 3
+    assert passthrough.value == 3
+    assert seen == [1, 3]
+
+
 def test_signal_rx_len():
     """Test reactive length via signal.rx.len."""
     values = Signal([1, 2, 3])

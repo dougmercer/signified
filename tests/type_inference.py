@@ -75,6 +75,18 @@ def test_as_bool():
     assert_type(unref(result), bool)
 
 
+def test_rx_map():
+    result = Signal(2).rx.map(lambda x: x * 2)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+
+def test_rx_peek():
+    result = Signal(2).rx.peek(lambda x: x + 1)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+
 def test_rx_len():
     result = Signal([1, 2, 3]).rx.len()
     assert_type(result, Computed[int])
