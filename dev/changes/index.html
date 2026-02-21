@@ -698,6 +698,67 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#030" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.0
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.3.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependency-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#change-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Change Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#027" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -915,6 +976,67 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#030" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.0
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.3.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dependency-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#change-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Change Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bug-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#027" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1101,70 +1223,96 @@
 
 
 <h1 id="change-log">Change Log<a class="headerlink" href="#change-log" title="Permanent link">&para;</a></h1>
-<p>This page summarizes key changes by diffing adjacent tagged releases.</p>
+<p>This page summarizes notable changes across releases.</p>
+<h2 id="030">0.3.0<a class="headerlink" href="#030" title="Permanent link">&para;</a></h2>
+<h3 id="dependency-tracking">Dependency Tracking<a class="headerlink" href="#dependency-tracking" title="Permanent link">&para;</a></h3>
+<p><code>Computed</code> now tracks its dependencies automatically at runtime — no need to declare them upfront. Values are only recomputed when actually read, and if a recomputed value turns out to be unchanged, downstream computeds won't needlessly re-run.</p>
+<h3 id="change-detection">Change Detection<a class="headerlink" href="#change-detection" title="Permanent link">&para;</a></h3>
+<p>Signified is smarter about deciding when a <code>Signal</code>'s value has actually changed:</p>
+<ul>
+<li>Functions are compared by identity rather than equality.</li>
+<li>Arrays are compared element-by-element.</li>
+<li>Assigning <code>NaN</code> to a signal that already holds <code>NaN</code> is treated as no change.</li>
+</ul>
+<p>Mutating a signal's contents (e.g. setting an attribute or index) now also correctly invalidates downstream computeds, and <code>unref</code>/<code>deep_unref</code> align with how dependencies are tracked at runtime.</p>
+<h3 id="bug-fixes">Bug Fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h3>
+<p>Fixed a bug in the IPython/Jupyter display integration where display observers could be garbage-collected before they had a chance to update.</p>
+<h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
+<p>Added an interactive Playground to the docs, powered by Pyodide and CodeMirror, so you can try <code>signified</code> right in your browser.</p>
+<div class="admonition warning">
+<p class="admonition-title">Deprecations</p>
+<ul>
+<li><code>Computed(..., dependencies=...)</code> — the <code>dependencies</code> argument is now ignored. Dependencies are automatically inferred from reactive reads during evaluation.</li>
+<li><code>@reactive_method(...)</code> — use <code>@computed</code> instead. Any dependency-name arguments are also ignored.</li>
+</ul>
+</div>
 <h2 id="027">0.2.7<a class="headerlink" href="#027" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Significantly improve type inference for a variety of methods.</li>
-<li>Disable plugins by default (now enabled via environment variable, <code>SIGNIFIED_ENABLE_HOOKS=1</code>)</li>
+<li>Significantly improved type inference across a wide range of methods.</li>
+<li>Plugins are now disabled by default — set <code>SIGNIFIED_ENABLE_HOOKS=1</code> to re-enable them.</li>
 <li>Several performance improvements.</li>
-<li>Expand documentation.</li>
-<li>Migrate CI to <code>uv</code></li>
+<li>Expanded documentation.</li>
+<li>Migrated CI to <code>uv</code>.</li>
 </ul>
-<p>Breaking Changes:
-- Plugins now disabled by default.
-- Renamed <code>OrderedSet</code> and <code>OrderedWeakRefSet</code> to <code>_OrderedSet</code> and <code>_OrderedWeakRefSet</code>. (You shouldn't be using these anyways...)</p>
+<div class="admonition danger">
+<p class="admonition-title">Breaking Changes</p>
+<ul>
+<li>Plugins are now disabled by default.</li>
+<li><code>OrderedSet</code> and <code>OrderedWeakRefSet</code> have been renamed to <code>_OrderedSet</code> and <code>_OrderedWeakRefSet</code>. These were always internal types.</li>
+</ul>
+</div>
 <h2 id="026">0.2.6<a class="headerlink" href="#026" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Fixed packaging so NumPy is truly optional.</li>
-<li>Fixed Python 3.14 compatibility behavior.</li>
-<li>Expanded/updated CI test matrix for newer Python versions.</li>
+<li>Fixed Python 3.14 compatibility.</li>
+<li>Expanded the CI test matrix to cover newer Python versions.</li>
 </ul>
 <h2 id="025">0.2.5<a class="headerlink" href="#025" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Improved weak-reference handling in the reactive observer internals.</li>
 <li>Updated core/type integration around weakref sets.</li>
-<li>Minor release metadata/version updates.</li>
+<li>Minor release metadata updates.</li>
 </ul>
 <h2 id="024">0.2.4<a class="headerlink" href="#024" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Made IPython an optional dependency.</li>
-<li>Removed hard NumPy dependency from base install requirements.</li>
-<li>Updated core/display logic to support optional imports.</li>
+<li>Removed the hard NumPy dependency from the base install.</li>
+<li>Updated core/display logic to handle optional imports.</li>
 </ul>
 <h2 id="023">0.2.3<a class="headerlink" href="#023" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Fixed runtime typing issue for generic forward references (<code>ReactiveValue</code>/<code>HasValue</code> usage).</li>
-<li>Added/expanded API documentation pages and MkDocs configuration.</li>
+<li>Fixed a runtime typing issue for generic forward references (<code>ReactiveValue</code>/<code>HasValue</code>).</li>
+<li>Added and expanded API documentation pages and updated MkDocs configuration.</li>
 <li>Updated docs deployment workflow.</li>
 </ul>
 <h2 id="022">0.2.2<a class="headerlink" href="#022" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Refactored the implementation into smaller modules (<code>core</code>, <code>ops</code>, <code>display</code>, <code>types</code>, <code>utils</code>).</li>
-<li>Removed old monolithic implementation layout.</li>
-<li>Updated docs/test scaffolding to match the split structure.</li>
+<li>Refactored the implementation into smaller, focused modules: <code>core</code>, <code>ops</code>, <code>display</code>, <code>types</code>, and <code>utils</code>.</li>
+<li>Removed the old monolithic layout.</li>
+<li>Updated docs and test scaffolding to match.</li>
 </ul>
 <h2 id="021">0.2.1<a class="headerlink" href="#021" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Fixed <code>deep_unref</code> behavior to avoid coercing unknown iterables into lists.</li>
-<li>Minor packaging/version metadata adjustments.</li>
+<li>Fixed <code>deep_unref</code> to avoid coercing unknown iterables into lists.</li>
+<li>Minor packaging and version metadata adjustments.</li>
 </ul>
 <h2 id="020">0.2.0<a class="headerlink" href="#020" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Added plugin system support (<code>signified.plugins</code>) and plugin examples.</li>
-<li>Added <code>deep_unref</code>, memory/performance cleanup (<code>__slots__</code>), and typing improvements.</li>
-<li>Substantially expanded docs (<code>usage</code>, <code>limitations</code>, <code>plugins</code>, changelog, theme updates).</li>
+<li>Added a plugin system (<code>signified.plugins</code>) with examples.</li>
+<li>Added <code>deep_unref</code>, memory/performance improvements via <code>__slots__</code>, and typing improvements.</li>
+<li>Substantially expanded docs: usage guides, limitations, plugin docs, changelog, and theme updates.</li>
 </ul>
 <h2 id="015">0.1.5<a class="headerlink" href="#015" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Major expansion of core reactive implementation and type-inference coverage.</li>
+<li>Major expansion of the core reactive implementation and type-inference coverage.</li>
 <li>Improved observe/unobserve and change-detection robustness.</li>
-<li>Added release/docs workflow improvements and changelog updates.</li>
+<li>Release and docs workflow improvements.</li>
 </ul>
 <h2 id="014">0.1.4<a class="headerlink" href="#014" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Repackaged project into <code>src/signified/</code> package layout.</li>
-<li>Ensured <code>py.typed</code> ships from package directory.</li>
-<li>Minor README/metadata cleanup.</li>
+<li>Repackaged the project into a <code>src/signified/</code> layout.</li>
+<li>Ensured <code>py.typed</code> is included in the package.</li>
+<li>Minor README and metadata cleanup.</li>
 </ul>
 <h2 id="013">0.1.3<a class="headerlink" href="#013" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1174,13 +1322,13 @@
 </ul>
 <h2 id="012">0.1.2<a class="headerlink" href="#012" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Added support for Python versions <code>&gt;=3.9</code> (at that time).</li>
-<li>Added broad tests for signals/computed/reactive methods/type inference.</li>
-<li>Added/updated CI test workflow and moved to <code>src/</code> source layout.</li>
+<li>Added support for Python 3.9+.</li>
+<li>Added broad tests for signals, computed values, reactive methods, and type inference.</li>
+<li>Added CI test workflow and moved to a <code>src/</code> layout.</li>
 </ul>
 <h2 id="011">0.1.1<a class="headerlink" href="#011" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Fixed package naming/docs after rename.</li>
+<li>Fixed package naming and docs after the project rename.</li>
 <li>Updated project URLs and version metadata.</li>
 <li>Updated changelog entries for the rename transition.</li>
 </ul>
