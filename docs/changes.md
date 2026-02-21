@@ -6,6 +6,22 @@ hide:
 
 This page summarizes key changes by diffing adjacent tagged releases.
 
+## 0.3.0
+
+- Reworked `Computed` to use dynamic dependency tracking with lazy recomputation on read.
+- Added dependency version tracking so stale markers can be cleared without unnecessary downstream recomputes when derived values stay the same.
+- Improved change detection for `Signal.value` updates:
+  - callables now use identity checks,
+  - ambiguous array-like equality uses all-elements semantics, and
+  - `NaN -> NaN` is treated as unchanged.
+- Improved mutation invalidation/versioning for `Signal` attribute/item assignments and aligned `deep_unref`/`unref` behavior with runtime dependency tracking.
+- Fixed an IPython display observer lifetime bug where observers could be garbage-collected too early.
+- Added an interactive docs Playground page (Pyodide + Web Worker + CodeMirror) and updated docs publish triggers for both `v*` and `*.*.*` tags.
+
+Deprecations:
+- `Computed(..., dependencies=...)` is deprecated and ignored; dependencies are inferred from reactive reads during evaluation.
+- `@reactive_method(...)` is deprecated; use `@computed` instead (dependency-name arguments are ignored).
+
 ## 0.2.7
 
 - Significantly improve type inference for a variety of methods.
