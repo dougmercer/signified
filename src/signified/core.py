@@ -102,6 +102,146 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
     return wrapper
 
 
+def _warn_deprecated_alias(method: str, replacement: str) -> None:
+    """Warn that a legacy `ReactiveMixIn` helper method is deprecated."""
+    warnings.warn(
+        f"`ReactiveMixIn.{method}()` is deprecated; use `{replacement}` instead.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
+class _RxOps[T]:
+    """Helper methods available under ``signal.rx``."""
+
+    __slots__ = ("_source",)
+
+    def __init__(self, source: "ReactiveMixIn[T]") -> None:
+        self._source = source
+
+    def is_not(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for identity check ``source.value is not other``.
+
+        Args:
+            other: Value to compare against with identity semantics.
+
+        Returns:
+            A reactive value for ``source.value is not other``.
+
+        Example:
+            ```py
+            >>> marker = object()
+            >>> s = Signal(marker)
+            >>> result = s.rx.is_not(marker)
+            >>> result.value
+            False
+            >>> s.value = object()
+            >>> result.value
+            True
+
+            ```
+        """
+        return computed(operator.is_not)(self._source, other)
+
+    def contains(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for whether `other` is in `self._source`.
+
+        Args:
+            other: The value to check for containment.
+
+        Returns:
+            A reactive value for ``other in source.value``.
+
+        Example:
+            ```py
+            >>> s = Signal([1, 2, 3, 4])
+            >>> result = s.rx.contains(3)
+            >>> result.value
+            True
+            >>> s.value = [5, 6, 7, 8]
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(operator.contains)(self._source, other)
+
+    def eq(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for whether ``source.value == other``.
+
+        Args:
+            other: Value to compare against.
+
+        Returns:
+            A reactive value for ``source.value == other``.
+
+        Example:
+            ```py
+            >>> s = Signal(10)
+            >>> result = s.rx.eq(10)
+            >>> result.value
+            True
+            >>> s.value = 25
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(operator.eq)(self._source, other)
+
+    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
+        """Return a reactive value for ``a`` if ``source`` is truthy, else ``b``.
+
+        Args:
+            a: The value to return if source is truthy.
+            b: The value to return if source is falsy.
+
+        Returns:
+            A reactive value for ``a if source.value else b``.
+
+        Example:
+            ```py
+            >>> condition = Signal(True)
+            >>> result = condition.rx.where("Yes", "No")
+            >>> result.value
+            'Yes'
+            >>> condition.value = False
+            >>> result.value
+            'No'
+
+            ```
+        """
+
+        @computed
+        def ternary(a: A, b: B, condition: Any) -> A | B:
+            return a if condition else b
+
+        return ternary(a, b, self._source)
+
+    def as_bool(self) -> Computed[bool]:
+        """Return a reactive value for the boolean value of ``self._source``.
+
+        Note:
+            ``__bool__`` cannot be implemented to return a non-``bool``, so it is provided as a method.
+
+        Returns:
+            A reactive value for ``bool(source.value)``.
+
+        Example:
+            ```py
+            >>> s = Signal(1)
+            >>> result = s.rx.as_bool()
+            >>> result.value
+            True
+            >>> s.value = 0
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(bool)(self._source)
+
+
 class ReactiveMixIn[T]:
     """Methods for easily creating reactive values."""
 
@@ -229,6 +369,9 @@ class ReactiveMixIn[T]:
     def as_bool(self) -> Computed[bool]:
         """Return a reactive value for the boolean value of `self`.
 
+        Deprecated:
+            Will be removed in a future release. Use `computed(bool)(self)`.
+
         Note:
             `__bool__` cannot be implemented to return a non-`bool`, so it is provided as a method.
 
@@ -247,7 +390,13 @@ class ReactiveMixIn[T]:
 
             ```
         """
-        return computed(bool)(self)
+        _warn_deprecated_alias("as_bool", "self.rx.as_bool()")
+        return self.rx.as_bool()
+
+    @property
+    def rx(self) -> _RxOps[T]:
+        """Access reactive helper operations in a dedicated namespace."""
+        return _RxOps(self)
 
     def __str__(self) -> str:
         """Return a string of the current value.
@@ -523,6 +672,9 @@ class ReactiveMixIn[T]:
     def contains(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `other` is in `self`.
 
+        Deprecated:
+            Use ``self.rx.contains(other)`` instead.
+
         Args:
             other: The value to check for containment.
 
@@ -541,7 +693,8 @@ class ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.contains)(self, other)
+        _warn_deprecated_alias("contains", "self.rx.contains(other)")
+        return self.rx.contains(other)
 
     @overload
     def __divmod__(self: "ReactiveMixIn[int]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
@@ -578,6 +731,9 @@ class ReactiveMixIn[T]:
     def is_not(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is not other.
 
+        Deprecated:
+            Use ``self.rx.is_not(other)`` instead.
+
         Args:
             other: The value to compare against.
 
@@ -597,10 +753,14 @@ class ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.is_not)(self, other)
+        _warn_deprecated_alias("is_not", "self.rx.is_not(other)")
+        return self.rx.is_not(other)
 
     def eq(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` equals other.
+
+        Deprecated:
+            Use ``self.rx.eq(other)`` instead.
 
         Args:
             other: The value to compare against.
@@ -623,7 +783,8 @@ class ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.eq)(self, other)
+        _warn_deprecated_alias("eq", "self.rx.eq(other)")
+        return self.rx.eq(other)
 
     @overload
     def __floordiv__(self: "ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1490,6 +1651,9 @@ class ReactiveMixIn[T]:
     def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
         """Return a reactive value for `a` if `self` is `True`, else `b`.
 
+        Deprecated:
+            Use ``self.rx.where(a, b)`` instead.
+
         Args:
             a: The value to return if `self` is `True`.
             b: The value to return if `self` is `False`.
@@ -1509,12 +1673,8 @@ class ReactiveMixIn[T]:
 
             ```
         """
-
-        @computed
-        def ternary(a: A, b: B, self: Any) -> A | B:
-            return a if self else b
-
-        return ternary(a, b, self)
+        _warn_deprecated_alias("where", "self.rx.where(a, b)")
+        return self.rx.where(a, b)
 
 
 def _coerce_to_bool(value: Any) -> bool:

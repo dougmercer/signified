@@ -1,5 +1,7 @@
 import math
 
+import pytest
+
 from signified import Signal
 
 
@@ -175,3 +177,45 @@ def test_signal_where():
 
     condition.value = False
     assert result.value == 10
+
+
+def test_signal_rx_is_not():
+    """Test reactive identity checks via signal.rx.is_not."""
+    marker = object()
+    s = Signal(marker)
+
+    assert s.rx.is_not(marker).value == False  # noqa: E712
+
+    other = object()
+    s.value = other
+    assert s.rx.is_not(marker).value == True  # noqa: E712
+
+
+def test_signal_rx_eq():
+    """Test reactive equality via signal.rx.eq."""
+    s = Signal(10)
+    result = s.rx.eq(10)
+
+    assert result.value == True  # noqa: E712
+    s.value = 25
+    assert result.value == False  # noqa: E712
+
+
+def test_legacy_non_dunder_methods_emit_deprecation_warning():
+    """Test that legacy non-dunder methods warn and still function."""
+    s = Signal([1, 2, 3])
+
+    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.as_bool"):
+        assert Signal(1).as_bool().value == True  # noqa: E712
+
+    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.contains"):
+        assert s.contains(2).value == True  # noqa: E712
+
+    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.is_not"):
+        assert Signal(1).is_not(None).value == True  # noqa: E712
+
+    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.eq"):
+        assert Signal(2).eq(2).value == True  # noqa: E712
+
+    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.where"):
+        assert Signal(True).where("a", "b").value == "a"

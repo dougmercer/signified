@@ -75,6 +75,18 @@ def test_as_bool():
     assert_type(unref(result), bool)
 
 
+def test_rx_is_not():
+    result = Signal(10).rx.is_not(None)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_eq():
+    result = Signal(10).rx.eq(10)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
 def test_str():
     result = str(Signal(1))
     assert_type(result, str)
