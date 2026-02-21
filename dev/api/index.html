@@ -694,28 +694,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#signified.core.InstanceMethod" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-type_alias"></code>&nbsp;InstanceMethod
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#signified.core.ReactiveMethod" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-type_alias"></code>&nbsp;ReactiveMethod
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#signified.core.ReactiveMixIn" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3625,28 +3603,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#signified.core.InstanceMethod" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-type_alias"></code>&nbsp;InstanceMethod
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#signified.core.ReactiveMethod" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-type_alias"></code>&nbsp;ReactiveMethod
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#signified.core.ReactiveMixIn" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6530,40 +6486,6 @@
 
 </div>
 
-
-<div class="doc doc-object doc-type_alias">
-
-
-
-<h3 id="signified.core.InstanceMethod" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-type_alias"></code>            <span class="doc doc-object-name doc-type_alias-name">InstanceMethod</span>
-
-
-<a href="#signified.core.InstanceMethod" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nc">InstanceMethod</span> <span class="o">=</span> <span class="n"><span title="typing.Callable">Callable</span></span><span class="p">[</span><span class="n"><span title="typing.Concatenate">Concatenate</span></span><span class="p">[</span><span class="n"><span title="typing.Any">Any</span></span><span class="p">,</span> <span class="n"><span title="signified.core.InstanceMethod[**P]">P</span></span><span class="p">],</span> <span class="n"><span title="signified.core.InstanceMethod[T]">T</span></span><span class="p">]</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-type_alias">
-
-
-
-<h3 id="signified.core.ReactiveMethod" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-type_alias"></code>            <span class="doc doc-object-name doc-type_alias-name">ReactiveMethod</span>
-
-
-<a href="#signified.core.ReactiveMethod" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nc">ReactiveMethod</span> <span class="o">=</span> <span class="n"><span title="typing.Callable">Callable</span></span><span class="p">[</span><span class="n"><span title="typing.Concatenate">Concatenate</span></span><span class="p">[</span><span class="n"><span title="typing.Any">Any</span></span><span class="p">,</span> <span class="n"><span title="signified.core.ReactiveMethod[**P]">P</span></span><span class="p">],</span> <span class="n"><a class="autorefs autorefs-internal" href="#signified.core.Computed">Computed</a></span><span class="p">[</span><span class="n"><span title="signified.core.ReactiveMethod[T]">T</span></span><span class="p">]]</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-    </div>
-
-</div>
 
 
 <div class="doc doc-object doc-class">
@@ -10972,7 +10894,7 @@ and observable patterns.</p>
   </span>
 
 <a href="#signified.core.Variable.__slots__" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_observers&#39;</span><span class="p">,</span> <span class="s1">&#39;__name&#39;</span><span class="p">,</span> <span class="s1">&#39;__weakref__&#39;</span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_observers&#39;</span><span class="p">,</span> <span class="s1">&#39;__name&#39;</span><span class="p">,</span> <span class="s1">&#39;_version&#39;</span><span class="p">,</span> <span class="s1">&#39;__weakref__&#39;</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -20364,11 +20286,11 @@ empty - just the value in brackets (default)</p>
 
 
         <p>Read-only reactive value derived from a computation.</p>
-<p><code>Computed</code> recalculates its value whenever one of its observed
-dependencies updates. In most usage, instances are created implicitly via
-:func:<code>computed</code>, operator overloads, or helper APIs such as
-:func:<code>reactive_method</code>.</p>
-<p>Unlike :class:<code>Signal</code>, <code>Computed.value</code> is read-only and is updated by
+<p><code>Computed</code> tracks dependencies as it executes and lazily recalculates the
+value when it is read after dependencies change. In most usage, instances
+are created implicitly via :func:<code>computed</code>, operator overloads, or helper
+APIs such as :func:<code>reactive_method</code>.</p>
+<p>Unlike :class:<code>Signal</code>, <code>Computed.value</code> is read-only and updated by
 re-running the stored function.</p>
 
 
@@ -20408,8 +20330,9 @@ re-running the stored function.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Dependencies to observe. May be a single item or nested
-container structure.</p>
+                <p>Deprecated compatibility argument. Still accepted for
+backwards compatibility but ignored. Runtime reads determine the
+true dependency set.</p>
               </div>
             </td>
             <td>
@@ -20423,7 +20346,7 @@ container structure.</p>
 <details class="example" open>
   <summary>Example</summary>
   <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">count</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">squared</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">value</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="n">count</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">squared</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">value</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">squared</span><span class="o">.</span><span class="n">value</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="mi">4</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">count</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">5</span>
@@ -20463,7 +20386,7 @@ container structure.</p>
   </span>
 
 <a href="#signified.core.Computed.__slots__" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;_value&#39;</span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;_value&#39;</span><span class="p">,</span> <span class="s1">&#39;_impl&#39;</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -20512,7 +20435,7 @@ container structure.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Get the current value.</p>
+        <p>Get the current value, recomputing lazily when stale.</p>
 
     </div>
 
@@ -20574,7 +20497,7 @@ container structure.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Update the value by re-evaluating the function.</p>
+        <p>Mark this computed stale and propagate invalidation.</p>
 
 
     </div>
@@ -25112,9 +25035,9 @@ empty - just the value in brackets (default)</p>
 containers that include reactive values. On each recomputation, arguments
 are normalized with :func:<code>deep_unref</code>, so <code>func</code> receives plain Python
 values.</p>
-<p>The created :class:<code>Computed</code> subscribes to reactive dependencies found in
-<code>args</code> and <code>kwargs</code> at call time. When any dependency updates, the
-function is re-evaluated and subscribers are notified.</p>
+<p>The created :class:<code>Computed</code> tracks dependencies dynamically while the
+wrapped function runs. Any reactive value read during evaluation becomes a
+dependency for subsequent updates.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -25206,8 +25129,9 @@ function is re-evaluated and subscribers are notified.</p>
 
         <p>Resolve a value by unwrapping reactive containers until plain data remains.</p>
 <p>This utility repeatedly unwraps :class:<code>Variable</code> objects by following
-their internal <code>_value</code> references, allowing callers to operate on the
-underlying Python value regardless of nesting depth.</p>
+their internal <code>_value</code> references. It intentionally bypasses dependency
+tracking, which keeps this helper side-effect free inside reactive
+computations.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -25494,13 +25418,9 @@ container type where practical.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Decorate an instance method so calls return a <code>Computed</code> value.</p>
-<p>The decorated method keeps its original call signature but now returns a
-reactive value. Dependencies include:
-- instance attributes named in <code>dep_names</code> (when present), and
-- call-time <code>args</code> and <code>kwargs</code>.</p>
-<p>This is useful for class APIs where a derived value depends on reactive
-fields owned by <code>self</code>.</p>
+        <p>Deprecated helper for method-style computed values.</p>
+<p>This decorator now delegates to :func:<code>computed</code>. It is retained only for
+backwards compatibility and will be removed in a future release.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -25523,7 +25443,7 @@ fields owned by <code>self</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Attribute names on <code>self</code> to observe as dependencies.</p>
+                <p>Deprecated compatibility argument. Ignored.</p>
               </div>
             </td>
             <td>
@@ -25545,7 +25465,7 @@ fields owned by <code>self</code>.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="typing.Callable">Callable</span>[[<a class="autorefs autorefs-internal" href="#signified.core.InstanceMethod">InstanceMethod</a>[<span title="signified.core.reactive_method[**P]">P</span>, <span title="signified.core.reactive_method[T]">T</span>]], <a class="autorefs autorefs-internal" href="#signified.core.ReactiveMethod">ReactiveMethod</a>[<span title="signified.core.reactive_method[**P]">P</span>, <span title="signified.core.reactive_method[T]">T</span>]]</code>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="typing.Callable">Callable</span>[<span title="typing.Concatenate">Concatenate</span>[<span title="typing.Any">Any</span>, <span title="signified.core.reactive_method[**P]">P</span>], <span title="signified.core.reactive_method[T]">T</span>]], <span title="typing.Callable">Callable</span>[<span title="typing.Concatenate">Concatenate</span>[<span title="typing.Any">Any</span>, <span title="signified.core.reactive_method[**P]">P</span>], <a class="autorefs autorefs-internal" href="#signified.core.Computed">Computed</a>[<span title="signified.core.reactive_method[T]">T</span>]]]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -25555,7 +25475,7 @@ fields owned by <code>self</code>.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="typing.Callable">Callable</span>[[<a class="autorefs autorefs-internal" href="#signified.core.InstanceMethod">InstanceMethod</a>[<span title="signified.core.reactive_method[**P]">P</span>, <span title="signified.core.reactive_method[T]">T</span>]], <a class="autorefs autorefs-internal" href="#signified.core.ReactiveMethod">ReactiveMethod</a>[<span title="signified.core.reactive_method[**P]">P</span>, <span title="signified.core.reactive_method[T]">T</span>]]</code>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="typing.Callable">Callable</span>[<span title="typing.Concatenate">Concatenate</span>[<span title="typing.Any">Any</span>, <span title="signified.core.reactive_method[**P]">P</span>], <span title="signified.core.reactive_method[T]">T</span>]], <span title="typing.Callable">Callable</span>[<span title="typing.Concatenate">Concatenate</span>[<span title="typing.Any">Any</span>, <span title="signified.core.reactive_method[**P]">P</span>], <a class="autorefs autorefs-internal" href="#signified.core.Computed">Computed</a>[<span title="signified.core.reactive_method[T]">T</span>]]]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -25566,25 +25486,6 @@ fields owned by <code>self</code>.</p>
       </tbody>
     </table>
 
-
-<details class="example" open>
-  <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">reactive_method</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="k">class</span><span class="w"> </span><span class="nc">Counter</span><span class="p">:</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">...</span>     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">...</span>         <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">...</span>     <span class="nd">@reactive_method</span><span class="p">(</span><span class="s2">&quot;count&quot;</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">...</span>     <span class="k">def</span><span class="w"> </span><span class="nf">doubled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="o">...</span>         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">c</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">doubled</span><span class="p">()</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="mi">2</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">count</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">4</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="mi">8</span>
-</span></code></pre></div>
-</details>
 
     </div>
 
