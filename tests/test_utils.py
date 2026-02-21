@@ -142,12 +142,38 @@ def test_has_changed_with_broken_eq_is_treated_as_changed():
     assert _has_changed(BrokenEq(), BrokenEq()) is True
 
 
-def test_is_truthy_handles_ambiguous_bool_with_any_fallback():
+def test_has_changed_with_ambiguous_equality_all_true_is_unchanged():
+    class AmbiguousEqResult:
+        def __bool__(self):
+            raise ValueError("ambiguous truth value")
+
+        def all(self):
+            return True
+
+    class WithAmbiguousEq:
+        def __eq__(self, other):  # type: ignore
+            return AmbiguousEqResult()
+
+    assert _has_changed(object(), WithAmbiguousEq()) is False
+
+
+def test_coerce_to_bool_handles_ambiguous_bool_with_all_fallback():
     class AmbiguousBool:
         def __bool__(self):
             raise ValueError("ambiguous truth value")
 
-        def any(self):
+        def all(self):
             return True
 
     assert _coerce_to_bool(AmbiguousBool()) is True
+
+
+def test_coerce_to_bool_uses_all_fallback():
+    class AmbiguousBool:
+        def __bool__(self):
+            raise ValueError("ambiguous truth value")
+
+        def all(self):
+            return False
+
+    assert _coerce_to_bool(AmbiguousBool()) is False

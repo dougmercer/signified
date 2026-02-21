@@ -1521,13 +1521,14 @@ def _coerce_to_bool(value: Any) -> bool:
     """Convert a value to bool, including ambiguous array-like values.
 
     Some array/series-style objects raise ``ValueError`` when coerced with
-    ``bool(...)``. For those, fall back to ``value.any()`` semantics.
+    ``bool(...)``. For those, fall back to ``value.all()`` semantics so
+    partial matches are treated as unequal in comparison contexts.
     """
     try:
         return bool(value)
     except ValueError:
         # Handle numpy arrays, pandas Series, and similar objects.
-        return bool(value.any())
+        return bool(value.all())
 
 
 class Observer(Protocol):
@@ -1739,6 +1740,8 @@ def _has_changed(previous: Any, current: Any) -> bool:
             return False
 
     try:
+        # `==` may return non-scalar array-like values; coerce those with
+        # all-elements semantics before negating.
         return not _coerce_to_bool(current == previous)
     except Exception:
         return True
