@@ -1,3 +1,5 @@
+import pytest
+
 from signified import Computed, Signal, computed
 
 
@@ -96,3 +98,113 @@ def test_computed_container_with_deeply_nestedreactive_values():
     assert result.value == [1, 2, 3, 4, 5, 6]
     s[1][0].value = 10
     assert result.value == [1, 10, 3, 4, 5, 6]
+
+
+def test_computed_is_lazy_until_read():
+    source = Signal(2)
+    reads: list[int] = []
+
+    derived = Computed(lambda: reads.append(source.value) or source.value * 10)
+
+    assert reads == []
+    assert derived.value == 20
+    assert reads == [2]
+
+    source.value = 3
+    assert reads == [2]
+    assert derived.value == 30
+    assert reads == [2, 3]
+
+
+def test_computed_dynamic_dependency_branch_switching():
+    use_left = Signal(True)
+    left = Signal(1)
+    right = Signal(10)
+
+    selected = Computed(lambda: left.value if use_left.value else right.value)
+
+    assert selected.value == 1
+
+    right.value = 20
+    assert selected.value == 1
+
+    use_left.value = False
+    assert selected.value == 20
+
+    left.value = 2
+    assert selected.value == 20
+
+    right.value = 30
+    assert selected.value == 30
+
+
+def test_computed_skips_downstream_recompute_when_upstream_value_stable():
+    source = Signal(1)
+    upstream_runs = 0
+    downstream_runs = 0
+
+    def upstream_fn() -> int:
+        nonlocal upstream_runs
+        upstream_runs += 1
+        return source.value % 2
+
+    upstream = Computed(upstream_fn)
+
+    def downstream_fn() -> int:
+        nonlocal downstream_runs
+        downstream_runs += 1
+        return upstream.value * 10
+
+    downstream = Computed(downstream_fn)
+
+    assert downstream.value == 10
+    assert upstream_runs == 1
+    assert downstream_runs == 1
+
+    source.value = 3  # upstream stays 1, so downstream should skip recompute.
+    assert downstream.value == 10
+    assert upstream_runs == 2
+    assert downstream_runs == 1
+
+
+def test_computed_dependencies_argument_is_deprecated_and_ignored():
+    source = Signal(1)
+    unrelated = Signal(10)
+
+    with pytest.warns(DeprecationWarning, match=r"Computed\(\.\.\., dependencies=.*\)"):
+        derived = Computed(lambda: source.value + 1, dependencies=[unrelated])
+
+    calls = 0
+    original_update = derived.update
+
+    def wrapped_update() -> None:
+        nonlocal calls
+        calls += 1
+        original_update()
+
+    derived.update = wrapped_update  # type: ignore[method-assign]
+    unrelated.value = 11
+
+    assert calls == 0
+    assert derived.value == 2
+
+
+def test_nested_signal_change_invalidates_computed_once():
+    inner = Signal(1)
+    outer = Signal(inner)
+    derived = Computed(lambda: outer.value + 1)
+    _ = derived.value
+
+    calls = 0
+    original_update = derived.update
+
+    def wrapped_update() -> None:
+        nonlocal calls
+        calls += 1
+        original_update()
+
+    derived.update = wrapped_update  # type: ignore[method-assign]
+    inner.value = 2
+
+    assert calls == 1
+    assert derived.value == 3
