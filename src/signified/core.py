@@ -28,6 +28,7 @@ __all__ = [
     "Variable",
     "Signal",
     "Computed",
+    "Effect",
     "computed",
     "unref",
     "has_value",
@@ -118,6 +119,116 @@ class _RxOps[T]:
 
     def __init__(self, source: "ReactiveMixIn[T]") -> None:
         self._source = source
+
+    def map[R](self, fn: Callable[[T], R]) -> Computed[R]:
+        """Return a reactive value by applying ``fn`` to ``self._source``.
+
+        Args:
+            fn: Function used to transform the current source value.
+
+        Returns:
+            A reactive value for ``fn(source.value)``.
+
+        Example:
+            ```py
+            >>> s = Signal(4)
+            >>> doubled = s.rx.map(lambda x: x * 2)
+            >>> doubled.value
+            8
+            >>> s.value = 5
+            >>> doubled.value
+            10
+
+            ```
+        """
+        return computed(fn)(self._source)
+
+    def effect(self, fn: Callable[[T], None]) -> "Effect":
+        """Eagerly run ``fn`` for side effects whenever the source changes.
+
+        ``fn`` is called immediately on creation and again on every subsequent
+        change to the source — without requiring the caller to read ``.value``.
+
+        The effect is active as long as the caller holds the returned
+        :class:`Effect` instance. Letting it be garbage-collected will silently
+        stop the effect; call :meth:`Effect.dispose` to stop it explicitly.
+
+        Args:
+            fn: Callback that receives the current source value on each change.
+
+        Returns:
+            An :class:`Effect` instance whose lifetime controls the subscription.
+
+        Example:
+            ```py
+            >>> seen = []
+            >>> s = Signal(1)
+            >>> e = s.rx.effect(seen.append)
+            >>> seen
+            [1]
+            >>> s.value = 2
+            >>> s.value = 3
+            >>> seen
+            [1, 2, 3]
+            >>> e.dispose()
+            >>> s.value = 99
+            >>> seen
+            [1, 2, 3]
+
+            ```
+        """
+        assert isinstance(self._source, Variable)
+        return Effect(self._source, fn)
+
+    def peek(self, fn: Callable[[T], Any]) -> Computed[T]:
+        """Run ``fn`` for side effects and pass through the original value.
+
+        This is a lazy pipeline operator. ``fn`` only executes when the
+        returned :class:`Computed` is read, not on every upstream change.
+        Intermediate values are skipped if the source changes multiple times
+        between reads.
+
+        .. warning::
+            The returned :class:`Computed` must be kept alive by the caller.
+            Observers are held as weak references, so if nothing holds a strong
+            reference to the returned value, it will be garbage-collected and
+            ``fn`` will silently stop running.
+
+            This is **not** an eagerly-evaluated effect. For code like::
+
+                s.rx.peek(print)  # returned Computed immediately GC'd
+
+            ``fn`` will never fire after the initial read. Assign the result
+            to a variable that outlives the reactive computation.
+
+        Args:
+            fn: Side-effect callback that receives the current source value.
+
+        Returns:
+            A reactive value that always equals ``source.value``.
+
+        Example:
+            ```py
+            >>> seen = []
+            >>> s = Signal(1)
+            >>> passthrough = s.rx.peek(lambda x: seen.append(x))
+            >>> passthrough.value
+            1
+            >>> s.value = 3
+            >>> passthrough.value
+            3
+            >>> seen
+            [1, 3]
+
+            ```
+        """
+
+        @computed
+        def _peek(value: T) -> T:
+            fn(value)
+            return value
+
+        return _peek(self._source)
 
     def len(self) -> Computed[int]:
         """Return a reactive value for ``len(source.value)``.
@@ -2243,6 +2354,58 @@ class Computed[T](Variable[T]):
         _track_read(self)
         self._impl.ensure_uptodate()
         return unref(self._value)
+
+
+class Effect:
+    """Eagerly run a side-effect whenever a reactive source changes.
+
+    Unlike :meth:`_RxOps.peek`, ``Effect`` subscribes directly to the source
+    and calls ``fn`` immediately on creation and on every subsequent change,
+    without requiring the caller to read ``.value``.
+
+    The effect is active for as long as the caller holds a reference to this
+    object. Because observers are stored as weak references, letting the
+    ``Effect`` instance be garbage-collected will silently stop the effect.
+    Call :meth:`dispose` to stop it explicitly before the instance is released.
+
+    Args:
+        source: The reactive value to observe.
+        fn: Callback that receives the current unwrapped value on each change.
+
+    Example:
+        ```py
+        >>> seen = []
+        >>> s = Signal(1)
+        >>> e = Effect(s, seen.append)
+        >>> seen
+        [1]
+        >>> s.value = 2
+        >>> s.value = 3
+        >>> seen
+        [1, 2, 3]
+        >>> e.dispose()
+        >>> s.value = 99
+        >>> seen
+        [1, 2, 3]
+
+        ```
+    """
+
+    __slots__ = ("_fn", "_source", "__weakref__")
+
+    def __init__(self, source: Variable[Any], fn: Callable[[Any], None]) -> None:
+        self._fn = fn
+        self._source = source
+        source.subscribe(self)
+        fn(source.value)
+
+    def update(self) -> None:
+        """Called by the source when its value changes."""
+        self._fn(self._source.value)
+
+    def dispose(self) -> None:
+        """Unsubscribe from the source and stop the effect."""
+        self._source.unsubscribe(self)
 
 
 # ---------------------------------------------------------------------------

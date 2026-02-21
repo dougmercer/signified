@@ -26,6 +26,9 @@ Mutating a signal's contents (e.g. setting an attribute or index) now also corre
 
 Added `Signal.rx` namespace which includes several methods:
 
+  - map (new) - lazy transform helper for derived values.
+  - peek (new) - lazy pass-through side-effect helper (observational effects).
+  - effect (new) - eager side-effect subscription with explicit `dispose()`.
   - len (new)
   - is_ (new)
   - is_not

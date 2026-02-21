@@ -179,6 +179,87 @@ def test_signal_where():
     assert result.value == 10
 
 
+def test_signal_rx_map():
+    """Test reactive transforms via signal.rx.map."""
+    s = Signal(2)
+    doubled = s.rx.map(lambda x: x * 2)
+
+    assert doubled.value == 4
+    s.value = 5
+    assert doubled.value == 10
+
+
+def test_signal_rx_map_is_lazy():
+    """Test that signal.rx.map does not execute until read."""
+    runs = 0
+    s = Signal(2)
+
+    def mapper(value: int) -> int:
+        nonlocal runs
+        runs += 1
+        return value * 2
+
+    doubled = s.rx.map(mapper)
+
+    assert runs == 0
+    s.value = 5
+    assert runs == 0
+    assert doubled.value == 10
+    assert runs == 1
+
+
+def test_signal_rx_peek():
+    """Test side effects via signal.rx.peek."""
+    seen: list[int] = []
+    s = Signal(1)
+    passthrough = s.rx.peek(lambda x: seen.append(x))
+
+    assert passthrough.value == 1
+    s.value = 3
+    assert passthrough.value == 3
+    assert seen == [1, 3]
+
+
+def test_signal_rx_peek_is_lazy_and_skips_intermediate_updates():
+    """Test lazy read semantics for signal.rx.peek."""
+    seen: list[int] = []
+    s = Signal(1)
+    passthrough = s.rx.peek(seen.append)
+
+    assert seen == []
+    s.value = 2
+    s.value = 3
+    assert seen == []
+    assert passthrough.value == 3
+    assert seen == [3]
+
+
+def test_signal_rx_effect_runs_immediately_and_on_updates():
+    """Test eager side effects via signal.rx.effect."""
+    seen: list[int] = []
+    s = Signal(1)
+
+    effect = s.rx.effect(seen.append)
+
+    assert seen == [1]
+    s.value = 2
+    s.value = 3
+    assert seen == [1, 2, 3]
+    effect.dispose()
+
+
+def test_signal_rx_effect_dispose_unsubscribes():
+    """Test that disposing signal.rx.effect stops future callbacks."""
+    seen: list[int] = []
+    s = Signal(1)
+
+    effect = s.rx.effect(seen.append)
+    effect.dispose()
+
+    s.value = 99
+    assert seen == [1]
+
+
 def test_signal_rx_len():
     """Test reactive length via signal.rx.len."""
     values = Signal([1, 2, 3])

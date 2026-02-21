@@ -21,13 +21,14 @@ Attributes:
     NestedValue: Recursive type for arbitrarily nested reactive values.
 """
 
-from .core import Computed, Signal, Variable, as_signal, computed, deep_unref, has_value, reactive_method, unref
+from .core import Computed, Effect, Signal, Variable, as_signal, computed, deep_unref, has_value, reactive_method, unref
 from .types import HasValue, NestedValue, ReactiveValue
 
 __all__ = [
     "Variable",
     "Signal",
     "Computed",
+    "Effect",
     "computed",
     "reactive_method",
     "unref",
