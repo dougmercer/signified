@@ -75,6 +75,18 @@ def test_as_bool():
     assert_type(unref(result), bool)
 
 
+def test_rx_len():
+    result = Signal([1, 2, 3]).rx.len()
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+
+def test_rx_is():
+    result = Signal(10).rx.is_(10)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
 def test_rx_is_not():
     result = Signal(10).rx.is_not(None)
     assert_type(result, Computed[bool])
@@ -83,6 +95,12 @@ def test_rx_is_not():
 
 def test_rx_eq():
     result = Signal(10).rx.eq(10)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_in():
+    result = Signal("a").rx.in_("cat")
     assert_type(result, Computed[bool])
     assert_type(unref(result), bool)
 

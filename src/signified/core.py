@@ -119,6 +119,50 @@ class _RxOps[T]:
     def __init__(self, source: "ReactiveMixIn[T]") -> None:
         self._source = source
 
+    def len(self) -> Computed[int]:
+        """Return a reactive value for ``len(source.value)``.
+
+        Returns:
+            A reactive value for ``len(source.value)``.
+
+        Example:
+            ```py
+            >>> s = Signal([1, 2, 3])
+            >>> length = s.rx.len()
+            >>> length.value
+            3
+            >>> s.value = [10]
+            >>> length.value
+            1
+
+            ```
+        """
+        return computed(len)(self._source)
+
+    def is_(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for identity check ``source.value is other``.
+
+        Args:
+            other: Value to compare against with identity semantics.
+
+        Returns:
+            A reactive value for ``source.value is other``.
+
+        Example:
+            ```py
+            >>> marker = object()
+            >>> s = Signal(marker)
+            >>> result = s.rx.is_(marker)
+            >>> result.value
+            True
+            >>> s.value = object()
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(operator.is_)(self._source, other)
+
     def is_not(self, other: Any) -> Computed[bool]:
         """Return a reactive value for identity check ``source.value is not other``.
 
@@ -142,6 +186,30 @@ class _RxOps[T]:
             ```
         """
         return computed(operator.is_not)(self._source, other)
+
+    def in_(self, container: Any) -> Computed[bool]:
+        """Return a reactive value for containment check ``source.value in container``.
+
+        Args:
+            container: Value checked for membership, e.g. list/string/set.
+
+        Returns:
+            A reactive value for ``source.value in container``.
+
+        Example:
+            ```py
+            >>> needle = Signal("a")
+            >>> haystack = Signal("cat")
+            >>> result = needle.rx.in_(haystack)
+            >>> result.value
+            True
+            >>> needle.value = "z"
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(operator.contains)(container, self._source)
 
     def contains(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `other` is in `self._source`.

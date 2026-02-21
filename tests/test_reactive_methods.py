@@ -179,15 +179,27 @@ def test_signal_where():
     assert result.value == 10
 
 
-def test_signal_rx_is_not():
-    """Test reactive identity checks via signal.rx.is_not."""
+def test_signal_rx_len():
+    """Test reactive length via signal.rx.len."""
+    values = Signal([1, 2, 3])
+    length = values.rx.len()
+
+    assert length.value == 3
+    values.value = [1]
+    assert length.value == 1
+
+
+def test_signal_rx_identity_methods():
+    """Test reactive identity checks via signal.rx.is_ / signal.rx.is_not."""
     marker = object()
     s = Signal(marker)
 
+    assert s.rx.is_(marker).value == True  # noqa: E712
     assert s.rx.is_not(marker).value == False  # noqa: E712
 
     other = object()
     s.value = other
+    assert s.rx.is_(marker).value == False  # noqa: E712
     assert s.rx.is_not(marker).value == True  # noqa: E712
 
 
@@ -199,6 +211,19 @@ def test_signal_rx_eq():
     assert result.value == True  # noqa: E712
     s.value = 25
     assert result.value == False  # noqa: E712
+
+
+def test_signal_rx_in():
+    """Test reverse containment via signal.rx.in_."""
+    needle = Signal(2)
+    haystack = Signal([1, 2, 3])
+    result = needle.rx.in_(haystack)
+
+    assert result.value == True  # noqa: E712
+    needle.value = 4
+    assert result.value == False  # noqa: E712
+    haystack.value = [4, 5]
+    assert result.value == True  # noqa: E712
 
 
 def test_legacy_non_dunder_methods_emit_deprecation_warning():
