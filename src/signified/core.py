@@ -1615,7 +1615,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
-        return f"<{self.value}>"
+        return f"<{self.value!r}>"
 
     @abstractmethod
     def update(self) -> None:
