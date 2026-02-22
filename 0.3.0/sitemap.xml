@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://dougmercer.github.io/signified/0.3.0/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://dougmercer.github.io/signified/0.3.0/api/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://dougmercer.github.io/signified/0.3.0/changes/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://dougmercer.github.io/signified/0.3.0/limitations/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://dougmercer.github.io/signified/0.3.0/magic-methods/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://dougmercer.github.io/signified/0.3.0/playground/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://dougmercer.github.io/signified/0.3.0/plugins/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+    <url>
+         <loc>https://dougmercer.github.io/signified/0.3.0/usage/</loc>
+         <lastmod>2026-02-22</lastmod>
+    </url>
+</urlset>
