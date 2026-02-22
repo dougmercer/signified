@@ -657,13 +657,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reactive_method" class="md-nav__link">
+  <a href="#applying-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        reactive_method
+        Applying functions
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Applying functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#peek-vs-effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        peek vs effect
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -971,13 +999,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reactive_method" class="md-nav__link">
+  <a href="#applying-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        reactive_method
+        Applying functions
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Applying functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        map
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#peek-vs-effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        peek vs effect
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1168,46 +1224,64 @@ Use <code>.value</code> when you need the plain Python value.</p>
 </span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="n">username</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;admin&quot;</span>
 </span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>  <span class="c1"># &lt;&quot;Welcome back, admin!&quot;&gt;</span>
 </span></code></pre></div>
-<h2 id="reactive_method"><code>reactive_method</code><a class="headerlink" href="#reactive_method" title="Permanent link">&para;</a></h2>
-<p>Use <code>@reactive_method(...)</code> for instance methods that depend on reactive attributes.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">reactive_method</span>
+<h2 id="applying-functions">Applying functions<a class="headerlink" href="#applying-functions" title="Permanent link">&para;</a></h2>
+<h3 id="map"><code>map</code><a class="headerlink" href="#map" title="Permanent link">&para;</a></h3>
+<p><code>map</code> transforms a value by applying a function and turning the result into a new reactive value. It is essentially a convenience wrapper for <code>computed</code>. It evaluates lazily.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">temperature_c</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
 </span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="nd">@dataclass</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">Item</span><span class="p">:</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">Cart</span><span class="p">:</span>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Item</span><span class="p">]):</span>
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">items</span><span class="p">)</span>
-</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tax_rate</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">0.125</span><span class="p">)</span>
-</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>
-</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>    <span class="nd">@reactive_method</span><span class="p">(</span><span class="s2">&quot;items&quot;</span><span class="p">,</span> <span class="s2">&quot;tax_rate&quot;</span><span class="p">)</span>
-</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">total</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>        <span class="n">subtotal</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">price</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>        <span class="k">return</span> <span class="n">subtotal</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">tax_rate</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>
-</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="n">cart</span> <span class="o">=</span> <span class="n">Cart</span><span class="p">([</span><span class="n">Item</span><span class="p">(</span><span class="s2">&quot;Book&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="n">Item</span><span class="p">(</span><span class="s2">&quot;Pen&quot;</span><span class="p">,</span> <span class="mi">4</span><span class="p">)])</span>
-</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="n">total_price</span> <span class="o">=</span> <span class="n">cart</span><span class="o">.</span><span class="n">total</span><span class="p">()</span>
-</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>
-</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="nb">print</span><span class="p">(</span><span class="n">total_price</span><span class="p">)</span>  <span class="c1"># &lt;27.0&gt;</span>
-</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a><span class="n">cart</span><span class="o">.</span><span class="n">tax_rate</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mf">0.25</span>
-</span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a><span class="nb">print</span><span class="p">(</span><span class="n">total_price</span><span class="p">)</span>  <span class="c1"># &lt;30.0&gt;</span>
-</span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a><span class="n">cart</span><span class="o">.</span><span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">Item</span><span class="p">(</span><span class="s2">&quot;Rare book?&quot;</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>
-</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a><span class="nb">print</span><span class="p">(</span><span class="n">total_price</span><span class="p">)</span>  <span class="c1"># &lt;505.0&gt;</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">temperature_f</span> <span class="o">=</span> <span class="n">temperature_c</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="p">(</span><span class="n">c</span> <span class="o">*</span> <span class="mi">9</span> <span class="o">/</span> <span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="mi">32</span><span class="p">)</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># equivalent to:</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># temperature_f = computed(lambda c: (c * 9 / 5) + 32)(temperature_f)</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">temperature_f</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 68.0</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="n">temperature_c</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">25</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">temperature_f</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 77.0</span>
 </span></code></pre></div>
+<h3 id="peek-vs-effect"><code>peek</code> vs <code>effect</code><a class="headerlink" href="#peek-vs-effect" title="Permanent link">&para;</a></h3>
+<p><code>peek</code> is lazy like other <code>Computed</code> values: it only runs when <code>.value</code> is read.</p>
+<p><code>effect</code> is eager: it runs immediately and again on every source update.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="peek-vs-effect-peek" name="__tabbed_1" type="radio" /><input id="peek-vs-effect-effect" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="peek-vs-effect-peek">peek</label><label for="peek-vs-effect-effect">effect</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">price</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">total</span> <span class="o">=</span> <span class="n">price</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">)</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;total:&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># Nothing happens</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">20</span>  <span class="c1"># Nothing happens</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">30</span>  <span class="c1"># Nothing happens</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># Nothing happens</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="n">total</span><span class="o">.</span><span class="n">value</span>  <span class="c1"># prints: &#39;total: 12.0&#39;</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">20</span>  <span class="c1"># Nothing happens</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="n">total</span><span class="o">.</span><span class="n">value</span>  <span class="c1"># prints: &#39;total: 24.0&#39;</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">price</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">total_effect</span> <span class="o">=</span> <span class="n">price</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">)</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">effect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;total:&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>  <span class="c1"># prints: &#39;total: 12.0&#39;</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">20</span>  <span class="c1"># prints: &#39;total: 24.0&#39;</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">effect_handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">30</span>  <span class="c1"># Nothing happens</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
 <h2 id="utility-helpers">Utility Helpers<a class="headerlink" href="#utility-helpers" title="Permanent link">&para;</a></h2>
 <p><code>unref</code> makes functions work with either plain values or reactive values.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasValue</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">unref</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_data</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">HasValue</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="k">return</span> <span class="n">unref</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">process_data</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>          <span class="c1"># 8</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">process_data</span><span class="p">(</span><span class="n">Signal</span><span class="p">(</span><span class="mi">5</span><span class="p">)))</span>  <span class="c1"># 10</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasValue</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">unref</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_data</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">HasValue</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="k">return</span> <span class="n">unref</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">process_data</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>          <span class="c1"># 8</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">process_data</span><span class="p">(</span><span class="n">Signal</span><span class="p">(</span><span class="mi">5</span><span class="p">)))</span>  <span class="c1"># 10</span>
 </span></code></pre></div>
 <p>Related helpers:</p>
 <ul>

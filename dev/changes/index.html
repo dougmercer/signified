@@ -732,6 +732,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#rx-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rx namespace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#bug-fixes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1010,6 +1021,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#rx-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rx namespace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#bug-fixes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1235,15 +1257,39 @@
 <li>Assigning <code>NaN</code> to a signal that already holds <code>NaN</code> is treated as no change.</li>
 </ul>
 <p>Mutating a signal's contents (e.g. setting an attribute or index) now also correctly invalidates downstream computeds, and <code>unref</code>/<code>deep_unref</code> align with how dependencies are tracked at runtime.</p>
+<h3 id="rx-namespace">rx namespace<a class="headerlink" href="#rx-namespace" title="Permanent link">&para;</a></h3>
+<p>Added <code>Signal.rx</code> namespace which includes several methods:</p>
+<ul>
+<li>map (new) - lazy transform helper for derived values.</li>
+<li>peek (new) - lazy pass-through side-effect helper (observational effects).</li>
+<li>effect (new) - eager side-effect subscription with explicit <code>dispose()</code>.</li>
+<li>len (new)</li>
+<li>is_ (new)</li>
+<li>is_not</li>
+<li>in_ (new)</li>
+<li>contains</li>
+<li>eq</li>
+<li>where</li>
+<li>as_bool</li>
+</ul>
 <h3 id="bug-fixes">Bug Fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h3>
 <p>Fixed a bug in the IPython/Jupyter display integration where display observers could be garbage-collected before they had a chance to update.</p>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <p>Added an interactive Playground to the docs, powered by Pyodide and CodeMirror, so you can try <code>signified</code> right in your browser.</p>
 <div class="admonition warning">
 <p class="admonition-title">Deprecations</p>
+<p>Deprecated functions:</p>
 <ul>
 <li><code>Computed(..., dependencies=...)</code> — the <code>dependencies</code> argument is now ignored. Dependencies are automatically inferred from reactive reads during evaluation.</li>
 <li><code>@reactive_method(...)</code> — use <code>@computed</code> instead. Any dependency-name arguments are also ignored.</li>
+</ul>
+<p>Deprecated several methods</p>
+<ul>
+<li><code>x.as_bool(...)</code> - Will eventually be removed entirely. Use <code>computed(bool)(x)</code> instead.</li>
+<li><code>x.contains(...)</code> - Use <code>x.rx.contains</code> instead.</li>
+<li><code>x.eq(...)</code> - Use <code>x.rx.eq</code> instead</li>
+<li><code>x.where(...)</code> - Use <code>x.rx.where</code> instead</li>
+<li><code>x.is_not(...)</code> - Use <code>x.rx.is_not</code> instead</li>
 </ul>
 </div>
 <h2 id="027">0.2.7<a class="headerlink" href="#027" title="Permanent link">&para;</a></h2>
