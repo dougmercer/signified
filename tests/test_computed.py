@@ -208,3 +208,26 @@ def test_nested_signal_change_invalidates_computed_once():
 
     assert calls == 1
     assert derived.value == 3
+
+
+def test_computed_update_forces_dependency_rediscovery_when_graph_changes():
+    frame = Signal(0)
+    source = Signal(1)
+
+    class Box:
+        pass
+
+    box = Box()
+    box.dep = Computed(lambda: source.value)  # type: ignore
+
+    consumer = Computed(lambda: box.dep.value)  # type: ignore
+    assert consumer.value == 1
+
+    old = box.dep  # type: ignore
+    box.dep = Computed(lambda: 100 if frame.value >= 1 else old.value)  # type: ignore
+
+    # Force invalidation through the old dependency path.
+    old.invalidate()
+    frame.value = 1
+
+    assert consumer.value == 100
