@@ -195,16 +195,38 @@ def test_nested_signal_change_invalidates_computed_once():
     derived = Computed(lambda: outer.value + 1)
     _ = derived.value
 
-    calls = 0
-    original_update = derived.update
+    class Counter:
+        def __init__(self) -> None:
+            self.calls = 0
 
-    def wrapped_update() -> None:
-        nonlocal calls
-        calls += 1
-        original_update()
+        def update(self) -> None:
+            self.calls += 1
 
-    derived.update = wrapped_update  # type: ignore[method-assign]
+    counter = Counter()
+    derived.subscribe(counter)
     inner.value = 2
 
-    assert calls == 1
+    assert counter.calls == 1
     assert derived.value == 3
+
+
+def test_manual_update_refreshes_after_dependency_topology_rebind():
+    frame = Signal(0)
+    source = Signal(1)
+
+    class Box:
+        pass
+
+    box = Box()
+    box.dep = Computed(lambda: source.value)
+    consumer = Computed(lambda: box.dep.value)
+
+    assert consumer.value == 1
+
+    old = box.dep
+    box.dep = Computed(lambda: 100 if frame.value >= 1 else old.value)
+
+    old.update()
+    frame.value = 1
+
+    assert consumer.value == 100

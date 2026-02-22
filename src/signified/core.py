@@ -2208,7 +2208,17 @@ class Signal[T](Variable[T]):
 class _ComputedImpl:
     """Internal state and dependency tracking for :class:`Computed`."""
 
-    __slots__ = ["_owner", "_deps", "_next_deps", "_dirty", "_has_value", "_is_computing", "_dep_versions"]
+    __slots__ = [
+        "__weakref__",
+        "_owner",
+        "_deps",
+        "_next_deps",
+        "_dirty",
+        "_has_value",
+        "_is_computing",
+        "_dep_versions",
+        "_force_refresh",
+    ]
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
@@ -2218,6 +2228,7 @@ class _ComputedImpl:
         self._has_value = False
         self._is_computing = False
         self._dep_versions: dict[int, int] = {}
+        self._force_refresh = False
 
     def register_dependency(self, dependency: Variable[Any]) -> None:
         if self._next_deps is not None and dependency is not self._owner:
@@ -2248,15 +2259,16 @@ class _ComputedImpl:
         assert next_deps is not None
         for dep in tuple(self._deps):
             if dep not in next_deps:
-                dep.unsubscribe(owner)
+                dep.unsubscribe(self)
         for dep in tuple(next_deps):
             if dep not in self._deps:
-                dep.subscribe(owner)
+                dep.subscribe(self)
         self._deps = next_deps
         self._dep_versions = {id(dep): dep._version for dep in tuple(next_deps)}
 
         # 3) Commit value/version if the computed result actually changed.
         self._dirty = False
+        self._force_refresh = False
         self._has_value = True
         if not had_value or _has_changed(previous_value, next_value):
             owner._value = next_value
@@ -2277,20 +2289,28 @@ class _ComputedImpl:
         if not self._dirty and self._has_value:
             return
 
-        # Fast path 2: dirty marker is stale, but dependency versions unchanged.
-        if self._has_value and not self.dependencies_changed():
+        # Fast path 2: dirty marker is stale, dependency versions unchanged,
+        # and no direct force-refresh request is pending.
+        if self._has_value and not self._force_refresh and not self.dependencies_changed():
             self._dirty = False
             return
 
         # Slow path: recompute and reconcile dependencies.
         self.refresh()
 
-    def invalidate(self) -> bool:
+    def invalidate(self, *, force_refresh: bool = False) -> bool:
         """Mark stale and return True when this call changed the marker."""
+        if force_refresh:
+            self._force_refresh = True
         if self._dirty:
             return False
         self._dirty = True
         return True
+
+    def update(self) -> None:
+        """Dependency-driven invalidation callback for subscribed sources."""
+        if self.invalidate():
+            self._owner.notify()
 
 
 class Computed[T](Variable[T]):
@@ -2342,9 +2362,10 @@ class Computed[T](Variable[T]):
         pm.hook.created(value=self)
 
     def update(self) -> None:
-        """Mark this computed stale and propagate invalidation."""
-        if not self._impl.invalidate():
-            return
+        """Hard-invalidate this computed and propagate invalidation."""
+        self._impl.invalidate(force_refresh=True)
+        self._version += 1
+        pm.hook.updated(value=self)
         self.notify()
 
     @property
