@@ -13,7 +13,7 @@ Signified exposes reactive behavior primarily through magic methods on `Signal` 
 | [`__abs__`](api.md#signified.core.ReactiveMixIn.__abs__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(-5)`<br>`#!pycon >>> abs(x)`<br>`#!pycon <5>` |  |
 | [`__neg__`](api.md#signified.core.ReactiveMixIn.__neg__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> -x`<br>`#!pycon <-10>` |  |
 | [`__pos__`](api.md#signified.core.ReactiveMixIn.__pos__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> +x`<br>`#!pycon <10>` |  |
-| [`__invert__`](api.md#signified.core.ReactiveMixIn.__invert__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> flags = Signal(0b0011)`<br>`#!pycon >>> ~flags`<br>`#!pycon <-4>` | Commonly used with bitmasks. |
+| [`__invert__`](api.md#signified.core.ReactiveMixIn.__invert__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> flags = Signal(0b0011)`<br>`#!pycon >>> ~flags`<br>`#!pycon <-4>` |  |
 | [`__round__`](api.md#signified.core.ReactiveMixIn.__round__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(3.14159)`<br>`#!pycon >>> round(x, 2)`<br>`#!pycon <3.14>` |  |
 | [`__trunc__`](api.md#signified.core.ReactiveMixIn.__trunc__) | `#!pycon >>> import math`<br>`#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(3.9)`<br>`#!pycon >>> math.trunc(x)`<br>`#!pycon <3>` |  |
 | [`__floor__`](api.md#signified.core.ReactiveMixIn.__floor__) | `#!pycon >>> import math`<br>`#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(3.9)`<br>`#!pycon >>> math.floor(x)`<br>`#!pycon <3>` |  |
@@ -57,6 +57,11 @@ Signified exposes reactive behavior primarily through magic methods on `Signal` 
 
 ## Comparisons, Predicates, and Truthiness
 
+For operations that Python cannot overload cleanly (`is`, `is not`, and
+truthiness via `bool(...)`) or that have special semantics in Signified
+(`==`), use the `rx` namespace (`x.rx.*`). Legacy direct methods like
+`x.eq(...)` still work, but are deprecated aliases.
+
 | Method | Usage example | Notes |
 | --- | --- | --- |
 | [`__lt__`](api.md#signified.core.ReactiveMixIn.__lt__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a < b`<br>`#!pycon <False>` |  |
@@ -64,11 +69,13 @@ Signified exposes reactive behavior primarily through magic methods on `Signal` 
 | [`__gt__`](api.md#signified.core.ReactiveMixIn.__gt__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a > b`<br>`#!pycon <True>` |  |
 | [`__ge__`](api.md#signified.core.ReactiveMixIn.__ge__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a >= b`<br>`#!pycon <True>` |  |
 | [`__ne__`](api.md#signified.core.ReactiveMixIn.__ne__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a != b`<br>`#!pycon <True>` |  |
-| [`eq`](api.md#signified.core.ReactiveMixIn.eq) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a.eq(b)`<br>`#!pycon <False>` | Overloading `__eq__` would break the object, so we use an explicit method, `a.eq(b)` as an analog to `a == b`. |
-| [`is_not`](api.md#signified.core.ReactiveMixIn.is_not) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> maybe_user = Signal(None)`<br>`#!pycon >>> maybe_user.is_not(None)`<br>`#!pycon <False>` | `is` / `is not` are not overloadable. Use this for reactive identity-style checks. |
-| [`contains`](api.md#signified.core.ReactiveMixIn.contains) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> nums = Signal([1, 2, 3])`<br>`#!pycon >>> nums.contains(2)`<br>`#!pycon <True>` |  |
-| [`where`](api.md#signified.core.ReactiveMixIn.where) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> flag = Signal(True)`<br>`#!pycon >>> flag.where("yes", "no")`<br>`#!pycon <yes>` |  |
-| [`as_bool`](api.md#signified.core.ReactiveMixIn.as_bool) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> x.as_bool()`<br>`#!pycon <True>` | `__bool__` cannot safely be reactive because Python expects an immediate bool in control flow. |
+| [`rx.is_`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> marker = object()`<br>`#!pycon >>> s = Signal(marker)`<br>`#!pycon >>> s.rx.is_(marker)`<br>`#!pycon <True>` | `is` is not overloadable. Use this for reactive identity checks. |
+| [`rx.is_not`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> maybe_user = Signal(None)`<br>`#!pycon >>> maybe_user.rx.is_not(None)`<br>`#!pycon <False>` | `is not` is not overloadable. |
+| [`rx.eq`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a.rx.eq(b)`<br>`#!pycon <False>` | `__eq__` is intentionally not overloaded; use `rx.eq` for reactive equality. |
+| [`rx.in_`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> needle = Signal(2)`<br>`#!pycon >>> haystack = Signal([1, 2, 3])`<br>`#!pycon >>> needle.rx.in_(haystack)`<br>`#!pycon <True>` |  |
+| [`rx.contains`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> nums = Signal([1, 2, 3])`<br>`#!pycon >>> nums.rx.contains(2)`<br>`#!pycon <True>` | |
+| [`rx.where`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> flag = Signal(True)`<br>`#!pycon >>> flag.rx.where("yes", "no")`<br>`#!pycon <yes>` |  |
+| [`rx.as_bool`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> x.rx.as_bool()`<br>`#!pycon <True>` | `__bool__` cannot safely be reactive because Python expects an immediate bool in control flow. |
 
 ## Object and Container Access
 

@@ -36,6 +36,7 @@ Added `Signal.rx` namespace which includes several methods:
   - contains
   - eq
   - where
+  - as_bool
 
 ### Bug Fixes
 
@@ -47,9 +48,13 @@ Added an interactive Playground to the docs, powered by Pyodide and CodeMirror, 
 
 !!! warning "Deprecations"
 
-    - `Computed(..., dependencies=...)` — the `dependencies` argument is now ignored. Dependencies are automatically inferred from reactive reads during evaluation.
-    - `@reactive_method(...)` — use `@computed` instead. Any dependency-name arguments are also ignored.
-    - Deprecated several methods
+    Deprecated functions:
+
+      - `Computed(..., dependencies=...)` — the `dependencies` argument is now ignored. Dependencies are automatically inferred from reactive reads during evaluation.
+      - `@reactive_method(...)` — use `@computed` instead. Any dependency-name arguments are also ignored.
+
+    Deprecated several methods
+
       - `x.as_bool(...)` - Will eventually be removed entirely. Use `computed(bool)(x)` instead.
       - `x.contains(...)` - Use `x.rx.contains` instead.
       - `x.eq(...)` - Use `x.rx.eq` instead
