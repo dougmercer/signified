@@ -1,7 +1,7 @@
 from math import ceil, floor, trunc
 from typing import Any, TypeVar, Union, assert_type
 
-from signified import Computed, Signal, computed, reactive_method, unref
+from signified import Computed, Effect, Signal, computed, reactive_method, unref
 
 T = TypeVar("T")
 Numeric = Union[int, float]
@@ -71,6 +71,54 @@ def test_abs():
 
 def test_as_bool():
     result = Signal(1).as_bool()
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_map():
+    result = Signal(2).rx.map(lambda x: x * 2)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+
+def test_rx_peek():
+    result = Signal(2).rx.peek(lambda x: x + 1)
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+
+def test_rx_effect():
+    result = Signal(2).rx.effect(lambda _x: None)
+    assert_type(result, Effect)
+    result.dispose()
+
+
+def test_rx_len():
+    result = Signal([1, 2, 3]).rx.len()
+    assert_type(result, Computed[int])
+    assert_type(unref(result), int)
+
+
+def test_rx_is():
+    result = Signal(10).rx.is_(10)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_is_not():
+    result = Signal(10).rx.is_not(None)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_eq():
+    result = Signal(10).rx.eq(10)
+    assert_type(result, Computed[bool])
+    assert_type(unref(result), bool)
+
+
+def test_rx_in():
+    result = Signal("a").rx.in_("cat")
     assert_type(result, Computed[bool])
     assert_type(unref(result), bool)
 

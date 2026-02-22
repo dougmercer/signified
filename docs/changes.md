@@ -22,6 +22,22 @@ Signified is smarter about deciding when a `Signal`'s value has actually changed
 
 Mutating a signal's contents (e.g. setting an attribute or index) now also correctly invalidates downstream computeds, and `unref`/`deep_unref` align with how dependencies are tracked at runtime.
 
+### rx namespace
+
+Added `Signal.rx` namespace which includes several methods:
+
+  - map (new) - lazy transform helper for derived values.
+  - peek (new) - lazy pass-through side-effect helper (observational effects).
+  - effect (new) - eager side-effect subscription with explicit `dispose()`.
+  - len (new)
+  - is_ (new)
+  - is_not
+  - in_ (new)
+  - contains
+  - eq
+  - where
+  - as_bool
+
 ### Bug Fixes
 
 Fixed a bug in the IPython/Jupyter display integration where display observers could be garbage-collected before they had a chance to update.
@@ -32,8 +48,18 @@ Added an interactive Playground to the docs, powered by Pyodide and CodeMirror, 
 
 !!! warning "Deprecations"
 
-    - `Computed(..., dependencies=...)` — the `dependencies` argument is now ignored. Dependencies are automatically inferred from reactive reads during evaluation.
-    - `@reactive_method(...)` — use `@computed` instead. Any dependency-name arguments are also ignored.
+    Deprecated functions:
+
+      - `Computed(..., dependencies=...)` — the `dependencies` argument is now ignored. Dependencies are automatically inferred from reactive reads during evaluation.
+      - `@reactive_method(...)` — use `@computed` instead. Any dependency-name arguments are also ignored.
+
+    Deprecated several methods
+
+      - `x.as_bool(...)` - Will eventually be removed entirely. Use `computed(bool)(x)` instead.
+      - `x.contains(...)` - Use `x.rx.contains` instead.
+      - `x.eq(...)` - Use `x.rx.eq` instead
+      - `x.where(...)` - Use `x.rx.where` instead
+      - `x.is_not(...)` - Use `x.rx.is_not` instead
 
 ## 0.2.7
 

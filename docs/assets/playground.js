@@ -37,6 +37,31 @@ print(summary.value)
 
 values.value = [10, 20, 30]
 print(summary.value)`,
+    "rx-peek": `from signified import Signal
+
+price = Signal(10)
+total = price.rx.map(lambda p: p * 1.2).rx.peek(lambda v: print("total:", v))
+
+price.value = 10
+price.value = 20
+price.value = 30
+price.value = 10
+total.value   # prints once: total: 12.0
+price.value = 20
+total.value   # prints: total: 24.0`,
+    "rx-effect": `from signified import Signal
+
+price = Signal(10)
+effect_handle = price.rx.map(lambda p: p * 1.2).rx.effect(
+    lambda v: print("total:", v)
+)
+
+# effect runs immediately and on each update
+price.value = 20
+price.value = 30
+
+effect_handle.dispose()
+price.value = 99  # no output after dispose`,
     collections: `from signified import Signal
 
 items = Signal({"theme": "dark", "count": 2})

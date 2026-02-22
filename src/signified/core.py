@@ -28,6 +28,7 @@ __all__ = [
     "Variable",
     "Signal",
     "Computed",
+    "Effect",
     "computed",
     "unref",
     "has_value",
@@ -100,6 +101,324 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
         return Computed(compute_func)
 
     return wrapper
+
+
+def _warn_deprecated_alias(method: str, replacement: str) -> None:
+    """Warn that a legacy `ReactiveMixIn` helper method is deprecated."""
+    warnings.warn(
+        f"`ReactiveMixIn.{method}()` is deprecated; use `{replacement}` instead.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
+class _RxOps[T]:
+    """Helper methods available under ``signal.rx``."""
+
+    __slots__ = ("_source",)
+
+    def __init__(self, source: "ReactiveMixIn[T]") -> None:
+        self._source = source
+
+    def map[R](self, fn: Callable[[T], R]) -> Computed[R]:
+        """Return a reactive value by applying ``fn`` to ``self._source``.
+
+        Args:
+            fn: Function used to transform the current source value.
+
+        Returns:
+            A reactive value for ``fn(source.value)``.
+
+        Example:
+            ```py
+            >>> s = Signal(4)
+            >>> doubled = s.rx.map(lambda x: x * 2)
+            >>> doubled.value
+            8
+            >>> s.value = 5
+            >>> doubled.value
+            10
+
+            ```
+        """
+        return computed(fn)(self._source)
+
+    def effect(self, fn: Callable[[T], None]) -> "Effect":
+        """Eagerly run ``fn`` for side effects whenever the source changes.
+
+        ``fn`` is called immediately on creation and again on every subsequent
+        change to the source — without requiring the caller to read ``.value``.
+
+        The effect is active as long as the caller holds the returned
+        :class:`Effect` instance. Letting it be garbage-collected will silently
+        stop the effect; call :meth:`Effect.dispose` to stop it explicitly.
+
+        Args:
+            fn: Callback that receives the current source value on each change.
+
+        Returns:
+            An :class:`Effect` instance whose lifetime controls the subscription.
+
+        Example:
+            ```py
+            >>> seen = []
+            >>> s = Signal(1)
+            >>> e = s.rx.effect(seen.append)
+            >>> seen
+            [1]
+            >>> s.value = 2
+            >>> s.value = 3
+            >>> seen
+            [1, 2, 3]
+            >>> e.dispose()
+            >>> s.value = 99
+            >>> seen
+            [1, 2, 3]
+
+            ```
+        """
+        assert isinstance(self._source, Variable)
+        return Effect(self._source, fn)
+
+    def peek(self, fn: Callable[[T], Any]) -> Computed[T]:
+        """Run ``fn`` for side effects and pass through the original value.
+
+        This is a lazy pipeline operator. ``fn`` only executes when the
+        returned :class:`Computed` is read, not on every upstream change.
+        Intermediate values are skipped if the source changes multiple times
+        between reads.
+
+        .. warning::
+            The returned :class:`Computed` must be kept alive by the caller.
+            Observers are held as weak references, so if nothing holds a strong
+            reference to the returned value, it will be garbage-collected and
+            ``fn`` will silently stop running.
+
+            This is **not** an eagerly-evaluated effect. For code like::
+
+                s.rx.peek(print)  # returned Computed immediately GC'd
+
+            ``fn`` will never fire after the initial read. Assign the result
+            to a variable that outlives the reactive computation.
+
+        Args:
+            fn: Side-effect callback that receives the current source value.
+
+        Returns:
+            A reactive value that always equals ``source.value``.
+
+        Example:
+            ```py
+            >>> seen = []
+            >>> s = Signal(1)
+            >>> passthrough = s.rx.peek(lambda x: seen.append(x))
+            >>> passthrough.value
+            1
+            >>> s.value = 3
+            >>> passthrough.value
+            3
+            >>> seen
+            [1, 3]
+
+            ```
+        """
+
+        @computed
+        def _peek(value: T) -> T:
+            fn(value)
+            return value
+
+        return _peek(self._source)
+
+    def len(self) -> Computed[int]:
+        """Return a reactive value for ``len(source.value)``.
+
+        Returns:
+            A reactive value for ``len(source.value)``.
+
+        Example:
+            ```py
+            >>> s = Signal([1, 2, 3])
+            >>> length = s.rx.len()
+            >>> length.value
+            3
+            >>> s.value = [10]
+            >>> length.value
+            1
+
+            ```
+        """
+        return computed(len)(self._source)
+
+    def is_(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for identity check ``source.value is other``.
+
+        Args:
+            other: Value to compare against with identity semantics.
+
+        Returns:
+            A reactive value for ``source.value is other``.
+
+        Example:
+            ```py
+            >>> marker = object()
+            >>> s = Signal(marker)
+            >>> result = s.rx.is_(marker)
+            >>> result.value
+            True
+            >>> s.value = object()
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(operator.is_)(self._source, other)
+
+    def is_not(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for identity check ``source.value is not other``.
+
+        Args:
+            other: Value to compare against with identity semantics.
+
+        Returns:
+            A reactive value for ``source.value is not other``.
+
+        Example:
+            ```py
+            >>> marker = object()
+            >>> s = Signal(marker)
+            >>> result = s.rx.is_not(marker)
+            >>> result.value
+            False
+            >>> s.value = object()
+            >>> result.value
+            True
+
+            ```
+        """
+        return computed(operator.is_not)(self._source, other)
+
+    def in_(self, container: Any) -> Computed[bool]:
+        """Return a reactive value for containment check ``source.value in container``.
+
+        Args:
+            container: Value checked for membership, e.g. list/string/set.
+
+        Returns:
+            A reactive value for ``source.value in container``.
+
+        Example:
+            ```py
+            >>> needle = Signal("a")
+            >>> haystack = Signal("cat")
+            >>> result = needle.rx.in_(haystack)
+            >>> result.value
+            True
+            >>> needle.value = "z"
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(operator.contains)(container, self._source)
+
+    def contains(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for whether `other` is in `self._source`.
+
+        Args:
+            other: The value to check for containment.
+
+        Returns:
+            A reactive value for ``other in source.value``.
+
+        Example:
+            ```py
+            >>> s = Signal([1, 2, 3, 4])
+            >>> result = s.rx.contains(3)
+            >>> result.value
+            True
+            >>> s.value = [5, 6, 7, 8]
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(operator.contains)(self._source, other)
+
+    def eq(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for whether ``source.value == other``.
+
+        Args:
+            other: Value to compare against.
+
+        Returns:
+            A reactive value for ``source.value == other``.
+
+        Example:
+            ```py
+            >>> s = Signal(10)
+            >>> result = s.rx.eq(10)
+            >>> result.value
+            True
+            >>> s.value = 25
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(operator.eq)(self._source, other)
+
+    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
+        """Return a reactive value for ``a`` if ``source`` is truthy, else ``b``.
+
+        Args:
+            a: The value to return if source is truthy.
+            b: The value to return if source is falsy.
+
+        Returns:
+            A reactive value for ``a if source.value else b``.
+
+        Example:
+            ```py
+            >>> condition = Signal(True)
+            >>> result = condition.rx.where("Yes", "No")
+            >>> result.value
+            'Yes'
+            >>> condition.value = False
+            >>> result.value
+            'No'
+
+            ```
+        """
+
+        @computed
+        def ternary(a: A, b: B, condition: Any) -> A | B:
+            return a if condition else b
+
+        return ternary(a, b, self._source)
+
+    def as_bool(self) -> Computed[bool]:
+        """Return a reactive value for the boolean value of ``self._source``.
+
+        Note:
+            ``__bool__`` cannot be implemented to return a non-``bool``, so it is provided as a method.
+
+        Returns:
+            A reactive value for ``bool(source.value)``.
+
+        Example:
+            ```py
+            >>> s = Signal(1)
+            >>> result = s.rx.as_bool()
+            >>> result.value
+            True
+            >>> s.value = 0
+            >>> result.value
+            False
+
+            ```
+        """
+        return computed(bool)(self._source)
 
 
 class ReactiveMixIn[T]:
@@ -229,6 +548,9 @@ class ReactiveMixIn[T]:
     def as_bool(self) -> Computed[bool]:
         """Return a reactive value for the boolean value of `self`.
 
+        Deprecated:
+            Will be removed in a future release. Use `computed(bool)(self)`.
+
         Note:
             `__bool__` cannot be implemented to return a non-`bool`, so it is provided as a method.
 
@@ -247,7 +569,13 @@ class ReactiveMixIn[T]:
 
             ```
         """
-        return computed(bool)(self)
+        _warn_deprecated_alias("as_bool", "self.rx.as_bool()")
+        return self.rx.as_bool()
+
+    @property
+    def rx(self) -> _RxOps[T]:
+        """Access reactive helper operations in a dedicated namespace."""
+        return _RxOps(self)
 
     def __str__(self) -> str:
         """Return a string of the current value.
@@ -523,6 +851,9 @@ class ReactiveMixIn[T]:
     def contains(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `other` is in `self`.
 
+        Deprecated:
+            Use ``self.rx.contains(other)`` instead.
+
         Args:
             other: The value to check for containment.
 
@@ -541,7 +872,8 @@ class ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.contains)(self, other)
+        _warn_deprecated_alias("contains", "self.rx.contains(other)")
+        return self.rx.contains(other)
 
     @overload
     def __divmod__(self: "ReactiveMixIn[int]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
@@ -578,6 +910,9 @@ class ReactiveMixIn[T]:
     def is_not(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is not other.
 
+        Deprecated:
+            Use ``self.rx.is_not(other)`` instead.
+
         Args:
             other: The value to compare against.
 
@@ -597,10 +932,14 @@ class ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.is_not)(self, other)
+        _warn_deprecated_alias("is_not", "self.rx.is_not(other)")
+        return self.rx.is_not(other)
 
     def eq(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` equals other.
+
+        Deprecated:
+            Use ``self.rx.eq(other)`` instead.
 
         Args:
             other: The value to compare against.
@@ -623,7 +962,8 @@ class ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.eq)(self, other)
+        _warn_deprecated_alias("eq", "self.rx.eq(other)")
+        return self.rx.eq(other)
 
     @overload
     def __floordiv__(self: "ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1490,6 +1830,9 @@ class ReactiveMixIn[T]:
     def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
         """Return a reactive value for `a` if `self` is `True`, else `b`.
 
+        Deprecated:
+            Use ``self.rx.where(a, b)`` instead.
+
         Args:
             a: The value to return if `self` is `True`.
             b: The value to return if `self` is `False`.
@@ -1509,12 +1852,8 @@ class ReactiveMixIn[T]:
 
             ```
         """
-
-        @computed
-        def ternary(a: A, b: B, self: Any) -> A | B:
-            return a if self else b
-
-        return ternary(a, b, self)
+        _warn_deprecated_alias("where", "self.rx.where(a, b)")
+        return self.rx.where(a, b)
 
 
 def _coerce_to_bool(value: Any) -> bool:
@@ -2015,6 +2354,58 @@ class Computed[T](Variable[T]):
         _track_read(self)
         self._impl.ensure_uptodate()
         return unref(self._value)
+
+
+class Effect:
+    """Eagerly run a side-effect whenever a reactive source changes.
+
+    Unlike :meth:`_RxOps.peek`, ``Effect`` subscribes directly to the source
+    and calls ``fn`` immediately on creation and on every subsequent change,
+    without requiring the caller to read ``.value``.
+
+    The effect is active for as long as the caller holds a reference to this
+    object. Because observers are stored as weak references, letting the
+    ``Effect`` instance be garbage-collected will silently stop the effect.
+    Call :meth:`dispose` to stop it explicitly before the instance is released.
+
+    Args:
+        source: The reactive value to observe.
+        fn: Callback that receives the current unwrapped value on each change.
+
+    Example:
+        ```py
+        >>> seen = []
+        >>> s = Signal(1)
+        >>> e = Effect(s, seen.append)
+        >>> seen
+        [1]
+        >>> s.value = 2
+        >>> s.value = 3
+        >>> seen
+        [1, 2, 3]
+        >>> e.dispose()
+        >>> s.value = 99
+        >>> seen
+        [1, 2, 3]
+
+        ```
+    """
+
+    __slots__ = ("_fn", "_source", "__weakref__")
+
+    def __init__(self, source: Variable[Any], fn: Callable[[Any], None]) -> None:
+        self._fn = fn
+        self._source = source
+        source.subscribe(self)
+        fn(source.value)
+
+    def update(self) -> None:
+        """Called by the source when its value changes."""
+        self._fn(self._source.value)
+
+    def dispose(self) -> None:
+        """Unsubscribe from the source and stop the effect."""
+        self._source.unsubscribe(self)
 
 
 # ---------------------------------------------------------------------------

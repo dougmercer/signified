@@ -185,40 +185,63 @@ username.value = "admin"
 print(message)  # <"Welcome back, admin!">
 ```
 
-## `reactive_method`
 
-Use `@reactive_method(...)` for instance methods that depend on reactive attributes.
+## Applying functions
+
+### `map`
+
+`map` transforms a value by applying a function and turning the result into a new reactive value. It is essentially a convenience wrapper for `computed`. It evaluates lazily.
 
 ```python
-from dataclasses import dataclass
-from typing import List
+from signified import Signal
 
-from signified import Signal, reactive_method
+temperature_c = Signal(20)
 
-@dataclass
-class Item:
-    name: str
-    price: float
 
-class Cart:
-    def __init__(self, items: List[Item]):
-        self.items = Signal(items)
-        self.tax_rate = Signal(0.125)
+temperature_f = temperature_c.rx.map(lambda c: (c * 9 / 5) + 32)
+# equivalent to:
+# temperature_f = computed(lambda c: (c * 9 / 5) + 32)(temperature_f)
 
-    @reactive_method("items", "tax_rate")
-    def total(self):
-        subtotal = sum(item.price for item in self.items.value)
-        return subtotal * (1 + self.tax_rate.value)
-
-cart = Cart([Item("Book", 20), Item("Pen", 4)])
-total_price = cart.total()
-
-print(total_price)  # <27.0>
-cart.tax_rate.value = 0.25
-print(total_price)  # <30.0>
-cart.items[0] = Item("Rare book?", 400)
-print(total_price)  # <505.0>
+print(temperature_f.value)  # 68.0
+temperature_c.value = 25
+print(temperature_f.value)  # 77.0
 ```
+
+### `peek` vs `effect`
+
+`peek` is lazy like other `Computed` values: it only runs when `.value` is read.
+
+`effect` is eager: it runs immediately and again on every source update.
+
+=== "peek"
+
+    ```python
+    from signified import Signal
+
+    price = Signal(10)
+    total = price.rx.map(lambda p: p * 1.2).rx.peek(lambda v: print("total:", v))
+
+    price.value = 10  # Nothing happens
+    price.value = 20  # Nothing happens
+    price.value = 30  # Nothing happens
+    price.value = 10  # Nothing happens
+    total.value  # prints: 'total: 12.0'
+    price.value = 20  # Nothing happens
+    total.value  # prints: 'total: 24.0'
+    ```
+
+=== "effect"
+
+    ```python
+    from signified import Signal
+
+    price = Signal(10)
+    total_effect = price.rx.map(lambda p: p * 1.2).rx.effect(lambda v: print("total:", v))  # prints: 'total: 12.0'
+    price.value = 20  # prints: 'total: 24.0'
+
+    effect_handle.dispose()
+    price.value = 30  # Nothing happens
+    ```
 
 ## Utility Helpers
 
