@@ -1,3 +1,5 @@
+import gc
+
 import pytest
 
 from signified import Computed, Signal, computed
@@ -231,3 +233,17 @@ def test_computed_update_forces_dependency_rediscovery_when_graph_changes():
     frame.value = 1
 
     assert consumer.value == 100
+
+
+def test_computed_retains_transient_dependencies_across_gc():
+    frame = Signal(0)
+    outer = Computed(lambda: (frame + 1).value * 10)
+
+    assert outer.value == 10
+    assert len(tuple(outer._impl._deps)) == 1
+
+    gc.collect()
+    assert len(tuple(outer._impl._deps)) == 1
+
+    frame.value = 1
+    assert outer.value == 20

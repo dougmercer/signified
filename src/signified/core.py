@@ -15,7 +15,7 @@ from functools import wraps
 from typing import Any, Callable, Concatenate, Literal, Protocol, Self, SupportsIndex, TypeGuard, Union, cast, overload
 
 from .plugins import pm
-from .types import HasValue, ReactiveValue, _OrderedWeakrefSet
+from .types import HasValue, ReactiveValue, _OrderedSet, _OrderedWeakrefSet
 
 if importlib.util.find_spec("numpy") is not None:
     import numpy as np  # pyright: ignore[reportMissingImports]
@@ -2237,8 +2237,8 @@ class _ComputedImpl:
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
-        self._deps = _OrderedWeakrefSet[Variable[Any]]()
-        self._next_deps: _OrderedWeakrefSet[Variable[Any]] | None = None
+        self._deps = _OrderedSet[Variable[Any]]()
+        self._next_deps: _OrderedSet[Variable[Any]] | None = None
         self._state = _State.UNINITIALIZED
         self._is_computing = False
         self._dep_versions: dict[int, int] = {}
@@ -2258,7 +2258,7 @@ class _ComputedImpl:
 
         # 1) Evaluate with dependency tracking enabled.
         self._is_computing = True
-        self._next_deps = _OrderedWeakrefSet[Variable[Any]]()
+        self._next_deps = _OrderedSet[Variable[Any]]()
         _COMPUTE_STACK.append(owner)
         try:
             next_value = owner.f()
