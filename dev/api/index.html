@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
     
     
       
@@ -1433,6 +1433,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#signified.core.Variable.invalidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;invalidate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#signified.core.Variable.__repr__" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2704,6 +2715,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#signified.core.Signal.invalidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;invalidate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#signified.core.Signal.__repr__" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2824,6 +2846,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.core.Computed.invalidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;invalidate
       
     </span>
   </a>
@@ -4447,6 +4480,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#signified.core.Variable.invalidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;invalidate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#signified.core.Variable.__repr__" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5718,6 +5762,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#signified.core.Signal.invalidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;invalidate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#signified.core.Signal.__repr__" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5838,6 +5893,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.core.Computed.invalidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;invalidate
       
     </span>
   </a>
@@ -11520,6 +11586,30 @@ and observable patterns.</p>
     <div class="doc doc-contents ">
 
         <p>Notify all observers by calling their update method.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="signified.core.Variable.invalidate" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">invalidate</span>
+
+
+<a href="#signified.core.Variable.invalidate" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">invalidate</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Force downstream recomputation, bypassing optimization caches.</p>
+<p>For :class:<code>Signal</code>, equivalent to :meth:<code>update</code>.
+:class:<code>Computed</code> overrides this to guarantee a full re-evaluation
+even when tracked dependency versions appear unchanged — use this
+instead of <code>update()</code> when the dependency topology may have changed.</p>
 
 
     </div>
@@ -20558,6 +20648,30 @@ result.value
 <div class="doc doc-object doc-function">
 
 
+<h4 id="signified.core.Signal.invalidate" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">invalidate</span>
+
+
+<a href="#signified.core.Signal.invalidate" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">invalidate</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Force downstream recomputation, bypassing optimization caches.</p>
+<p>For :class:<code>Signal</code>, equivalent to :meth:<code>update</code>.
+:class:<code>Computed</code> overrides this to guarantee a full re-evaluation
+even when tracked dependency versions appear unchanged — use this
+instead of <code>update()</code> when the dependency topology may have changed.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="signified.core.Signal.__repr__" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__repr__</span>
 
@@ -20878,7 +20992,31 @@ true dependency set.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Mark this computed stale and propagate invalidation.</p>
+        <p>Mark this computed stale when notified by an upstream dependency.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="signified.core.Computed.invalidate" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">invalidate</span>
+
+
+<a href="#signified.core.Computed.invalidate" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">invalidate</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Force recomputation on next read, bypassing the dep-version check.</p>
+<p>Use this instead of <code>update()</code> when the dependency topology may have
+changed (for example, when a reactive attribute is replaced with a new
+object). Unlike the normal notification path, this guarantees a full
+re-evaluation and a version bump even if dep versions look unchanged.</p>
 
 
     </div>
