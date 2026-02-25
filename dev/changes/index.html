@@ -698,6 +698,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#031" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.3.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#invalidation-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invalidation API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependency-retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency Retention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#030" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -987,6 +1026,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#031" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3.1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.3.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#invalidation-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invalidation API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dependency-retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dependency Retention
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#030" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1246,6 +1324,11 @@
 
 <h1 id="change-log">Change Log<a class="headerlink" href="#change-log" title="Permanent link">&para;</a></h1>
 <p>This page summarizes notable changes across releases.</p>
+<h2 id="031">0.3.1<a class="headerlink" href="#031" title="Permanent link">&para;</a></h2>
+<h3 id="invalidation-api">Invalidation API<a class="headerlink" href="#invalidation-api" title="Permanent link">&para;</a></h3>
+<p>Added <code>invalidate()</code> to reactive values, including a force-refresh invalidation path for <code>Computed</code>. Use this when dependency topology changes outside the reactive graph (for example, replacing an object attribute that points to a signal/computed), so the next read performs a full recomputation.</p>
+<h3 id="dependency-retention">Dependency Retention<a class="headerlink" href="#dependency-retention" title="Permanent link">&para;</a></h3>
+<p>Fixed transient computed dependency retention by tracking dependencies strongly during evaluation. This prevents dependencies from being dropped by garbage collection and keeps downstream updates correct.</p>
 <h2 id="030">0.3.0<a class="headerlink" href="#030" title="Permanent link">&para;</a></h2>
 <h3 id="dependency-tracking">Dependency Tracking<a class="headerlink" href="#dependency-tracking" title="Permanent link">&para;</a></h3>
 <p><code>Computed</code> now tracks its dependencies automatically at runtime — no need to declare them upfront. Values are only recomputed when actually read, and if a recomputed value turns out to be unchanged, downstream computeds won't needlessly re-run.</p>
