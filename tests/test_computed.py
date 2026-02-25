@@ -1,3 +1,5 @@
+import gc
+
 import pytest
 
 from signified import Computed, Signal, computed
@@ -210,24 +212,66 @@ def test_nested_signal_change_invalidates_computed_once():
     assert derived.value == 3
 
 
-def test_computed_update_forces_dependency_rediscovery_when_graph_changes():
+def test_computed_retains_transient_dependencies_across_gc():
     frame = Signal(0)
+    outer = Computed(lambda: (frame + 1).value * 10)
+
+    assert outer.value == 10
+    assert len(tuple(outer._impl._deps)) == 1
+
+    gc.collect()
+    assert len(tuple(outer._impl._deps)) == 1
+
+    frame.value = 1
+    assert outer.value == 20
+
+
+def test_invalidate_nonreactive_value_replace():
+    channels = {"left": Signal(3), "right": Signal(8)}
+    config = {"selected": "left"}
+    derived = Computed(lambda: channels[config["selected"]].value * 2)
+
+    assert derived.value == 6
+
+    config["selected"] = "right"
+    assert derived.value == 6  # undesirable, but we did something weird
+    derived.invalidate()
+    assert derived.value == 16
+
+
+def test_invalidate_signal_replace():
+    class Source:
+        def __init__(self, sig: Signal[int]) -> None:
+            self.sig = sig
+
+    src = Source(Signal(5))
+    derived = Computed(lambda: src.sig.value - 1)
+
+    assert derived.value == 4
+
+    src.sig = Signal(20)
+    assert derived.value == 4  # undesirable, but we did something weird
+    derived.invalidate()
+    assert derived.value == 19
+
+
+def test_invalidate_computed_graph_after_non_reactive_rewire():
+    toggle = Signal(0)
     source = Signal(1)
 
-    class Box:
-        pass
+    class Holder:
+        """Non-reactive container — assignments here don't trigger dependency tracking."""
+        def __init__(self, inner: Computed[int]) -> None:
+            self.inner = inner
 
-    box = Box()
-    box.dep = Computed(lambda: source.value)  # type: ignore
+    holder = Holder(Computed(lambda: source.value))
+    derived = Computed(lambda: holder.inner.value)
+    assert derived.value == 1
 
-    consumer = Computed(lambda: box.dep.value)  # type: ignore
-    assert consumer.value == 1
+    original = holder.inner
+    holder.inner = Computed(lambda: 100 if toggle.value >= 1 else original.value)
+    toggle.value = 1
 
-    old = box.dep  # type: ignore
-    box.dep = Computed(lambda: 100 if frame.value >= 1 else old.value)  # type: ignore
-
-    # Force invalidation through the old dependency path.
-    old.invalidate()
-    frame.value = 1
-
-    assert consumer.value == 100
+    assert derived.value == 1  # stale — rewire happened outside reactive graph
+    derived.invalidate()
+    assert derived.value == 100

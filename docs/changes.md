@@ -6,6 +6,16 @@ hide:
 
 This page summarizes notable changes across releases.
 
+## 0.3.1
+
+### Invalidation API
+
+Added `invalidate()` to reactive values, including a force-refresh invalidation path for `Computed`. Use this when dependency topology changes outside the reactive graph (for example, replacing an object attribute that points to a signal/computed), so the next read performs a full recomputation.
+
+### Dependency Retention
+
+Fixed transient computed dependency retention by tracking dependencies strongly during evaluation. This prevents dependencies from being dropped by garbage collection and keeps downstream updates correct.
+
 ## 0.3.0
 
 ### Dependency Tracking

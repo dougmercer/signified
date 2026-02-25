@@ -94,6 +94,33 @@ print(y)  # <26>
 
 This composition is the core pattern: define state once, derive the rest.
 
+### Manual invalidation for non-reactive rewires
+
+Most updates should happen through reactive writes (`signal.value = ...`, `signal[key] = ...`, etc.).
+
+If you replace references through non-reactive containers, call `invalidate()` so a `Computed` fully re-evaluates on next read.
+
+```python
+from signified import Signal, computed
+
+
+class Holder:
+    def __init__(self, sig):
+        self.sig = sig
+
+
+holder = Holder(Signal(5))
+derived = computed(lambda holder: holder.sig * 2)(holder)
+
+print(derived.value)  # 10
+
+holder.sig = Signal(20)  # non-reactive rewire
+print(derived.value)     # still 10
+
+derived.invalidate()
+print(derived.value)     # 40
+```
+
 ## Attribute Access, Method Calls, and Assignment
 
 You can reactively read attributes and call methods from objects inside signals.
