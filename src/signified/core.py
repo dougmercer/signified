@@ -10,6 +10,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
+from enum import IntEnum
 from functools import wraps
 from typing import Any, Callable, Concatenate, Literal, Protocol, Self, SupportsIndex, TypeGuard, Union, cast, overload
 
@@ -1963,6 +1964,16 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         for observer in tuple(self._observers):
             observer.update()
 
+    def invalidate(self) -> None:
+        """Force downstream recomputation, bypassing optimization caches.
+
+        For :class:`Signal`, equivalent to :meth:`update`.
+        :class:`Computed` overrides this to guarantee a full re-evaluation
+        even when tracked dependency versions appear unchanged — use this
+        instead of ``update()`` when the dependency topology may have changed.
+        """
+        self.update()
+
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
         return f"<{self.value!r}>"
@@ -2205,17 +2216,30 @@ class Signal[T](Variable[T]):
         self.notify()
 
 
+class _State(IntEnum):
+    """Staleness state for a :class:`Computed` value.
+
+    Values are ordered so higher integers mean higher invalidation priority.
+    ``UNINITIALIZED`` sits above ``MUST_REFRESH`` so that normal invalidation
+    signals never downgrade a never-computed node to a lower-priority state.
+    """
+
+    FRESH = 0  # Value is current; no recomputation needed.
+    STALE = 1  # May be out of date; dep-version check can save a recompute.
+    MUST_REFRESH = 2  # Definitely out of date; recompute unconditionally on next read.
+    UNINITIALIZED = 3  # Never computed; recompute on first read, but don't re-notify.
+
+
 class _ComputedImpl:
     """Internal state and dependency tracking for :class:`Computed`."""
 
-    __slots__ = ["_owner", "_deps", "_next_deps", "_dirty", "_has_value", "_is_computing", "_dep_versions"]
+    __slots__ = ["_owner", "_deps", "_next_deps", "_state", "_is_computing", "_dep_versions"]
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
         self._deps = _OrderedWeakrefSet[Variable[Any]]()
         self._next_deps: _OrderedWeakrefSet[Variable[Any]] | None = None
-        self._dirty = True
-        self._has_value = False
+        self._state = _State.UNINITIALIZED
         self._is_computing = False
         self._dep_versions: dict[int, int] = {}
 
@@ -2228,8 +2252,9 @@ class _ComputedImpl:
         if self._is_computing:
             raise RuntimeError("Cycle detected while evaluating Computed")
 
+        forced_refresh = self._state == _State.MUST_REFRESH
         previous_value = owner._value
-        had_value = self._has_value
+        had_value = self._state != _State.UNINITIALIZED
 
         # 1) Evaluate with dependency tracking enabled.
         self._is_computing = True
@@ -2256,15 +2281,17 @@ class _ComputedImpl:
         self._dep_versions = {id(dep): dep._version for dep in tuple(next_deps)}
 
         # 3) Commit value/version if the computed result actually changed.
-        self._dirty = False
-        self._has_value = True
-        if not had_value or _has_changed(previous_value, next_value):
+        self._state = _State.FRESH
+        value_changed = not had_value or _has_changed(previous_value, next_value)
+        if value_changed:
             owner._value = next_value
+        if value_changed or forced_refresh:
             owner._version += 1
+        if value_changed:
             pm.hook.updated(value=owner)
 
     def dependencies_changed(self) -> bool:
-        """Return True when any dependency has a newer observed version."""
+        """Ensure stale Computed deps are current, then return True if any dep version changed."""
         for dep in tuple(self._deps):
             if isinstance(dep, Computed):
                 dep._impl.ensure_uptodate()
@@ -2274,23 +2301,28 @@ class _ComputedImpl:
 
     def ensure_uptodate(self) -> None:
         # Fast path 1: already fresh.
-        if not self._dirty and self._has_value:
+        if self._state == _State.FRESH:
             return
 
-        # Fast path 2: dirty marker is stale, but dependency versions unchanged.
-        if self._has_value and not self.dependencies_changed():
-            self._dirty = False
+        # Fast path 2: stale, but no dep version changed — skip recompute.
+        if self._state == _State.STALE and not self.dependencies_changed():
+            self._state = _State.FRESH
             return
 
         # Slow path: recompute and reconcile dependencies.
         self.refresh()
 
-    def invalidate(self) -> bool:
-        """Mark stale and return True when this call changed the marker."""
-        if self._dirty:
-            return False
-        self._dirty = True
-        return True
+    def invalidate(self, *, force: bool = False) -> bool:
+        """Mark stale and return True when transitioning out of FRESH.
+
+        ``force=True`` upgrades the state to ``MUST_REFRESH``, bypassing the
+        dep-version check on the next read even if dep versions look unchanged.
+        """
+        target = _State.MUST_REFRESH if force else _State.STALE
+        was_fresh = self._state == _State.FRESH
+        if self._state < target:
+            self._state = target
+        return was_fresh
 
 
 class Computed[T](Variable[T]):
@@ -2342,8 +2374,20 @@ class Computed[T](Variable[T]):
         pm.hook.created(value=self)
 
     def update(self) -> None:
-        """Mark this computed stale and propagate invalidation."""
+        """Mark this computed stale when notified by an upstream dependency."""
         if not self._impl.invalidate():
+            return
+        self.notify()
+
+    def invalidate(self) -> None:
+        """Force recomputation on next read, bypassing the dep-version check.
+
+        Use this instead of ``update()`` when the dependency topology may have
+        changed (for example, when a reactive attribute is replaced with a new
+        object). Unlike the normal notification path, this guarantees a full
+        re-evaluation and a version bump even if dep versions look unchanged.
+        """
+        if not self._impl.invalidate(force=True):
             return
         self.notify()
 
