@@ -34,13 +34,16 @@ print(sum_numbers.value) # 10
 
 # 3. For lists/dicts, use __setitem__ on the signal
 numbers[0] = 99
-print(sum_numbers.value)  # 108
+print(sum_numbers.value)  # 108  (99 + 2 + 3 + 4)
 ```
 
 ## Plugin Hooks Are Opt-In
 
-Plugin hooks are disabled by default. To enable hook execution, install the plugin extra and set:
+Plugin hooks are disabled by default to keep the base install dependency-free and low-overhead. To activate them, install the plugin extra and set the environment variable:
 
 ```bash
+pip install "signified[plugins]"
 SIGNIFIED_ENABLE_HOOKS=1
 ```
+
+See the [Plugins guide](plugins.md) for full details on writing and registering plugins.

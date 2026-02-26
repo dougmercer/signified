@@ -52,7 +52,7 @@ class MyPlugin:
     @hookimpl
     def created(self, value: Variable[Any]) -> None:
         self.created_count += 1
-        print(f"created: {value:d}")
+        print(f"created: {value:d}")  # :d = debug format: shows type and id
 
 plugin = MyPlugin()
 pm.register(plugin)

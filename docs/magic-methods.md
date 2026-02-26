@@ -74,8 +74,8 @@ truthiness via `bool(...)`) or that have special semantics in Signified
 | [`rx.eq`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a.rx.eq(b)`<br>`#!pycon <False>` | `__eq__` is intentionally not overloaded; use `rx.eq` for reactive equality. |
 | [`rx.in_`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> needle = Signal(2)`<br>`#!pycon >>> haystack = Signal([1, 2, 3])`<br>`#!pycon >>> needle.rx.in_(haystack)`<br>`#!pycon <True>` |  |
 | [`rx.contains`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> nums = Signal([1, 2, 3])`<br>`#!pycon >>> nums.rx.contains(2)`<br>`#!pycon <True>` | |
-| [`rx.where`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> flag = Signal(True)`<br>`#!pycon >>> flag.rx.where("yes", "no")`<br>`#!pycon <yes>` |  |
-| [`rx.as_bool`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> x.rx.as_bool()`<br>`#!pycon <True>` | `__bool__` cannot safely be reactive because Python expects an immediate bool in control flow. |
+| [`rx.where`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> flag = Signal(True)`<br>`#!pycon >>> flag.rx.where("yes", "no")`<br>`#!pycon <"yes">` |  |
+| [`rx.as_bool`](api.md#signified.core.ReactiveMixIn.rx) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> x.rx.as_bool()`<br>`#!pycon <True>` | `__bool__` is not overloaded. Use `rx.as_bool()`.|
 
 ## Object and Container Access
 

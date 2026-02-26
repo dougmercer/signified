@@ -39,7 +39,7 @@ x.value = 10
 print(x_squared.value)  # 100
 ```
 
-Above, we used `signified`'s rich set of overloaded operators build a `Computed` object on-the-fly.
+Above, we used `signified`'s rich set of overloaded operators to build a `Computed` object on-the-fly.
 
 Alternatively, you can accomplish the same thing with `@computed`:
 
@@ -69,5 +69,5 @@ print(x_squared.value)  # 100
 
 - Read this first: [Usage Guide](usage.md)
 - Full API docs: [Core API](api.md)
-- Quick look at avilable operators: [Magic Methods and Operators](magic-methods.md)
+- Quick look at available operators: [Magic Methods and Operators](magic-methods.md)
 - Extending `signified` with plugins: [Plugins](plugins.md)
