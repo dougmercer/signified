@@ -261,6 +261,7 @@ def test_invalidate_computed_graph_after_non_reactive_rewire():
 
     class Holder:
         """Non-reactive container — assignments here don't trigger dependency tracking."""
+
         def __init__(self, inner: Computed[int]) -> None:
             self.inner = inner
 
