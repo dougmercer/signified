@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, overload
 
-from .core import ReactiveMixIn
+from ._reactive_methods import ReactiveMixIn
 from .plugins import pm
 from .types import HasValue, ReactiveValue, _OrderedSet, _OrderedWeakrefSet
 
@@ -152,7 +152,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         raise NotImplementedError("Update method should be overridden by subclasses")
 
     def _ipython_display_(self) -> None:
-        from .display import _HAS_IPYTHON, IPythonObserver
+        from ._ipython import _HAS_IPYTHON, IPythonObserver
 
         if not _HAS_IPYTHON:
             return
