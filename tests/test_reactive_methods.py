@@ -260,6 +260,70 @@ def test_signal_rx_effect_dispose_unsubscribes():
     assert seen == [1]
 
 
+def test_effect_auto_tracks_multiple_sources():
+    """Effect re-runs when any reactive value read inside fn changes."""
+    from signified import Effect
+
+    a = Signal(1)
+    b = Signal(10)
+    results: list[int] = []
+
+    e = Effect(lambda: results.append(a.value + b.value))
+    assert results == [11]
+
+    a.value = 2
+    assert results == [11, 12]
+
+    b.value = 20  # was only tracked by old single-source Effect; now works
+    assert results == [11, 12, 22]
+
+    e.dispose()
+
+
+def test_effect_dynamic_deps_follow_branch():
+    """Effect drops deps from inactive branch, just like Computed."""
+    from signified import Effect
+
+    flag = Signal(True)
+    a = Signal("left")
+    b = Signal("right")
+    seen: list[str] = []
+
+    e = Effect(lambda: seen.append(a.value if flag.value else b.value))
+    assert seen == ["left"]
+
+    b.value = "RIGHT"  # not tracked while flag is True
+    assert seen == ["left"]
+
+    flag.value = False  # switches branch; a dropped, b picked up
+    assert seen == ["left", "RIGHT"]
+
+    a.value = "LEFT_UPDATED"  # a is now dropped
+    assert seen == ["left", "RIGHT"]
+
+    b.value = "RIGHT2"
+    assert seen == ["left", "RIGHT", "RIGHT2"]
+
+    e.dispose()
+
+
+def test_effect_dispose_stops_all_tracked_deps():
+    """dispose() unsubscribes from every dep, including dynamically added ones."""
+    from signified import Effect
+
+    a = Signal(1)
+    b = Signal(2)
+    results: list[int] = []
+
+    e = Effect(lambda: results.append(a.value + b.value))
+    assert results == [3]
+
+    e.dispose()
+    a.value = 99
+    b.value = 99
+    assert results == [3]  # no new calls after dispose
+
+
 def test_signal_rx_len():
     """Test reactive length via signal.rx.len."""
     values = Signal([1, 2, 3])
