@@ -1,4 +1,4 @@
-"""Internal runtime primitives for :mod:`signified.core`."""
+"""Internal runtime primitives for :mod:`signified`."""
 
 from __future__ import annotations
 

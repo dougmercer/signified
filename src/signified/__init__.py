@@ -21,7 +21,9 @@ Attributes:
     NestedValue: Recursive type for arbitrarily nested reactive values.
 """
 
-from .core import Computed, Effect, Signal, Variable, as_signal, computed, deep_unref, has_value, reactive_method, unref
+# Import core first to initialize ReactiveMixIn before runtime classes.
+from . import core as _core  # noqa: F401
+from ._runtime import Computed, Effect, Signal, Variable, as_signal, computed, deep_unref, has_value, reactive_method, unref
 from .types import HasValue, NestedValue, ReactiveValue
 
 __all__ = [

@@ -7,7 +7,7 @@ import weakref
 from typing import TYPE_CHECKING, Hashable, Iterable, Iterator
 
 if TYPE_CHECKING:
-    from .core import Computed, Signal
+    from ._runtime import Computed, Signal
 
 __all__ = ["NestedValue", "HasValue", "ReactiveValue"]
 
