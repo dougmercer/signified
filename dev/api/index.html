@@ -2842,6 +2842,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#signified.core.Computed.subscribe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;subscribe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#signified.core.Computed.update" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3414,17 +3425,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#signified.core.Computed.subscribe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;subscribe
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#signified.core.Computed.unsubscribe" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3523,6 +3523,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__init__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.core.Effect.register_dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;register_dependency
       
     </span>
   </a>
@@ -5889,6 +5900,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#signified.core.Computed.subscribe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;subscribe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#signified.core.Computed.update" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6461,17 +6483,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#signified.core.Computed.subscribe" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;subscribe
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#signified.core.Computed.unsubscribe" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6570,6 +6581,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__init__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.core.Effect.register_dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;register_dependency
       
     </span>
   </a>
@@ -11367,6 +11389,13 @@ and observable patterns.</p>
       </tbody>
     </table>
 
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p>:class:<code>Computed</code> overrides this method to initialize dependency
+tracking before adding the observer, so subscribers are guaranteed
+to see all future upstream changes from the moment they subscribe.</p>
+</details>
 
     </div>
 
@@ -16171,7 +16200,18 @@ reactivity.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Update the signal and notify subscribers.</p>
+        <p>Force a version bump and notify all subscribers unconditionally.</p>
+<p>Unlike assigning to <code>.value</code>, this method does <strong>not</strong> check whether
+the stored value has changed — it always increments <code>_version</code> and
+notifies downstream observers. Use this when the contained object has
+been mutated in-place and change detection cannot detect the mutation
+(e.g. appending to a list stored in the signal).</p>
+<p>.. warning::
+    Because the version always advances, every downstream
+    :class:<code>Computed</code> that depends on this signal will recompute on its
+    next <code>.value</code> read, even if the underlying data is unchanged.
+    Prefer assigning to <code>.value</code> when possible so that equality-based
+    short-circuiting can prevent unnecessary recomputation.</p>
 
 
     </div>
@@ -20441,6 +20481,13 @@ result.value
     </table>
 
 
+<details class="note" open>
+  <summary>Note</summary>
+  <p>:class:<code>Computed</code> overrides this method to initialize dependency
+tracking before adding the observer, so subscribers are guaranteed
+to see all future upstream changes from the moment they subscribe.</p>
+</details>
+
     </div>
 
 </div>
@@ -20973,6 +21020,31 @@ true dependency set.</p>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="signified.core.Computed.subscribe" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">subscribe</span>
+
+
+<a href="#signified.core.Computed.subscribe" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">subscribe</span><span class="p">(</span><span class="n">observer</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Subscribe an observer, ensuring dependency tracking is active first.</p>
+<p>Overrides :meth:<code>Variable.subscribe</code> to guarantee that this
+:class:<code>Computed</code> has evaluated at least once before <code>observer</code> is
+added. After this call the computed is subscribed to all of its upstream
+dependencies, so any subsequent change will be forwarded to
+<code>observer</code> without missing any updates.</p>
 
 
     </div>
@@ -25242,57 +25314,6 @@ result.value
 <div class="doc doc-object doc-function">
 
 
-<h4 id="signified.core.Computed.subscribe" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">subscribe</span>
-
-
-<a href="#signified.core.Computed.subscribe" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">subscribe</span><span class="p">(</span><span class="n">observer</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Subscribe an observer to this variable.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>observer</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" href="#signified.core.Observer">Observer</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The observer to subscribe.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h4 id="signified.core.Computed.unsubscribe" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">unsubscribe</span>
 
@@ -25575,14 +25596,30 @@ empty - just the value in brackets (default)</p>
 
 
 
-        <p>Eagerly run a side-effect whenever a reactive source changes.</p>
-<p>Unlike :meth:<code>_RxOps.peek</code>, <code>Effect</code> subscribes directly to the source
-and calls <code>fn</code> immediately on creation and on every subsequent change,
-without requiring the caller to read <code>.value</code>.</p>
+        <p>Eagerly run a zero-argument callable and re-run it whenever any reactive
+value read inside it changes.</p>
+<p><code>Effect</code> pushes itself onto the dependency-tracking stack while <code>fn</code>
+runs, so every <code>.value</code> read (or :func:<code>unref</code> call) inside <code>fn</code>
+registers as a dependency. After each run the dependency set is reconciled:
+newly-read reactives are subscribed, dropped ones are unsubscribed. This
+mirrors the dynamic dependency tracking used by :class:<code>Computed</code> but runs
+eagerly — <code>fn</code> fires immediately on construction and again on every
+subsequent upstream change without needing a <code>.value</code> read to trigger it.</p>
+<p>Because dependencies are inferred at runtime, conditional branches are
+handled correctly: only the signals actually read during the most recent
+run are tracked, and that set is updated automatically when the branch
+changes.</p>
 <p>The effect is active for as long as the caller holds a reference to this
 object. Because observers are stored as weak references, letting the
 <code>Effect</code> instance be garbage-collected will silently stop the effect.
 Call :meth:<code>dispose</code> to stop it explicitly before the instance is released.</p>
+<p>.. warning::
+    The returned :class:<code>Effect</code> <strong>must be assigned to a variable</strong>. If the
+    result is discarded the object is immediately eligible for garbage
+    collection and the effect will silently stop running::</p>
+<div class="language-text highlight"><pre><span></span><code>    Effect(lambda: print(s.value))  # GC&#39;d immediately — never re-runs!
+    e = Effect(lambda: print(s.value))  # kept alive — runs on every change
+</code></pre></div>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -25598,30 +25635,16 @@ Call :meth:<code>dispose</code> to stop it explicitly before the instance is rel
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>source</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" href="#signified.core.Variable">Variable</a>[<span title="typing.Any">Any</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The reactive value to observe.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
                 <code>fn</code>
             </td>
             <td>
-                  <code><span title="typing.Callable">Callable</span>[[<span title="typing.Any">Any</span>], None]</code>
+                  <code><span title="typing.Callable">Callable</span>[[], None]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Callback that receives the current unwrapped value on each change.</p>
+                <p>Zero-argument callable run for its side effects. Every reactive
+value read via <code>.value</code> or :func:<code>unref</code> inside <code>fn</code> becomes
+a tracked dependency.</p>
               </div>
             </td>
             <td>
@@ -25636,7 +25659,7 @@ Call :meth:<code>dispose</code> to stop it explicitly before the instance is rel
   <summary>Example</summary>
   <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">seen</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">2</span>
@@ -25681,7 +25704,7 @@ Call :meth:<code>dispose</code> to stop it explicitly before the instance is rel
   </span>
 
 <a href="#signified.core.Effect.__slots__" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_fn&#39;</span><span class="p">,</span> <span class="s1">&#39;_source&#39;</span><span class="p">,</span> <span class="s1">&#39;__weakref__&#39;</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_fn&#39;</span><span class="p">,</span> <span class="s1">&#39;_deps&#39;</span><span class="p">,</span> <span class="s1">&#39;_next_deps&#39;</span><span class="p">,</span> <span class="s1">&#39;_is_running&#39;</span><span class="p">,</span> <span class="s1">&#39;__weakref__&#39;</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -25701,10 +25724,30 @@ Call :meth:<code>dispose</code> to stop it explicitly before the instance is rel
 
 
 <a href="#signified.core.Effect.__init__" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__init__</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__init__</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="signified.core.Effect.register_dependency" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">register_dependency</span>
+
+
+<a href="#signified.core.Effect.register_dependency" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">register_dependency</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Register <code>dep</code> as a dependency discovered during the current run.</p>
 
 
     </div>
@@ -25724,7 +25767,7 @@ Call :meth:<code>dispose</code> to stop it explicitly before the instance is rel
 
     <div class="doc doc-contents ">
 
-        <p>Called by the source when its value changes.</p>
+        <p>Called by a dependency when its value changes.</p>
 
 
     </div>
@@ -25744,7 +25787,7 @@ Call :meth:<code>dispose</code> to stop it explicitly before the instance is rel
 
     <div class="doc doc-contents ">
 
-        <p>Unsubscribe from the source and stop the effect.</p>
+        <p>Unsubscribe from all dependencies and stop the effect.</p>
 
 
     </div>
@@ -25872,9 +25915,10 @@ dependency for subsequent updates.</p>
 
         <p>Resolve a value by unwrapping reactive containers until plain data remains.</p>
 <p>This utility repeatedly unwraps :class:<code>Variable</code> objects by following
-their internal <code>_value</code> references. It intentionally bypasses dependency
-tracking, which keeps this helper side-effect free inside reactive
-computations.</p>
+their <code>.value</code> chain. When called inside a :class:<code>Computed</code> or
+:class:<code>Effect</code> evaluation, each unwrapped reactive is registered as a
+dependency so that changes propagate correctly — the same behaviour as
+reading <code>.value</code> directly.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
