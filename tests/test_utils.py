@@ -1,7 +1,7 @@
 import pytest
 
 from signified import Computed, Signal, as_signal, computed, has_value, reactive_method, unref
-from signified.core import _coerce_to_bool, _has_changed
+from signified._runtime import _coerce_to_bool, _has_changed
 
 
 def test_has_value():
