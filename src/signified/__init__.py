@@ -22,9 +22,12 @@ Attributes:
 """
 
 # Import core first to initialize ReactiveMixIn before runtime classes.
-from . import core as _core  # noqa: F401
-from ._runtime import Computed, Effect, Signal, Variable, as_signal, computed, deep_unref, has_value, reactive_method, unref
+from . import core as _core
+from .functions import as_signal, computed, deep_unref, has_value, reactive_method, unref
+from .reactive_objects import Computed, Effect, Signal, Variable
 from .types import HasValue, NestedValue, ReactiveValue
+
+del _core
 
 __all__ = [
     "Variable",

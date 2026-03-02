@@ -5,13 +5,14 @@ from __future__ import annotations
 import math
 import operator
 import warnings
-from typing import Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
 
 from .types import HasValue
 
-__all__ = [
-    "ReactiveMixIn",
-]
+if TYPE_CHECKING:
+    from .reactive_objects import Computed
+
+__all__ = ["ReactiveMixIn"]
 
 
 class _SupportsAdd[OtherT, ResultT](Protocol):
@@ -1792,10 +1793,6 @@ class ReactiveMixIn[T]:
         return self.rx.where(a, b)
 
 
-# Runtime symbols are loaded after ReactiveMixIn is defined to avoid import cycles.
-from ._runtime import (  # NOQA
-    Computed,
-    Effect,
-    Variable,
-    computed,
-)
+# Loaded after ReactiveMixIn is defined to avoid import cycles.
+from .functions import computed  # NOQA
+from .reactive_objects import Effect, Variable  # NOQA
