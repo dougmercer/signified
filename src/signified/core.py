@@ -150,6 +150,10 @@ class _RxOps[T]:
         ``fn`` is called immediately on creation and again on every subsequent
         change to the source — without requiring the caller to read ``.value``.
 
+        This is a convenience wrapper around :class:`Effect`. The source value
+        is passed as the single argument to ``fn`` on each run. For effects
+        that need to read multiple reactive values, use :class:`Effect` directly.
+
         The effect is active as long as the caller holds the returned
         :class:`Effect` instance. Letting it be garbage-collected will silently
         stop the effect; call :meth:`Effect.dispose` to stop it explicitly.
@@ -178,8 +182,8 @@ class _RxOps[T]:
 
             ```
         """
-        assert isinstance(self._source, Variable)
-        return Effect(self._source, fn)
+        source = self._source
+        return Effect(lambda: fn(source.value))
 
     def peek(self, fn: Callable[[T], Any]) -> Computed[T]:
         """Run ``fn`` for side effects and pass through the original value.
@@ -195,12 +199,15 @@ class _RxOps[T]:
             reference to the returned value, it will be garbage-collected and
             ``fn`` will silently stop running.
 
-            This is **not** an eagerly-evaluated effect. For code like::
+            ``fn`` fires on each explicit ``.value`` read of the returned
+            :class:`Computed` — **not** on creation and not on upstream changes
+            alone. If the returned object is never read, or is garbage-collected
+            before any ``.value`` read, ``fn`` never fires at all::
 
-                s.rx.peek(print)  # returned Computed immediately GC'd
+                s.rx.peek(print)  # GC'd immediately — print never called
 
-            ``fn`` will never fire after the initial read. Assign the result
-            to a variable that outlives the reactive computation.
+            For eager side effects that fire automatically, use
+            :meth:`effect` or :class:`Effect` instead.
 
         Args:
             fn: Side-effect callback that receives the current source value.
@@ -1916,6 +1923,11 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
         Args:
             observer: The observer to subscribe.
+
+        Note:
+            :class:`Computed` overrides this method to initialize dependency
+            tracking before adding the observer, so subscribers are guaranteed
+            to see all future upstream changes from the moment they subscribe.
         """
         self._observers.add(observer)
 
@@ -2030,13 +2042,18 @@ _COMPUTE_STACK: list[Any] = []
 
 When a reactive value is read, we attach that read to the Computed at the
 top of this stack so dependency subscriptions can be reconciled on refresh.
+
+.. note:: **Thread safety**: this is a plain module-level list and is not
+    thread-safe. Concurrent reads or computations on different threads will
+    corrupt dependency tracking. All reactive operations should be performed
+    on a single thread.
 """
 
 
 def _track_read(variable: Variable[Any]) -> None:
-    """Register `variable` as a dependency of the currently computing Computed."""
+    """Register `variable` as a dependency of the currently computing Computed or Effect."""
     if not _COMPUTE_STACK:
-        # Reads outside Computed evaluation do not participate in dependency tracking.
+        # Reads outside Computed/Effect evaluation do not participate in dependency tracking.
         return
     owner = _COMPUTE_STACK[-1]
     if owner is variable:
@@ -2044,17 +2061,48 @@ def _track_read(variable: Variable[Any]) -> None:
         return
     owner_impl = getattr(owner, "_impl", None)
     if owner_impl is not None:
-        # Add this read for the current refresh run.
+        # Computed: delegate to _ComputedImpl.
         owner_impl.register_dependency(variable)
+    elif hasattr(owner, "register_dependency"):
+        # Effect: register directly on the owner.
+        owner.register_dependency(variable)
+
+
+def _reconcile_deps(
+    subscriber: Any, old_deps: _OrderedSet[Variable[Any]], new_deps: _OrderedSet[Variable[Any]]
+) -> None:
+    """Update subscriptions to reflect a change from old_deps to new_deps."""
+    for dep in tuple(old_deps):
+        if dep not in new_deps:
+            dep.unsubscribe(subscriber)
+    for dep in tuple(new_deps):
+        if dep not in old_deps:
+            dep.subscribe(subscriber)
+
+
+def _resolve(value: Any) -> Any:
+    """Unwrap nested reactive containers without registering any dependencies.
+
+    Used internally by ``.value`` property getters so that resolving a stored
+    nested reactive (e.g. ``Signal(Signal(5))``) does not create a redundant
+    direct subscription that bypasses the outer variable's own observe chain.
+    """
+    current: Any = value
+    while isinstance(current, Variable):
+        if isinstance(current, Computed):
+            current._impl.ensure_uptodate()
+        current = current._value
+    return current
 
 
 def unref[T](value: HasValue[T]) -> T:
     """Resolve a value by unwrapping reactive containers until plain data remains.
 
     This utility repeatedly unwraps :class:`Variable` objects by following
-    their internal ``_value`` references. It intentionally bypasses dependency
-    tracking, which keeps this helper side-effect free inside reactive
-    computations.
+    their ``.value`` chain. When called inside a :class:`Computed` or
+    :class:`Effect` evaluation, each unwrapped reactive is registered as a
+    dependency so that changes propagate correctly — the same behaviour as
+    reading ``.value`` directly.
 
     Args:
         value: Plain value, reactive value, or nested reactive value.
@@ -2074,6 +2122,7 @@ def unref[T](value: HasValue[T]) -> T:
     while isinstance(current, Variable):
         if isinstance(current, Computed):
             current._impl.ensure_uptodate()
+        _track_read(current)
         current = current._value
     return current
 
@@ -2187,7 +2236,7 @@ class Signal[T](Variable[T]):
         """Get or set the current value."""
         pm.hook.read(value=self)
         _track_read(self)
-        return unref(self._value)
+        return _resolve(self._value)
 
     @value.setter
     def value(self, new_value: HasValue[T]) -> None:
@@ -2211,7 +2260,21 @@ class Signal[T](Variable[T]):
             self.value = before
 
     def update(self) -> None:
-        """Update the signal and notify subscribers."""
+        """Force a version bump and notify all subscribers unconditionally.
+
+        Unlike assigning to ``.value``, this method does **not** check whether
+        the stored value has changed — it always increments ``_version`` and
+        notifies downstream observers. Use this when the contained object has
+        been mutated in-place and change detection cannot detect the mutation
+        (e.g. appending to a list stored in the signal).
+
+        .. warning::
+            Because the version always advances, every downstream
+            :class:`Computed` that depends on this signal will recompute on its
+            next ``.value`` read, even if the underlying data is unchanged.
+            Prefer assigning to ``.value`` when possible so that equality-based
+            short-circuiting can prevent unnecessary recomputation.
+        """
         self._version += 1
         self.notify()
 
@@ -2262,21 +2325,23 @@ class _ComputedImpl:
         _COMPUTE_STACK.append(owner)
         try:
             next_value = owner.f()
-        finally:
+        except BaseException:
+            # Roll back: leave self._deps and self._state unchanged so the
+            # Computed stays subscribed to its previous deps and remains stale
+            # for retry on the next .value read.
             popped = _COMPUTE_STACK.pop()
             assert popped is owner
-            next_deps = self._next_deps
             self._next_deps = None
             self._is_computing = False
+            raise
+        popped = _COMPUTE_STACK.pop()
+        assert popped is owner
+        next_deps = self._next_deps
+        self._next_deps = None
+        self._is_computing = False
 
         # 2) Reconcile subscriptions against the dependency set from this run.
-        assert next_deps is not None
-        for dep in tuple(self._deps):
-            if dep not in next_deps:
-                dep.unsubscribe(owner)
-        for dep in tuple(next_deps):
-            if dep not in self._deps:
-                dep.subscribe(owner)
+        _reconcile_deps(owner, self._deps, next_deps)
         self._deps = next_deps
         self._dep_versions = {id(dep): dep._version for dep in tuple(next_deps)}
 
@@ -2373,6 +2438,18 @@ class Computed[T](Variable[T]):
 
         pm.hook.created(value=self)
 
+    def subscribe(self, observer: Observer) -> None:
+        """Subscribe an observer, ensuring dependency tracking is active first.
+
+        Overrides :meth:`Variable.subscribe` to guarantee that this
+        :class:`Computed` has evaluated at least once before ``observer`` is
+        added. After this call the computed is subscribed to all of its upstream
+        dependencies, so any subsequent change will be forwarded to
+        ``observer`` without missing any updates.
+        """
+        self._impl.ensure_uptodate()
+        super().subscribe(observer)
+
     def update(self) -> None:
         """Mark this computed stale when notified by an upstream dependency."""
         if not self._impl.invalidate():
@@ -2397,30 +2474,49 @@ class Computed[T](Variable[T]):
         pm.hook.read(value=self)
         _track_read(self)
         self._impl.ensure_uptodate()
-        return unref(self._value)
+        return _resolve(self._value)
 
 
 class Effect:
-    """Eagerly run a side-effect whenever a reactive source changes.
+    """Eagerly run a zero-argument callable and re-run it whenever any reactive
+    value read inside it changes.
 
-    Unlike :meth:`_RxOps.peek`, ``Effect`` subscribes directly to the source
-    and calls ``fn`` immediately on creation and on every subsequent change,
-    without requiring the caller to read ``.value``.
+    ``Effect`` pushes itself onto the dependency-tracking stack while ``fn``
+    runs, so every ``.value`` read (or :func:`unref` call) inside ``fn``
+    registers as a dependency. After each run the dependency set is reconciled:
+    newly-read reactives are subscribed, dropped ones are unsubscribed. This
+    mirrors the dynamic dependency tracking used by :class:`Computed` but runs
+    eagerly — ``fn`` fires immediately on construction and again on every
+    subsequent upstream change without needing a ``.value`` read to trigger it.
+
+    Because dependencies are inferred at runtime, conditional branches are
+    handled correctly: only the signals actually read during the most recent
+    run are tracked, and that set is updated automatically when the branch
+    changes.
 
     The effect is active for as long as the caller holds a reference to this
     object. Because observers are stored as weak references, letting the
     ``Effect`` instance be garbage-collected will silently stop the effect.
     Call :meth:`dispose` to stop it explicitly before the instance is released.
 
+    .. warning::
+        The returned :class:`Effect` **must be assigned to a variable**. If the
+        result is discarded the object is immediately eligible for garbage
+        collection and the effect will silently stop running::
+
+            Effect(lambda: print(s.value))  # GC'd immediately — never re-runs!
+            e = Effect(lambda: print(s.value))  # kept alive — runs on every change
+
     Args:
-        source: The reactive value to observe.
-        fn: Callback that receives the current unwrapped value on each change.
+        fn: Zero-argument callable run for its side effects. Every reactive
+            value read via ``.value`` or :func:`unref` inside ``fn`` becomes
+            a tracked dependency.
 
     Example:
         ```py
         >>> seen = []
         >>> s = Signal(1)
-        >>> e = Effect(s, seen.append)
+        >>> e = Effect(lambda: seen.append(s.value))
         >>> seen
         [1]
         >>> s.value = 2
@@ -2435,21 +2531,52 @@ class Effect:
         ```
     """
 
-    __slots__ = ("_fn", "_source", "__weakref__")
+    __slots__ = ("_fn", "_deps", "_next_deps", "_is_running", "__weakref__")
 
-    def __init__(self, source: Variable[Any], fn: Callable[[Any], None]) -> None:
+    def __init__(self, fn: Callable[[], None]) -> None:
         self._fn = fn
-        self._source = source
-        source.subscribe(self)
-        fn(source.value)
+        self._deps = _OrderedSet[Variable[Any]]()
+        self._next_deps: _OrderedSet[Variable[Any]] | None = None
+        self._is_running = False
+        self._run()
+
+    def register_dependency(self, dep: Variable[Any]) -> None:
+        """Register ``dep`` as a dependency discovered during the current run."""
+        if self._next_deps is not None:
+            self._next_deps.add(dep)
+
+    def _run(self) -> None:
+        if self._is_running:
+            raise RuntimeError("Cycle detected while evaluating Effect")
+        prev_deps = self._deps
+        self._next_deps = _OrderedSet[Variable[Any]]()
+        self._is_running = True
+        _COMPUTE_STACK.append(self)
+        try:
+            self._fn()
+        except BaseException:
+            # Roll back: leave self._deps unchanged so the Effect stays
+            # subscribed to its previous deps and will retry on the next change.
+            _COMPUTE_STACK.pop()
+            self._next_deps = None
+            self._is_running = False
+            raise
+        _COMPUTE_STACK.pop()
+        next_deps = self._next_deps
+        self._next_deps = None
+        self._is_running = False
+        _reconcile_deps(self, prev_deps, next_deps)
+        self._deps = next_deps
 
     def update(self) -> None:
-        """Called by the source when its value changes."""
-        self._fn(self._source.value)
+        """Called by a dependency when its value changes."""
+        self._run()
 
     def dispose(self) -> None:
-        """Unsubscribe from the source and stop the effect."""
-        self._source.unsubscribe(self)
+        """Unsubscribe from all dependencies and stop the effect."""
+        for dep in self._deps:
+            dep.unsubscribe(self)
+        self._deps = _OrderedSet[Variable[Any]]()
 
 
 # ---------------------------------------------------------------------------
