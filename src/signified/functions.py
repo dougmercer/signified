@@ -9,7 +9,7 @@ from functools import wraps
 from typing import Any, Callable, Concatenate, TypeGuard, cast
 
 from .reactive_objects import Computed, Signal, Variable, _track_read
-from .types import HasValue
+from .types import HasValue, ReactiveValue
 
 if importlib.util.find_spec("numpy") is not None:
     import numpy as np  # pyright: ignore[reportMissingImports]
@@ -201,8 +201,8 @@ def reactive_method[**P, T](
     return decorator
 
 
-def as_signal[T](val: HasValue[T]) -> Signal[T]:
-    """Normalize a value to a signal-compatible reactive object.
+def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
+    """Normalize a value to a reactive object.
 
     If ``val`` is already reactive, it is returned unchanged to avoid wrapping
     an existing reactive node. Otherwise a new :class:`Signal` is created.
@@ -211,21 +211,21 @@ def as_signal[T](val: HasValue[T]) -> Signal[T]:
         val: Plain value or reactive value.
 
     Returns:
-        A reactive value suitable for APIs expecting ``Signal``-like behavior.
-
-    Note:
-        Existing reactive values are returned as-is at runtime, including
-        ``Computed`` instances.
-
-    Example:
-        ```py
-        >>> from signified import Signal, as_signal
-        >>> as_signal(3).value
-        3
-        >>> s = Signal(4)
-        >>> as_signal(s) is s
-        True
-
-        ```
+        A reactive value.
     """
-    return cast(Signal[T], val) if isinstance(val, Variable) else Signal(val)
+    return cast(ReactiveValue[T], val) if isinstance(val, Variable) else Signal(val)
+
+
+def as_signal[T](val: HasValue[T]) -> Signal[T]:
+    """Deprecated alias for :func:`as_rx`.
+
+    Existing reactive values are returned as-is at runtime, including
+    ``Computed`` instances.
+    """
+    warnings.warn(
+        "`as_signal(...)` is deprecated and will be removed in a future release; "
+        "use `as_rx(...)` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return cast(Signal[T], as_rx(val))

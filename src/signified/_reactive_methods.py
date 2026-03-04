@@ -42,7 +42,7 @@ def _warn_deprecated_alias(method: str, replacement: str) -> None:
     )
 
 
-class _RxOps[T]:
+class _ReactiveOps[T]:
     """Helper methods available under ``signal.rx``."""
 
     __slots__ = ("_source",)
@@ -510,9 +510,9 @@ class ReactiveMixIn[T]:
         return self.rx.as_bool()
 
     @property
-    def rx(self) -> _RxOps[T]:
+    def rx(self) -> _ReactiveOps[T]:
         """Access reactive helper operations in a dedicated namespace."""
-        return _RxOps(self)
+        return _ReactiveOps(self)
 
     def __str__(self) -> str:
         """Return a string of the current value.

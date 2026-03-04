@@ -12,18 +12,18 @@ Functions:
     unref: Dereference a potentially reactive value.
     computed: Decorator to create a reactive value from a function.
     reactive_method: Decorator to create a reactive method.
-    as_signal: Convert a value to a Signal if it's not already a reactive value.
+    as_rx: Convert a value to a reactive value if it's not already reactive.
+    as_signal: Deprecated alias for as_rx.
     has_value: Type guard to check if an object has a value of a specific type.
 
 Attributes:
     ReactiveValue: Union of Computed and Signal types.
     HasValue: Union of basic types and reactive types.
-    NestedValue: Recursive type for arbitrarily nested reactive values.
 """
 
 # Import reactive methods first to initialize ReactiveMixIn before runtime classes.
 from . import _reactive_methods as _reactive_methods_bootstrap
-from .functions import as_signal, computed, deep_unref, has_value, reactive_method, unref
+from .functions import as_rx, as_signal, computed, deep_unref, has_value, reactive_method, unref
 from .reactive_objects import Computed, Effect, Signal, Variable
 from .types import HasValue, ReactiveValue
 
@@ -37,6 +37,7 @@ __all__ = [
     "computed",
     "reactive_method",
     "unref",
+    "as_rx",
     "as_signal",
     "HasValue",
     "ReactiveValue",

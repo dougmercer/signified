@@ -1,3 +1,5 @@
+import pytest
+
 from signified import Computed, Signal, unref
 
 
@@ -66,3 +68,14 @@ def test_signal_context_manager():
 
     assert s.value == 5
     assert t.value == 5
+
+
+def test_with_name_sets_display_name():
+    s = Signal(1).with_name("counter")
+    assert f"{s:n}" == "counter"
+
+
+def test_add_name_is_deprecated_alias():
+    with pytest.warns(DeprecationWarning, match=r"add_name"):
+        s = Signal(1).add_name("counter")
+    assert f"{s:n}" == "counter"

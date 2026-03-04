@@ -8,7 +8,7 @@ Signified provides a plugin system built on top of [pluggy](https://pluggy.readt
 
 ## Important: Hooks Are Disabled by Default
 
-By default, `signified.plugins.pm` is a no-op manager. To activate real hooks:
+By default, `signified.plugins.plugin_manager` is a no-op manager. To activate real hooks:
 
 1. Install plugin support:
 
@@ -37,13 +37,13 @@ These hooks allow plugins to observe and respond to the complete lifecycle of re
 
 ## Creating a Plugin
 
-Implement hooks with `@hookimpl`, then register with `pm`:
+Implement hooks with `@hookimpl`, then register with `plugin_manager`:
 
 ```python
 from typing import Any
 
 from signified import Signal, Variable
-from signified.plugins import hookimpl, pm
+from signified.plugins import hookimpl, plugin_manager
 
 class MyPlugin:
     def __init__(self) -> None:
@@ -55,24 +55,24 @@ class MyPlugin:
         print(f"created: {value:d}")  # :d = debug format: shows type and id
 
 plugin = MyPlugin()
-pm.register(plugin)
+plugin_manager.register(plugin)
 
 x = Signal(1)
 y = x + 1
 print(plugin.created_count)  # 2 when hooks are enabled
 
-pm.unregister(plugin)
+plugin_manager.unregister(plugin)
 ```
 
 ## Plugin Management
 
-The global manager lives at `signified.plugins.pm`:
+The global manager lives at `signified.plugins.plugin_manager` (`pm` is kept as a backwards-compatible alias):
 
 ```python
-from signified.plugins import pm
+from signified.plugins import plugin_manager
 
-pm.register(my_plugin)
-pm.unregister(my_plugin)
+plugin_manager.register(my_plugin)
+plugin_manager.unregister(my_plugin)
 ```
 
 ## Logging Example
@@ -84,7 +84,7 @@ import logging
 from typing import Any
 
 from signified import Signal, Variable
-from signified.plugins import hookimpl, pm
+from signified.plugins import hookimpl, plugin_manager
 
 
 class ReactiveLogger:
@@ -113,12 +113,12 @@ class ReactiveLogger:
         self.logger.info(f"Named {type(value).__name__}(id={id(value)}) as {value:n}")
 
 logger_plugin = ReactiveLogger()
-pm.register(logger_plugin)
+plugin_manager.register(logger_plugin)
 
-x = Signal(1).add_name("x")
-y = (x + 1).add_name("y")
+x = Signal(1).with_name("x")
+y = (x + 1).with_name("y")
 x.value = 5
 print(y.value)  # 6
 
-pm.unregister(logger_plugin)
+plugin_manager.unregister(logger_plugin)
 ```

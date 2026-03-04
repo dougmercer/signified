@@ -12,8 +12,10 @@ from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, overload
 
 from ._reactive_methods import ReactiveMixIn
-from .plugins import pm
+from .plugins import plugin_manager
 from .types import HasValue, ReactiveValue, _OrderedSet, _OrderedWeakrefSet
+
+__all__ = ["Variable", "Signal", "Computed", "Effect"]
 
 
 def _coerce_to_bool(value: Any) -> bool:
@@ -30,7 +32,7 @@ def _coerce_to_bool(value: Any) -> bool:
         return bool(value.all())
 
 
-class Observer(Protocol):
+class _Observer(Protocol):
     def update(self) -> None:
         pass
 
@@ -47,14 +49,14 @@ class Variable[T](ABC, ReactiveMixIn[T]):
     Subclasses should implement the `update` method.
 
     Attributes:
-        _observers (list[Observer]): List of observers subscribed to this variable.
+        _observers (list[_Observer]): List of observers subscribed to this variable.
     """
 
     __slots__ = ["_observers", "__name", "_version", "__weakref__"]
 
     def __init__(self):
         """Initialize the variable."""
-        self._observers = _OrderedWeakrefSet[Observer]()
+        self._observers = _OrderedWeakrefSet[_Observer]()
         self.__name = ""
         self._version = 0
 
@@ -70,7 +72,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
             for sub_item in item:
                 yield from Variable._iter_variables(sub_item)
 
-    def subscribe(self, observer: Observer) -> None:
+    def subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer to this variable.
 
         Args:
@@ -83,7 +85,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         """
         self._observers.add(observer)
 
-    def unsubscribe(self, observer: Observer) -> None:
+    def unsubscribe(self, observer: _Observer) -> None:
         """Unsubscribe an observer from this variable.
 
         Args:
@@ -91,37 +93,39 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         """
         self._observers.discard(observer)
 
-    def observe(self, items: Any) -> Self:
-        """Subscribe the observer (`self`) to all items that are Observable.
-
-        This method handles arbitrarily nested iterables.
-
-        Args:
-            items: A single item, an iterable, or a nested structure of items to potentially subscribe to.
-
-        Returns:
-            self
-        """
-
+    def _observe(self, items: Any) -> Self:
+        """Subscribe ``self`` to all reactive values found in ``items``."""
         for item in self._iter_variables(items):
             if item is not self:
                 item.subscribe(self)
         return self
 
-    def unobserve(self, items: Any) -> Self:
-        """Unsubscribe the observer (`self`) from all items that are Observable.
+    def observe(self, items: Any) -> Self:
+        """Deprecated alias for :meth:`_observe`."""
+        warnings.warn(
+            "`Variable.observe(...)` is deprecated and will be removed in a future release; "
+            "this is an internal API.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._observe(items)
 
-        Args:
-            items: A single item or an iterable of items to potentially unsubscribe from.
-
-        Returns:
-            self
-        """
-
+    def _unobserve(self, items: Any) -> Self:
+        """Unsubscribe ``self`` from all reactive values found in ``items``."""
         for item in self._iter_variables(items):
             if item is not self:
                 item.unsubscribe(self)
         return self
+
+    def unobserve(self, items: Any) -> Self:
+        """Deprecated alias for :meth:`_unobserve`."""
+        warnings.warn(
+            "`Variable.unobserve(...)` is deprecated and will be removed in a future release; "
+            "this is an internal API.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._unobserve(items)
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
@@ -166,10 +170,19 @@ class Variable[T](ABC, ReactiveMixIn[T]):
         assert handle is not None
         IPythonObserver(self, handle)
 
-    def add_name(self, name: str) -> Self:
+    def with_name(self, name: str) -> Self:
         self.__name = name
-        pm.hook.named(value=self)
+        plugin_manager.hook.named(value=self)
         return self
+
+    def add_name(self, name: str) -> Self:
+        warnings.warn(
+            "`add_name(...)` is deprecated and will be removed in a future release; "
+            "use `with_name(...)` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.with_name(name)
 
     def __format__(self, format_spec: str) -> str:
         """Format the variable with custom display options.
@@ -214,10 +227,12 @@ def _track_read(variable: Variable[Any]) -> None:
     owner_impl = getattr(owner, "_impl", None)
     if owner_impl is not None:
         # Computed: delegate to _ComputedImpl.
-        owner_impl.register_dependency(variable)
-    elif hasattr(owner, "register_dependency"):
+        owner_impl._register_dependency(variable)
+        return
+    owner_register_dependency = getattr(owner, "_register_dependency", None)
+    if owner_register_dependency is not None:
         # Effect: register directly on the owner.
-        owner.register_dependency(variable)
+        owner_register_dependency(variable)
 
 
 def _reconcile_deps(
@@ -320,13 +335,13 @@ class Signal[T](Variable[T]):
     def __init__(self, value: HasValue[T]) -> None:
         super().__init__()
         self._value: HasValue[T] = value
-        self.observe(value)
-        pm.hook.created(value=self)
+        self._observe(value)
+        plugin_manager.hook.created(value=self)
 
     @property
     def value(self) -> T:
         """Get or set the current value."""
-        pm.hook.read(value=self)
+        plugin_manager.hook.read(value=self)
         _track_read(self)
         return _resolve(self._value)
 
@@ -336,9 +351,9 @@ class Signal[T](Variable[T]):
         if _has_changed(old_value, new_value):
             self._value = new_value
             self._version += 1
-            pm.hook.updated(value=self)
-            self.unobserve(old_value)
-            self.observe(new_value)
+            plugin_manager.hook.updated(value=self)
+            self._unobserve(old_value)
+            self._observe(new_value)
             self.notify()
 
     @contextmanager
@@ -398,7 +413,7 @@ class _ComputedImpl:
         self._is_computing = False
         self._dep_versions: dict[int, int] = {}
 
-    def register_dependency(self, dependency: Variable[Any]) -> None:
+    def _register_dependency(self, dependency: Variable[Any]) -> None:
         if self._next_deps is not None and dependency is not self._owner:
             self._next_deps.add(dependency)
 
@@ -416,7 +431,7 @@ class _ComputedImpl:
         self._next_deps = _OrderedSet[Variable[Any]]()
         _COMPUTE_STACK.append(owner)
         try:
-            next_value = owner.f()
+            next_value = owner._compute_fn()
         except BaseException:
             # Roll back: leave self._deps and self._state unchanged so the
             # Computed stays subscribed to its previous deps and remains stale
@@ -445,7 +460,7 @@ class _ComputedImpl:
         if value_changed or forced_refresh:
             owner._version += 1
         if value_changed:
-            pm.hook.updated(value=owner)
+            plugin_manager.hook.updated(value=owner)
 
     def dependencies_changed(self) -> bool:
         """Ensure stale Computed deps are current, then return True if any dep version changed."""
@@ -512,11 +527,11 @@ class Computed[T](Variable[T]):
         ```
     """
 
-    __slots__ = ["f", "_value", "_impl"]
+    __slots__ = ["_compute_fn", "_value", "_impl"]
 
     def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
         super().__init__()
-        self.f = f
+        self._compute_fn = f
         self._value: Any = None
         self._impl = _ComputedImpl(self)
 
@@ -528,9 +543,9 @@ class Computed[T](Variable[T]):
                 stacklevel=2,
             )
 
-        pm.hook.created(value=self)
+        plugin_manager.hook.created(value=self)
 
-    def subscribe(self, observer: Observer) -> None:
+    def subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer, ensuring dependency tracking is active first.
 
         Overrides :meth:`Variable.subscribe` to guarantee that this
@@ -563,7 +578,7 @@ class Computed[T](Variable[T]):
     @property
     def value(self) -> T:
         """Get the current value, recomputing lazily when stale."""
-        pm.hook.read(value=self)
+        plugin_manager.hook.read(value=self)
         _track_read(self)
         self._impl.ensure_uptodate()
         return _resolve(self._value)
@@ -632,7 +647,7 @@ class Effect:
         self._is_running = False
         self._run()
 
-    def register_dependency(self, dep: Variable[Any]) -> None:
+    def _register_dependency(self, dep: Variable[Any]) -> None:
         """Register ``dep`` as a dependency discovered during the current run."""
         if self._next_deps is not None:
             self._next_deps.add(dep)

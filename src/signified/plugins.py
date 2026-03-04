@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from signified import Variable
 
-__all__ = ["hookimpl", "pm"]
+__all__ = ["hookimpl", "plugin_manager", "pm"]
 
 _ENABLE_HOOKS = os.environ.get("SIGNIFIED_ENABLE_HOOKS")
 
@@ -71,8 +71,11 @@ def _make_pluggy_pm() -> Any:
 
 if _ENABLE_HOOKS == "1":
     # Force-enable: pluggy must be installed
-    pm, hookimpl = _make_pluggy_pm()
+    plugin_manager, hookimpl = _make_pluggy_pm()
 else:
     # Force-disable: use no-op
-    pm = _NoOpPM()
+    plugin_manager = _NoOpPM()
     hookimpl = _identity
+
+# Backwards-compatible alias.
+pm = plugin_manager

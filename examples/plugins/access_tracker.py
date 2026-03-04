@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 from weakref import WeakValueDictionary
 
 from signified import Signal, Variable, unref
-from signified.plugins import hookimpl, pm
+from signified.plugins import hookimpl, plugin_manager
 
 
 class EventType(Enum):
@@ -112,14 +112,14 @@ class AccessTracker:
 tracker = AccessTracker()
 
 # Register it
-pm.register(tracker)
+plugin_manager.register(tracker)
 
 if __name__ == "__main__":
     import time
 
     # Create some reactive values and use them
-    x = Signal(1).add_name("x")
-    y = Signal(2).add_name("y")
+    x = Signal(1).with_name("x")
+    y = Signal(2).with_name("y")
 
     time.sleep(1)
 
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     x.value = 30  # x read and write
 
     # More reads
-    z = (x + y).add_name("z")  # x and y read
+    z = (x + y).with_name("z")  # x and y read
 
     # Wait a bit to get some time differences
     time.sleep(1)
@@ -143,5 +143,5 @@ if __name__ == "__main__":
     print(f"Value history for z: {[v.value for v in tracker.get_stats(z).value_history]}")
 
     # Cleanup
-    pm.unregister(tracker)
+    plugin_manager.unregister(tracker)
     tracker.cleanup()
