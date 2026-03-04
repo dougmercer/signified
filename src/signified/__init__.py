@@ -21,13 +21,13 @@ Attributes:
     HasValue: Union of basic types and reactive types.
 """
 
-# Import reactive methods first to initialize ReactiveMixIn before runtime classes.
-from . import _reactive_methods as _reactive_methods_bootstrap
-from .functions import as_rx, as_signal, computed, deep_unref, has_value, reactive_method, unref
-from .reactive_objects import Computed, Effect, Signal, Variable
-from .types import HasValue, ReactiveValue
+# Import _mixin first to initialize _ReactiveMixIn before runtime classes.
+from . import _mixin
+from ._functions import as_rx, as_signal, computed, deep_unref, has_value, reactive_method, unref
+from ._reactive import Computed, Effect, Signal, Variable
+from ._types import HasValue, ReactiveValue
 
-del _reactive_methods_bootstrap
+del _mixin
 
 __all__ = [
     "Variable",

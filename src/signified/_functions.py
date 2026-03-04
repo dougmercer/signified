@@ -8,8 +8,8 @@ from collections.abc import Iterable
 from functools import wraps
 from typing import Any, Callable, Concatenate, TypeGuard, cast
 
-from .reactive_objects import Computed, Signal, Variable, _track_read
-from .types import HasValue, ReactiveValue
+from ._reactive import Computed, Signal, Variable, _track_read
+from ._types import HasValue, ReactiveValue
 
 if importlib.util.find_spec("numpy") is not None:
     import numpy as np  # pyright: ignore[reportMissingImports]
@@ -223,8 +223,7 @@ def as_signal[T](val: HasValue[T]) -> Signal[T]:
     ``Computed`` instances.
     """
     warnings.warn(
-        "`as_signal(...)` is deprecated and will be removed in a future release; "
-        "use `as_rx(...)` instead.",
+        "`as_signal(...)` is deprecated and will be removed in a future release; use `as_rx(...)` instead.",
         DeprecationWarning,
         stacklevel=2,
     )

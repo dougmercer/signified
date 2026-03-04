@@ -11,9 +11,9 @@ from contextlib import contextmanager
 from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, overload
 
-from ._reactive_methods import ReactiveMixIn
+from ._mixin import _ReactiveMixIn
+from ._types import HasValue, ReactiveValue, _OrderedSet, _OrderedWeakrefSet
 from .plugins import plugin_manager
-from .types import HasValue, ReactiveValue, _OrderedSet, _OrderedWeakrefSet
 
 __all__ = ["Variable", "Signal", "Computed", "Effect"]
 
@@ -37,7 +37,7 @@ class _Observer(Protocol):
         pass
 
 
-class Variable[T](ABC, ReactiveMixIn[T]):
+class Variable[T](ABC, _ReactiveMixIn[T]):
     """An abstract base class for reactive values.
 
     A reactive value is an object that can be observed by observer for changes and
@@ -103,8 +103,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
     def observe(self, items: Any) -> Self:
         """Deprecated alias for :meth:`_observe`."""
         warnings.warn(
-            "`Variable.observe(...)` is deprecated and will be removed in a future release; "
-            "this is an internal API.",
+            "`Variable.observe(...)` is deprecated and will be removed in a future release; this is an internal API.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -120,8 +119,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
     def unobserve(self, items: Any) -> Self:
         """Deprecated alias for :meth:`_unobserve`."""
         warnings.warn(
-            "`Variable.unobserve(...)` is deprecated and will be removed in a future release; "
-            "this is an internal API.",
+            "`Variable.unobserve(...)` is deprecated and will be removed in a future release; this is an internal API.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -177,8 +175,7 @@ class Variable[T](ABC, ReactiveMixIn[T]):
 
     def add_name(self, name: str) -> Self:
         warnings.warn(
-            "`add_name(...)` is deprecated and will be removed in a future release; "
-            "use `with_name(...)` instead.",
+            "`add_name(...)` is deprecated and will be removed in a future release; use `with_name(...)` instead.",
             DeprecationWarning,
             stacklevel=2,
         )
