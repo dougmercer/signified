@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import Any, Callable, Protocol, Self, overload
+from typing import Any, Callable, Protocol, Self, TypeVar, overload
 
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _OrderedSet, _OrderedWeakrefSet
@@ -494,7 +494,18 @@ class _ComputedImpl:
         return was_fresh
 
 
-class Computed[T](Variable[T]):
+# We intentionally use a `TypeVar` here rather than PEP 695 syntax to ensure
+# that Computed[T] is explicitly invariant.
+#
+# With inferred variance (PEP 695), internal refactors (e.g., renaming `f`
+# to `_compute_fn`) can make `Computed` covariant in the type checker. That,
+# in turn, causes several operator overloads on `_ReactiveMixIn` to be flagged
+# as overlapping. Keeping variance explicit here avoids these subtle, brittle
+# regressions.
+T = TypeVar("T")
+
+
+class Computed(Variable[T]):
     """Read-only reactive value derived from a computation.
 
     ``Computed`` tracks dependencies as it executes and lazily recalculates the
