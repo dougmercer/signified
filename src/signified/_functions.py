@@ -18,22 +18,20 @@ else:
 
 
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
-    """Wrap a function so calls produce a reactive ``Computed`` result.
+    """Wrap a function so calls produce a reactive [Computed][signified.Computed] result.
 
     The returned wrapper accepts plain values, reactive values, or nested
-    containers that include reactive values. On each recomputation, arguments
-    are normalized with :func:`deep_unref`, so ``func`` receives plain Python
-    values.
+    containers. On each recomputation, arguments are resolved with
+    [deep_unref][signified.deep_unref], so `func` always receives plain Python values.
 
-    The created :class:`Computed` tracks dependencies dynamically while the
-    wrapped function runs. Any reactive value read during evaluation becomes a
-    dependency for subsequent updates.
+    Any reactive value read during evaluation becomes a dependency; the
+    [Computed][signified.Computed] updates automatically when any dependency changes.
 
     Args:
         func: Function that computes a derived value from its inputs.
 
     Returns:
-        A wrapper that returns a :class:`Computed` when called.
+        A wrapper that returns a [Computed][signified.Computed] when called.
     """
 
     @wraps(func)
@@ -49,13 +47,12 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
 
 def unref[T](value: HasValue[T]) -> T:
-    """Resolve a value by unwrapping reactive containers until plain data remains.
+    """Unwrap a reactive value to its plain Python value.
 
-    This utility repeatedly unwraps :class:`Variable` objects by following
-    their ``.value`` chain. When called inside a :class:`Computed` or
-    :class:`Effect` evaluation, each unwrapped reactive is registered as a
-    dependency so that changes propagate correctly — the same behaviour as
-    reading ``.value`` directly.
+    Repeatedly follows the `.value` chain until a non-reactive value is
+    reached. When called inside a [Computed][signified.Computed] or [Effect][signified.Effect] evaluation,
+    each unwrapped reactive registers as a dependency — equivalent to
+    reading `.value` directly.
 
     Args:
         value: Plain value, reactive value, or nested reactive value.
@@ -81,19 +78,17 @@ def unref[T](value: HasValue[T]) -> T:
 
 
 def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
-    """Check whether an object's resolved value is an instance of ``type_``.
+    """Check whether an object's resolved value is an instance of `type_`.
 
-    This helper is a typed guard around :func:`unref`. It is useful when code
-    accepts either plain values or reactive values and needs a narrowed type
-    before continuing.
+    A typed guard around [unref][signified.unref]. Useful when a parameter accepts either a
+    plain value or a reactive wrapper and you need to narrow the type.
 
     Args:
         obj: Value to inspect. May be plain or reactive.
         type_: Expected resolved value type.
 
     Returns:
-        ``True`` if ``unref(obj)`` is an instance of ``type_``; otherwise
-        ``False``.
+        `True` if `unref(obj)` is an instance of `type_`; otherwise `False`.
 
     Example:
         ```py
@@ -118,17 +113,16 @@ _SCALAR_TYPES = {int, float, str, bool, type(None)}
 def deep_unref(value: Any) -> Any:
     """Recursively resolve reactive values within nested containers.
 
-    ``deep_unref`` is the structural counterpart to :func:`unref`. It unwraps
-    reactive values that appear inside supported containers while preserving the
-    container type where practical.
+    Like [unref][signified.unref], but also descends into `dict`, `list`, `tuple`, and other
+    iterables, replacing any reactive values found within them.
 
-    Supported behavior:
-    - scalar primitives are returned unchanged
+    Supported containers:
+
+    - scalars (`int`, `float`, `str`, `bool`, `None`) are returned unchanged
     - reactive values are unwrapped recursively
-    - ``dict``, ``list``, and ``tuple`` contents are recursively unwrapped
+    - `dict`, `list`, and `tuple` contents are recursively unwrapped
     - generic iterables are reconstructed when possible; otherwise returned as-is
-    - ``numpy.ndarray`` values with ``dtype=object`` are recursively unwrapped
-      element-wise
+    - `numpy.ndarray` with `dtype=object` is unwrapped element-wise
 
     Args:
         value: Any value, possibly containing reactive values.
@@ -204,8 +198,8 @@ def reactive_method[**P, T](
 def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
     """Normalize a value to a reactive object.
 
-    If ``val`` is already reactive, it is returned unchanged to avoid wrapping
-    an existing reactive node. Otherwise a new :class:`Signal` is created.
+    If `val` is already reactive, it is returned unchanged. Otherwise a new
+    [Signal][signified.Signal] is created wrapping the value.
 
     Args:
         val: Plain value or reactive value.

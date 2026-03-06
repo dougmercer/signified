@@ -155,7 +155,7 @@ plugins:
           options:
             docstring_style: google
             show_if_no_docstring: true
-            inherited_members: true
+            inherited_members: false
             members_order: source
             filters:
             - '!^_[^_]'
