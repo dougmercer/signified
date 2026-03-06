@@ -4,4 +4,5 @@ hide:
 ---
 # Core
 
-::: signified.core
+::: signified.reactive_objects
+::: signified.functions

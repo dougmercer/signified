@@ -1,7 +1,7 @@
 import pytest
 
-from signified import Computed, Signal, as_signal, computed, has_value, reactive_method, unref
-from signified.core import _coerce_to_bool, _has_changed
+from signified import Computed, Signal, as_rx, as_signal, computed, has_value, reactive_method, unref
+from signified._reactive import _coerce_to_bool, _has_changed
 
 
 def test_has_value():
@@ -118,15 +118,21 @@ def test_computed_decorator_on_method_tracks_reactive_arguments():
     assert result.value == 15
 
 
-def test_as_signal():
-    """Test the as_signal function."""
-    s1 = as_signal(5)
-    s2 = as_signal(Signal(10))
+def test_as_rx():
+    """Test the as_rx helper."""
+    s1 = as_rx(5)
+    s2 = as_rx(Signal(10))
 
     assert isinstance(s1, Signal)
     assert isinstance(s2, Signal)
     assert s1.value == 5
     assert s2.value == 10
+
+
+def test_as_signal_is_deprecated_alias():
+    with pytest.warns(DeprecationWarning, match=r"as_signal"):
+        value = as_signal(5)
+    assert value.value == 5
 
 
 def test_has_changed_treats_nan_as_unchanged():

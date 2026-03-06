@@ -375,17 +375,17 @@ def test_legacy_non_dunder_methods_emit_deprecation_warning():
     """Test that legacy non-dunder methods warn and still function."""
     s = Signal([1, 2, 3])
 
-    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.as_bool"):
+    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.as_bool"):
         assert Signal(1).as_bool().value == True  # noqa: E712
 
-    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.contains"):
+    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.contains"):
         assert s.contains(2).value == True  # noqa: E712
 
-    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.is_not"):
+    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.is_not"):
         assert Signal(1).is_not(None).value == True  # noqa: E712
 
-    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.eq"):
+    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.eq"):
         assert Signal(2).eq(2).value == True  # noqa: E712
 
-    with pytest.warns(DeprecationWarning, match=r"ReactiveMixIn\.where"):
+    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.where"):
         assert Signal(True).where("a", "b").value == "a"
