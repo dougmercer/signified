@@ -213,23 +213,15 @@ top of this stack so dependency subscriptions can be reconciled on refresh.
 
 
 def _track_read(variable: Variable[Any]) -> None:
-    """Register `variable` as a dependency of the currently computing Computed or Effect."""
+    """Register `variable` as a dependency of the currently computing Computed."""
     if not _COMPUTE_STACK:
-        # Reads outside Computed/Effect evaluation do not participate in dependency tracking.
+        # Reads outside Computed evaluation do not participate in dependency tracking.
         return
     owner = _COMPUTE_STACK[-1]
     if owner is variable:
         # Ignore self-reads to avoid self-dependency loops.
         return
-    owner_impl = getattr(owner, "_impl", None)
-    if owner_impl is not None:
-        # Computed: delegate to _ComputedImpl.
-        owner_impl._register_dependency(variable)
-        return
-    owner_register_dependency = getattr(owner, "_register_dependency", None)
-    if owner_register_dependency is not None:
-        # Effect: register directly on the owner.
-        owner_register_dependency(variable)
+    owner._impl._register_dependency(variable)
 
 
 def _reconcile_deps(
@@ -596,13 +588,13 @@ class Effect:
     """Eagerly run a zero-argument callable and re-run it whenever any reactive
     value read inside it changes.
 
-    ``Effect`` pushes itself onto the dependency-tracking stack while ``fn``
-    runs, so every ``.value`` read (or :func:`unref` call) inside ``fn``
+    ``Effect`` wraps ``fn`` in a :class:`Computed` and subscribes to it
+    eagerly, so every ``.value`` read (or :func:`unref` call) inside ``fn``
     registers as a dependency. After each run the dependency set is reconciled:
-    newly-read reactives are subscribed, dropped ones are unsubscribed. This
-    mirrors the dynamic dependency tracking used by :class:`Computed` but runs
-    eagerly — ``fn`` fires immediately on construction and again on every
-    subsequent upstream change without needing a ``.value`` read to trigger it.
+    newly-read reactives are subscribed, dropped ones are unsubscribed. Unlike
+    :class:`Computed`, ``fn`` fires immediately on construction and again on
+    every subsequent upstream change without needing a ``.value`` read to
+    trigger it.
 
     Because dependencies are inferred at runtime, conditional branches are
     handled correctly: only the signals actually read during the most recent
@@ -646,49 +638,20 @@ class Effect:
         ```
     """
 
-    __slots__ = ("_fn", "_deps", "_next_deps", "_is_running", "__weakref__")
+    __slots__ = ("_computed", "__weakref__")
 
     def __init__(self, fn: Callable[[], None]) -> None:
-        self._fn = fn
-        self._deps = _OrderedSet[Variable[Any]]()
-        self._next_deps: _OrderedSet[Variable[Any]] | None = None
-        self._is_running = False
-        self._run()
-
-    def _register_dependency(self, dep: Variable[Any]) -> None:
-        """Register ``dep`` as a dependency discovered during the current run."""
-        if self._next_deps is not None:
-            self._next_deps.add(dep)
-
-    def _run(self) -> None:
-        if self._is_running:
-            raise RuntimeError("Cycle detected while evaluating Effect")
-        prev_deps = self._deps
-        self._next_deps = _OrderedSet[Variable[Any]]()
-        self._is_running = True
-        _COMPUTE_STACK.append(self)
-        try:
-            self._fn()
-        except BaseException:
-            # Roll back: leave self._deps unchanged so the Effect stays
-            # subscribed to its previous deps and will retry on the next change.
-            _COMPUTE_STACK.pop()
-            self._next_deps = None
-            self._is_running = False
-            raise
-        _COMPUTE_STACK.pop()
-        next_deps = self._next_deps
-        self._next_deps = None
-        self._is_running = False
-        _reconcile_deps(self, prev_deps, next_deps)
-        self._deps = next_deps
+        self._computed = Computed(fn)
+        self._computed.subscribe(self)  # triggers initial evaluation
 
     def update(self) -> None:
         """Called by a dependency when its value changes."""
-        self._run()
+        self._computed._impl.invalidate(force=True)
+        self._computed._impl.ensure_uptodate()
 
     def dispose(self) -> None:
         """Unsubscribe from all dependencies and stop the effect."""
-        for dep in self._deps:
-            dep.unsubscribe(self)
-        self._deps = _OrderedSet[Variable[Any]]()
+        self._computed.unsubscribe(self)
+        for dep in tuple(self._computed._impl._deps):
+            dep.unsubscribe(self._computed)
+        self._computed._impl._deps = _OrderedSet[Variable[Any]]()
