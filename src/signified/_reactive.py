@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import math
 import warnings
 from abc import ABC, abstractmethod
@@ -159,10 +158,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         if not _HAS_IPYTHON:
             return
 
-        try:
-            display = importlib.import_module("IPython.display").display
-        except ImportError:
-            return
+        from IPython.display import display  # pyright: ignore[reportMissingImports]
 
         handle = display(self.value, display_id=True)
         assert handle is not None
@@ -228,12 +224,10 @@ def _reconcile_deps(
     subscriber: Any, old_deps: _OrderedSet[Variable[Any]], new_deps: _OrderedSet[Variable[Any]]
 ) -> None:
     """Update subscriptions to reflect a change from old_deps to new_deps."""
-    for dep in tuple(old_deps):
-        if dep not in new_deps:
-            dep.unsubscribe(subscriber)
-    for dep in tuple(new_deps):
-        if dep not in old_deps:
-            dep.subscribe(subscriber)
+    for dep in old_deps - new_deps:
+        dep.unsubscribe(subscriber)
+    for dep in new_deps - old_deps:
+        dep.subscribe(subscriber)
 
 
 def _resolve(value: Any) -> Any:
@@ -268,9 +262,8 @@ def _has_changed(previous: Any, current: Any) -> bool:
         return previous is not current
 
     # Keep NaN stable: treat NaN -> NaN as unchanged.
-    if isinstance(previous, float) and isinstance(current, float):
-        if math.isnan(previous) and math.isnan(current):
-            return False
+    if isinstance(previous, float) and isinstance(current, float) and math.isnan(previous) and math.isnan(current):
+        return False
 
     try:
         # `==` may return non-scalar array-like values; coerce those with
@@ -446,14 +439,14 @@ class _ComputedImpl:
         value_changed = not had_value or _has_changed(previous_value, next_value)
         if value_changed:
             owner._value = next_value
-        if value_changed or forced_refresh:
             owner._version += 1
-        if value_changed:
             plugin_manager.hook.updated(value=owner)
+        elif forced_refresh:
+            owner._version += 1
 
     def dependencies_changed(self) -> bool:
         """Ensure stale Computed deps are current, then return True if any dep version changed."""
-        for dep in tuple(self._deps):
+        for dep in self._deps:
             if isinstance(dep, Computed):
                 dep._impl.ensure_uptodate()
             if self._dep_versions.get(id(dep), -1) != dep._version:
@@ -479,10 +472,8 @@ class _ComputedImpl:
         ``force=True`` upgrades the state to ``MUST_REFRESH``, bypassing the
         dep-version check on the next read even if dep versions look unchanged.
         """
-        target = _State.MUST_REFRESH if force else _State.STALE
         was_fresh = self._state == _State.FRESH
-        if self._state < target:
-            self._state = target
+        self._state = max(self._state, _State.MUST_REFRESH if force else _State.STALE)
         return was_fresh
 
 

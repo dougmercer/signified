@@ -448,8 +448,7 @@ class _ReactiveMixIn[T]:
             raise ValueError("Value is not callable.")
 
         def f(*args: Any, **kwargs: Any):
-            _f = getattr(self, "value")
-            return _f(*args, **kwargs)
+            return self.value(*args, **kwargs)
 
         return computed(f)(*args, **kwargs)
 
@@ -567,12 +566,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        if ndigits is None or ndigits == 0:
-            # When ndigits is None or 0, round returns an integer
-            return computed(round)(self, ndigits=ndigits)
-        else:
-            # Otherwise, float
-            return computed(round)(self, ndigits=ndigits)
+        return computed(round)(self, ndigits=ndigits)
 
     def __ceil__(self) -> Computed[int]:
         """Return a reactive value for the ceiling of `self`.
