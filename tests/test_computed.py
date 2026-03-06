@@ -145,6 +145,65 @@ def test_computed_is_lazy_until_read():
     assert reads == [2, 3]
 
 
+def test_computed_evaluate_at_does_not_mutate_cached_state():
+    source = Signal(2)
+    derived = Computed(lambda: source.value * 10)
+
+    assert derived._impl._state.name == "UNINITIALIZED"
+    assert derived.evaluate_at({source: 5}) == 50
+    assert source.value == 2
+    assert derived._impl._state.name == "UNINITIALIZED"
+    assert derived._version == 0
+    assert derived.value == 20
+
+
+def test_computed_evaluate_at_matches_signal_at_scope():
+    left = Signal(2)
+    right = Signal(3)
+    total = Computed(lambda: left.value * 2 + right.value)
+
+    with left.at(10), right.at(20):
+        expected = total.value
+
+    assert total.evaluate_at({left: 10, right: 20}) == expected
+    assert total.value == 7
+
+
+def test_computed_evaluate_at_applies_to_nested_computeds():
+    left = Signal(2)
+    right = Signal(3)
+    inner = Computed(lambda: left.value + right.value)
+    outer = Computed(lambda: inner.value * 2)
+
+    assert outer.evaluate_at({left: 10}) == 26
+    assert outer.value == 10
+
+
+def test_computed_evaluate_at_can_switch_dynamic_branches():
+    use_left = Signal(True)
+    left = Signal(1)
+    right = Signal(10)
+    selected = Computed(lambda: left.value if use_left.value else right.value)
+
+    assert selected.evaluate_at({use_left: False, right: 99}) == 99
+    assert selected.value == 1
+
+
+def test_computed_evaluate_at_tracks_only_live_dependencies_when_nested():
+    left = Signal(1)
+    right = Signal(10)
+    base = Computed(lambda: left.value + right.value)
+    outer = Computed(lambda: base.evaluate_at({left: 100}))
+
+    assert outer.value == 110
+
+    left.value = 2
+    assert outer.value == 110
+
+    right.value = 20
+    assert outer.value == 120
+
+
 def test_computed_dynamic_dependency_branch_switching():
     use_left = Signal(True)
     left = Signal(1)
