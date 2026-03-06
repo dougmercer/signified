@@ -37,5 +37,5 @@ class IPythonObserver:
         me = self.me_ref()
         if me is None:
             return
-        if _HAS_IPYTHON and hasattr(self.handle, "update"):
+        if hasattr(self.handle, "update"):
             self.handle.update(me.value)
