@@ -78,13 +78,13 @@ print("count:", count.value)`,
     where: `from signified import Signal, computed
 
 username = Signal(None)
-is_logged_in = username.is_not(None)
+is_logged_in = username.rx.is_not(None)
 
 @computed
 def welcome(name):
     return f"Welcome back, {name}!"
 
-message = is_logged_in.where(welcome(username), "Please log in")
+message = is_logged_in.rx.where(welcome(username), "Please log in")
 print(message.value)
 
 username.value = "admin"
