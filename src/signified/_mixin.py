@@ -404,13 +404,16 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        if name in {"value", "_value"}:
+        if name in {"value", "_value", "_impl"}:
             return super().__getattribute__(name)
+
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
         if hasattr(self.value, name):
             return computed(getattr)(self, name)
-        else:
-            return super().__getattribute__(name)
+
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     def __call__[**P, R](self: "_ReactiveMixIn[Callable[P, R]]", *args: P.args, **kwargs: P.kwargs) -> Computed[R]:
         """Create a reactive value for calling `self.value(*args, **kwargs)`.
@@ -1687,46 +1690,65 @@ class _ReactiveMixIn[T]:
         """
         return computed(operator.getitem)(self, key)
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Set an attribute on the underlying `self.value`.
+    @classmethod
+    def _is_own_attr(cls, name: str) -> bool:
+        """Return whether `name` is defined on this wrapper type or one of its bases."""
+        return any(name in c.__dict__ for c in cls.__mro__)
 
-        Note:
-            It is necessary to set the attribute via the Signal, rather than the
-            underlying `signal.value`, to properly notify downstream observers
-            of changes. Reason being, mutable objects that, for example, fallback
-            to id comparison for equality checks will appear as if nothing changed
-            even if one of its attributes changed.
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Assign `name` on the wrapper or forward it to the wrapped value.
+
+        Private attributes and names owned by the wrapper type are assigned on the
+        wrapper itself. Other names are forwarded to the wrapped value when that
+        object already defines the attribute, then observers are notified so
+        dependents recompute.
+
+        This allows `signal.name = "Bob"` to update the wrapped object while still
+        preserving the wrapper's own API such as `.value` and `.rx`.
 
         Args:
-            name: The name of the attribute to access.
-            value: The value to set it to.
+            name: The attribute name to assign.
+            value: The value to assign.
 
         Example:
             ```py
-                >>> class Person:
-                ...    def __init__(self, name: str):
-                ...        self.name = name
-                ...    def greet(self) -> str:
-                ...        return f"Hi, I'm {self.name}!"
-                >>> s = Signal(Person("Alice"))
-                >>> result = s.greet()
-                >>> result.value
-                "Hi, I'm Alice!"
-                >>> s.name = "Bob"  # Modify attribute on Person instance through the reactive value s
-                >>> result.value
-                "Hi, I'm Bob!"
+            >>> class Person:
+            ...     def __init__(self, name: str):
+            ...         self.name = name
+            ...     def greet(self) -> str:
+            ...         return f"Hi, I'm {self.name}!"
+            >>> s = Signal(Person("Alice"))
+            >>> result = s.greet()
+            >>> result.value
+            "Hi, I'm Alice!"
+            >>> s.name = "Bob"
+            >>> result.value
+            "Hi, I'm Bob!"
 
             ```
         """
-        if name.startswith("_") or not hasattr(self, "_value"):
+        # Bypass __getattr__ during initialization, before _value exists.
+        try:
+            object.__getattribute__(self, "_value")
+        except AttributeError:
             super().__setattr__(name, value)
-        elif hasattr(self.value, name):
+            return
+
+        # Keep private names and wrapper-owned API on the wrapper itself.
+        if name.startswith("_") or self._is_own_attr(name):
+            super().__setattr__(name, value)
+            return
+
+        # Forward assignment to the wrapped value and notify dependents.
+        if hasattr(self.value, name):
             setattr(self.value, name, value)
             if isinstance(self, Variable):
                 self._version += 1
             self.notify()
-        else:
-            super().__setattr__(name, value)
+            return
+
+        # Otherwise, fall back to normal wrapper assignment semantics.
+        super().__setattr__(name, value)
 
     def __setitem__(self, key: Any, value: Any) -> None:
         """Set an item on the underlying `self.value`.
