@@ -8,13 +8,42 @@ This page summarizes notable changes across releases.
 
 ## 0.3.1
 
+### Effect rework
+
+`Effect` now auto-tracks its dependencies the same way `Computed` does. The constructor signature has changed: instead of taking a reactive source and a callback, it now takes a single zero-argument callable. Every reactive value read via `.value` or `unref()` inside that callable is automatically registered as a dependency.
+
+```python
+# Before (0.3.0)
+e = Effect(s, lambda v: print(v))
+
+# After (0.3.1)
+e = Effect(lambda: print(s.value))
+```
+
+Conditional branches are handled correctly — only the signals actually read during the most recent run are tracked, and the dependency set updates automatically when branches change.
+
+### `unref()` now participates in dependency tracking
+
+Calling `unref()` inside a `Computed` or `Effect` evaluation now registers each unwrapped reactive as a dependency, the same as reading `.value` directly. Previously `unref()` bypassed tracking entirely.
+
 ### Invalidation API
 
-Added `invalidate()` to reactive values, including a force-refresh invalidation path for `Computed`. Use this when dependency topology changes outside the reactive graph (for example, replacing an object attribute that points to a signal/computed), so the next read performs a full recomputation.
+Added `invalidate()` to all reactive values. For `Computed`, pass `force=True` to bypass the dependency-version check and guarantee a full re-evaluation on the next read. Use this when the dependency topology changes outside the reactive graph (for example, replacing an object attribute that points to a signal or computed).
 
-### Dependency Retention
+### Bug Fixes
 
-Fixed transient computed dependency retention by tracking dependencies strongly during evaluation. This prevents dependencies from being dropped by garbage collection and keeps downstream updates correct.
+- Fixed transient computed dependency retention: dependencies are now held strongly during evaluation, preventing them from being dropped by garbage collection before downstream updates complete.
+- Fixed exception rollback in `Computed` and `Effect`: if the user function raises, the previous dependency set and staleness state are preserved so the node retries correctly on the next change.
+
+!!! danger "Breaking Changes"
+
+    - **`Effect` constructor**: the two-argument form `Effect(source, fn)` is gone. Replace with `Effect(lambda: fn(source.value))`.
+    - **`NestedValue` removed from public exports**: `from signified import NestedValue` will raise `ImportError`. The type alias is still available in `signified._types` if needed.
+    - **Internal module renames**: the private implementation modules have been reorganised. Any code importing directly from `signified.core`, `signified.types`, or `signified.display` will break. Use the public `signified` namespace instead.
+
+!!! warning "Deprecations"
+
+    - `as_signal(val)` — use `as_rx(val)` instead.
 
 ## 0.3.0
 
