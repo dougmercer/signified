@@ -2,7 +2,7 @@ import gc
 
 import pytest
 
-from signified import Computed, Signal, computed
+from signified import Computed, Signal, computed, peek, untracked
 
 
 def test_computed_basic():
@@ -237,6 +237,45 @@ def test_invalidate_nonreactive_value_replace():
     assert derived.value == 6  # undesirable, but we did something weird
     derived.invalidate()
     assert derived.value == 16
+
+
+def test_peek_reads_without_registering_dependencies():
+    source = Signal(1)
+    derived = Computed(lambda: peek(source) * 10)
+
+    assert derived.value == 10
+
+    source.value = 2
+    assert derived.value == 10
+
+    derived.invalidate()
+    assert derived.value == 20
+
+
+def test_untracked_context_suppresses_dependency_capture():
+    source = Signal(1)
+    trigger = Signal(10)
+    runs = 0
+
+    def compute() -> int:
+        nonlocal runs
+        runs += 1
+        with untracked():
+            snapshot = source.value
+        return snapshot + trigger.value
+
+    derived = Computed(compute)
+
+    assert derived.value == 11
+    assert runs == 1
+
+    source.value = 2
+    assert derived.value == 11
+    assert runs == 1
+
+    trigger.value = 20
+    assert derived.value == 22
+    assert runs == 2
 
 
 def test_invalidate_signal_replace():

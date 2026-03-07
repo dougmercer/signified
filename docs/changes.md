@@ -6,6 +6,15 @@ hide:
 
 This page summarizes notable changes across releases.
 
+## Unreleased
+
+### Untracked reads
+
+Added `peek()` and `untracked()` for advanced cases where you need to inspect a
+reactive value without registering a dependency. This is mainly useful for
+library authors building higher-level abstractions around `Computed` and
+`Effect`.
+
 ## 0.3.1
 
 ### Effect rework

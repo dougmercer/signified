@@ -23,8 +23,8 @@ Attributes:
 
 # Import _mixin first to initialize _ReactiveMixIn before runtime classes.
 from . import _mixin
-from ._functions import as_rx, as_signal, computed, deep_unref, has_value, reactive_method, unref
-from ._reactive import Computed, Effect, Signal, Variable
+from ._functions import as_rx, as_signal, computed, deep_unref, has_value, peek, reactive_method, unref
+from ._reactive import Computed, Effect, Signal, Variable, untracked
 from ._types import HasValue, ReactiveValue
 
 del _mixin
@@ -37,6 +37,8 @@ __all__ = [
     "computed",
     "reactive_method",
     "unref",
+    "peek",
+    "untracked",
     "as_rx",
     "as_signal",
     "HasValue",

@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from functools import wraps
 from typing import Any, Callable, Concatenate, TypeGuard, cast
 
-from ._reactive import Computed, Signal, Variable, _track_read
+from ._reactive import Computed, Signal, Variable, _track_read, untracked
 from ._types import HasValue, ReactiveValue
 
 if importlib.util.find_spec("numpy") is not None:
@@ -75,6 +75,23 @@ def unref[T](value: HasValue[T]) -> T:
         _track_read(current)
         current = current._value
     return current
+
+
+def peek[T](value: HasValue[T]) -> T:
+    """Unwrap a reactive value without registering any dependencies.
+
+    This behaves like [unref][signified.unref], but suppresses dependency
+    tracking even when called inside a [Computed][signified.Computed] or
+    [Effect][signified.Effect] evaluation.
+
+    Args:
+        value: Plain value or reactive value.
+
+    Returns:
+        The fully unwrapped value.
+    """
+    with untracked():
+        return unref(value)
 
 
 def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:

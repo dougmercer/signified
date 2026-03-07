@@ -112,9 +112,11 @@ subscript, and attribute-access operations all return reactive
 
 ::: signified.computed
 ::: signified.unref
+::: signified.peek
 ::: signified.deep_unref
 ::: signified.has_value
 ::: signified.as_rx
+::: signified.untracked
 
 ## Types
 

@@ -14,7 +14,7 @@ from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _OrderedSet, _OrderedWeakrefSet
 from .plugins import plugin_manager
 
-__all__ = ["Variable", "Signal", "Computed", "Effect"]
+__all__ = ["Variable", "Signal", "Computed", "Effect", "untracked"]
 
 
 def _coerce_to_bool(value: Any) -> bool:
@@ -212,10 +212,38 @@ top of this stack so dependency subscriptions can be reconciled on refresh.
     on a single thread.
 """
 
+_UNTRACK_DEPTH = 0
+"""Depth counter for temporarily suppressing dependency tracking."""
+
+
+@contextmanager
+def untracked() -> Generator[None, None, None]:
+    """Temporarily suppress dependency tracking for reactive reads.
+
+    This is intended for advanced helpers that need a snapshot of reactive
+    state without subscribing the current [Computed][signified.Computed] or
+    [Effect][signified.Effect] to that value.
+
+    Example:
+        ```py
+        >>> source = Signal(1)
+        >>> with untracked():
+        ...     source.value
+        1
+
+        ```
+    """
+    global _UNTRACK_DEPTH
+    _UNTRACK_DEPTH += 1
+    try:
+        yield
+    finally:
+        _UNTRACK_DEPTH -= 1
+
 
 def _track_read(variable: Variable[Any]) -> None:
     """Register `variable` as a dependency of the currently computing Computed."""
-    if not _COMPUTE_STACK:
+    if _UNTRACK_DEPTH or not _COMPUTE_STACK:
         # Reads outside Computed evaluation do not participate in dependency tracking.
         return
     owner = _COMPUTE_STACK[-1]

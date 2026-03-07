@@ -34,6 +34,27 @@ print(subtotal.value)  # 59.97
 
 `Signal.value` is read/write. `Computed.value` is read-only and updates from dependencies.
 
+Inside a `Computed` or `Effect`, reading `.value` participates in dependency
+tracking. That is usually what you want for ordinary application code.
+
+If you are writing higher-level helpers and need a snapshot without creating a
+dependency edge, use `peek()` or wrap a block in `untracked()`:
+
+```python
+from signified import Computed, Signal, peek, untracked
+
+source = Signal(1)
+
+snapshot = Computed(lambda: peek(source))
+assert snapshot.value == 1
+
+source.value = 2
+assert snapshot.value == 1  # still cached: the read was untracked
+
+with untracked():
+    current = source.value
+```
+
 ### Computed from operators
 
 ```python
@@ -258,6 +279,15 @@ def process_data(value: HasValue[float]) -> float:
 
 print(process_data(4))          # 8
 print(process_data(Signal(5)))  # 10
+```
+
+`peek` is the untracked counterpart to `unref`:
+
+```python
+from signified import Signal, peek
+
+value = Signal(5)
+print(peek(value))  # 5
 ```
 
 Related helpers:

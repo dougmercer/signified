@@ -1,7 +1,7 @@
 from math import ceil, floor, trunc
 from typing import Any, TypeVar, Union, assert_type
 
-from signified import Computed, Effect, Signal, computed, reactive_method, unref
+from signified import Computed, Effect, Signal, computed, peek, reactive_method, unref
 
 T = TypeVar("T")
 Numeric = Union[int, float]
@@ -91,6 +91,11 @@ def test_rx_effect():
     result = Signal(2).rx.effect(lambda _x: None)
     assert_type(result, Effect)
     result.dispose()
+
+
+def test_peek():
+    result = peek(Signal(2))
+    assert_type(result, int)
 
 
 def test_rx_len():
