@@ -37,18 +37,12 @@ class _Observer(Protocol):
 
 
 class Variable[T](ABC, _ReactiveMixIn[T]):
-    """An abstract base class for reactive values.
+    """Abstract base class for reactive values.
 
-    A reactive value is an object that can be observed by observer for changes and
-    can notify observers when its value changes. This class implements both the observer
-    and observable patterns.
+    Both [Signal][signified.Signal] and [Computed][signified.Computed] extend this
+    class. *You should use them directly.*
 
-    This class implements both the observer and observable pattern.
-
-    Subclasses should implement the `update` method.
-
-    Attributes:
-        _observers (list[_Observer]): List of observers subscribed to this variable.
+    Variable is only exposed for type hinting or subclassing purposes.
     """
 
     __slots__ = ["_observers", "__name", "_version", "__weakref__"]
@@ -78,7 +72,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
             observer: The observer to subscribe.
 
         Note:
-            :class:`Computed` overrides this method to initialize dependency
+            [Computed][signified.Computed] overrides this method to initialize dependency
             tracking before adding the observer, so subscribers are guaranteed
             to see all future upstream changes from the moment they subscribe.
         """
@@ -100,7 +94,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         return self
 
     def observe(self, items: Any) -> Self:
-        """Deprecated alias for :meth:`_observe`."""
+        """Deprecated alias for `_observe`."""
         warnings.warn(
             "`Variable.observe(...)` is deprecated and will be removed in a future release; this is an internal API.",
             DeprecationWarning,
@@ -116,7 +110,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         return self
 
     def unobserve(self, items: Any) -> Self:
-        """Deprecated alias for :meth:`_unobserve`."""
+        """Deprecated alias for `_unobserve`."""
         warnings.warn(
             "`Variable.unobserve(...)` is deprecated and will be removed in a future release; this is an internal API.",
             DeprecationWarning,
@@ -132,10 +126,10 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
     def invalidate(self) -> None:
         """Force downstream recomputation, bypassing optimization caches.
 
-        For :class:`Signal`, equivalent to :meth:`update`.
-        :class:`Computed` overrides this to guarantee a full re-evaluation
+        For [Signal][signified.Signal], equivalent to `update`.
+        [Computed][signified.Computed] overrides this to guarantee a full re-evaluation
         even when tracked dependency versions appear unchanged — use this
-        instead of ``update()`` when the dependency topology may have changed.
+        instead of `update()` when the dependency topology may have changed.
         """
         self.update()
 
@@ -165,6 +159,17 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         IPythonObserver(self, handle)
 
     def with_name(self, name: str) -> Self:
+        """Assign a human-readable name to this reactive value.
+
+        The name is used by plugins (e.g. for debugging or tracing) and appears
+        in formatted output. It does not affect the value or reactivity.
+
+        Args:
+            name: A label for this value.
+
+        Returns:
+            `self`, to allow method chaining.
+        """
         self.__name = name
         plugin_manager.hook.named(value=self)
         return self
@@ -275,23 +280,17 @@ def _has_changed(previous: Any, current: Any) -> bool:
 
 
 class Signal[T](Variable[T]):
-    """Mutable source-of-truth reactive value.
+    """Mutable state.
 
-    ``Signal`` stores a value and notifies subscribers when that value changes.
-    It is typically used for application state that should be observed by
-    derived :class:`Computed` values.
+    `Signal` stores a value and notifies observers when that value changes.
+    The `value` property is read/write:
 
-    The ``value`` property is read/write:
-    - reading ``value`` returns the resolved plain value
-    - assigning ``value`` updates dependencies and notifies observers when the
-      value changed
+    - reading `value` returns the current plain value
+    - assigning `value` updates the stored value and notifies observers if it changed
 
-    Signals can also proxy mutation operations (for example ``__setattr__`` and
-    ``__setitem__``) so in-place updates on wrapped objects can still trigger
-    reactivity.
 
     Args:
-        value: Initial value to wrap. May be plain or reactive.
+        value: Value to wrap.
 
     Example:
         ```py
@@ -322,7 +321,12 @@ class Signal[T](Variable[T]):
 
     @property
     def value(self) -> T:
-        """Get or set the current value."""
+        """The current value.
+
+        Getting this property returns the plain Python value, unwrapping any
+        nested reactive. Setting it updates the stored value and notifies
+        observers if the value changed.
+        """
         plugin_manager.hook.read(value=self)
         _track_read(self)
         return _resolve(self._value)
@@ -340,7 +344,25 @@ class Signal[T](Variable[T]):
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
-        """Temporarily set the signal to a given value within a context."""
+        """Temporarily set the signal to a given value within a context.
+
+        Restores the previous value when the context exits, even if an exception
+        is raised.
+
+        Args:
+            value: The temporary value to set.
+
+        Example:
+            ```py
+            >>> s = Signal(1)
+            >>> with s.at(99):
+            ...     print(s.value)
+            99
+            >>> s.value
+            1
+
+            ```
+        """
         before = self.value
         try:
             self.value = value
@@ -349,20 +371,17 @@ class Signal[T](Variable[T]):
             self.value = before
 
     def update(self) -> None:
-        """Force a version bump and notify all subscribers unconditionally.
+        """Force a notification to all observers unconditionally.
 
-        Unlike assigning to ``.value``, this method does **not** check whether
-        the stored value has changed — it always increments ``_version`` and
-        notifies downstream observers. Use this when the contained object has
-        been mutated in-place and change detection cannot detect the mutation
-        (e.g. appending to a list stored in the signal).
+        Unlike assigning to `.value`, this does **not** check whether the stored
+        value has changed. Use this when the contained object has been mutated
+        in-place and change detection cannot detect the mutation (e.g. appending
+        to a list stored in the signal).
 
-        .. warning::
-            Because the version always advances, every downstream
-            :class:`Computed` that depends on this signal will recompute on its
-            next ``.value`` read, even if the underlying data is unchanged.
-            Prefer assigning to ``.value`` when possible so that equality-based
-            short-circuiting can prevent unnecessary recomputation.
+        Warning:
+            Every downstream [Computed][signified.Computed] that depends on this
+            signal will recompute on its next `.value` read, even if the underlying
+            data is unchanged. Prefer assigning to `.value` when possible.
         """
         self._version += 1
         self.notify()
@@ -489,21 +508,20 @@ T = TypeVar("T")
 
 
 class Computed(Variable[T]):
-    """Read-only reactive value derived from a computation.
+    """Reactive value derived from a computation.
 
-    ``Computed`` tracks dependencies as it executes and lazily recalculates the
-    value when it is read after dependencies change. In most usage, instances
-    are created implicitly via :func:`computed`, operator overloads, or helper
-    APIs such as :func:`reactive_method`.
+    `Computed` lazily re-runs its function and updates its value whenever a
+    dependency changes. Dependencies are inferred automatically from which
+    reactive values are read during evaluation.
 
-    Unlike :class:`Signal`, ``Computed.value`` is read-only and updated by
-    re-running the stored function.
+    In most cases `Computed` instances should be created implicitly by using
+    overloaded operators or the [computed][signified.computed] decorator rather
+    than directly using the `Computed` class.
+
+    Unlike [Signal][signified.Signal], `Computed.value` is read-only.
 
     Args:
         f: Zero-argument function used to compute the current value.
-        dependencies: Deprecated compatibility argument. Still accepted for
-            backwards compatibility but ignored. Runtime reads determine the
-            true dependency set.
 
     Example:
         ```py
@@ -539,8 +557,8 @@ class Computed(Variable[T]):
     def subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer, ensuring dependency tracking is active first.
 
-        Overrides :meth:`Variable.subscribe` to guarantee that this
-        :class:`Computed` has evaluated at least once before ``observer`` is
+        Overrides [Variable.subscribe][signified.Variable.subscribe] to guarantee that this
+        [Computed][signified.Computed] has evaluated at least once before ``observer`` is
         added. After this call the computed is subscribed to all of its upstream
         dependencies, so any subsequent change will be forwarded to
         ``observer`` without missing any updates.
@@ -555,12 +573,33 @@ class Computed(Variable[T]):
         self.notify()
 
     def invalidate(self) -> None:
-        """Force recomputation on next read, bypassing the dep-version check.
+        """Force a full recomputation on the next `.value` read.
 
-        Use this instead of ``update()`` when the dependency topology may have
-        changed (for example, when a reactive attribute is replaced with a new
-        object). Unlike the normal notification path, this guarantees a full
-        re-evaluation and a version bump even if dep versions look unchanged.
+        Use this when a reactive attribute is replaced with a new object and
+        the normal change-detection path may not pick up the change. Unlike a
+        regular update, this always triggers re-evaluation regardless of whether
+        dependencies appear unchanged.
+
+        Warning:
+            This method is fragile and should be a last resort. Incorrect use
+            can cause unnecessary recomputation or missed updates. Prefer
+            assigning to `.value` whenever possible, as this triggers the
+            standard change-detection path.
+
+        Example:
+            ```py
+            >>> external = {"value": 1}
+            >>> c = Computed(lambda: external["value"])
+            >>> c.value
+            1
+            >>> external["value"] = 99  # mutation not tracked by reactivity
+            >>> c.value  # still cached
+            1
+            >>> c.invalidate()
+            >>> c.value
+            99
+
+            ```
         """
         if not self._impl.invalidate(force=True):
             return
@@ -576,39 +615,34 @@ class Computed(Variable[T]):
 
 
 class Effect:
-    """Eagerly run a zero-argument callable and re-run it whenever any reactive
-    value read inside it changes.
+    """Run a function (for its side effects) and re-run it whenever its reactive dependencies change.
 
-    ``Effect`` wraps ``fn`` in a :class:`Computed` and subscribes to it
-    eagerly, so every ``.value`` read (or :func:`unref` call) inside ``fn``
-    registers as a dependency. After each run the dependency set is reconciled:
-    newly-read reactives are subscribed, dropped ones are unsubscribed. Unlike
-    :class:`Computed`, ``fn`` fires immediately on construction and again on
-    every subsequent upstream change without needing a ``.value`` read to
-    trigger it.
+    Any reactive value read inside `fn` — via `.value` or [unref][signified.unref] — is
+    automatically tracked as a dependency. The function runs once immediately on
+    construction, then again each time a dependency changes.
 
-    Because dependencies are inferred at runtime, conditional branches are
-    handled correctly: only the signals actually read during the most recent
-    run are tracked, and that set is updated automatically when the branch
-    changes.
+    Warning:
+        Dependencies are tracked dynamically on each run. Only values that are read on the branch executed in the last run are tracked.
 
-    The effect is active for as long as the caller holds a reference to this
-    object. Because observers are stored as weak references, letting the
-    ``Effect`` instance be garbage-collected will silently stop the effect.
-    Call :meth:`dispose` to stop it explicitly before the instance is released.
+        This means that if a reactive value within the function is not read, then updates to that value will not trigger the effect.
 
-    .. warning::
-        The returned :class:`Effect` **must be assigned to a variable**. If the
-        result is discarded the object is immediately eligible for garbage
-        collection and the effect will silently stop running::
+        For example: in `Effect(lambda: x.value if y.value else z.value)`, if `y.value` was truthy then only `x` and `y` will be tracked.
 
-            Effect(lambda: print(s.value))  # GC'd immediately — never re-runs!
-            e = Effect(lambda: print(s.value))  # kept alive — runs on every change
+    The effect stays active as long as you hold a reference to this object.
+    Call [Effect.dispose][signified.Effect.dispose] to stop it explicitly.
+
+    Warning:
+        The `Effect` instance **must be assigned to a variable**. If the result
+        is discarded, it is immediately eligible for garbage collection and the
+        effect will silently stop running:
+
+        ```python
+        Effect(lambda: print(s.value))   # GC'd immediately — never re-runs!
+        e = Effect(lambda: print(s.value))  # kept alive — runs on every change
+        ```
 
     Args:
-        fn: Zero-argument callable run for its side effects. Every reactive
-            value read via ``.value`` or :func:`unref` inside ``fn`` becomes
-            a tracked dependency.
+        fn: Zero-argument callable run for its side effects.
 
     Example:
         ```py

@@ -43,7 +43,7 @@ def _warn_deprecated_alias(method: str, replacement: str) -> None:
 
 
 class _ReactiveNamespace[T]:
-    """Helper methods available under ``signal.rx``."""
+    """Helper methods available under `signal_or_computed.rx`."""
 
     __slots__ = ("_source",)
 
@@ -51,13 +51,13 @@ class _ReactiveNamespace[T]:
         self._source = source
 
     def map[R](self, fn: Callable[[T], R]) -> Computed[R]:
-        """Return a reactive value by applying ``fn`` to ``self._source``.
+        """Return a reactive value by applying `fn` to the source.
 
         Args:
             fn: Function used to transform the current source value.
 
         Returns:
-            A reactive value for ``fn(source.value)``.
+            A reactive value for `fn(source.value)`.
 
         Example:
             ```py
@@ -74,24 +74,23 @@ class _ReactiveNamespace[T]:
         return computed(fn)(self._source)
 
     def effect(self, fn: Callable[[T], None]) -> "Effect":
-        """Eagerly run ``fn`` for side effects whenever the source changes.
+        """Eagerly run `fn` for side effects whenever the source changes.
 
-        ``fn`` is called immediately on creation and again on every subsequent
-        change to the source — without requiring the caller to read ``.value``.
+        `fn` is called immediately on creation and again on every subsequent
+        change — without requiring the caller to read `.value`.
 
-        This is a convenience wrapper around :class:`Effect`. The source value
-        is passed as the single argument to ``fn`` on each run. For effects
-        that need to read multiple reactive values, use :class:`Effect` directly.
+        This is a convenience wrapper around [Effect][signified.Effect]. The source value is
+        passed as the single argument to `fn` on each run. For effects that need
+        to read multiple reactive values, use [Effect][signified.Effect] directly.
 
-        The effect is active as long as the caller holds the returned
-        :class:`Effect` instance. Letting it be garbage-collected will silently
-        stop the effect; call :meth:`Effect.dispose` to stop it explicitly.
+        The effect is active as long as the caller holds the returned [Effect][signified.Effect]
+        instance. Call [Effect.dispose][signified.Effect.dispose] to stop it explicitly.
 
         Args:
             fn: Callback that receives the current source value on each change.
 
         Returns:
-            An :class:`Effect` instance whose lifetime controls the subscription.
+            An [Effect][signified.Effect] instance whose lifetime controls the subscription.
 
         Example:
             ```py
@@ -115,34 +114,33 @@ class _ReactiveNamespace[T]:
         return Effect(lambda: fn(source.value))
 
     def peek(self, fn: Callable[[T], Any]) -> Computed[T]:
-        """Run ``fn`` for side effects and pass through the original value.
+        """Run `fn` for side effects and pass through the original value.
 
-        This is a lazy pipeline operator. ``fn`` only executes when the
-        returned :class:`Computed` is read, not on every upstream change.
-        Intermediate values are skipped if the source changes multiple times
-        between reads.
+        `fn` only executes when the returned [Computed][signified.Computed] is read, not on every
+        upstream change. Intermediate values are skipped if the source changes
+        multiple times between reads.
 
-        .. warning::
-            The returned :class:`Computed` must be kept alive by the caller.
+        Warning:
+            The returned [Computed][signified.Computed] must be kept alive by the caller.
             Observers are held as weak references, so if nothing holds a strong
             reference to the returned value, it will be garbage-collected and
-            ``fn`` will silently stop running.
+            `fn` will silently stop running.
 
-            ``fn`` fires on each explicit ``.value`` read of the returned
-            :class:`Computed` — **not** on creation and not on upstream changes
-            alone. If the returned object is never read, or is garbage-collected
-            before any ``.value`` read, ``fn`` never fires at all::
+            `fn` fires on each explicit `.value` read — **not** on creation and
+            not on upstream changes alone. If the returned object is
+            garbage-collected before any `.value` read, `fn` never fires at all:
 
-                s.rx.peek(print)  # GC'd immediately — print never called
+            ```python
+            s.rx.peek(print)  # GC'd immediately — print never called
+            ```
 
-            For eager side effects that fire automatically, use
-            :meth:`effect` or :class:`Effect` instead.
+            For eager side effects, use the `effect` method or [Effect][signified.Effect] directly.
 
         Args:
             fn: Side-effect callback that receives the current source value.
 
         Returns:
-            A reactive value that always equals ``source.value``.
+            A reactive value that always equals `source.value`.
 
         Example:
             ```py
@@ -510,7 +508,7 @@ class _ReactiveMixIn[T]:
 
     @property
     def rx(self) -> _ReactiveNamespace[T]:
-        """Access reactive helper operations in a dedicated namespace."""
+        """Access reactive helper operations in a [namespace][signified._mixin._ReactiveNamespace]."""
         return _ReactiveNamespace(self)
 
     def __str__(self) -> str:
