@@ -6,6 +6,14 @@ hide:
 
 This page summarizes notable changes across releases.
 
+## 0.3.2
+
+### Bug fixes
+
+Fix bug causing `__getattr__` to do infinite loops when the object attempts to be deep copied.
+
+Make `__setattr__` slightly more robust.
+
 ## 0.3.1
 
 ### Effect rework
