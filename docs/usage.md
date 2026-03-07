@@ -264,7 +264,6 @@ Related helpers:
 
 - `deep_unref`: recursively unwraps nested containers of reactive values
 - `as_rx`: wraps plain values into `Signal` (or returns the input reactive value)
-- `as_signal`: deprecated alias for `as_rx`
 - `has_value`: type guard for checking `HasValue[T]`
 - `Signal.at(...)`: temporary scoped value override via context manager
 
