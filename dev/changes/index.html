@@ -710,6 +710,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#effect-rework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Effect rework
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unref-now-participates-in-dependency-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unref() now participates in dependency tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#invalidation-api" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -721,10 +743,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#dependency-retention" class="md-nav__link">
+  <a href="#bug-fixes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dependency Retention
+        Bug Fixes
       
     </span>
   </a>
@@ -782,7 +804,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
+  <a href="#bug-fixes_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Bug Fixes
@@ -1038,6 +1060,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#effect-rework" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Effect rework
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unref-now-participates-in-dependency-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unref() now participates in dependency tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#invalidation-api" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1049,10 +1093,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#dependency-retention" class="md-nav__link">
+  <a href="#bug-fixes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Dependency Retention
+        Bug Fixes
       
     </span>
   </a>
@@ -1110,7 +1154,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#bug-fixes" class="md-nav__link">
+  <a href="#bug-fixes_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Bug Fixes
@@ -1325,10 +1369,38 @@
 <h1 id="change-log">Change Log<a class="headerlink" href="#change-log" title="Permanent link">&para;</a></h1>
 <p>This page summarizes notable changes across releases.</p>
 <h2 id="031">0.3.1<a class="headerlink" href="#031" title="Permanent link">&para;</a></h2>
+<h3 id="effect-rework">Effect rework<a class="headerlink" href="#effect-rework" title="Permanent link">&para;</a></h3>
+<p><code>Effect</code> now auto-tracks its dependencies the same way <code>Computed</code> does. The constructor signature has changed: instead of taking a reactive source and a callback, it now takes a single zero-argument callable. Every reactive value read via <code>.value</code> or <code>unref()</code> inside that callable is automatically registered as a dependency.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Before (0.3.0)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># After (0.3.1)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+</span></code></pre></div>
+<p>Conditional branches are handled correctly — only the signals actually read during the most recent run are tracked, and the dependency set updates automatically when branches change.</p>
+<h3 id="unref-now-participates-in-dependency-tracking"><code>unref()</code> now participates in dependency tracking<a class="headerlink" href="#unref-now-participates-in-dependency-tracking" title="Permanent link">&para;</a></h3>
+<p>Calling <code>unref()</code> inside a <code>Computed</code> or <code>Effect</code> evaluation now registers each unwrapped reactive as a dependency, the same as reading <code>.value</code> directly. Previously <code>unref()</code> bypassed tracking entirely.</p>
 <h3 id="invalidation-api">Invalidation API<a class="headerlink" href="#invalidation-api" title="Permanent link">&para;</a></h3>
-<p>Added <code>invalidate()</code> to reactive values, including a force-refresh invalidation path for <code>Computed</code>. Use this when dependency topology changes outside the reactive graph (for example, replacing an object attribute that points to a signal/computed), so the next read performs a full recomputation.</p>
-<h3 id="dependency-retention">Dependency Retention<a class="headerlink" href="#dependency-retention" title="Permanent link">&para;</a></h3>
-<p>Fixed transient computed dependency retention by tracking dependencies strongly during evaluation. This prevents dependencies from being dropped by garbage collection and keeps downstream updates correct.</p>
+<p>Added <code>invalidate()</code> to all reactive values. For <code>Computed</code>, pass <code>force=True</code> to bypass the dependency-version check and guarantee a full re-evaluation on the next read. Use this when the dependency topology changes outside the reactive graph (for example, replacing an object attribute that points to a signal or computed).</p>
+<h3 id="bug-fixes">Bug Fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Fixed transient computed dependency retention: dependencies are now held strongly during evaluation, preventing them from being dropped by garbage collection before downstream updates complete.</li>
+<li>Fixed exception rollback in <code>Computed</code> and <code>Effect</code>: if the user function raises, the previous dependency set and staleness state are preserved so the node retries correctly on the next change.</li>
+</ul>
+<div class="admonition danger">
+<p class="admonition-title">Breaking Changes</p>
+<ul>
+<li><strong><code>Effect</code> constructor</strong>: the two-argument form <code>Effect(source, fn)</code> is gone. Replace with <code>Effect(lambda: fn(source.value))</code>.</li>
+<li><strong><code>NestedValue</code> removed from public exports</strong>: <code>from signified import NestedValue</code> will raise <code>ImportError</code>. The type alias is still available in <code>signified._types</code> if needed.</li>
+<li><strong>Internal module renames</strong>: the private implementation modules have been reorganised. Any code importing directly from <code>signified.core</code>, <code>signified.types</code>, or <code>signified.display</code> will break. Use the public <code>signified</code> namespace instead.</li>
+</ul>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Deprecations</p>
+<ul>
+<li><code>as_signal(val)</code> — use <code>as_rx(val)</code> instead.</li>
+</ul>
+</div>
 <h2 id="030">0.3.0<a class="headerlink" href="#030" title="Permanent link">&para;</a></h2>
 <h3 id="dependency-tracking">Dependency Tracking<a class="headerlink" href="#dependency-tracking" title="Permanent link">&para;</a></h3>
 <p><code>Computed</code> now tracks its dependencies automatically at runtime — no need to declare them upfront. Values are only recomputed when actually read, and if a recomputed value turns out to be unchanged, downstream computeds won't needlessly re-run.</p>
@@ -1355,7 +1427,7 @@
 <li>where</li>
 <li>as_bool</li>
 </ul>
-<h3 id="bug-fixes">Bug Fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h3>
+<h3 id="bug-fixes_1">Bug Fixes<a class="headerlink" href="#bug-fixes_1" title="Permanent link">&para;</a></h3>
 <p>Fixed a bug in the IPython/Jupyter display integration where display observers could be garbage-collected before they had a chance to update.</p>
 <h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
 <p>Added an interactive Playground to the docs, powered by Pyodide and CodeMirror, so you can try <code>signified</code> right in your browser.</p>
