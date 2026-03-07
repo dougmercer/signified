@@ -404,7 +404,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        if name in {"value", "_value"}:
+        if name in {"value", "_value", "_impl", "__deepcopy__"}:
             return super().__getattribute__(name)
 
         if hasattr(self.value, name):
