@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
     
     
       
@@ -1310,7 +1310,8 @@ Use <code>.value</code> when you need the plain Python value.</p>
 <p>Related helpers:</p>
 <ul>
 <li><code>deep_unref</code>: recursively unwraps nested containers of reactive values</li>
-<li><code>as_signal</code>: wraps plain values into <code>Signal</code> (or returns the input signal)</li>
+<li><code>as_rx</code>: wraps plain values into <code>Signal</code> (or returns the input reactive value)</li>
+<li><code>as_signal</code>: deprecated alias for <code>as_rx</code></li>
 <li><code>has_value</code>: type guard for checking <code>HasValue[T]</code></li>
 <li><code>Signal.at(...)</code>: temporary scoped value override via context manager</li>
 </ul>
