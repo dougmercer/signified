@@ -404,13 +404,16 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        if name in {"value", "_value"}:
+        if name in {"value", "_value", "_impl"}:
             return super().__getattribute__(name)
+
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
         if hasattr(self.value, name):
             return computed(getattr)(self, name)
-        else:
-            return super().__getattribute__(name)
+
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     def __call__[**P, R](self: "_ReactiveMixIn[Callable[P, R]]", *args: P.args, **kwargs: P.kwargs) -> Computed[R]:
         """Create a reactive value for calling `self.value(*args, **kwargs)`.
