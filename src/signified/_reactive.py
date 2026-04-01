@@ -20,6 +20,15 @@ __all__ = ["Variable", "Signal", "Computed", "Effect"]
 _PLAIN_SCALAR_TYPES = {int, float, str, bool, bytes, complex, type(None)}
 
 
+def _may_have_reactive_children(value: Any) -> bool:
+    """Return whether `value` could contain reactive values that need subscriptions."""
+    if type(value) in _PLAIN_SCALAR_TYPES:
+        return False
+    if isinstance(value, Variable):
+        return True
+    return isinstance(value, Iterable) and not isinstance(value, str)
+
+
 def _coerce_to_bool(value: Any) -> bool:
     """Convert a value to bool, including ambiguous array-like values.
 
@@ -333,7 +342,8 @@ class Signal[T](Variable[T]):
     def __init__(self, value: HasValue[T]) -> None:
         super().__init__()
         self._value: HasValue[T] = value
-        self._observe(value)
+        if _may_have_reactive_children(value):
+            self._observe(value)
         plugin_manager.hook.created(value=self)
 
     @property
@@ -355,8 +365,10 @@ class Signal[T](Variable[T]):
             self._value = new_value
             self._version += 1
             plugin_manager.hook.updated(value=self)
-            self._unobserve(old_value)
-            self._observe(new_value)
+            if _may_have_reactive_children(old_value):
+                self._unobserve(old_value)
+            if _may_have_reactive_children(new_value):
+                self._observe(new_value)
             self.notify()
 
     @contextmanager
