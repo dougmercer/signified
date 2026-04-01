@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import operator
 import warnings
+from functools import cache
 from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
 
 from ._types import HasValue
@@ -1691,9 +1692,24 @@ class _ReactiveMixIn[T]:
         return computed(operator.getitem)(self, key)
 
     @classmethod
+    @cache
+    def _own_attr_names(cls) -> frozenset[str]:
+        names: set[str] = set()
+        for base in cls.__mro__:
+            names.update(base.__dict__)
+        return frozenset(names)
+
+    @classmethod
+    @cache
+    def _value_setter(cls) -> Callable[[Any, Any], None] | None:
+        descriptor = getattr(cls, "value", None)
+        setter = getattr(descriptor, "__set__", None)
+        return setter if callable(setter) else None
+
+    @classmethod
     def _is_own_attr(cls, name: str) -> bool:
         """Return whether `name` is defined on this wrapper type or one of its bases."""
-        return any(name in c.__dict__ for c in cls.__mro__)
+        return name in cls._own_attr_names()
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Assign `name` on the wrapper or forward it to the wrapped value.
@@ -1727,6 +1743,16 @@ class _ReactiveMixIn[T]:
 
             ```
         """
+        if name and name[0] == "_":
+            super().__setattr__(name, value)
+            return
+
+        if name == "value":
+            setter = type(self)._value_setter()
+            if setter is not None:
+                setter(self, value)
+                return
+
         # Bypass __getattr__ during initialization, before _value exists.
         try:
             object.__getattribute__(self, "_value")
@@ -1735,7 +1761,7 @@ class _ReactiveMixIn[T]:
             return
 
         # Keep private names and wrapper-owned API on the wrapper itself.
-        if name.startswith("_") or self._is_own_attr(name):
+        if self._is_own_attr(name):
             super().__setattr__(name, value)
             return
 
