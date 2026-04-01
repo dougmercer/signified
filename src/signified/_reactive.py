@@ -17,6 +17,9 @@ from .plugins import plugin_manager
 __all__ = ["Variable", "Signal", "Computed", "Effect"]
 
 
+_PLAIN_SCALAR_TYPES = {int, float, str, bool, bytes, complex, type(None)}
+
+
 def _coerce_to_bool(value: Any) -> bool:
     """Convert a value to bool, including ambiguous array-like values.
 
@@ -56,6 +59,8 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
     @staticmethod
     def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
         """Yield `Variable` instances found in arbitrarily nested containers."""
+        if type(item) in _PLAIN_SCALAR_TYPES:
+            return
         if isinstance(item, Variable):
             yield item
             return
@@ -245,6 +250,8 @@ def _resolve(value: Any) -> Any:
     direct subscription that bypasses the outer variable's own observe chain.
     """
     current: Any = value
+    if type(current) in _PLAIN_SCALAR_TYPES:
+        return current
     while isinstance(current, Variable):
         if isinstance(current, Computed):
             current._impl.ensure_uptodate()
@@ -258,6 +265,14 @@ def _has_changed(previous: Any, current: Any) -> bool:
     This function is intentionally fail-open: if comparison is ambiguous or
     raises, we treat the value as changed to avoid missing invalidations.
     """
+    previous_type = type(previous)
+    current_type = type(current)
+    if previous_type is current_type:
+        if previous_type in {int, bool, str, bytes, complex, type(None)}:
+            return previous != current
+        if previous_type is float:
+            return not (math.isnan(previous) and math.isnan(current)) and previous != current
+
     # Compare callables by identity to avoid invoking custom `__eq__` logic and
     # to preserve stable references as unchanged.
     if callable(previous) or callable(current):
