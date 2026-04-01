@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.8,<2.0"]
+build-backend = "maturin"
 
 [project]
 name = "signified"
@@ -23,6 +23,11 @@ classifiers = [
 
 [tool.setuptools.package-data]
 signified = ["py.typed"]
+
+[tool.maturin]
+python-source = "src"
+module-name = "signified._rust_core"
+features = ["pyo3/extension-module"]
 
 [project.optional-dependencies]
 plugins = ["pluggy"]

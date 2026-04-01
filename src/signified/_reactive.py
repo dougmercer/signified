@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import os
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
@@ -15,6 +16,14 @@ from ._types import HasValue, ReactiveValue, _OrderedSet, _OrderedWeakrefSet
 from .plugins import plugin_manager
 
 __all__ = ["Variable", "Signal", "Computed", "Effect"]
+
+if os.environ.get("SIGNIFIED_DISABLE_RUST_CORE") == "1":
+    _RustDependencyState = None
+else:
+    try:
+        from ._rust_core import DependencyState as _RustDependencyState
+    except ImportError:
+        _RustDependencyState = None
 
 
 _PLAIN_SCALAR_TYPES = {int, float, str, bool, bytes, complex, type(None)}
@@ -430,22 +439,70 @@ class _State(IntEnum):
     UNINITIALIZED = 3  # Never computed; recompute on first read, but don't re-notify.
 
 
+class _PythonDependencyState:
+    """Pure-Python fallback for dependency bookkeeping."""
+
+    __slots__ = ["_deps", "_next_deps", "_dep_versions"]
+
+    def __init__(self) -> None:
+        self._deps = _OrderedSet[Variable[Any]]()
+        self._next_deps: _OrderedSet[Variable[Any]] | None = None
+        self._dep_versions: dict[int, int] = {}
+
+    @property
+    def deps(self) -> _OrderedSet[Variable[Any]]:
+        return self._deps
+
+    def start_refresh(self) -> None:
+        self._next_deps = _OrderedSet[Variable[Any]]()
+
+    def register_dependency(self, dependency: Variable[Any]) -> None:
+        if self._next_deps is not None:
+            self._next_deps.add(dependency)
+
+    def rollback_refresh(self) -> None:
+        self._next_deps = None
+
+    def commit_refresh(self, subscriber: Any) -> None:
+        next_deps = self._next_deps
+        assert next_deps is not None
+        _reconcile_deps(subscriber, self._deps, next_deps)
+        self._deps = next_deps
+        self._dep_versions = {id(dep): dep._version for dep in tuple(next_deps)}
+        self._next_deps = None
+
+    def dependencies_changed(self) -> bool:
+        for dep in self._deps:
+            if isinstance(dep, Computed):
+                dep._impl.ensure_uptodate()
+            if self._dep_versions.get(id(dep), -1) != dep._version:
+                return True
+        return False
+
+    def clear(self) -> None:
+        self._deps = _OrderedSet[Variable[Any]]()
+        self._dep_versions = {}
+        self._next_deps = None
+
+
 class _ComputedImpl:
     """Internal state and dependency tracking for :class:`Computed`."""
 
-    __slots__ = ["_owner", "_deps", "_next_deps", "_state", "_is_computing", "_dep_versions"]
+    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing"]
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
-        self._deps = _OrderedSet[Variable[Any]]()
-        self._next_deps: _OrderedSet[Variable[Any]] | None = None
+        self._dep_state = _RustDependencyState() if _RustDependencyState is not None else _PythonDependencyState()
         self._state = _State.UNINITIALIZED
         self._is_computing = False
-        self._dep_versions: dict[int, int] = {}
+
+    @property
+    def _deps(self) -> Any:
+        return self._dep_state.deps
 
     def _register_dependency(self, dependency: Variable[Any]) -> None:
-        if self._next_deps is not None and dependency is not self._owner:
-            self._next_deps.add(dependency)
+        if dependency is not self._owner:
+            self._dep_state.register_dependency(dependency)
 
     def refresh(self) -> None:
         owner = self._owner
@@ -458,7 +515,7 @@ class _ComputedImpl:
 
         # 1) Evaluate with dependency tracking enabled.
         self._is_computing = True
-        self._next_deps = _OrderedSet[Variable[Any]]()
+        self._dep_state.start_refresh()
         _COMPUTE_STACK.append(owner)
         try:
             next_value = owner._compute_fn()
@@ -468,19 +525,15 @@ class _ComputedImpl:
             # for retry on the next .value read.
             popped = _COMPUTE_STACK.pop()
             assert popped is owner
-            self._next_deps = None
+            self._dep_state.rollback_refresh()
             self._is_computing = False
             raise
         popped = _COMPUTE_STACK.pop()
         assert popped is owner
-        next_deps = self._next_deps
-        self._next_deps = None
         self._is_computing = False
 
         # 2) Reconcile subscriptions against the dependency set from this run.
-        _reconcile_deps(owner, self._deps, next_deps)
-        self._deps = next_deps
-        self._dep_versions = {id(dep): dep._version for dep in tuple(next_deps)}
+        self._dep_state.commit_refresh(owner)
 
         # 3) Commit value/version if the computed result actually changed.
         self._state = _State.FRESH
@@ -494,12 +547,7 @@ class _ComputedImpl:
 
     def dependencies_changed(self) -> bool:
         """Ensure stale Computed deps are current, then return True if any dep version changed."""
-        for dep in self._deps:
-            if isinstance(dep, Computed):
-                dep._impl.ensure_uptodate()
-            if self._dep_versions.get(id(dep), -1) != dep._version:
-                return True
-        return False
+        return self._dep_state.dependencies_changed()
 
     def ensure_uptodate(self) -> None:
         # Fast path 1: already fresh.
@@ -523,6 +571,9 @@ class _ComputedImpl:
         was_fresh = self._state == _State.FRESH
         self._state = max(self._state, _State.MUST_REFRESH if force else _State.STALE)
         return was_fresh
+
+    def clear_deps(self) -> None:
+        self._dep_state.clear()
 
 
 # We intentionally use a `TypeVar` here rather than PEP 695 syntax to ensure
@@ -708,4 +759,4 @@ class Effect:
         self._computed.unsubscribe(self)
         for dep in tuple(self._computed._impl._deps):
             dep.unsubscribe(self._computed)
-        self._computed._impl._deps = _OrderedSet[Variable[Any]]()
+        self._computed._impl.clear_deps()
