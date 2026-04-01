@@ -59,6 +59,16 @@ class _OrderedWeakrefSet[T](weakref.WeakSet[T]):
 
     def __init__(self, values: Iterable[T] = ()) -> None:
         super().__init__()
-        self.data = _OrderedSet[T]()
+        self.data: _OrderedSet[weakref.ReferenceType[T]] = _OrderedSet()
         for elem in values:
             self.add(elem)
+
+    def __bool__(self) -> bool:
+        """Return whether there are any observer weakrefs stored."""
+        return bool(self.data._od)
+
+    def iter_alive(self):
+        for item_ref in tuple(self.data):
+            item = item_ref()
+            if item is not None:
+                yield item

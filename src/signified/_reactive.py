@@ -120,7 +120,9 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
-        for observer in tuple(self._observers):
+        if not self._observers:
+            return
+        for observer in self._observers.iter_alive():
             observer.update()
 
     def invalidate(self) -> None:
