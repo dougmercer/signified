@@ -190,23 +190,36 @@ def deep_unref(value: Any) -> Any:
 
         ```
     """
+    value_type = type(value)
+
     # Fast path for common scalar types (faster than isinstance check)
-    if type(value) in _SCALAR_TYPES:
+    if value_type in _SCALAR_TYPES:
         return value
 
-    # Base case - if it's a reactive value, resolve through `.value` so reads
-    # are tracked while inside computed evaluations.
-    if isinstance(value, Variable):
-        return deep_unref(value.value)
+    # Unwrap reactive values in a tight loop so nested Signals/Computed values
+    # don't bounce through the generic container logic at every level.
+    current = value
+    while isinstance(current, Variable):
+        if isinstance(current, Computed):
+            current._impl.ensure_uptodate()
+        _track_read(current)
+        current = current._value
+        current_type = type(current)
+        if current_type in _SCALAR_TYPES:
+            return current
+    value = current
+    value_type = type(value)
 
     # For containers, recursively unref their elements
     if np is not None and isinstance(value, np.ndarray):
         assert np is not None
         return np.array([deep_unref(item) for item in value]).reshape(value.shape) if value.dtype == object else value
-    if isinstance(value, dict):
+    if value_type is list:
+        return [deep_unref(item) for item in value]
+    if value_type is tuple:
+        return tuple(deep_unref(item) for item in value)
+    if value_type is dict:
         return {deep_unref(k): deep_unref(v) for k, v in value.items()}
-    if isinstance(value, (list, tuple)):
-        return type(value)(deep_unref(item) for item in value)
     if isinstance(value, Iterable) and not isinstance(value, str):
         constructor: Any = type(value)
         try:
