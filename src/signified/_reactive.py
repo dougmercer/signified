@@ -61,9 +61,9 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     def __init__(self):
         """Initialize the variable."""
-        self._observers = _OrderedWeakrefSet[_Observer]()
-        self.__name = ""
-        self._version = 0
+        object.__setattr__(self, "_observers", _OrderedWeakrefSet[_Observer]())
+        object.__setattr__(self, "_Variable__name", "")
+        object.__setattr__(self, "_version", 0)
 
     @staticmethod
     def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
@@ -186,7 +186,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         Returns:
             `self`, to allow method chaining.
         """
-        self.__name = name
+        object.__setattr__(self, "_Variable__name", name)
         plugin_manager.hook.named(value=self)
         return self
 
@@ -341,7 +341,7 @@ class Signal[T](Variable[T]):
 
     def __init__(self, value: HasValue[T]) -> None:
         super().__init__()
-        self._value: HasValue[T] = value
+        object.__setattr__(self, "_value", value)
         if _may_have_reactive_children(value):
             self._observe(value)
         plugin_manager.hook.created(value=self)
@@ -362,8 +362,8 @@ class Signal[T](Variable[T]):
     def value(self, new_value: HasValue[T]) -> None:
         old_value = self._value
         if _has_changed(old_value, new_value):
-            self._value = new_value
-            self._version += 1
+            object.__setattr__(self, "_value", new_value)
+            object.__setattr__(self, "_version", self._version + 1)
             plugin_manager.hook.updated(value=self)
             if _may_have_reactive_children(old_value):
                 self._unobserve(old_value)
@@ -412,7 +412,7 @@ class Signal[T](Variable[T]):
             signal will recompute on its next `.value` read, even if the underlying
             data is unchanged. Prefer assigning to `.value` when possible.
         """
-        self._version += 1
+        object.__setattr__(self, "_version", self._version + 1)
         self.notify()
 
 
@@ -486,11 +486,11 @@ class _ComputedImpl:
         self._state = _State.FRESH
         value_changed = not had_value or _has_changed(previous_value, next_value)
         if value_changed:
-            owner._value = next_value
-            owner._version += 1
+            object.__setattr__(owner, "_value", next_value)
+            object.__setattr__(owner, "_version", owner._version + 1)
             plugin_manager.hook.updated(value=owner)
         elif forced_refresh:
-            owner._version += 1
+            object.__setattr__(owner, "_version", owner._version + 1)
 
     def dependencies_changed(self) -> bool:
         """Ensure stale Computed deps are current, then return True if any dep version changed."""
@@ -569,9 +569,9 @@ class Computed(Variable[T]):
 
     def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
         super().__init__()
-        self._compute_fn = f
-        self._value: Any = None
-        self._impl = _ComputedImpl(self)
+        object.__setattr__(self, "_compute_fn", f)
+        object.__setattr__(self, "_value", None)
+        object.__setattr__(self, "_impl", _ComputedImpl(self))
 
         if dependencies is not None:
             warnings.warn(
