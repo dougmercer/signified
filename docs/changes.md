@@ -61,10 +61,10 @@ Added `invalidate()` to all reactive values. For `Computed`, pass `force=True` t
 
 ### Change Detection
 
-Signified is smarter about deciding when a `Signal`'s value has actually changed:
+Signified keeps change detection intentionally simple on the hot path:
 
 - Functions are compared by identity rather than equality.
-- Arrays are compared element-by-element.
+- Non-scalar objects use identity by default.
 - Assigning `NaN` to a signal that already holds `NaN` is treated as no change.
 
 Mutating a signal's contents (e.g. setting an attribute or index) now also correctly invalidates downstream computeds, and `unref`/`deep_unref` align with how dependencies are tracked at runtime.

@@ -275,10 +275,11 @@ def _resolve(value: Any) -> Any:
 
 
 def _has_changed(previous: Any, current: Any) -> bool:
-    """Best-effort change detection for assignments into reactive values.
+    """Cheap change detection for assignments into reactive values.
 
-    This function is intentionally fail-open: if comparison is ambiguous or
-    raises, we treat the value as changed to avoid missing invalidations.
+    Scalars use value equality, while richer Python objects use identity by
+    default. This keeps the hot path predictable and avoids invoking arbitrary
+    ``__eq__`` logic during reactive updates.
     """
     previous_type = type(previous)
     current_type = type(current)
@@ -298,17 +299,7 @@ def _has_changed(previous: Any, current: Any) -> bool:
     if isinstance(previous, Variable) or isinstance(current, Variable):
         return previous is not current
 
-    # Keep NaN stable: treat NaN -> NaN as unchanged.
-    if isinstance(previous, float) and isinstance(current, float) and math.isnan(previous) and math.isnan(current):
-        return False
-
-    try:
-        # `==` may return non-scalar array-like values; coerce those with
-        # all-elements semantics before negating.
-        return not _coerce_to_bool(current == previous)
-    except Exception:
-        # Fail-open for exotic/buggy equality implementations.
-        return True
+    return previous is not current
 
 
 class Signal[T](Variable[T]):

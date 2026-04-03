@@ -180,19 +180,13 @@ def test_has_changed_with_broken_eq_is_treated_as_changed():
     assert _has_changed(BrokenEq(), BrokenEq()) is True
 
 
-def test_has_changed_with_ambiguous_equality_all_true_is_unchanged():
-    class AmbiguousEqResult:
-        def __bool__(self):
-            raise ValueError("ambiguous truth value")
+def test_has_changed_same_container_reference_is_unchanged():
+    payload = {"name": "alice"}
+    assert _has_changed(payload, payload) is False
 
-        def all(self):
-            return True
 
-    class WithAmbiguousEq:
-        def __eq__(self, other):  # type: ignore
-            return AmbiguousEqResult()
-
-    assert _has_changed(object(), WithAmbiguousEq()) is False
+def test_has_changed_equal_distinct_containers_are_changed():
+    assert _has_changed({"name": "alice"}, {"name": "alice"}) is True
 
 
 def test_coerce_to_bool_handles_ambiguous_bool_with_all_fallback():
