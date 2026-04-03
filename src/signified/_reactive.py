@@ -20,10 +20,7 @@ __all__ = ["Variable", "Signal", "Computed", "Effect"]
 if os.environ.get("SIGNIFIED_DISABLE_RUST_CORE") == "1":
     _RustDependencyState = None
 else:
-    try:
-        from ._rust_core import DependencyState as _RustDependencyState
-    except ImportError:
-        _RustDependencyState = None
+    from ._rust_core import DependencyState as _RustDependencyState
 
 
 _PLAIN_SCALAR_TYPES = {int, float, str, bool, bytes, complex, type(None)}
@@ -439,7 +436,7 @@ class _State(IntEnum):
     UNINITIALIZED = 3  # Never computed; recompute on first read, but don't re-notify.
 
 
-class _PythonDependencyState:
+class _DependencyState:
     """Pure-Python fallback for dependency bookkeeping."""
 
     __slots__ = ["_deps", "_next_deps", "_dep_versions"]
@@ -492,7 +489,7 @@ class _ComputedImpl:
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
-        self._dep_state = _RustDependencyState() if _RustDependencyState is not None else _PythonDependencyState()
+        self._dep_state = _RustDependencyState() if _RustDependencyState is not None else _DependencyState()
         self._state = _State.UNINITIALIZED
         self._is_computing = False
 
