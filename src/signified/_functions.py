@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from functools import wraps
 from typing import Any, Callable, Concatenate, TypeGuard, cast
 
-from ._reactive import Computed, Signal, Variable, _track_read
+from ._reactive import Computed, Effect, Signal, Variable, _track_read
 from ._types import HasValue, ReactiveValue
 
 if importlib.util.find_spec("numpy") is not None:
@@ -42,6 +42,58 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
             return func(*resolved_args, **resolved_kwargs)
 
         return Computed(compute_func)
+
+    return wrapper
+
+
+def effect(func: Callable[..., None]) -> Callable[..., Effect]:
+    """Wrap a function so calls produce a reactive [Effect][signified.Effect].
+
+    The returned wrapper accepts plain values, reactive values, or nested
+    containers. On each re-run, arguments are resolved with
+    [deep_unref][signified.deep_unref], so `func` always receives plain Python values.
+
+    The effect runs immediately when called and re-runs whenever any reactive
+    dependency changes. It is active as long as the caller holds a reference to
+    the returned [Effect][signified.Effect].
+
+    Args:
+        func: Function run for its side effects.
+
+    Returns:
+        A wrapper that returns an [Effect][signified.Effect] when called.
+
+    Example:
+        ```py
+        >>> seen = []
+        >>> s = Signal(1)
+
+        >>> @effect
+        ... def log(x):
+        ...     seen.append(x)
+
+        >>> e = log(s)
+        >>> seen
+        [1]
+        >>> s.value = 2
+        >>> seen
+        [1, 2]
+        >>> e.dispose()
+        >>> s.value = 3
+        >>> seen
+        [1, 2]
+
+        ```
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Effect:
+        def effect_fn() -> None:
+            resolved_args = tuple(deep_unref(arg) for arg in args)
+            resolved_kwargs = {key: deep_unref(value) for key, value in kwargs.items()}
+            func(*resolved_args, **resolved_kwargs)
+
+        return Effect(effect_fn)
 
     return wrapper
 
