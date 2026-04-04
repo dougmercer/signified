@@ -11,7 +11,7 @@ from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, TypeVar, overload
 
 from ._mixin import _ReactiveMixIn
-from ._types import HasValue, ReactiveValue, _OrderedSet, _OrderedWeakrefSet
+from ._types import HasValue, ReactiveValue, _ObserverLinks, _OrderedSet
 from .plugins import plugin_manager
 
 __all__ = ["Variable", "Signal", "Computed", "Effect"]
@@ -49,9 +49,9 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     def __init__(self):
         """Initialize the variable."""
-        self._observers = _OrderedWeakrefSet[_Observer]()
-        self.__name = ""
-        self._version = 0
+        object.__setattr__(self, "_observers", _ObserverLinks[_Observer]())
+        object.__setattr__(self, "_Variable__name", "")
+        object.__setattr__(self, "_version", 0)
 
     @staticmethod
     def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
@@ -120,7 +120,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
-        for observer in tuple(self._observers):
+        for observer in self._observers.iter_alive():
             observer.update()
 
     def invalidate(self) -> None:
