@@ -12,9 +12,29 @@ from typing import Any, Callable, Protocol, Self, TypeVar, overload
 
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks, _OrderedSet
-from .plugins import plugin_manager
+from .plugins import HOOKS_ENABLED, plugin_manager
 
 __all__ = ["Variable", "Signal", "Computed", "Effect"]
+
+
+_PLAIN_SCALAR_TYPES = {int, float, str, bool, bytes, complex, type(None)}
+_GLOBAL_VERSION = 0
+
+
+def _bump_global_version() -> int:
+    """Advance the module-wide reactive version clock and return the new value."""
+    global _GLOBAL_VERSION
+    _GLOBAL_VERSION += 1
+    return _GLOBAL_VERSION
+
+
+def _may_have_reactive_children(value: Any) -> bool:
+    """Return whether `value` could contain reactive values that need subscriptions."""
+    if type(value) in _PLAIN_SCALAR_TYPES:
+        return False
+    if isinstance(value, Variable):
+        return True
+    return isinstance(value, Iterable) and not isinstance(value, str)
 
 
 def _coerce_to_bool(value: Any) -> bool:
@@ -46,6 +66,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
     """
 
     __slots__ = ["_observers", "__name", "_version", "__weakref__"]
+    _IS_COMPUTED_NODE = False
 
     def __init__(self):
         """Initialize the variable."""
@@ -56,6 +77,8 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
     @staticmethod
     def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
         """Yield `Variable` instances found in arbitrarily nested containers."""
+        if type(item) in _PLAIN_SCALAR_TYPES:
+            return
         if isinstance(item, Variable):
             yield item
             return
@@ -120,8 +143,9 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
-        for observer in self._observers.iter_alive():
-            observer.update()
+        if not self._observers:
+            return
+        self._observers.notify()
 
     def invalidate(self) -> None:
         """Force downstream recomputation, bypassing optimization caches.
@@ -132,6 +156,15 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         instead of `update()` when the dependency topology may have changed.
         """
         self.update()
+
+    def _ensure_uptodate(self) -> None:
+        """Refresh this node if needed before a dependent reads its version.
+
+        Signals are always current, so the base implementation is a no-op.
+        Computed overrides this to drive lazy refresh without requiring type
+        checks or exception-based attribute probing in the dependency engine.
+        """
+        return
 
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
@@ -170,8 +203,9 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         Returns:
             `self`, to allow method chaining.
         """
-        self.__name = name
-        plugin_manager.hook.named(value=self)
+        object.__setattr__(self, "_Variable__name", name)
+        if HOOKS_ENABLED:
+            plugin_manager.hook.named(value=self)
         return self
 
     def add_name(self, name: str) -> Self:
@@ -215,14 +249,16 @@ top of this stack so dependency subscriptions can be reconciled on refresh.
 
 def _track_read(variable: Variable[Any]) -> None:
     """Register `variable` as a dependency of the currently computing Computed."""
-    if not _COMPUTE_STACK:
+    stack = _COMPUTE_STACK
+    if not stack:
         # Reads outside Computed evaluation do not participate in dependency tracking.
         return
-    owner = _COMPUTE_STACK[-1]
+    impl = stack[-1]
+    owner = impl._owner
     if owner is variable:
         # Ignore self-reads to avoid self-dependency loops.
         return
-    owner._impl._register_dependency(variable)
+    impl._dep_state.register_dependency(variable)
 
 
 def _reconcile_deps(
@@ -243,8 +279,10 @@ def _resolve(value: Any) -> Any:
     direct subscription that bypasses the outer variable's own observe chain.
     """
     current: Any = value
+    if type(current) in _PLAIN_SCALAR_TYPES:
+        return current
     while isinstance(current, Variable):
-        if isinstance(current, Computed):
+        if current._IS_COMPUTED_NODE:
             current._impl.ensure_uptodate()
         current = current._value
     return current
@@ -256,6 +294,14 @@ def _has_changed(previous: Any, current: Any) -> bool:
     This function is intentionally fail-open: if comparison is ambiguous or
     raises, we treat the value as changed to avoid missing invalidations.
     """
+    previous_type = type(previous)
+    current_type = type(current)
+    if previous_type is current_type:
+        if previous_type in {int, bool, str, bytes, complex, type(None)}:
+            return previous != current
+        if previous_type is float:
+            return not (math.isnan(previous) and math.isnan(current)) and previous != current
+
     # Compare callables by identity to avoid invoking custom `__eq__` logic and
     # to preserve stable references as unchanged.
     if callable(previous) or callable(current):
@@ -315,9 +361,11 @@ class Signal[T](Variable[T]):
 
     def __init__(self, value: HasValue[T]) -> None:
         super().__init__()
-        self._value: HasValue[T] = value
-        self._observe(value)
-        plugin_manager.hook.created(value=self)
+        object.__setattr__(self, "_value", value)
+        if _may_have_reactive_children(value):
+            self._observe(value)
+        if HOOKS_ENABLED:
+            plugin_manager.hook.created(value=self)
 
     @property
     def value(self) -> T:
@@ -327,19 +375,25 @@ class Signal[T](Variable[T]):
         nested reactive. Setting it updates the stored value and notifies
         observers if the value changed.
         """
-        plugin_manager.hook.read(value=self)
+        if HOOKS_ENABLED:
+            plugin_manager.hook.read(value=self)
         _track_read(self)
-        return _resolve(self._value)
+        value = self._value
+        return value if type(value) in _PLAIN_SCALAR_TYPES else _resolve(value)
 
     @value.setter
     def value(self, new_value: HasValue[T]) -> None:
         old_value = self._value
         if _has_changed(old_value, new_value):
-            self._value = new_value
-            self._version += 1
-            plugin_manager.hook.updated(value=self)
-            self._unobserve(old_value)
-            self._observe(new_value)
+            object.__setattr__(self, "_value", new_value)
+            object.__setattr__(self, "_version", self._version + 1)
+            _bump_global_version()
+            if HOOKS_ENABLED:
+                plugin_manager.hook.updated(value=self)
+            if _may_have_reactive_children(old_value):
+                self._unobserve(old_value)
+            if _may_have_reactive_children(new_value):
+                self._observe(new_value)
             self.notify()
 
     @contextmanager
@@ -383,7 +437,8 @@ class Signal[T](Variable[T]):
             signal will recompute on its next `.value` read, even if the underlying
             data is unchanged. Prefer assigning to `.value` when possible.
         """
-        self._version += 1
+        object.__setattr__(self, "_version", self._version + 1)
+        _bump_global_version()
         self.notify()
 
 
@@ -511,7 +566,7 @@ class _DependencyState:
         current = self._head
         while current is not None:
             dep = current.dep
-            if isinstance(dep, Computed):
+            if dep._IS_COMPUTED_NODE:
                 dep._impl.ensure_uptodate()
             if current.version != dep._version:
                 return True
@@ -535,21 +590,18 @@ class _DependencyState:
 class _ComputedImpl:
     """Internal state and dependency tracking for :class:`Computed`."""
 
-    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing"]
+    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing", "_global_version_seen"]
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
         self._dep_state = _DependencyState(owner)
         self._state = _State.UNINITIALIZED
         self._is_computing = False
- 
+        self._global_version_seen = -1
+
     @property
     def _deps(self) -> Any:
         return self._dep_state.deps
-
-    def _register_dependency(self, dependency: Variable[Any]) -> None:
-        if dependency is not self._owner:
-            self._dep_state.register_dependency(dependency)
 
     def refresh(self) -> None:
         owner = self._owner
@@ -563,7 +615,7 @@ class _ComputedImpl:
         # 1) Evaluate with dependency tracking enabled.
         self._is_computing = True
         self._dep_state.start_refresh()
-        _COMPUTE_STACK.append(owner)
+        _COMPUTE_STACK.append(self)
         try:
             next_value = owner._compute_fn()
         except BaseException:
@@ -571,12 +623,12 @@ class _ComputedImpl:
             # Computed stays subscribed to its previous deps and remains stale
             # for retry on the next .value read.
             popped = _COMPUTE_STACK.pop()
-            assert popped is owner
+            assert popped is self
             self._dep_state.rollback_refresh()
             self._is_computing = False
             raise
         popped = _COMPUTE_STACK.pop()
-        assert popped is owner
+        assert popped is self
         self._is_computing = False
 
         # 2) Reconcile subscriptions against the dependency set from this run.
@@ -586,11 +638,16 @@ class _ComputedImpl:
         self._state = _State.FRESH
         value_changed = not had_value or _has_changed(previous_value, next_value)
         if value_changed:
-            owner._value = next_value
-            owner._version += 1
-            plugin_manager.hook.updated(value=owner)
+            object.__setattr__(owner, "_value", next_value)
+            object.__setattr__(owner, "_version", owner._version + 1)
+            self._global_version_seen = _bump_global_version()
+            if HOOKS_ENABLED:
+                plugin_manager.hook.updated(value=owner)
         elif forced_refresh:
-            owner._version += 1
+            object.__setattr__(owner, "_version", owner._version + 1)
+            self._global_version_seen = _bump_global_version()
+        else:
+            self._global_version_seen = _GLOBAL_VERSION
 
     def dependencies_changed(self) -> bool:
         """Ensure stale Computed deps are current, then return True if any dep version changed."""
@@ -601,9 +658,16 @@ class _ComputedImpl:
         if self._state == _State.FRESH:
             return
 
-        # Fast path 2: stale, but no dep version changed — skip recompute.
+        # Fast path 2: the graph has not changed since this computed last
+        # became current, so a stale mark can be cleared without scanning deps.
+        if self._state == _State.STALE and self._global_version_seen == _GLOBAL_VERSION:
+            self._state = _State.FRESH
+            return
+
+        # Fast path 3: stale, but no dep version changed — skip recompute.
         if self._state == _State.STALE and not self.dependencies_changed():
             self._state = _State.FRESH
+            self._global_version_seen = _GLOBAL_VERSION
             return
 
         # Slow path: recompute and reconcile dependencies.
@@ -664,12 +728,13 @@ class Computed(Variable[T]):
     """
 
     __slots__ = ["_compute_fn", "_value", "_impl"]
+    _IS_COMPUTED_NODE = True
 
     def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
         super().__init__()
-        self._compute_fn = f
-        self._value: Any = None
-        self._impl = _ComputedImpl(self)
+        object.__setattr__(self, "_compute_fn", f)
+        object.__setattr__(self, "_value", None)
+        object.__setattr__(self, "_impl", _ComputedImpl(self))
 
         if dependencies is not None:
             warnings.warn(
@@ -679,7 +744,8 @@ class Computed(Variable[T]):
                 stacklevel=2,
             )
 
-        plugin_manager.hook.created(value=self)
+        if HOOKS_ENABLED:
+            plugin_manager.hook.created(value=self)
 
     def subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer, ensuring dependency tracking is active first.
@@ -698,6 +764,9 @@ class Computed(Variable[T]):
         if not self._impl.invalidate():
             return
         self.notify()
+
+    def _ensure_uptodate(self) -> None:
+        self._impl.ensure_uptodate()
 
     def invalidate(self) -> None:
         """Force a full recomputation on the next `.value` read.
@@ -730,15 +799,18 @@ class Computed(Variable[T]):
         """
         if not self._impl.invalidate(force=True):
             return
+        _bump_global_version()
         self.notify()
 
     @property
     def value(self) -> T:
         """Get the current value, recomputing lazily when stale."""
-        plugin_manager.hook.read(value=self)
+        if HOOKS_ENABLED:
+            plugin_manager.hook.read(value=self)
         _track_read(self)
         self._impl.ensure_uptodate()
-        return _resolve(self._value)
+        value = self._value
+        return value if type(value) in _PLAIN_SCALAR_TYPES else _resolve(value)
 
 
 class Effect:

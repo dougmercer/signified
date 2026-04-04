@@ -1744,6 +1744,7 @@ class _ReactiveMixIn[T]:
             setattr(self.value, name, value)
             if isinstance(self, Variable):
                 self._version += 1
+                _bump_global_version()
             self.notify()
             return
 
@@ -1778,6 +1779,7 @@ class _ReactiveMixIn[T]:
             self.value[key] = value
             if isinstance(self, Variable):
                 self._version += 1
+                _bump_global_version()
             self.notify()
         else:
             raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
@@ -1813,4 +1815,4 @@ class _ReactiveMixIn[T]:
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
 from ._functions import computed  # noqa: E402
-from ._reactive import Effect, Variable  # noqa: E402
+from ._reactive import Effect, Variable, _bump_global_version  # noqa: E402

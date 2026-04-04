@@ -121,6 +121,17 @@ class _ObserverLinks[T]:
                 yield observer
             current = next_link
 
+    def notify(self) -> None:
+        current = self._head
+        while current is not None:
+            next_link = current.next
+            observer = current.observer_ref()
+            if observer is None:
+                self._remove_link(current)
+            else:
+                observer.update()
+            current = next_link
+
     def _remove_link(self, link: _ObserverLink[T]) -> None:
         prev_link = link.prev
         next_link = link.next
