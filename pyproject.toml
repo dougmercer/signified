@@ -32,6 +32,10 @@ docs = [
 ]
 test = ["pytest", "pytest-coverage", "numpy", "pluggy"]
 lint = ["pyright"]
+dev = [
+    "pytest-codspeed>=4.3.0",
+    "ruff>=0.15.9",
+]
 
 [project.urls]
 Homepage = "https://github.com/dougmercer/signified.git"

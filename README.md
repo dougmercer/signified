@@ -3,6 +3,7 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dw/signified)](https://pypi.org/project/signified/)
 [![PyPI - Version](https://img.shields.io/pypi/v/signified)](https://pypi.org/project/signified/)
 [![Tests Status](https://github.com/dougmercer/signified/actions/workflows/test.yml/badge.svg)](https://github.com/dougmercer/signified/actions/workflows/test.yml?query=branch%3Amain)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/dougmercer/signified?utm_source=badge)
 
 ---
 
