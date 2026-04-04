@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import collections.abc
 import weakref
-from typing import TYPE_CHECKING, Hashable, Iterable, Iterator
+from typing import TYPE_CHECKING, Iterable, Iterator, Protocol
 
 if TYPE_CHECKING:
     from ._reactive import Computed, Signal
@@ -21,36 +20,11 @@ type HasValue[T] = T | ReactiveValue[T]
 """This object would return a value of type T when calling unref(obj)."""
 
 
-class _OrderedSet[T](collections.abc.MutableSet[T]):
-    """Used to implement a WeakRefSet.
-
-    Yoinked from a Raymond Hettinger stackoverflow post:
-        https://stackoverflow.com/a/7829569
-    """
-
-    def __init__(self, values: Iterable[T] = ()) -> None:
-        self._od = dict.fromkeys(values)
-
-    def __len__(self) -> int:
-        return len(self._od)
-
-    def __iter__(self) -> Iterator[T]:
-        return iter(self._od)
-
-    def __contains__(self, x: Hashable) -> bool:
-        return x in self._od
-
-    def add(self, value: T) -> None:
-        self._od[value] = None
-
-    def discard(self, value: T) -> None:
-        self._od.pop(value, None)
-
-    def copy(self):
-        return type(self)(self._od)
+class _SupportsUpdate(Protocol):
+    def update(self) -> None: ...
 
 
-class _ObserverLink[T]:
+class _ObserverLink[T: _SupportsUpdate]:
     """Doubly linked producer -> observer subscription edge."""
 
     __slots__ = ("observer_ref", "prev", "next")
@@ -61,7 +35,7 @@ class _ObserverLink[T]:
         self.next: _ObserverLink[T] | None = None
 
 
-class _ObserverLinks[T]:
+class _ObserverLinks[T: _SupportsUpdate]:
     """Store observer subscriptions as explicit producer/consumer links.
 
     Producers keep a doubly linked list of weak observer refs for cheap notify
@@ -85,11 +59,7 @@ class _ObserverLinks[T]:
         owner_ref = weakref.ref(self)
         link = _ObserverLink[T](weakref.ref(observer))
 
-        def _cleanup(
-            _ref: weakref.ReferenceType[T],
-            owner_ref: weakref.ReferenceType[_ObserverLinks[T]] = owner_ref,
-            link: _ObserverLink[T] = link,
-        ) -> None:
+        def _cleanup(_ref: weakref.ReferenceType[T], link: _ObserverLink[T] = link) -> None:
             owner = owner_ref()
             if owner is not None:
                 owner._remove_link(link)

@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from functools import wraps
 from typing import Any, Callable, Concatenate, TypeGuard, cast
 
-from ._reactive import Computed, Effect, Signal, _is_reactive_node, _track_read
+from ._reactive import Computed, Effect, Signal, _is_reactive_value, _track_read
 from ._types import HasValue, ReactiveValue
 
 if importlib.util.find_spec("numpy") is not None:
@@ -24,7 +24,7 @@ def _identity[T](value: T) -> T:
 
 
 def _get_unref_op(value: Any) -> Callable[[Any], Any]:
-    if _is_reactive_node(value):
+    if _is_reactive_value(value):
         return unref
     if type(value) in _PLAIN_ARG_TYPES:
         return _identity
@@ -171,8 +171,8 @@ def unref[T](value: HasValue[T]) -> T:
         ```
     """
     current: Any = value
-    while _is_reactive_node(current):
-        if current._IS_COMPUTED_NODE:
+    while _is_reactive_value(current):
+        if current._IS_COMPUTED:
             current._impl.ensure_uptodate()
         _track_read(current)
         current = current._value
@@ -246,18 +246,8 @@ def deep_unref(value: Any) -> Any:
     if value_type in _SCALAR_TYPES:
         return value
 
-    # Unwrap reactive values in a tight loop so nested Signals/Computed values
-    # don't bounce through the generic container logic at every level.
-    current = value
-    while _is_reactive_node(current):
-        if current._IS_COMPUTED_NODE:
-            current._impl.ensure_uptodate()
-        _track_read(current)
-        current = current._value
-        current_type = type(current)
-        if current_type in _SCALAR_TYPES:
-            return current
-    value = current
+    # Unwrap reactive values.
+    value = unref(value)
     value_type = type(value)
 
     # For containers, recursively unref their elements
@@ -271,9 +261,8 @@ def deep_unref(value: Any) -> Any:
     if value_type is dict:
         return {deep_unref(k): deep_unref(v) for k, v in value.items()}
     if isinstance(value, Iterable) and not isinstance(value, str):
-        constructor: Any = type(value)
         try:
-            return constructor(deep_unref(item) for item in value)
+            return type(value)(deep_unref(item) for item in value)  # pyright: ignore[reportCallIssue]
         except TypeError:
             return value
 
@@ -322,7 +311,9 @@ def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
     Returns:
         A reactive value.
     """
-    return cast(ReactiveValue[T], val) if _is_reactive_node(val) else Signal(val)
+    if _is_reactive_value(val):
+        return val
+    return Signal(cast(T, val))
 
 
 def as_signal[T](val: HasValue[T]) -> Signal[T]:

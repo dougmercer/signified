@@ -8,10 +8,10 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import Any, Callable, Protocol, Self, TypeVar, overload
+from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, overload
 
 from ._mixin import _ReactiveMixIn
-from ._types import HasValue, ReactiveValue, _ObserverLinks, _OrderedSet
+from ._types import HasValue, ReactiveValue, _ObserverLinks
 from .plugins import HOOKS_ENABLED, plugin_manager
 
 __all__ = ["Variable", "Signal", "Computed", "Effect"]
@@ -28,16 +28,17 @@ def _bump_global_version() -> int:
     return _GLOBAL_VERSION
 
 
-def _is_reactive_node(value: Any) -> bool:
+def _is_reactive_value[T](value: HasValue[T]) -> TypeGuard[ReactiveValue[T]]:
     """Return whether ``value`` is a signified reactive wrapper."""
-    return getattr(type(value), "_IS_REACTIVE_WRAPPER", False)
+    # Note: We use a specific attribute instead of isinstance to reduce overhead.
+    return getattr(type(value), "_IS_REACTIVE", False)
 
 
 def _may_have_reactive_children(value: Any) -> bool:
     """Return whether `value` could contain reactive values that need subscriptions."""
     if type(value) in _PLAIN_SCALAR_TYPES:
         return False
-    if _is_reactive_node(value):
+    if _is_reactive_value(value):
         return True
     return isinstance(value, Iterable) and not isinstance(value, str)
 
@@ -70,14 +71,14 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
     Variable is only exposed for type hinting or subclassing purposes.
     """
 
-    __slots__ = ["_observers", "__name", "_version", "__weakref__"]
-    _IS_COMPUTED_NODE = False
-    _IS_REACTIVE_WRAPPER = True
+    __slots__ = ["_observers", "_name", "_version", "__weakref__"]
+    _IS_COMPUTED = False
+    _IS_REACTIVE = True
 
     def __init__(self):
         """Initialize the variable."""
         object.__setattr__(self, "_observers", _ObserverLinks[_Observer]())
-        object.__setattr__(self, "_Variable__name", "")
+        object.__setattr__(self, "_name", "")
         object.__setattr__(self, "_version", 0)
 
     @staticmethod
@@ -85,7 +86,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         """Yield `Variable` instances found in arbitrarily nested containers."""
         if type(item) in _PLAIN_SCALAR_TYPES:
             return
-        if _is_reactive_node(item):
+        if _is_reactive_value(item):
             yield item
             return
         if isinstance(item, str):
@@ -209,7 +210,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         Returns:
             `self`, to allow method chaining.
         """
-        object.__setattr__(self, "_Variable__name", name)
+        object.__setattr__(self, "_name", name)
         if HOOKS_ENABLED:
             plugin_manager.hook.named(value=self)
         return self
@@ -233,9 +234,9 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         if not format_spec:  # Default - just show value in brackets
             return f"<{self.value}>"
         if format_spec == "n":  # Name only
-            return self.__name if self.__name else f"{type(self).__name__}(id={id(self)})"
+            return self._name if self._name else f"{type(self).__name__}(id={id(self)})"
         if format_spec == "d":  # Debug
-            name_part = f"name='{self.__name}', " if self.__name else ""
+            name_part = f"name='{self._name}', " if self._name else ""
             return f"{type(self).__name__}({name_part}value={self.value!r}, id={id(self)})"
         return super().__format__(format_spec)  # Handles other format specs
 
@@ -267,16 +268,6 @@ def _track_read(variable: Variable[Any]) -> None:
     impl._dep_state.register_dependency(variable)
 
 
-def _reconcile_deps(
-    subscriber: Any, old_deps: _OrderedSet[Variable[Any]], new_deps: _OrderedSet[Variable[Any]]
-) -> None:
-    """Update subscriptions to reflect a change from old_deps to new_deps."""
-    for dep in old_deps - new_deps:
-        dep.unsubscribe(subscriber)
-    for dep in new_deps - old_deps:
-        dep.subscribe(subscriber)
-
-
 def _resolve(value: Any) -> Any:
     """Unwrap nested reactive containers without registering any dependencies.
 
@@ -287,8 +278,8 @@ def _resolve(value: Any) -> Any:
     current: Any = value
     if type(current) in _PLAIN_SCALAR_TYPES:
         return current
-    while _is_reactive_node(current):
-        if current._IS_COMPUTED_NODE:
+    while _is_reactive_value(current):
+        if current._IS_COMPUTED:
             current._impl.ensure_uptodate()
         current = current._value
     return current
@@ -315,7 +306,7 @@ def _has_changed(previous: Any, current: Any) -> bool:
     # Reactive wrappers compare by identity rather than value equality.
     # Distinct wrapper objects should invalidate even if they currently resolve
     # to equal values.
-    if _is_reactive_node(previous) or _is_reactive_node(current):
+    if _is_reactive_value(previous) or _is_reactive_value(current):
         return previous is not current
 
     # Keep NaN stable: treat NaN -> NaN as unchanged.
@@ -476,7 +467,7 @@ class _DependencyLink:
         self.seen_token = 0
 
 
-class _DependencyState:
+class _PythonDependencyState:
     """Dependency bookkeeping with reusable producer/consumer edges."""
 
     __slots__ = [
@@ -537,6 +528,7 @@ class _DependencyState:
             self._next_single = link
             cursor = self._refresh_cursor
             if cursor is link:
+                assert cursor is not None
                 self._refresh_cursor = cursor.next
             else:
                 self._stable_order = False
@@ -561,6 +553,7 @@ class _DependencyState:
         next_links.append(link)
         cursor = self._refresh_cursor
         if cursor is link:
+            assert cursor is not None
             self._refresh_cursor = cursor.next
         else:
             self._stable_order = False
@@ -689,12 +682,12 @@ class _DependencyState:
             return False
         if current.next is None:
             dep = current.dep
-            if dep._IS_COMPUTED_NODE:
+            if dep._IS_COMPUTED:
                 dep._impl.ensure_uptodate()
             return current.version != dep._version
         while current is not None:
             dep = current.dep
-            if dep._IS_COMPUTED_NODE:
+            if dep._IS_COMPUTED:
                 dep._impl.ensure_uptodate()
             if current.version != dep._version:
                 return True
@@ -716,6 +709,9 @@ class _DependencyState:
         self._next_links = None
         self._refresh_cursor = None
         self._stable_order = False
+
+
+_DependencyState = _PythonDependencyState
 
 
 class _ComputedImpl:
@@ -859,7 +855,7 @@ class Computed(Variable[T]):
     """
 
     __slots__ = ["_compute_fn", "_value", "_impl"]
-    _IS_COMPUTED_NODE = True
+    _IS_COMPUTED = True
 
     def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
         super().__init__()

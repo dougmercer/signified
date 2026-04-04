@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import operator
 import warnings
+from functools import cache
 from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
 
 from ._types import HasValue
@@ -1691,9 +1692,14 @@ class _ReactiveMixIn[T]:
         return computed(operator.getitem)(self, key)
 
     @classmethod
+    @cache
+    def _own_attr_names(cls) -> frozenset[str]:
+        return frozenset(name for base in cls.__mro__ for name in base.__dict__)
+
+    @classmethod
     def _is_own_attr(cls, name: str) -> bool:
         """Return whether `name` is defined on this wrapper type or one of its bases."""
-        return any(name in c.__dict__ for c in cls.__mro__)
+        return name in cls._own_attr_names()
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Assign `name` on the wrapper or forward it to the wrapped value.
@@ -1727,28 +1733,41 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        # Bypass __getattr__ during initialization, before _value exists.
+        # Internal state always belongs to the wrapper, never the wrapped value.
+        if name[:1] == "_":
+            super().__setattr__(name, value)
+            return
+
+        # During __init__, `_value` may not exist yet. Check it directly so we
+        # do not accidentally use __getattr__ while the wrapper is only
+        # partially constructed.
         try:
             object.__getattribute__(self, "_value")
         except AttributeError:
             super().__setattr__(name, value)
             return
 
-        # Keep private names and wrapper-owned API on the wrapper itself.
-        if name.startswith("_") or self._is_own_attr(name):
+        # Attributes defined on the wrapper itself stay on the wrapper.
+        # This preserves the wrapper's API like `.value`, `.rx`, and helper
+        # methods.
+        if self._is_own_attr(name):
             super().__setattr__(name, value)
             return
 
-        # Forward assignment to the wrapped value and notify dependents.
-        if hasattr(self.value, name):
-            setattr(self.value, name, value)
+        # For everything else, proxy the write only if the wrapped object
+        # already exposes that attribute. Successful forwarded writes are
+        # treated like in-place mutations, so dependents are invalidated.
+        wrapped = self.value
+        if hasattr(wrapped, name):
+            setattr(wrapped, name, value)
             if isinstance(self, Variable):
                 self._version += 1
                 _bump_global_version()
             self.notify()
             return
 
-        # Otherwise, fall back to normal wrapper assignment semantics.
+        # If the wrapped object does not own the name either, fall back to
+        # normal Python assignment on the wrapper instance.
         super().__setattr__(name, value)
 
     def __setitem__(self, key: Any, value: Any) -> None:

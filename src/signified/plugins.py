@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -42,7 +43,7 @@ def _identity(fn: Any) -> Any:
 
 
 def _make_pluggy_pm() -> Any:
-    import pluggy
+    pluggy = importlib.import_module("pluggy")
 
     hookspec = pluggy.HookspecMarker("signified")
 
