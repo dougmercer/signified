@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install docs dependencies
-        run: uv sync --python "$pythonLocation/bin/python" --group docs
+        run: uv sync --frozen --group docs
       - name: Configure git user
         run: |
           git config user.name "github-actions[bot]"
