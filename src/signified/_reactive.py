@@ -28,11 +28,16 @@ def _bump_global_version() -> int:
     return _GLOBAL_VERSION
 
 
+def _is_reactive_node(value: Any) -> bool:
+    """Return whether ``value`` is a signified reactive wrapper."""
+    return getattr(type(value), "_IS_REACTIVE_WRAPPER", False)
+
+
 def _may_have_reactive_children(value: Any) -> bool:
     """Return whether `value` could contain reactive values that need subscriptions."""
     if type(value) in _PLAIN_SCALAR_TYPES:
         return False
-    if isinstance(value, Variable):
+    if _is_reactive_node(value):
         return True
     return isinstance(value, Iterable) and not isinstance(value, str)
 
@@ -67,6 +72,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     __slots__ = ["_observers", "__name", "_version", "__weakref__"]
     _IS_COMPUTED_NODE = False
+    _IS_REACTIVE_WRAPPER = True
 
     def __init__(self):
         """Initialize the variable."""
@@ -79,7 +85,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         """Yield `Variable` instances found in arbitrarily nested containers."""
         if type(item) in _PLAIN_SCALAR_TYPES:
             return
-        if isinstance(item, Variable):
+        if _is_reactive_node(item):
             yield item
             return
         if isinstance(item, str):
@@ -281,7 +287,7 @@ def _resolve(value: Any) -> Any:
     current: Any = value
     if type(current) in _PLAIN_SCALAR_TYPES:
         return current
-    while isinstance(current, Variable):
+    while _is_reactive_node(current):
         if current._IS_COMPUTED_NODE:
             current._impl.ensure_uptodate()
         current = current._value
@@ -309,7 +315,7 @@ def _has_changed(previous: Any, current: Any) -> bool:
     # Reactive wrappers compare by identity rather than value equality.
     # Distinct wrapper objects should invalidate even if they currently resolve
     # to equal values.
-    if isinstance(previous, Variable) or isinstance(current, Variable):
+    if _is_reactive_node(previous) or _is_reactive_node(current):
         return previous is not current
 
     # Keep NaN stable: treat NaN -> NaN as unchanged.
@@ -473,15 +479,28 @@ class _DependencyLink:
 class _DependencyState:
     """Dependency bookkeeping with reusable producer/consumer edges."""
 
-    __slots__ = ["_subscriber", "_head", "_tail", "_lookup", "_next_links", "_refresh_token"]
+    __slots__ = [
+        "_subscriber",
+        "_head",
+        "_tail",
+        "_lookup",
+        "_next_single",
+        "_next_links",
+        "_refresh_token",
+        "_refresh_cursor",
+        "_stable_order",
+    ]
 
     def __init__(self, subscriber: Any) -> None:
         self._subscriber = subscriber
         self._head: _DependencyLink | None = None
         self._tail: _DependencyLink | None = None
         self._lookup: dict[Variable[Any], _DependencyLink] = {}
+        self._next_single: _DependencyLink | None = None
         self._next_links: list[_DependencyLink] | None = None
         self._refresh_token = 0
+        self._refresh_cursor: _DependencyLink | None = None
+        self._stable_order = False
 
     @property
     def deps(self) -> tuple[Variable[Any], ...]:
@@ -494,36 +513,135 @@ class _DependencyState:
 
     def start_refresh(self) -> None:
         self._refresh_token += 1
-        self._next_links = []
+        self._next_single = None
+        self._next_links = None
+        self._refresh_cursor = self._head
+        self._stable_order = self._head is not None
 
     def register_dependency(self, dependency: Variable[Any]) -> None:
+        token = self._refresh_token
+        next_single = self._next_single
         next_links = self._next_links
-        if next_links is None:
+        if next_links is None and next_single is None:
+            head = self._head
+            if head is not None and head.next is None and dependency is head.dep:
+                link = head
+            else:
+                link = self._lookup.get(dependency)
+                if link is None:
+                    link = _DependencyLink(dependency)
+                    self._lookup[dependency] = link
+            if link.seen_token == token:
+                return
+            link.seen_token = token
+            self._next_single = link
+            cursor = self._refresh_cursor
+            if cursor is link:
+                self._refresh_cursor = cursor.next
+            else:
+                self._stable_order = False
             return
+
+        if next_links is None:
+            assert next_single is not None
+            if next_single.seen_token == token and dependency is next_single.dep:
+                return
+            next_links = [next_single]
+            self._next_links = next_links
+            self._next_single = None
 
         link = self._lookup.get(dependency)
         if link is None:
             link = _DependencyLink(dependency)
             self._lookup[dependency] = link
-        if link.seen_token == self._refresh_token:
+        if link.seen_token == token:
             return
 
-        link.seen_token = self._refresh_token
+        link.seen_token = token
         next_links.append(link)
+        cursor = self._refresh_cursor
+        if cursor is link:
+            self._refresh_cursor = cursor.next
+        else:
+            self._stable_order = False
 
     def rollback_refresh(self) -> None:
+        next_single = self._next_single
+        if next_single is not None and not next_single.active and self._lookup.get(next_single.dep) is next_single:
+            self._lookup.pop(next_single.dep, None)
         next_links = self._next_links
         if next_links is not None:
             for link in next_links:
                 if not link.active and self._lookup.get(link.dep) is link:
                     self._lookup.pop(link.dep, None)
+        self._next_single = None
         self._next_links = None
+        self._refresh_cursor = None
+        self._stable_order = False
 
     def commit_refresh(self, subscriber: Any) -> None:
         del subscriber
 
+        next_single = self._next_single
         next_links = self._next_links
-        assert next_links is not None
+        if next_links is None and next_single is not None:
+            link = next_single
+            if self._stable_order and self._refresh_cursor is None and self._head is link and link.next is None:
+                link.version = link.dep._version
+                self._next_single = None
+                self._refresh_cursor = None
+                self._stable_order = False
+                return
+
+            current = self._head
+            while current is not None:
+                next_current = current.next
+                if current is not link:
+                    current.dep.unsubscribe(self._subscriber)
+                    current.active = False
+                current.prev = None
+                current.next = None
+                if current is not link:
+                    self._lookup.pop(current.dep, None)
+                current = next_current
+
+            if not link.active:
+                link.dep.subscribe(self._subscriber)
+                link.active = True
+            link.version = link.dep._version
+            link.prev = None
+            link.next = None
+            self._head = link
+            self._tail = link
+            self._next_single = None
+            self._refresh_cursor = None
+            self._stable_order = False
+            return
+
+        if next_links is None:
+            current = self._head
+            while current is not None:
+                next_current = current.next
+                current.dep.unsubscribe(self._subscriber)
+                current.active = False
+                current.prev = None
+                current.next = None
+                self._lookup.pop(current.dep, None)
+                current = next_current
+            self._head = None
+            self._tail = None
+            self._refresh_cursor = None
+            self._stable_order = False
+            return
+
+        if self._stable_order and self._refresh_cursor is None:
+            for link in next_links:
+                link.version = link.dep._version
+            self._next_single = None
+            self._next_links = None
+            self._refresh_cursor = None
+            self._stable_order = False
+            return
 
         current = self._head
         while current is not None:
@@ -560,10 +678,20 @@ class _DependencyState:
             self._head = head
             self._tail = prev
 
+        self._next_single = None
         self._next_links = None
+        self._refresh_cursor = None
+        self._stable_order = False
 
     def dependencies_changed(self) -> bool:
         current = self._head
+        if current is None:
+            return False
+        if current.next is None:
+            dep = current.dep
+            if dep._IS_COMPUTED_NODE:
+                dep._impl.ensure_uptodate()
+            return current.version != dep._version
         while current is not None:
             dep = current.dep
             if dep._IS_COMPUTED_NODE:
@@ -584,7 +712,10 @@ class _DependencyState:
         self._head = None
         self._tail = None
         self._lookup.clear()
+        self._next_single = None
         self._next_links = None
+        self._refresh_cursor = None
+        self._stable_order = False
 
 
 class _ComputedImpl:

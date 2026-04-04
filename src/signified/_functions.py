@@ -8,13 +8,27 @@ from collections.abc import Iterable
 from functools import wraps
 from typing import Any, Callable, Concatenate, TypeGuard, cast
 
-from ._reactive import Computed, Effect, Signal, Variable, _track_read
+from ._reactive import Computed, Effect, Signal, _is_reactive_node, _track_read
 from ._types import HasValue, ReactiveValue
 
 if importlib.util.find_spec("numpy") is not None:
     import numpy as np  # pyright: ignore[reportMissingImports]
 else:
     np = None  # User does not have numpy installed
+
+_PLAIN_ARG_TYPES = {int, float, str, bool, bytes, complex, type(None)}
+
+
+def _identity[T](value: T) -> T:
+    return value
+
+
+def _get_unref_op(value: Any) -> Callable[[Any], Any]:
+    if _is_reactive_node(value):
+        return unref
+    if type(value) in _PLAIN_ARG_TYPES:
+        return _identity
+    return deep_unref
 
 
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
@@ -36,9 +50,27 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Computed[R]:
+        # Fast Paths:
+        if not kwargs:
+            if not args:
+                return Computed(func)
+            if len(args) == 1:
+                arg = args[0]
+                resolve_arg = _get_unref_op(arg)
+                return Computed(lambda: func(resolve_arg(arg)))
+            if len(args) == 2:
+                left, right = args
+                resolve_left = _get_unref_op(left)
+                resolve_right = _get_unref_op(right)
+                return Computed(lambda: func(resolve_left(left), resolve_right(right)))
+
+        # General Case:
+        arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
+        kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
+
         def compute_func() -> R:
-            resolved_args = tuple(deep_unref(arg) for arg in args)
-            resolved_kwargs = {key: deep_unref(value) for key, value in kwargs.items()}
+            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
+            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
             return func(*resolved_args, **resolved_kwargs)
 
         return Computed(compute_func)
@@ -88,9 +120,27 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Effect:
+        # Fast Paths:
+        if not kwargs:
+            if not args:
+                return Effect(func)
+            if len(args) == 1:
+                arg = args[0]
+                resolve_arg = _get_unref_op(arg)
+                return Effect(lambda: func(resolve_arg(arg)))
+            if len(args) == 2:
+                left, right = args
+                resolve_left = _get_unref_op(left)
+                resolve_right = _get_unref_op(right)
+                return Effect(lambda: func(resolve_left(left), resolve_right(right)))
+
+        # General Case:
+        arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
+        kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
+
         def effect_fn() -> None:
-            resolved_args = tuple(deep_unref(arg) for arg in args)
-            resolved_kwargs = {key: deep_unref(value) for key, value in kwargs.items()}
+            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
+            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
             func(*resolved_args, **resolved_kwargs)
 
         return Effect(effect_fn)
@@ -121,7 +171,7 @@ def unref[T](value: HasValue[T]) -> T:
         ```
     """
     current: Any = value
-    while isinstance(current, Variable):
+    while _is_reactive_node(current):
         if current._IS_COMPUTED_NODE:
             current._impl.ensure_uptodate()
         _track_read(current)
@@ -199,7 +249,7 @@ def deep_unref(value: Any) -> Any:
     # Unwrap reactive values in a tight loop so nested Signals/Computed values
     # don't bounce through the generic container logic at every level.
     current = value
-    while isinstance(current, Variable):
+    while _is_reactive_node(current):
         if current._IS_COMPUTED_NODE:
             current._impl.ensure_uptodate()
         _track_read(current)
@@ -272,7 +322,7 @@ def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
     Returns:
         A reactive value.
     """
-    return cast(ReactiveValue[T], val) if isinstance(val, Variable) else Signal(val)
+    return cast(ReactiveValue[T], val) if _is_reactive_node(val) else Signal(val)
 
 
 def as_signal[T](val: HasValue[T]) -> Signal[T]:
