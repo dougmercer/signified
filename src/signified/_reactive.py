@@ -401,22 +401,155 @@ class _State(IntEnum):
     UNINITIALIZED = 3  # Never computed; recompute on first read, but don't re-notify.
 
 
+class _DependencyLink:
+    """Reusable edge between a Computed consumer and one producer dependency."""
+
+    __slots__ = ["dep", "version", "prev", "next", "active", "seen_token"]
+
+    def __init__(self, dep: Variable[Any]) -> None:
+        self.dep = dep
+        self.version = -1
+        self.prev: _DependencyLink | None = None
+        self.next: _DependencyLink | None = None
+        self.active = False
+        self.seen_token = 0
+
+
+class _DependencyState:
+    """Dependency bookkeeping with reusable producer/consumer edges."""
+
+    __slots__ = ["_subscriber", "_head", "_tail", "_lookup", "_next_links", "_refresh_token"]
+
+    def __init__(self, subscriber: Any) -> None:
+        self._subscriber = subscriber
+        self._head: _DependencyLink | None = None
+        self._tail: _DependencyLink | None = None
+        self._lookup: dict[Variable[Any], _DependencyLink] = {}
+        self._next_links: list[_DependencyLink] | None = None
+        self._refresh_token = 0
+
+    @property
+    def deps(self) -> tuple[Variable[Any], ...]:
+        deps: list[Variable[Any]] = []
+        current = self._head
+        while current is not None:
+            deps.append(current.dep)
+            current = current.next
+        return tuple(deps)
+
+    def start_refresh(self) -> None:
+        self._refresh_token += 1
+        self._next_links = []
+
+    def register_dependency(self, dependency: Variable[Any]) -> None:
+        next_links = self._next_links
+        if next_links is None:
+            return
+
+        link = self._lookup.get(dependency)
+        if link is None:
+            link = _DependencyLink(dependency)
+            self._lookup[dependency] = link
+        if link.seen_token == self._refresh_token:
+            return
+
+        link.seen_token = self._refresh_token
+        next_links.append(link)
+
+    def rollback_refresh(self) -> None:
+        next_links = self._next_links
+        if next_links is not None:
+            for link in next_links:
+                if not link.active and self._lookup.get(link.dep) is link:
+                    self._lookup.pop(link.dep, None)
+        self._next_links = None
+
+    def commit_refresh(self, subscriber: Any) -> None:
+        del subscriber
+
+        next_links = self._next_links
+        assert next_links is not None
+
+        current = self._head
+        while current is not None:
+            next_current = current.next
+            if current.seen_token != self._refresh_token:
+                current.dep.unsubscribe(self._subscriber)
+                current.active = False
+                current.prev = None
+                current.next = None
+                self._lookup.pop(current.dep, None)
+            current = next_current
+
+        head: _DependencyLink | None = None
+        prev: _DependencyLink | None = None
+        for link in next_links:
+            if not link.active:
+                link.dep.subscribe(self._subscriber)
+                link.active = True
+            link.version = link.dep._version
+            link.prev = prev
+            if prev is None:
+                head = link
+            else:
+                prev.next = link
+            prev = link
+
+        if head is None:
+            self._head = None
+            self._tail = None
+        else:
+            head.prev = None
+            assert prev is not None
+            prev.next = None
+            self._head = head
+            self._tail = prev
+
+        self._next_links = None
+
+    def dependencies_changed(self) -> bool:
+        current = self._head
+        while current is not None:
+            dep = current.dep
+            if isinstance(dep, Computed):
+                dep._impl.ensure_uptodate()
+            if current.version != dep._version:
+                return True
+            current = current.next
+        return False
+
+    def clear(self) -> None:
+        current = self._head
+        while current is not None:
+            next_current = current.next
+            current.active = False
+            current.prev = None
+            current.next = None
+            current = next_current
+        self._head = None
+        self._tail = None
+        self._lookup.clear()
+        self._next_links = None
+
+
 class _ComputedImpl:
     """Internal state and dependency tracking for :class:`Computed`."""
 
-    __slots__ = ["_owner", "_deps", "_next_deps", "_state", "_is_computing", "_dep_versions"]
+    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing"]
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
-        self._deps = _OrderedSet[Variable[Any]]()
-        self._next_deps: _OrderedSet[Variable[Any]] | None = None
+        self._dep_state = _DependencyState(owner)
         self._state = _State.UNINITIALIZED
         self._is_computing = False
-        self._dep_versions: dict[int, int] = {}
+ 
+    @property
+    def _deps(self) -> Any:
+        return self._dep_state.deps
 
     def _register_dependency(self, dependency: Variable[Any]) -> None:
-        if self._next_deps is not None and dependency is not self._owner:
-            self._next_deps.add(dependency)
+        if dependency is not self._owner:
+            self._dep_state.register_dependency(dependency)
 
     def refresh(self) -> None:
         owner = self._owner
@@ -429,7 +562,7 @@ class _ComputedImpl:
 
         # 1) Evaluate with dependency tracking enabled.
         self._is_computing = True
-        self._next_deps = _OrderedSet[Variable[Any]]()
+        self._dep_state.start_refresh()
         _COMPUTE_STACK.append(owner)
         try:
             next_value = owner._compute_fn()
@@ -439,19 +572,15 @@ class _ComputedImpl:
             # for retry on the next .value read.
             popped = _COMPUTE_STACK.pop()
             assert popped is owner
-            self._next_deps = None
+            self._dep_state.rollback_refresh()
             self._is_computing = False
             raise
         popped = _COMPUTE_STACK.pop()
         assert popped is owner
-        next_deps = self._next_deps
-        self._next_deps = None
         self._is_computing = False
 
         # 2) Reconcile subscriptions against the dependency set from this run.
-        _reconcile_deps(owner, self._deps, next_deps)
-        self._deps = next_deps
-        self._dep_versions = {id(dep): dep._version for dep in tuple(next_deps)}
+        self._dep_state.commit_refresh(owner)
 
         # 3) Commit value/version if the computed result actually changed.
         self._state = _State.FRESH
@@ -465,12 +594,7 @@ class _ComputedImpl:
 
     def dependencies_changed(self) -> bool:
         """Ensure stale Computed deps are current, then return True if any dep version changed."""
-        for dep in self._deps:
-            if isinstance(dep, Computed):
-                dep._impl.ensure_uptodate()
-            if self._dep_versions.get(id(dep), -1) != dep._version:
-                return True
-        return False
+        return self._dep_state.dependencies_changed()
 
     def ensure_uptodate(self) -> None:
         # Fast path 1: already fresh.
@@ -494,6 +618,9 @@ class _ComputedImpl:
         was_fresh = self._state == _State.FRESH
         self._state = max(self._state, _State.MUST_REFRESH if force else _State.STALE)
         return was_fresh
+
+    def clear_deps(self) -> None:
+        self._dep_state.clear()
 
 
 # We intentionally use a `TypeVar` here rather than PEP 695 syntax to ensure
@@ -679,4 +806,4 @@ class Effect:
         self._computed.unsubscribe(self)
         for dep in tuple(self._computed._impl._deps):
             dep.unsubscribe(self._computed)
-        self._computed._impl._deps = _OrderedSet[Variable[Any]]()
+        self._computed._impl.clear_deps()
