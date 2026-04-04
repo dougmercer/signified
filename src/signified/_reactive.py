@@ -73,13 +73,12 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     __slots__ = ["_observers", "_name", "_version", "__weakref__"]
     _IS_COMPUTED = False
-    _IS_REACTIVE = True
 
     def __init__(self):
         """Initialize the variable."""
-        object.__setattr__(self, "_observers", _ObserverLinks[_Observer]())
-        object.__setattr__(self, "_name", "")
-        object.__setattr__(self, "_version", 0)
+        self._observers = _ObserverLinks[_Observer]()
+        self._name = ""
+        self._version = 0
 
     @staticmethod
     def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
@@ -210,7 +209,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         Returns:
             `self`, to allow method chaining.
         """
-        object.__setattr__(self, "_name", name)
+        self._name = name
         if HOOKS_ENABLED:
             plugin_manager.hook.named(value=self)
         return self
@@ -358,7 +357,7 @@ class Signal[T](Variable[T]):
 
     def __init__(self, value: HasValue[T]) -> None:
         super().__init__()
-        object.__setattr__(self, "_value", value)
+        self._value = value
         if _may_have_reactive_children(value):
             self._observe(value)
         if HOOKS_ENABLED:
@@ -382,9 +381,8 @@ class Signal[T](Variable[T]):
     def value(self, new_value: HasValue[T]) -> None:
         old_value = self._value
         if _has_changed(old_value, new_value):
-            object.__setattr__(self, "_value", new_value)
-            object.__setattr__(self, "_version", self._version + 1)
-            _bump_global_version()
+            self._value = new_value
+            self._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=self)
             if _may_have_reactive_children(old_value):
@@ -434,8 +432,7 @@ class Signal[T](Variable[T]):
             signal will recompute on its next `.value` read, even if the underlying
             data is unchanged. Prefer assigning to `.value` when possible.
         """
-        object.__setattr__(self, "_version", self._version + 1)
-        _bump_global_version()
+        self._bump_version()
         self.notify()
 
 
@@ -765,14 +762,12 @@ class _ComputedImpl:
         self._state = _State.FRESH
         value_changed = not had_value or _has_changed(previous_value, next_value)
         if value_changed:
-            object.__setattr__(owner, "_value", next_value)
-            object.__setattr__(owner, "_version", owner._version + 1)
-            self._global_version_seen = _bump_global_version()
+            owner._value = next_value
+            self._global_version_seen = owner._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=owner)
         elif forced_refresh:
-            object.__setattr__(owner, "_version", owner._version + 1)
-            self._global_version_seen = _bump_global_version()
+            self._global_version_seen = owner._bump_version()
         else:
             self._global_version_seen = _GLOBAL_VERSION
 
@@ -859,9 +854,9 @@ class Computed(Variable[T]):
 
     def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
         super().__init__()
-        object.__setattr__(self, "_compute_fn", f)
-        object.__setattr__(self, "_value", None)
-        object.__setattr__(self, "_impl", _ComputedImpl(self))
+        self._compute_fn = f
+        self._value = None
+        self._impl = _ComputedImpl(self)
 
         if dependencies is not None:
             warnings.warn(

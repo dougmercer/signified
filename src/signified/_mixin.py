@@ -359,6 +359,7 @@ class _ReactiveNamespace[T]:
 
 class _ReactiveMixIn[T]:
     """Methods for easily creating reactive values."""
+    _IS_REACTIVE = True
 
     @property
     def value(self) -> T:
@@ -1701,6 +1702,11 @@ class _ReactiveMixIn[T]:
         """Return whether `name` is defined on this wrapper type or one of its bases."""
         return name in cls._own_attr_names()
 
+    def _bump_version(self) -> int:
+        """Increment the local version counter and the shared global version clock."""
+        object.__setattr__(self, "_version", self._version + 1)
+        return _bump_global_version()
+
     def __setattr__(self, name: str, value: Any) -> None:
         """Assign `name` on the wrapper or forward it to the wrapped value.
 
@@ -1760,9 +1766,8 @@ class _ReactiveMixIn[T]:
         wrapped = self.value
         if hasattr(wrapped, name):
             setattr(wrapped, name, value)
-            if isinstance(self, Variable):
-                self._version += 1
-                _bump_global_version()
+            if _is_reactive_value(self):
+                self._bump_version()
             self.notify()
             return
 
@@ -1796,9 +1801,8 @@ class _ReactiveMixIn[T]:
         """
         if isinstance(self.value, (list, dict)):
             self.value[key] = value
-            if isinstance(self, Variable):
-                self._version += 1
-                _bump_global_version()
+            if _is_reactive_value(self):
+                self._bump_version()
             self.notify()
         else:
             raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
@@ -1834,4 +1838,4 @@ class _ReactiveMixIn[T]:
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
 from ._functions import computed  # noqa: E402
-from ._reactive import Effect, Variable, _bump_global_version  # noqa: E402
+from ._reactive import Effect, _bump_global_version, _is_reactive_value  # noqa: E402
