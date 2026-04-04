@@ -1,0 +1,52 @@
+name: codspeed
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: codspeed-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmarks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHON_VERSION: "3.12"
+      # Pin this to a tag or SHA once the benchmark harness has a stable release.
+      SIGNIFIED_BENCH_REF: main
+
+    steps:
+      - name: Check out signified
+        uses: actions/checkout@v6
+
+      - name: Check out signified-bench
+        uses: actions/checkout@v6
+        with:
+          repository: dougmercer/signified-bench
+          ref: ${{ env.SIGNIFIED_BENCH_REF }}
+          path: signified-bench
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Run benchmarks with CodSpeed
+        uses: CodSpeedHQ/action@v4
+        with:
+          mode: simulation
+          run: uv run --with-editable ./signified-bench --with-editable . signified-bench --table --codspeed --codspeed-mode simulation --group steady-state
