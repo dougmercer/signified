@@ -32,6 +32,10 @@ docs = [
 ]
 test = ["pytest", "pytest-coverage", "numpy", "pluggy"]
 lint = ["pyright"]
+dev = [
+    "pytest-codspeed>=4.3.0",
+    "ruff>=0.15.9",
+]
 
 [project.urls]
 Homepage = "https://github.com/dougmercer/signified.git"
@@ -129,6 +133,10 @@ docstring-code-line-length = "dynamic"
 addopts = "--doctest-modules --cov=signified --cov-report=xml --junitxml=junit/test-results.xml"
 filterwarnings = [
     "ignore::DeprecationWarning",
+]
+markers = [
+    "benchmark: performance-focused benchmark tests",
+    "slow_benchmark: longer-running benchmark tests reserved for manual pre-merge runs",
 ]
 pythonpath = [
     "src",
