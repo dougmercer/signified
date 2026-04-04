@@ -9,3 +9,5 @@ jobs:
         uses: astral-sh/setup-uv@v7
       - name: Run Ruff
         run: uvx ruff check --output-format=github .
+      - name: Run Ruff format check
+        run: uvx ruff format --check src/ tests/

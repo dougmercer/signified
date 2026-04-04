@@ -162,3 +162,15 @@ cython_debug/
 #.idea/
 
 junit/
+
+# rust
+*.dylib.dSYM/
+
+#mac
+.DS_Store
+
+# VS Code
+.vscode/
+
+# misc
+junk/

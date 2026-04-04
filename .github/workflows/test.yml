@@ -22,9 +22,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --group test --group lint
       - name: Test with pytest
-        run: uv run --group test --no-sync pytest tests/ --doctest-modules --pyargs signified --cov=signified --cov-report=xml --junitxml=junit/test-results.xml
-    #   - name: Run Pyright
-    #     run: uv run --group lint --no-sync pyright
+        run: uv run --group test --no-sync pytest
       - run: |
           source .venv/bin/activate
           echo "$PWD/.venv/bin" >> $GITHUB_PATH

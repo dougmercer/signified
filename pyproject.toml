@@ -1,7 +1,3 @@
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "signified"
 version = "0.3.2"
@@ -14,15 +10,13 @@ maintainers = [
 ]
 description = "Reactive Signals and Computed values."
 readme = "README.md"
-license = {file="LICENSE"}
+license = "BSD-3-Clause"
 keywords = ["reactive", "signals"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python",
 ]
 
-[tool.setuptools.package-data]
-signified = ["py.typed"]
 
 [project.optional-dependencies]
 plugins = ["pluggy"]
@@ -132,9 +126,12 @@ docstring-code-line-length = "dynamic"
 
 
 [tool.pytest.ini_options]
-addopts = "--doctest-modules --cov=src/ --cov-report=xml --junitxml=junit/test-results.xml"
+addopts = "--doctest-modules --cov=signified --cov-report=xml --junitxml=junit/test-results.xml"
 filterwarnings = [
     "ignore::DeprecationWarning",
+]
+pythonpath = [
+    "src",
 ]
 testpaths = [
 	"tests",
@@ -153,3 +150,4 @@ project-includes = [
 
 [tool.pyright]
 pythonVersion = "3.12"
+include = ["src/signified"]
