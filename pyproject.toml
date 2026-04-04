@@ -134,6 +134,10 @@ addopts = "--doctest-modules --cov=signified --cov-report=xml --junitxml=junit/t
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
+markers = [
+    "benchmark: performance-focused benchmark tests",
+    "slow_benchmark: longer-running benchmark tests reserved for manual pre-merge runs",
+]
 pythonpath = [
     "src",
 ]

@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   codspeed:
-    name: Run benchmarks
+    name: Run fast benchmarks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -27,9 +27,12 @@ jobs:
           python-version: "3.14"
 
       - name: Install dependencies
-        run: uv sync --group test
+        run: uv sync --group test --group dev
 
-      - name: Run benchmarks
+      - name: Show selected benchmark tier
+        run: echo "Running fast CodSpeed benchmarks"
+
+      - name: Run fast benchmarks
         uses: CodSpeedHQ/action@v4
         with:
           mode: simulation
