@@ -764,7 +764,7 @@ class _ComputedImpl:
         self._state = _State.FRESH
         value_changed = not had_value or _has_changed(previous_value, next_value)
         if value_changed:
-            owner._value = next_value
+            object.__setattr__(owner, "_value", next_value)
             self._global_version_seen = owner._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=owner)
