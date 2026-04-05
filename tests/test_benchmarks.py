@@ -12,18 +12,18 @@ slow_benchmark = pytest.mark.slow_benchmark
 # ---------------------------------------------------------------------------
 
 
-def test_bench_signal_create(benchmark):
+def test_bench_signal_create_v1(benchmark):
     """Benchmark creating a Signal."""
     benchmark(Signal, 42)
 
 
-def test_bench_signal_read(benchmark):
+def test_bench_signal_read_v1(benchmark):
     """Benchmark reading a Signal value."""
     s = Signal(42)
     benchmark(lambda: s.value)
 
 
-def test_bench_signal_write(benchmark):
+def test_bench_signal_write_v1(benchmark):
     """Benchmark writing a new value to a Signal."""
     s = Signal(0)
     i = 0
@@ -36,7 +36,7 @@ def test_bench_signal_write(benchmark):
     benchmark(write)
 
 
-def test_bench_signal_update(benchmark):
+def test_bench_signal_update_v1(benchmark):
     """Benchmark forcing notification after mutating a contained object."""
     payload = {"count": 0}
     s = Signal(payload)
@@ -54,13 +54,13 @@ def test_bench_signal_update(benchmark):
 # ---------------------------------------------------------------------------
 
 
-def test_bench_computed_create(benchmark):
+def test_bench_computed_create_v1(benchmark):
     """Benchmark creating a Computed that depends on a Signal."""
     s = Signal(10)
     benchmark(lambda: Computed(lambda: s.value * 2))
 
 
-def test_bench_computed_read(benchmark):
+def test_bench_computed_read_v1(benchmark):
     """Benchmark reading a Computed value (already evaluated)."""
     s = Signal(10)
     c = Computed(lambda: s.value * 2)
@@ -68,7 +68,7 @@ def test_bench_computed_read(benchmark):
     benchmark(lambda: c.value)
 
 
-def test_bench_computed_propagation(benchmark):
+def test_bench_computed_propagation_v1(benchmark):
     """Benchmark Signal write that propagates through a Computed."""
     s = Signal(0)
     c = Computed(lambda: s.value + 1)
@@ -84,7 +84,7 @@ def test_bench_computed_propagation(benchmark):
     benchmark(propagate)
 
 
-def test_bench_computed_invalidate(benchmark):
+def test_bench_computed_invalidate_v1(benchmark):
     """Benchmark forced recomputation after rewiring a non-reactive container."""
 
     class Holder:
@@ -105,7 +105,7 @@ def test_bench_computed_invalidate(benchmark):
     benchmark(invalidate)
 
 
-def test_bench_computed_decorator(benchmark):
+def test_bench_computed_decorator_v1(benchmark):
     """Benchmark calling a @computed-decorated function."""
 
     @computed
@@ -117,7 +117,7 @@ def test_bench_computed_decorator(benchmark):
     benchmark(lambda: add(a, b).value)
 
 
-def test_bench_operator_chain(benchmark):
+def test_bench_operator_chain_v1(benchmark):
     """Benchmark chained arithmetic operators producing Computed values."""
     a = Signal(2)
     b = Signal(3)
@@ -134,7 +134,7 @@ def test_bench_operator_chain(benchmark):
 # ---------------------------------------------------------------------------
 
 
-def test_bench_nested_signal_read(benchmark):
+def test_bench_nested_signal_read_v1(benchmark):
     """Benchmark reading through nested Signals (3 levels)."""
     inner = Signal(7)
     mid = Signal(inner)
@@ -142,14 +142,14 @@ def test_bench_nested_signal_read(benchmark):
     benchmark(lambda: outer.value)
 
 
-def test_bench_unref(benchmark):
+def test_bench_unref_v1(benchmark):
     """Benchmark unref on a nested Signal."""
     inner = Signal(99)
     outer = Signal(inner)
     benchmark(unref, outer)
 
 
-def test_bench_deep_unref_dict(benchmark):
+def test_bench_deep_unref_dict_v1(benchmark):
     """Benchmark deep_unref on a dict containing reactive values."""
     payload = {"a": Signal(1), "b": [Signal(2), Signal(3)], "c": {"d": Signal(4)}}
     benchmark(deep_unref, payload)
@@ -160,7 +160,7 @@ def test_bench_deep_unref_dict(benchmark):
 # ---------------------------------------------------------------------------
 
 
-def test_bench_effect_creation(benchmark):
+def test_bench_effect_creation_v1(benchmark):
     """Benchmark creating an Effect that observes a Signal."""
     s = Signal(0)
 
@@ -171,7 +171,7 @@ def test_bench_effect_creation(benchmark):
     benchmark(create_effect)
 
 
-def test_bench_effect_fanout_updates(benchmark):
+def test_bench_effect_fanout_updates_v1(benchmark):
     """Benchmark many eager effects subscribed to one source."""
     source = Signal(0)
     accumulator = [0]
@@ -200,7 +200,7 @@ def test_bench_effect_fanout_updates(benchmark):
 # ---------------------------------------------------------------------------
 
 
-def test_bench_deep_chain_updates(benchmark):
+def test_bench_deep_chain_updates_v1(benchmark):
     """Benchmark repeated updates through a longer computed chain."""
     source = Signal(0)
     sink = source
@@ -218,7 +218,7 @@ def test_bench_deep_chain_updates(benchmark):
     benchmark(propagate_chain)
 
 
-def test_bench_fanout_updates(benchmark):
+def test_bench_fanout_v1(benchmark):
     """Benchmark one source update invalidating many downstream nodes."""
     source = Signal(0)
     leaves = [source + offset for offset in range(64)]
@@ -235,7 +235,7 @@ def test_bench_fanout_updates(benchmark):
     benchmark(propagate_fanout)
 
 
-def test_bench_diamond_updates(benchmark):
+def test_bench_diamond_updates_v1(benchmark):
     """Benchmark a branch-and-merge graph under repeated updates."""
     source = Signal(0)
     left = [source * factor for factor in range(1, 25)]
@@ -254,7 +254,7 @@ def test_bench_diamond_updates(benchmark):
     benchmark(propagate_diamond)
 
 
-def test_bench_animation_stack(benchmark):
+def test_bench_animation_stack_v1(benchmark):
     """Benchmark a frame-driven animation-style workload."""
     frame = Signal(0)
     clamp_ease = computed(lambda start, end, f: max(0.0, min(1.0, (f - start) / max(end - start, 1))))
@@ -282,7 +282,7 @@ def test_bench_animation_stack(benchmark):
     benchmark(animate)
 
 
-def test_bench_multi_input_computed(benchmark):
+def test_bench_multi_input_computed_v1(benchmark):
     """Benchmark a computed with several inputs updating at different rates."""
     pos_x = Signal(0.0)
     pos_y = Signal(0.0)
@@ -317,7 +317,7 @@ def test_bench_multi_input_computed(benchmark):
     benchmark(update_inputs)
 
 
-def test_bench_stacked_layers(benchmark):
+def test_bench_stacked_layers_v1(benchmark):
     """Benchmark repeated reads through a deep layered graph."""
     source = Signal(1)
     driver = Signal(0)
@@ -344,7 +344,7 @@ def test_bench_stacked_layers(benchmark):
     benchmark(update_layers)
 
 
-def test_bench_shared_clock_reads(benchmark):
+def test_bench_shared_clock_reads_v1(benchmark):
     """Benchmark shared invalidation followed by repeated partial reads."""
     clock = Signal(0)
     bases = [Signal(i) for i in range(32)]
@@ -370,7 +370,7 @@ def test_bench_shared_clock_reads(benchmark):
     benchmark(tick)
 
 
-def test_bench_dynamic_dependency_switch(benchmark):
+def test_bench_dynamic_dependency_switch_v1(benchmark):
     """Benchmark per-update dependency switching."""
     selector = Signal(0)
     branches = [Signal(i) for i in range(128)]
@@ -391,7 +391,7 @@ def test_bench_dynamic_dependency_switch(benchmark):
     benchmark(switch_dependencies)
 
 
-def test_bench_shared_dependency_branches(benchmark):
+def test_bench_shared_dependency_branches_v1(benchmark):
     """Benchmark branches that share an intermediate computed node."""
     left = Signal(1)
     right = Signal(2)
@@ -422,7 +422,7 @@ def test_bench_shared_dependency_branches(benchmark):
 # ---------------------------------------------------------------------------
 
 
-def test_bench_computed_signal_at(benchmark):
+def test_bench_computed_signal_at_v1(benchmark):
     """Benchmark repeated scoped overrides through Signal.at()."""
     left = Signal(1)
     right = Signal(2)
@@ -441,7 +441,7 @@ def test_bench_computed_signal_at(benchmark):
     benchmark(scoped_override)
 
 
-def test_bench_scoped_context_reads(benchmark):
+def test_bench_scoped_context_reads_v1(benchmark):
     """Benchmark several downstream reads inside Signal.at() scopes."""
     left = Signal(1)
     right = Signal(2)
@@ -470,7 +470,7 @@ def test_bench_scoped_context_reads(benchmark):
 # ---------------------------------------------------------------------------
 
 
-def test_bench_subscription_churn(benchmark):
+def test_bench_subscription_churn_v1(benchmark):
     """Benchmark repeated subscribe and unsubscribe cycles."""
     source = Signal(0)
     observers = [source + offset for offset in range(48)]
@@ -496,7 +496,7 @@ def test_bench_subscription_churn(benchmark):
 # ---------------------------------------------------------------------------
 
 
-def test_bench_build_deep_chain(benchmark):
+def test_bench_build_deep_chain_v1(benchmark):
     """Benchmark constructing a deeper computed chain."""
 
     def build_chain():
@@ -509,7 +509,7 @@ def test_bench_build_deep_chain(benchmark):
     benchmark(build_chain)
 
 
-def test_bench_build_fanout_graph(benchmark):
+def test_bench_build_fanout_graph_v1(benchmark):
     """Benchmark constructing a wider fan-out graph."""
 
     def build_fanout():
@@ -521,7 +521,7 @@ def test_bench_build_fanout_graph(benchmark):
     benchmark(build_fanout)
 
 
-def test_bench_build_diamond_graph(benchmark):
+def test_bench_build_diamond_graph_v1(benchmark):
     """Benchmark constructing a wider branch-and-merge graph."""
 
     def build_diamond():
