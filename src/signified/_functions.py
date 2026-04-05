@@ -249,6 +249,8 @@ def deep_unref(value: Any) -> Any:
     # Unwrap reactive values.
     value = unref(value)
     value_type = type(value)
+    if value_type in _SCALAR_TYPES:
+        return value
 
     # For containers, recursively unref their elements
     if np is not None and isinstance(value, np.ndarray):
