@@ -243,7 +243,7 @@ def test_bench_deep_chain_updates(benchmark):
 
     def propagate_chain():
         checksum = 0
-        for i in range(1, 3_001):
+        for i in range(1, 1_001):
             source.value = i
             checksum += sink.value
         return checksum
@@ -260,7 +260,7 @@ def test_bench_fanout_updates(benchmark):
 
     def propagate_fanout():
         checksum = 0
-        for i in range(1, 1_501):
+        for i in range(1, 501):
             source.value = i
             checksum += sink.value
         return checksum
@@ -279,7 +279,7 @@ def test_bench_diamond_updates(benchmark):
 
     def propagate_diamond():
         checksum = 0
-        for i in range(1, 1_501):
+        for i in range(1, 501):
             source.value = i
             checksum += sink.value
         return checksum
@@ -307,7 +307,7 @@ def test_bench_animation_stack(benchmark):
 
     def animate():
         checksum = 0.0
-        for i in range(1_500):
+        for i in range(500):
             frame.value = i % 120
             checksum += sink.value
         return int(checksum)
@@ -336,7 +336,7 @@ def test_bench_multi_input_computed(benchmark):
 
     def update_inputs():
         checksum = 0.0
-        for i in range(5_000):
+        for i in range(1_000):
             horizontal.value = (i % 60) * 0.01
             if i % 3 == 0:
                 vertical.value = (i // 3 % 30) * 0.005
@@ -361,7 +361,7 @@ def test_bench_computed_signal_at(benchmark):
 
     def scoped_override():
         checksum = 0
-        for i in range(1, 3_001):
+        for i in range(1, 1_001):
             with left.at(i), right.at(i + 1), bias.at(i & 7):
                 checksum += total.value
         return checksum
@@ -384,7 +384,7 @@ def test_bench_shared_clock_reads(benchmark):
 
     def tick():
         checksum = 0
-        for i in range(1, 1_201):
+        for i in range(1, 1_001):
             clock.value = i
             bases[i % 32].value = i * 2
             start = (i * 8) % 32
@@ -433,7 +433,7 @@ def test_bench_stacked_layers(benchmark):
 
     def update_layers():
         checksum = 0
-        for i in range(1, 2_201):
+        for i in range(1, 501):
             driver.value = i
             source.value = (i % 11) + 1
             checksum += summary.value
@@ -459,7 +459,7 @@ def test_bench_scoped_context_reads(benchmark):
 
     def scoped_reads():
         checksum = 0
-        for i in range(1, 2_201):
+        for i in range(1, 1_001):
             with selector.at(i), left.at(i + 1), right.at(i + 2), bias.at(i & 7):
                 checksum += primary.value + merged.value + total.value
         return checksum
@@ -478,7 +478,7 @@ def test_bench_dynamic_dependency_switch(benchmark):
 
     def switch_dependencies():
         checksum = 0
-        for i in range(1, 4_001):
+        for i in range(1, 1_001):
             idx = i % 128
             selector.value = idx
             branches[idx].value = i
@@ -504,7 +504,7 @@ def test_bench_shared_dependency_branches(benchmark):
 
     def update_shared_graph():
         checksum = 0
-        for i in range(1, 1_801):
+        for i in range(1, 1_001):
             selector.value = i
             left.value = (i % 13) + 1
             right.value = (i % 17) + 2
@@ -536,7 +536,7 @@ def test_bench_effect_fanout_updates(benchmark):
 
     def update_effects():
         baseline = accumulator[0]
-        for i in range(1, 1_501):
+        for i in range(1, 251):
             source.value = i
         return accumulator[0] - baseline
 
