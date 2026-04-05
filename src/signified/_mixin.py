@@ -359,6 +359,7 @@ class _ReactiveNamespace[T]:
 
 class _ReactiveMixIn[T]:
     """Methods for easily creating reactive values."""
+
     _IS_REACTIVE = True
 
     @property

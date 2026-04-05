@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, overload
+from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
@@ -267,21 +267,21 @@ def _track_read(variable: Variable[Any]) -> None:
     impl._dep_state.register_dependency(variable)
 
 
-def _resolve(value: Any) -> Any:
+def _resolve[T](value: HasValue[T]) -> T:
     """Unwrap nested reactive containers without registering any dependencies.
 
     Used internally by ``.value`` property getters so that resolving a stored
     nested reactive (e.g. ``Signal(Signal(5))``) does not create a redundant
     direct subscription that bypasses the outer variable's own observe chain.
     """
-    current: Any = value
+    current: T | HasValue[T] = value
     if type(current) in _PLAIN_SCALAR_TYPES:
-        return current
+        return cast(T, current)
     while _is_reactive_value(current):
         if current._IS_COMPUTED:
             current._impl.ensure_uptodate()
         current = current._value
-    return current
+    return cast(T, current)
 
 
 def _has_changed(previous: Any, current: Any) -> bool:
@@ -375,7 +375,9 @@ class Signal[T](Variable[T]):
             plugin_manager.hook.read(value=self)
         _track_read(self)
         value = self._value
-        return value if type(value) in _PLAIN_SCALAR_TYPES else _resolve(value)
+        if type(value) in _PLAIN_SCALAR_TYPES:
+            return cast(T, value)
+        return _resolve(value)
 
     @value.setter
     def value(self, new_value: HasValue[T]) -> None:
@@ -855,7 +857,7 @@ class Computed(Variable[T]):
     def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
         super().__init__()
         self._compute_fn = f
-        self._value = None
+        self._value: T = cast(T, None)  # placeholder; always set before read via _state guard
         self._impl = _ComputedImpl(self)
 
         if dependencies is not None:
@@ -932,7 +934,9 @@ class Computed(Variable[T]):
         _track_read(self)
         self._impl.ensure_uptodate()
         value = self._value
-        return value if type(value) in _PLAIN_SCALAR_TYPES else _resolve(value)
+        if type(value) in _PLAIN_SCALAR_TYPES:
+            return value
+        return _resolve(value)
 
 
 class Effect:
