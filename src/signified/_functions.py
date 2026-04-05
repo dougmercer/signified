@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import importlib.util
-import warnings
 from collections.abc import Iterable
 from functools import wraps
-from typing import Any, Callable, Concatenate, TypeGuard, cast
+from typing import Any, Callable, TypeGuard, cast
 
 from ._reactive import Computed, Effect, Signal, _is_reactive_value, _track_read
 from ._types import HasValue, ReactiveValue
@@ -271,36 +270,6 @@ def deep_unref(value: Any) -> Any:
     return value
 
 
-def reactive_method[**P, T](
-    *dep_names: str,
-) -> Callable[[Callable[Concatenate[Any, P], T]], Callable[Concatenate[Any, P], Computed[T]]]:
-    """Deprecated helper for method-style computed values.
-
-    This decorator now delegates to :func:`computed`. It is retained only for
-    backwards compatibility and will be removed in a future release.
-
-    Args:
-        *dep_names: Deprecated compatibility argument. Ignored.
-
-    Returns:
-        A decorator that transforms an instance method into one that returns
-        :class:`Computed`.
-    """
-
-    warnings.warn(
-        "`reactive_method(...)` is deprecated and will be removed in a future "
-        "release; use `@computed` instead. Any dependency-name arguments are "
-        "ignored.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    def decorator(func: Callable[Concatenate[Any, P], T]) -> Callable[Concatenate[Any, P], Computed[T]]:
-        return cast(Callable[Concatenate[Any, P], Computed[T]], computed(func))
-
-    return decorator
-
-
 def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
     """Normalize a value to a reactive object.
 
@@ -316,17 +285,3 @@ def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
     if _is_reactive_value(val):
         return val
     return Signal(cast(T, val))
-
-
-def as_signal[T](val: HasValue[T]) -> Signal[T]:
-    """Deprecated alias for :func:`as_rx`.
-
-    Existing reactive values are returned as-is at runtime, including
-    ``Computed`` instances.
-    """
-    warnings.warn(
-        "`as_signal(...)` is deprecated and will be removed in a future release; use `as_rx(...)` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return cast(Signal[T], as_rx(val))
