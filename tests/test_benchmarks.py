@@ -8,7 +8,7 @@ pytestmark = pytest.mark.benchmark
 slow_benchmark = pytest.mark.slow_benchmark
 
 # ---------------------------------------------------------------------------
-# Signal creation and value access
+# Signal
 # ---------------------------------------------------------------------------
 
 
@@ -50,7 +50,7 @@ def test_bench_signal_update(benchmark):
 
 
 # ---------------------------------------------------------------------------
-# Computed creation and evaluation
+# Computed
 # ---------------------------------------------------------------------------
 
 
@@ -105,55 +105,32 @@ def test_bench_computed_invalidate(benchmark):
     benchmark(invalidate)
 
 
-# ---------------------------------------------------------------------------
-# Dependency chains
-# ---------------------------------------------------------------------------
+def test_bench_computed_decorator(benchmark):
+    """Benchmark calling a @computed-decorated function."""
+
+    @computed
+    def add(x, y):
+        return x + y
+
+    a = Signal(1)
+    b = Signal(2)
+    benchmark(lambda: add(a, b).value)
 
 
-def test_bench_chain_propagation(benchmark):
-    """Benchmark propagation through a chain of 10 Computed nodes."""
-    s = Signal(0)
-    chain = [s]
-    for _ in range(10):
-        prev = chain[-1]
-        chain.append(Computed(lambda prev=prev: prev.value + 1))
-    tail = chain[-1]
-    _ = tail.value  # force evaluation of the full chain
-    i = 0
+def test_bench_operator_chain(benchmark):
+    """Benchmark chained arithmetic operators producing Computed values."""
+    a = Signal(2)
+    b = Signal(3)
 
-    def propagate_chain():
-        nonlocal i
-        i += 1
-        s.value = i
-        return tail.value
+    def chain_ops():
+        result = a + b * a - b
+        return result.value
 
-    benchmark(propagate_chain)
-
-
-# ---------------------------------------------------------------------------
-# Fan-out (diamond) dependency graphs
-# ---------------------------------------------------------------------------
-
-
-def test_bench_fan_out(benchmark):
-    """Benchmark propagation with fan-out: one Signal observed by 10 Computeds."""
-    s = Signal(0)
-    dependents = [Computed(lambda i=i: s.value + i) for i in range(10)]
-    for d in dependents:
-        _ = d.value
-    i = 0
-
-    def propagate_fan():
-        nonlocal i
-        i += 1
-        s.value = i
-        return [d.value for d in dependents]
-
-    benchmark(propagate_fan)
+    benchmark(chain_ops)
 
 
 # ---------------------------------------------------------------------------
-# Nested Signals and unref
+# Unref
 # ---------------------------------------------------------------------------
 
 
@@ -179,24 +156,7 @@ def test_bench_deep_unref_dict(benchmark):
 
 
 # ---------------------------------------------------------------------------
-# @computed decorator
-# ---------------------------------------------------------------------------
-
-
-def test_bench_computed_decorator(benchmark):
-    """Benchmark calling a @computed-decorated function."""
-
-    @computed
-    def add(x, y):
-        return x + y
-
-    a = Signal(1)
-    b = Signal(2)
-    benchmark(lambda: add(a, b).value)
-
-
-# ---------------------------------------------------------------------------
-# Effect
+# Effects
 # ---------------------------------------------------------------------------
 
 
@@ -211,25 +171,32 @@ def test_bench_effect_creation(benchmark):
     benchmark(create_effect)
 
 
+def test_bench_effect_fanout_updates(benchmark):
+    """Benchmark many eager effects subscribed to one source."""
+    source = Signal(0)
+    accumulator = [0]
+    effects = [
+        Effect(
+            lambda source=source, offset=offset, accumulator=accumulator: accumulator.__setitem__(
+                0,
+                accumulator[0] + source.value + offset,
+            )
+        )
+        for offset in range(192)
+    ]
+    _ = len(effects)
+
+    def update_effects():
+        baseline = accumulator[0]
+        for i in range(1, 126):
+            source.value = i
+        return accumulator[0] - baseline
+
+    benchmark(update_effects)
+
+
 # ---------------------------------------------------------------------------
-# Operator overloads (arithmetic via _ReactiveMixIn)
-# ---------------------------------------------------------------------------
-
-
-def test_bench_operator_chain(benchmark):
-    """Benchmark chained arithmetic operators producing Computed values."""
-    a = Signal(2)
-    b = Signal(3)
-
-    def chain_ops():
-        result = a + b * a - b
-        return result.value
-
-    benchmark(chain_ops)
-
-
-# ---------------------------------------------------------------------------
-# Larger steady-state workloads
+# Graph propagation
 # ---------------------------------------------------------------------------
 
 
@@ -243,7 +210,7 @@ def test_bench_deep_chain_updates(benchmark):
 
     def propagate_chain():
         checksum = 0
-        for i in range(1, 1_001):
+        for i in range(1, 33):
             source.value = i
             checksum += sink.value
         return checksum
@@ -260,7 +227,7 @@ def test_bench_fanout_updates(benchmark):
 
     def propagate_fanout():
         checksum = 0
-        for i in range(1, 501):
+        for i in range(32):
             source.value = i
             checksum += sink.value
         return checksum
@@ -279,7 +246,7 @@ def test_bench_diamond_updates(benchmark):
 
     def propagate_diamond():
         checksum = 0
-        for i in range(1, 501):
+        for i in range(1, 251):
             source.value = i
             checksum += sink.value
         return checksum
@@ -307,7 +274,7 @@ def test_bench_animation_stack(benchmark):
 
     def animate():
         checksum = 0.0
-        for i in range(500):
+        for i in range(250):
             frame.value = i % 120
             checksum += sink.value
         return int(checksum)
@@ -336,7 +303,7 @@ def test_bench_multi_input_computed(benchmark):
 
     def update_inputs():
         checksum = 0.0
-        for i in range(1_000):
+        for i in range(500):
             horizontal.value = (i % 60) * 0.01
             if i % 3 == 0:
                 vertical.value = (i // 3 % 30) * 0.005
@@ -348,72 +315,6 @@ def test_bench_multi_input_computed(benchmark):
         return int(checksum)
 
     benchmark(update_inputs)
-
-
-def test_bench_computed_signal_at(benchmark):
-    """Benchmark repeated scoped overrides through Signal.at()."""
-    left = Signal(1)
-    right = Signal(2)
-    bias = Signal(3)
-    subtotal = left * 2 + right
-    total = subtotal + bias * 3
-    _ = total.value
-
-    def scoped_override():
-        checksum = 0
-        for i in range(1, 1_001):
-            with left.at(i), right.at(i + 1), bias.at(i & 7):
-                checksum += total.value
-        return checksum
-
-    benchmark(scoped_override)
-
-
-def test_bench_shared_clock_reads(benchmark):
-    """Benchmark shared invalidation followed by repeated partial reads."""
-    clock = Signal(0)
-    bases = [Signal(i) for i in range(32)]
-    affine_step = computed(lambda value, scale, offset: value * scale + offset)
-    mix_pair = computed(lambda left, right, bias: left + right + bias)
-
-    leaves = []
-    for index, base in enumerate(bases):
-        staged = affine_step(clock, (index % 3) + 1, index)
-        leaves.append(mix_pair(staged, base, index % 5))
-    _ = [leaf.value for leaf in leaves]
-
-    def tick():
-        checksum = 0
-        for i in range(1, 1_001):
-            clock.value = i
-            bases[i % 32].value = i * 2
-            start = (i * 8) % 32
-            for offset in range(8):
-                checksum += leaves[(start + offset) % 32].value
-        return checksum
-
-    benchmark(tick)
-
-
-def test_bench_subscription_churn(benchmark):
-    """Benchmark repeated subscribe and unsubscribe cycles."""
-    source = Signal(0)
-    observers = [source + offset for offset in range(48)]
-    sink = computed(sum)(observers)
-    _ = sink.value
-
-    def churn():
-        checksum = 0
-        for _ in range(250):
-            for observer in observers:
-                source.unsubscribe(observer)
-            for observer in observers:
-                source.subscribe(observer)
-            source.value = source.value + 1
-            checksum += sink.value
-        return checksum
-
-    benchmark(churn)
 
 
 def test_bench_stacked_layers(benchmark):
@@ -433,7 +334,7 @@ def test_bench_stacked_layers(benchmark):
 
     def update_layers():
         checksum = 0
-        for i in range(1, 501):
+        for i in range(1, 251):
             driver.value = i
             source.value = (i % 11) + 1
             checksum += summary.value
@@ -443,28 +344,30 @@ def test_bench_stacked_layers(benchmark):
     benchmark(update_layers)
 
 
-def test_bench_scoped_context_reads(benchmark):
-    """Benchmark several downstream reads inside Signal.at() scopes."""
-    left = Signal(1)
-    right = Signal(2)
-    selector = Signal(0)
-    bias = Signal(3)
+def test_bench_shared_clock_reads(benchmark):
+    """Benchmark shared invalidation followed by repeated partial reads."""
+    clock = Signal(0)
+    bases = [Signal(i) for i in range(32)]
     affine_step = computed(lambda value, scale, offset: value * scale + offset)
+    mix_pair = computed(lambda left, right, bias: left + right + bias)
 
-    primary = left + right + 1
-    selected = affine_step(selector, 3, 2)
-    merged = primary + selected + 4
-    total = merged + bias + 5
-    _ = total.value
+    leaves = []
+    for index, base in enumerate(bases):
+        staged = affine_step(clock, (index % 3) + 1, index)
+        leaves.append(mix_pair(staged, base, index % 5))
+    _ = [leaf.value for leaf in leaves]
 
-    def scoped_reads():
+    def tick():
         checksum = 0
-        for i in range(1, 1_001):
-            with selector.at(i), left.at(i + 1), right.at(i + 2), bias.at(i & 7):
-                checksum += primary.value + merged.value + total.value
+        for i in range(1, 501):
+            clock.value = i
+            bases[i % 32].value = i * 2
+            start = (i * 8) % 32
+            for offset in range(8):
+                checksum += leaves[(start + offset) % 32].value
         return checksum
 
-    benchmark(scoped_reads)
+    benchmark(tick)
 
 
 def test_bench_dynamic_dependency_switch(benchmark):
@@ -478,7 +381,7 @@ def test_bench_dynamic_dependency_switch(benchmark):
 
     def switch_dependencies():
         checksum = 0
-        for i in range(1, 1_001):
+        for i in range(1, 501):
             idx = i % 128
             selector.value = idx
             branches[idx].value = i
@@ -504,7 +407,7 @@ def test_bench_shared_dependency_branches(benchmark):
 
     def update_shared_graph():
         checksum = 0
-        for i in range(1, 1_001):
+        for i in range(1, 501):
             selector.value = i
             left.value = (i % 13) + 1
             right.value = (i % 17) + 2
@@ -515,36 +418,81 @@ def test_bench_shared_dependency_branches(benchmark):
 
 
 # ---------------------------------------------------------------------------
-# Effects
+# Scoped overrides (Signal.at)
 # ---------------------------------------------------------------------------
 
 
-def test_bench_effect_fanout_updates(benchmark):
-    """Benchmark many eager effects subscribed to one source."""
+def test_bench_computed_signal_at(benchmark):
+    """Benchmark repeated scoped overrides through Signal.at()."""
+    left = Signal(1)
+    right = Signal(2)
+    bias = Signal(3)
+    subtotal = left * 2 + right
+    total = subtotal + bias * 3
+    _ = total.value
+
+    def scoped_override():
+        checksum = 0
+        for i in range(1, 501):
+            with left.at(i), right.at(i + 1), bias.at(i & 7):
+                checksum += total.value
+        return checksum
+
+    benchmark(scoped_override)
+
+
+def test_bench_scoped_context_reads(benchmark):
+    """Benchmark several downstream reads inside Signal.at() scopes."""
+    left = Signal(1)
+    right = Signal(2)
+    selector = Signal(0)
+    bias = Signal(3)
+    affine_step = computed(lambda value, scale, offset: value * scale + offset)
+
+    primary = left + right + 1
+    selected = affine_step(selector, 3, 2)
+    merged = primary + selected + 4
+    total = merged + bias + 5
+    _ = total.value
+
+    def scoped_reads():
+        checksum = 0
+        for i in range(1, 501):
+            with selector.at(i), left.at(i + 1), right.at(i + 2), bias.at(i & 7):
+                checksum += primary.value + merged.value + total.value
+        return checksum
+
+    benchmark(scoped_reads)
+
+
+# ---------------------------------------------------------------------------
+# Subscription churn
+# ---------------------------------------------------------------------------
+
+
+def test_bench_subscription_churn(benchmark):
+    """Benchmark repeated subscribe and unsubscribe cycles."""
     source = Signal(0)
-    accumulator = [0]
-    effects = [
-        Effect(
-            lambda source=source, offset=offset, accumulator=accumulator: accumulator.__setitem__(
-                0,
-                accumulator[0] + source.value + offset,
-            )
-        )
-        for offset in range(192)
-    ]
-    _ = len(effects)
+    observers = [source + offset for offset in range(48)]
+    sink = computed(sum)(observers)
+    _ = sink.value
 
-    def update_effects():
-        baseline = accumulator[0]
-        for i in range(1, 251):
-            source.value = i
-        return accumulator[0] - baseline
+    def churn():
+        checksum = 0
+        for _ in range(125):
+            for observer in observers:
+                source.unsubscribe(observer)
+            for observer in observers:
+                source.subscribe(observer)
+            source.value = source.value + 1
+            checksum += sink.value
+        return checksum
 
-    benchmark(update_effects)
+    benchmark(churn)
 
 
 # ---------------------------------------------------------------------------
-# Construction workloads
+# Graph construction
 # ---------------------------------------------------------------------------
 
 

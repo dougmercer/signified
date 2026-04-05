@@ -34,6 +34,7 @@ test = ["pytest", "pytest-coverage", "numpy", "pluggy"]
 lint = ["pyright"]
 dev = [
     "pytest-codspeed>=4.3.0",
+    "pytest-split",
     "ruff>=0.15.9",
 ]
 
