@@ -17,9 +17,11 @@ jobs:
   codspeed:
     name: Run fast benchmarks
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v6
-
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -36,4 +38,4 @@ jobs:
         uses: CodSpeedHQ/action@v4
         with:
           mode: simulation
-          run: uv run pytest tests/test_benchmarks.py --codspeed -o "addopts="
+          run: uv run pytest tests/test_benchmarks.py --codspeed -o "addopts=" --group=${{ matrix.shard }} --splits=4

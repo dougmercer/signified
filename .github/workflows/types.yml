@@ -1,4 +1,4 @@
-name: test
+name: type checks
 
 on: [push]
 
@@ -21,5 +21,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: uv sync --group test --group lint
-      - name: Test with pytest
-        run: uv run --group test --no-sync pytest
+      - run: |
+          source .venv/bin/activate
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+      - name: Run Pyright
+        uses: jakebailey/pyright-action@v2
+        with:
+          pylance-version: latest-release
