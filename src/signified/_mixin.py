@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 import operator
-import warnings
 from functools import cache
 from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
 
@@ -32,15 +31,6 @@ class _ReactiveSupportsAdd[OtherT, ResultT](Protocol):
 class _ReactiveSupportsGetItem[KeyT, ValueT](Protocol):
     @property
     def value(self) -> _SupportsGetItem[KeyT, ValueT]: ...
-
-
-def _warn_deprecated_alias(method: str, replacement: str) -> None:
-    """Warn that a legacy `_ReactiveMixIn` helper method is deprecated."""
-    warnings.warn(
-        f"`_ReactiveMixIn.{method}()` is deprecated; use `{replacement}` instead.",
-        DeprecationWarning,
-        stacklevel=3,
-    )
 
 
 class _ReactiveNamespace[T]:
@@ -485,33 +475,6 @@ class _ReactiveMixIn[T]:
         """
         return computed(abs)(self)
 
-    def as_bool(self) -> Computed[bool]:
-        """Return a reactive value for the boolean value of `self`.
-
-        Deprecated:
-            Will be removed in a future release. Use `computed(bool)(self)`.
-
-        Note:
-            `__bool__` cannot be implemented to return a non-`bool`, so it is provided as a method.
-
-        Returns:
-            A reactive value for `bool(self.value)`.
-
-        Example:
-            ```py
-            >>> s = Signal(1)
-            >>> result = s.as_bool()
-            >>> result.value
-            True
-            >>> s.value = 0
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("as_bool", "self.rx.as_bool()")
-        return self.rx.as_bool()
-
     @property
     def rx(self) -> _ReactiveNamespace[T]:
         """Access reactive helper operations in a [namespace][signified._mixin._ReactiveNamespace]."""
@@ -783,33 +746,6 @@ class _ReactiveMixIn[T]:
         """
         return computed(operator.and_)(self, other)
 
-    def contains(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `other` is in `self`.
-
-        Deprecated:
-            Use ``self.rx.contains(other)`` instead.
-
-        Args:
-            other: The value to check for containment.
-
-        Returns:
-            A reactive value for `other in self.value`.
-
-        Example:
-            ```py
-            >>> s = Signal([1, 2, 3, 4])
-            >>> result = s.contains(3)
-            >>> result.value
-            True
-            >>> s.value = [5, 6, 7, 8]
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("contains", "self.rx.contains(other)")
-        return self.rx.contains(other)
-
     @overload
     def __divmod__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
 
@@ -843,64 +779,6 @@ class _ReactiveMixIn[T]:
             ```
         """
         return computed(divmod)(self, other)
-
-    def is_not(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` is not other.
-
-        Deprecated:
-            Use ``self.rx.is_not(other)`` instead.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for self.value is not other.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> other = None
-            >>> result = s.is_not(other)
-            >>> result.value
-            True
-            >>> s.value = None
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("is_not", "self.rx.is_not(other)")
-        return self.rx.is_not(other)
-
-    def eq(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` equals other.
-
-        Deprecated:
-            Use ``self.rx.eq(other)`` instead.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for self.value == other.
-
-        Note:
-            We can't overload `__eq__` because it interferes with basic Python operations.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> result = s.eq(10)
-            >>> result.value
-            True
-            >>> s.value = 25
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("eq", "self.rx.eq(other)")
-        return self.rx.eq(other)
 
     @overload
     def __floordiv__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1807,34 +1685,6 @@ class _ReactiveMixIn[T]:
             self.notify()
         else:
             raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
-
-    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
-        """Return a reactive value for `a` if `self` is `True`, else `b`.
-
-        Deprecated:
-            Use ``self.rx.where(a, b)`` instead.
-
-        Args:
-            a: The value to return if `self` is `True`.
-            b: The value to return if `self` is `False`.
-
-        Returns:
-            A reactive value for `a if self.value else b`.
-
-        Example:
-            ```py
-            >>> condition = Signal(True)
-            >>> result = condition.where("Yes", "No")
-            >>> result.value
-            'Yes'
-            >>> condition.value = False
-            >>> result.value
-            'No'
-
-            ```
-        """
-        _warn_deprecated_alias("where", "self.rx.where(a, b)")
-        return self.rx.where(a, b)
 
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
