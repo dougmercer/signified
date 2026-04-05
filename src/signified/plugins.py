@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import importlib
 import os
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from signified import Variable
 
-__all__ = ["hookimpl", "plugin_manager", "pm"]
+__all__ = ["HOOKS_ENABLED", "hookimpl", "plugin_manager", "pm"]
 
 _ENABLE_HOOKS = os.environ.get("SIGNIFIED_ENABLE_HOOKS")
+HOOKS_ENABLED = _ENABLE_HOOKS == "1"
 
 
 def _noop(*args: Any, **kwargs: Any) -> None:
@@ -41,7 +43,7 @@ def _identity(fn: Any) -> Any:
 
 
 def _make_pluggy_pm() -> Any:
-    import pluggy
+    pluggy = importlib.import_module("pluggy")
 
     hookspec = pluggy.HookspecMarker("signified")
 
@@ -69,7 +71,7 @@ def _make_pluggy_pm() -> Any:
     return _pm, pluggy.HookimplMarker("signified")
 
 
-if _ENABLE_HOOKS == "1":
+if HOOKS_ENABLED:
     # Force-enable: pluggy must be installed
     plugin_manager, hookimpl = _make_pluggy_pm()
 else:

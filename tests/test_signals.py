@@ -1,3 +1,6 @@
+import gc
+import weakref
+
 import pytest
 
 from signified import Computed, Signal, unref
@@ -55,6 +58,43 @@ def test_signal_observer():
     s.value = 15
 
     assert appender.values == [10, 15]
+
+
+def test_signal_unsubscribe_stops_notifications():
+    s = Signal(5)
+
+    class Appender:
+        def __init__(self, signal: Signal):
+            self.signal = signal
+            self.values: list[int] = []
+
+        def update(self) -> None:
+            self.values.append(self.signal.value)
+
+    appender = Appender(s)
+    s.subscribe(appender)
+    s.unsubscribe(appender)
+
+    s.value = 10
+    assert appender.values == []
+
+
+def test_signal_drops_garbage_collected_observers():
+    s = Signal(5)
+
+    class Appender:
+        def update(self) -> None:
+            raise AssertionError("dead observer should never be notified")
+
+    appender = Appender()
+    observer_ref = weakref.ref(appender)
+    s.subscribe(appender)
+
+    del appender
+    gc.collect()
+
+    assert observer_ref() is None
+    assert not s._observers
 
 
 def test_signal_context_manager():

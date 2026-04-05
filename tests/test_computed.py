@@ -212,6 +212,14 @@ def test_nested_signal_change_invalidates_computed_once():
     assert derived.value == 3
 
 
+def test_computed_deduplicates_repeated_dependency_reads():
+    source = Signal(2)
+    derived = Computed(lambda: source.value + source.value)
+
+    assert derived.value == 4
+    assert len(tuple(derived._impl._deps)) == 1
+
+
 def test_computed_retains_transient_dependencies_across_gc():
     frame = Signal(0)
     outer = Computed(lambda: (frame + 1).value * 10)
@@ -224,6 +232,35 @@ def test_computed_retains_transient_dependencies_across_gc():
 
     frame.value = 1
     assert outer.value == 20
+
+
+def test_computed_exception_rollback_preserves_previous_dependencies():
+    flag = Signal(True)
+    left = Signal(1)
+    right = Signal(10)
+    fail = Signal(False)
+
+    def compute() -> int:
+        if flag.value:
+            return left.value
+        value = right.value
+        if fail.value:
+            raise RuntimeError("boom")
+        return value
+
+    derived = Computed(compute)
+
+    assert derived.value == 1
+    before = tuple(derived._impl._deps)
+    assert set(before) == {flag, left}
+
+    flag.value = False
+    fail.value = True
+    with pytest.raises(RuntimeError, match="boom"):
+        _ = derived.value
+
+    after = tuple(derived._impl._deps)
+    assert set(after) == {flag, left}
 
 
 def test_invalidate_nonreactive_value_replace():
@@ -276,3 +313,24 @@ def test_invalidate_computed_graph_after_non_reactive_rewire():
     assert derived.value == 1  # stale — rewire happened outside reactive graph
     derived.invalidate()
     assert derived.value == 100
+
+
+def test_invalidate_forces_downstream_recompute_without_signal_change():
+    source = Signal(1)
+    upstream = Computed(lambda: source.value)
+    runs = 0
+
+    def downstream_fn() -> int:
+        nonlocal runs
+        runs += 1
+        return upstream.value + 1
+
+    downstream = Computed(downstream_fn)
+
+    assert downstream.value == 2
+    assert runs == 1
+
+    upstream.invalidate()
+
+    assert downstream.value == 2
+    assert runs == 2
