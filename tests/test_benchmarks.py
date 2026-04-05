@@ -233,7 +233,6 @@ def test_bench_operator_chain(benchmark):
 # ---------------------------------------------------------------------------
 
 
-@slow_benchmark
 def test_bench_deep_chain_updates(benchmark):
     """Benchmark repeated updates through a longer computed chain."""
     source = Signal(0)
@@ -252,7 +251,6 @@ def test_bench_deep_chain_updates(benchmark):
     benchmark(propagate_chain)
 
 
-@slow_benchmark
 def test_bench_fanout_updates(benchmark):
     """Benchmark one source update invalidating many downstream nodes."""
     source = Signal(0)
@@ -270,7 +268,6 @@ def test_bench_fanout_updates(benchmark):
     benchmark(propagate_fanout)
 
 
-@slow_benchmark
 def test_bench_diamond_updates(benchmark):
     """Benchmark a branch-and-merge graph under repeated updates."""
     source = Signal(0)
@@ -290,7 +287,6 @@ def test_bench_diamond_updates(benchmark):
     benchmark(propagate_diamond)
 
 
-@slow_benchmark
 def test_bench_animation_stack(benchmark):
     """Benchmark a frame-driven animation-style workload."""
     frame = Signal(0)
@@ -319,7 +315,6 @@ def test_bench_animation_stack(benchmark):
     benchmark(animate)
 
 
-@slow_benchmark
 def test_bench_multi_input_computed(benchmark):
     """Benchmark a computed with several inputs updating at different rates."""
     pos_x = Signal(0.0)
@@ -355,7 +350,6 @@ def test_bench_multi_input_computed(benchmark):
     benchmark(update_inputs)
 
 
-@slow_benchmark
 def test_bench_computed_signal_at(benchmark):
     """Benchmark repeated scoped overrides through Signal.at()."""
     left = Signal(1)
@@ -375,7 +369,6 @@ def test_bench_computed_signal_at(benchmark):
     benchmark(scoped_override)
 
 
-@slow_benchmark
 def test_bench_shared_clock_reads(benchmark):
     """Benchmark shared invalidation followed by repeated partial reads."""
     clock = Signal(0)
@@ -402,7 +395,6 @@ def test_bench_shared_clock_reads(benchmark):
     benchmark(tick)
 
 
-@slow_benchmark
 def test_bench_subscription_churn(benchmark):
     """Benchmark repeated subscribe and unsubscribe cycles."""
     source = Signal(0)
@@ -424,7 +416,6 @@ def test_bench_subscription_churn(benchmark):
     benchmark(churn)
 
 
-@slow_benchmark
 def test_bench_stacked_layers(benchmark):
     """Benchmark repeated reads through a deep layered graph."""
     source = Signal(1)
@@ -452,7 +443,6 @@ def test_bench_stacked_layers(benchmark):
     benchmark(update_layers)
 
 
-@slow_benchmark
 def test_bench_scoped_context_reads(benchmark):
     """Benchmark several downstream reads inside Signal.at() scopes."""
     left = Signal(1)
@@ -477,7 +467,6 @@ def test_bench_scoped_context_reads(benchmark):
     benchmark(scoped_reads)
 
 
-@slow_benchmark
 def test_bench_dynamic_dependency_switch(benchmark):
     """Benchmark per-update dependency switching."""
     selector = Signal(0)
@@ -499,7 +488,6 @@ def test_bench_dynamic_dependency_switch(benchmark):
     benchmark(switch_dependencies)
 
 
-@slow_benchmark
 def test_bench_shared_dependency_branches(benchmark):
     """Benchmark branches that share an intermediate computed node."""
     left = Signal(1)
@@ -531,7 +519,6 @@ def test_bench_shared_dependency_branches(benchmark):
 # ---------------------------------------------------------------------------
 
 
-@slow_benchmark
 def test_bench_effect_fanout_updates(benchmark):
     """Benchmark many eager effects subscribed to one source."""
     source = Signal(0)
@@ -561,7 +548,6 @@ def test_bench_effect_fanout_updates(benchmark):
 # ---------------------------------------------------------------------------
 
 
-@slow_benchmark
 def test_bench_build_deep_chain(benchmark):
     """Benchmark constructing a deeper computed chain."""
 
@@ -575,7 +561,6 @@ def test_bench_build_deep_chain(benchmark):
     benchmark(build_chain)
 
 
-@slow_benchmark
 def test_bench_build_fanout_graph(benchmark):
     """Benchmark constructing a wider fan-out graph."""
 
@@ -588,7 +573,6 @@ def test_bench_build_fanout_graph(benchmark):
     benchmark(build_fanout)
 
 
-@slow_benchmark
 def test_bench_build_diamond_graph(benchmark):
     """Benchmark constructing a wider branch-and-merge graph."""
 
