@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 import operator
-import warnings
 from functools import cache
 from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
 
@@ -14,6 +13,9 @@ if TYPE_CHECKING:
     from ._reactive import Computed
 
 __all__ = ["_ReactiveMixIn"]
+
+
+_PLAIN_COMPUTED_ARG_TYPES = {int, float, str, bool, bytes, complex, type(None)}
 
 
 class _SupportsAdd[OtherT, ResultT](Protocol):
@@ -32,15 +34,6 @@ class _ReactiveSupportsAdd[OtherT, ResultT](Protocol):
 class _ReactiveSupportsGetItem[KeyT, ValueT](Protocol):
     @property
     def value(self) -> _SupportsGetItem[KeyT, ValueT]: ...
-
-
-def _warn_deprecated_alias(method: str, replacement: str) -> None:
-    """Warn that a legacy `_ReactiveMixIn` helper method is deprecated."""
-    warnings.warn(
-        f"`_ReactiveMixIn.{method}()` is deprecated; use `{replacement}` instead.",
-        DeprecationWarning,
-        stacklevel=3,
-    )
 
 
 class _ReactiveNamespace[T]:
@@ -414,7 +407,7 @@ class _ReactiveMixIn[T]:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
         if hasattr(self.value, name):
-            return computed(getattr)(self, name)
+            return self._attr_computed(name)
 
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
@@ -451,10 +444,7 @@ class _ReactiveMixIn[T]:
         if not callable(self.value):
             raise ValueError("Value is not callable.")
 
-        def f(*args: Any, **kwargs: Any):
-            return self.value(*args, **kwargs)
-
-        return computed(f)(*args, **kwargs)
+        return self._invoke_value_computed(*args, **kwargs)
 
     @overload
     def __abs__(self: "_ReactiveMixIn[complex]") -> Computed[float]: ...
@@ -483,34 +473,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(abs)(self)
-
-    def as_bool(self) -> Computed[bool]:
-        """Return a reactive value for the boolean value of `self`.
-
-        Deprecated:
-            Will be removed in a future release. Use `computed(bool)(self)`.
-
-        Note:
-            `__bool__` cannot be implemented to return a non-`bool`, so it is provided as a method.
-
-        Returns:
-            A reactive value for `bool(self.value)`.
-
-        Example:
-            ```py
-            >>> s = Signal(1)
-            >>> result = s.as_bool()
-            >>> result.value
-            True
-            >>> s.value = 0
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("as_bool", "self.rx.as_bool()")
-        return self.rx.as_bool()
+        return self._unary_computed(self, abs)
 
     @property
     def rx(self) -> _ReactiveNamespace[T]:
@@ -570,7 +533,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(round)(self, ndigits=ndigits)
+        return self._apply_computed(round, self, ndigits=ndigits)
 
     def __ceil__(self) -> Computed[int]:
         """Return a reactive value for the ceiling of `self`.
@@ -591,7 +554,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(math.ceil)(self)
+        return self._unary_computed(self, math.ceil)
 
     def __floor__(self) -> Computed[int]:
         """Return a reactive value for the floor of `self`.
@@ -612,7 +575,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(math.floor)(self)
+        return self._unary_computed(self, math.floor)
 
     @overload
     def __invert__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
@@ -638,7 +601,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.inv)(self)
+        return self._unary_computed(self, operator.inv)
 
     @overload
     def __neg__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
@@ -664,7 +627,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.neg)(self)
+        return self._unary_computed(self, operator.neg)
 
     @overload
     def __pos__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
@@ -690,7 +653,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.pos)(self)
+        return self._unary_computed(self, operator.pos)
 
     @overload
     def __trunc__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
@@ -723,7 +686,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(math.trunc)(self)
+        return self._unary_computed(self, math.trunc)
 
     @overload
     def __add__(self: "_ReactiveMixIn[float]", other: HasValue[int] | HasValue[float]) -> Computed[float]: ...
@@ -758,7 +721,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.add)(self, other)
+        return self._binary_computed(self, other, operator.add)
 
     def __and__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise AND of self and other.
@@ -781,34 +744,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.and_)(self, other)
-
-    def contains(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `other` is in `self`.
-
-        Deprecated:
-            Use ``self.rx.contains(other)`` instead.
-
-        Args:
-            other: The value to check for containment.
-
-        Returns:
-            A reactive value for `other in self.value`.
-
-        Example:
-            ```py
-            >>> s = Signal([1, 2, 3, 4])
-            >>> result = s.contains(3)
-            >>> result.value
-            True
-            >>> s.value = [5, 6, 7, 8]
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("contains", "self.rx.contains(other)")
-        return self.rx.contains(other)
+        return self._binary_computed(self, other, operator.and_)
 
     @overload
     def __divmod__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
@@ -842,65 +778,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(divmod)(self, other)
-
-    def is_not(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` is not other.
-
-        Deprecated:
-            Use ``self.rx.is_not(other)`` instead.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for self.value is not other.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> other = None
-            >>> result = s.is_not(other)
-            >>> result.value
-            True
-            >>> s.value = None
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("is_not", "self.rx.is_not(other)")
-        return self.rx.is_not(other)
-
-    def eq(self, other: Any) -> Computed[bool]:
-        """Return a reactive value for whether `self` equals other.
-
-        Deprecated:
-            Use ``self.rx.eq(other)`` instead.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for self.value == other.
-
-        Note:
-            We can't overload `__eq__` because it interferes with basic Python operations.
-
-        Example:
-            ```py
-            >>> s = Signal(10)
-            >>> result = s.eq(10)
-            >>> result.value
-            True
-            >>> s.value = 25
-            >>> result.value
-            False
-
-            ```
-        """
-        _warn_deprecated_alias("eq", "self.rx.eq(other)")
-        return self.rx.eq(other)
+        return self._binary_computed(self, other, divmod)
 
     @overload
     def __floordiv__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -929,7 +807,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.floordiv)(self, other)
+        return self._binary_computed(self, other, operator.floordiv)
 
     def __ge__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is greater than or equal to other.
@@ -952,7 +830,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.ge)(self, other)
+        return self._binary_computed(self, other, operator.ge)
 
     def __gt__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is greater than other.
@@ -975,7 +853,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.gt)(self, other)
+        return self._binary_computed(self, other, operator.gt)
 
     def __le__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is less than or equal to `other`.
@@ -998,7 +876,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.le)(self, other)
+        return self._binary_computed(self, other, operator.le)
 
     def __lt__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is less than `other`.
@@ -1021,7 +899,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.lt)(self, other)
+        return self._binary_computed(self, other, operator.lt)
 
     def __lshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` left-shifted by `other`.
@@ -1044,7 +922,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.lshift)(self, other)
+        return self._binary_computed(self, other, operator.lshift)
 
     def __matmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the matrix multiplication of `self` and `other`.
@@ -1068,7 +946,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.matmul)(self, other)
+        return self._binary_computed(self, other, operator.matmul)
 
     @overload
     def __mod__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1097,7 +975,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mod)(self, other)
+        return self._binary_computed(self, other, operator.mod)
 
     @overload
     def __mul__(self: "_ReactiveMixIn[str]", other: HasValue[int]) -> Computed[str]: ...
@@ -1129,7 +1007,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mul)(self, other)
+        return self._binary_computed(self, other, operator.mul)
 
     def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
         """Return a reactive value for whether `self` is not equal to `other`.
@@ -1152,7 +1030,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.ne)(self, other)
+        return self._binary_computed(self, other, operator.ne)
 
     def __or__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
@@ -1175,7 +1053,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.or_)(self, other)
+        return self._binary_computed(self, other, operator.or_)
 
     def __rshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` right-shifted by `other`.
@@ -1198,7 +1076,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.rshift)(self, other)
+        return self._binary_computed(self, other, operator.rshift)
 
     @overload
     def __pow__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1227,7 +1105,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.pow)(self, other)
+        return self._binary_computed(self, other, operator.pow)
 
     def __sub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the difference of `self` and `other`.
@@ -1250,7 +1128,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.sub)(self, other)
+        return self._binary_computed(self, other, operator.sub)
 
     @overload
     def __truediv__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[float]: ...
@@ -1293,7 +1171,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.truediv)(self, other)
+        return self._binary_computed(self, other, operator.truediv)
 
     def __xor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
@@ -1316,7 +1194,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.xor)(self, other)
+        return self._binary_computed(self, other, operator.xor)
 
     @overload
     def __radd__(self: "_ReactiveMixIn[float]", other: HasValue[int] | HasValue[float]) -> Computed[float]: ...
@@ -1348,7 +1226,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.add)(other, self)
+        return self._binary_computed(other, self, operator.add)
 
     def __rand__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise AND of `self` and `other`.
@@ -1371,7 +1249,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.and_)(other, self)
+        return self._binary_computed(other, self, operator.and_)
 
     @overload
     def __rdivmod__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
@@ -1406,7 +1284,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(divmod)(other, self)
+        return self._binary_computed(other, self, divmod)
 
     @overload
     def __rfloordiv__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1435,7 +1313,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.floordiv)(other, self)
+        return self._binary_computed(other, self, operator.floordiv)
 
     @overload
     def __rmod__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1464,7 +1342,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mod)(other, self)
+        return self._binary_computed(other, self, operator.mod)
 
     @overload
     def __rmul__(self: "_ReactiveMixIn[str]", other: HasValue[int]) -> Computed[str]: ...
@@ -1496,7 +1374,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mul)(other, self)
+        return self._binary_computed(other, self, operator.mul)
 
     def __ror__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
@@ -1519,7 +1397,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.or_)(other, self)
+        return self._binary_computed(other, self, operator.or_)
 
     @overload
     def __rpow__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1548,7 +1426,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.pow)(other, self)
+        return self._binary_computed(other, self, operator.pow)
 
     def __rsub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the difference of `self` and `other`.
@@ -1571,7 +1449,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.sub)(other, self)
+        return self._binary_computed(other, self, operator.sub)
 
     @overload
     def __rtruediv__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[float]: ...
@@ -1614,7 +1492,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.truediv)(other, self)
+        return self._binary_computed(other, self, operator.truediv)
 
     def __rxor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
@@ -1637,7 +1515,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.xor)(other, self)
+        return self._binary_computed(other, self, operator.xor)
 
     @overload
     def __getitem__[V](self: "_ReactiveMixIn[list[V]]", key: slice) -> Computed[list[V]]: ...
@@ -1691,7 +1569,75 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.getitem)(self, key)
+        return self._binary_computed(self, key, operator.getitem)
+
+    @staticmethod
+    def _identity_arg(value: Any) -> Any:
+        return value
+
+    @staticmethod
+    def _value_arg(value: HasValue[Any]) -> Any:
+        return value.value
+
+    @staticmethod
+    def _resolver_for(value: Any) -> Callable[[Any], Any]:
+        if _is_reactive_value(value):
+            return _ReactiveMixIn._value_arg
+        if type(value) in _PLAIN_COMPUTED_ARG_TYPES:
+            return _ReactiveMixIn._identity_arg
+        return deep_unref
+
+    @staticmethod
+    def _apply_computed(func: Callable[..., Any], *args: Any, **kwargs: Any) -> Computed[Any]:
+        """Create a computed with faster direct-value resolvers for reactive args."""
+        if not kwargs:
+            if not args:
+                return Computed(func)
+            if len(args) == 1:
+                arg = args[0]
+                resolve_arg = _ReactiveMixIn._resolver_for(arg)
+                return Computed(lambda: func(resolve_arg(arg)))
+            if len(args) == 2:
+                left, right = args
+                resolve_left = _ReactiveMixIn._resolver_for(left)
+                resolve_right = _ReactiveMixIn._resolver_for(right)
+                return Computed(lambda: func(resolve_left(left), resolve_right(right)))
+
+        arg_resolvers = tuple(_ReactiveMixIn._resolver_for(arg) for arg in args)
+        kw_resolvers = {key: _ReactiveMixIn._resolver_for(value) for key, value in kwargs.items()}
+
+        def compute_func() -> Any:
+            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
+            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
+            return func(*resolved_args, **resolved_kwargs)
+
+        return Computed(compute_func)
+
+    @staticmethod
+    def _unary_computed(value: HasValue[Any], op: Callable[[Any], Any]) -> Computed[Any]:
+        resolve_value = _ReactiveMixIn._resolver_for(value)
+        return Computed(lambda: op(resolve_value(value)))
+
+    @staticmethod
+    def _binary_computed(left: HasValue[Any], right: HasValue[Any], op: Callable[[Any, Any], Any]) -> Computed[Any]:
+        """Create a binary computed with direct-value reactive resolution."""
+        resolve_left = _ReactiveMixIn._resolver_for(left)
+        resolve_right = _ReactiveMixIn._resolver_for(right)
+        return Computed(lambda: op(resolve_left(left), resolve_right(right)))
+
+    def _attr_computed(self, name: str) -> Computed[Any]:
+        return Computed(lambda: getattr(self.value, name))
+
+    def _invoke_value_computed(self, *args: Any, **kwargs: Any) -> Computed[Any]:
+        arg_resolvers = tuple(self._resolver_for(arg) for arg in args)
+        kw_resolvers = {key: self._resolver_for(value) for key, value in kwargs.items()}
+
+        def compute_func() -> Any:
+            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
+            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
+            return self.value(*resolved_args, **resolved_kwargs)
+
+        return Computed(compute_func)
 
     @classmethod
     @cache
@@ -1808,35 +1754,7 @@ class _ReactiveMixIn[T]:
         else:
             raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
 
-    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
-        """Return a reactive value for `a` if `self` is `True`, else `b`.
-
-        Deprecated:
-            Use ``self.rx.where(a, b)`` instead.
-
-        Args:
-            a: The value to return if `self` is `True`.
-            b: The value to return if `self` is `False`.
-
-        Returns:
-            A reactive value for `a if self.value else b`.
-
-        Example:
-            ```py
-            >>> condition = Signal(True)
-            >>> result = condition.where("Yes", "No")
-            >>> result.value
-            'Yes'
-            >>> condition.value = False
-            >>> result.value
-            'No'
-
-            ```
-        """
-        _warn_deprecated_alias("where", "self.rx.where(a, b)")
-        return self.rx.where(a, b)
-
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
-from ._functions import computed  # noqa: E402
-from ._reactive import Effect, _bump_global_version, _is_reactive_value  # noqa: E402
+from ._functions import computed, deep_unref  # noqa: E402
+from ._reactive import Computed, Effect, _bump_global_version, _is_reactive_value  # noqa: E402
