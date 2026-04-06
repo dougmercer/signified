@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import contextvars
 import math
-import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
@@ -11,6 +11,7 @@ from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 
 from ._mixin import _ReactiveMixIn
+from ._scheduler import queue_batch_observer, register_task_context_default, should_batch_observers
 from ._types import HasValue, ReactiveValue, _ObserverLinks
 from .plugins import HOOKS_ENABLED, plugin_manager
 
@@ -122,15 +123,6 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
                 item.subscribe(self)
         return self
 
-    def observe(self, items: Any) -> Self:
-        """Deprecated alias for `_observe`."""
-        warnings.warn(
-            "`Variable.observe(...)` is deprecated and will be removed in a future release; this is an internal API.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._observe(items)
-
     def _unobserve(self, items: Any) -> Self:
         """Unsubscribe ``self`` from all reactive values found in ``items``."""
         for item in self._iter_variables(items):
@@ -138,20 +130,19 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
                 item.unsubscribe(self)
         return self
 
-    def unobserve(self, items: Any) -> Self:
-        """Deprecated alias for `_unobserve`."""
-        warnings.warn(
-            "`Variable.unobserve(...)` is deprecated and will be removed in a future release; this is an internal API.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._unobserve(items)
-
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
         if not self._observers:
             return
-        self._observers.notify()
+        if not should_batch_observers():
+            self._observers.notify()
+            return
+
+        for observer in self._observers.iter_alive():
+            if getattr(type(observer), "_IS_REACTIVE", False):
+                observer.update()
+            else:
+                queue_batch_observer(observer)
 
     def invalidate(self) -> None:
         """Force downstream recomputation, bypassing optimization caches.
@@ -214,14 +205,6 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
             plugin_manager.hook.named(value=self)
         return self
 
-    def add_name(self, name: str) -> Self:
-        warnings.warn(
-            "`add_name(...)` is deprecated and will be removed in a future release; use `with_name(...)` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.with_name(name)
-
     def __format__(self, format_spec: str) -> str:
         """Format the variable with custom display options.
 
@@ -240,22 +223,21 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         return super().__format__(format_spec)  # Handles other format specs
 
 
-_COMPUTE_STACK: list[Any] = []
-"""Internal state that supports inferring reactive dependencies.
+_COMPUTE_STACK: contextvars.ContextVar[list[Any] | None] = contextvars.ContextVar(
+    "signified_compute_stack", default=None
+)
+"""Context-local compute stack used for dependency inference.
 
-When a reactive value is read, we attach that read to the Computed at the
-top of this stack so dependency subscriptions can be reconciled on refresh.
-
-.. note:: **Thread safety**: this is a plain module-level list and is not
-    thread-safe. Concurrent reads or computations on different threads will
-    corrupt dependency tracking. All reactive operations should be performed
-    on a single thread.
+Each thread/task gets its own stack object, but nested synchronous
+recomputations reuse that stack without incurring per-refresh ContextVar
+set/reset overhead.
 """
+register_task_context_default(_COMPUTE_STACK, None)
 
 
 def _track_read(variable: Variable[Any]) -> None:
     """Register `variable` as a dependency of the currently computing Computed."""
-    stack = _COMPUTE_STACK
+    stack = _COMPUTE_STACK.get()
     if not stack:
         # Reads outside Computed evaluation do not participate in dependency tracking.
         return
@@ -741,19 +723,23 @@ class _ComputedImpl:
         # 1) Evaluate with dependency tracking enabled.
         self._is_computing = True
         self._dep_state.start_refresh()
-        _COMPUTE_STACK.append(self)
+        stack = _COMPUTE_STACK.get()
+        if stack is None:
+            stack = []
+            _COMPUTE_STACK.set(stack)
+        stack.append(self)
         try:
             next_value = owner._compute_fn()
         except BaseException:
             # Roll back: leave self._deps and self._state unchanged so the
             # Computed stays subscribed to its previous deps and remains stale
             # for retry on the next .value read.
-            popped = _COMPUTE_STACK.pop()
+            popped = stack.pop()
             assert popped is self
             self._dep_state.rollback_refresh()
             self._is_computing = False
             raise
-        popped = _COMPUTE_STACK.pop()
+        popped = stack.pop()
         assert popped is self
         self._is_computing = False
 
@@ -854,19 +840,11 @@ class Computed(Variable[T]):
     __slots__ = ["_compute_fn", "_value", "_impl"]
     _IS_COMPUTED = True
 
-    def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
+    def __init__(self, f: Callable[[], T]) -> None:
         super().__init__()
         self._compute_fn = f
         self._value: T = cast(T, None)  # placeholder; always set before read via _state guard
         self._impl = _ComputedImpl(self)
-
-        if dependencies is not None:
-            warnings.warn(
-                "`Computed(..., dependencies=...)` is deprecated and ignored; "
-                "dependencies are tracked automatically during evaluation.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
 
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
@@ -988,19 +966,25 @@ class Effect:
         ```
     """
 
-    __slots__ = ("_computed", "__weakref__")
+    __slots__ = ("_computed", "_disposed", "__weakref__")
 
     def __init__(self, fn: Callable[[], None]) -> None:
         self._computed = Computed(fn)
+        self._disposed = False
         self._computed.subscribe(self)  # triggers initial evaluation
 
     def update(self) -> None:
         """Called by a dependency when its value changes."""
+        if self._disposed:
+            return
         self._computed._impl.invalidate(force=True)
         self._computed._impl.ensure_uptodate()
 
     def dispose(self) -> None:
         """Unsubscribe from all dependencies and stop the effect."""
+        if self._disposed:
+            return
+        self._disposed = True
         self._computed.unsubscribe(self)
         for dep in tuple(self._computed._impl._deps):
             dep.unsubscribe(self._computed)

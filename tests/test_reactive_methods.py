@@ -1,8 +1,6 @@
 import math
 
-import pytest
-
-from signified import Signal
+from signified import Signal, batch
 
 
 def test_signal_arithmetic():
@@ -52,7 +50,7 @@ def test_signal_comparison_operations():
     assert (s1 >= s2).value == True  # noqa: E712
     assert (s1 < s2).value == False  # noqa: E712
     assert (s1 <= s2).value == False  # noqa: E712
-    assert s1.eq(s2).value == False  # noqa: E712
+    assert s1.rx.eq(s2).value == False  # noqa: E712
     assert (s1 != s2).value == True  # noqa: E712
 
 
@@ -136,8 +134,8 @@ def test_signal_contains():
     """Test 'in' operator on Signal containing a sequence."""
     s = Signal([1, 2, 3, 4, 5])
 
-    assert s.contains(3).value == True  # noqa: E712
-    assert s.contains(6).value == False  # noqa: E712
+    assert s.rx.contains(3).value == True  # noqa: E712
+    assert s.rx.contains(6).value == False  # noqa: E712
 
 
 def test_signal_bool():
@@ -147,10 +145,10 @@ def test_signal_bool():
     s3 = Signal([])
     s4 = Signal([1, 2, 3])
 
-    assert s1.as_bool().value == True  # noqa: E712
-    assert s2.as_bool().value == False  # noqa: E712
-    assert s3.as_bool().value == False  # noqa: E712
-    assert s4.as_bool().value == True  # noqa: E712
+    assert s1.rx.as_bool().value == True  # noqa: E712
+    assert s2.rx.as_bool().value == False  # noqa: E712
+    assert s3.rx.as_bool().value == False  # noqa: E712
+    assert s4.rx.as_bool().value == True  # noqa: E712
 
 
 def test_signal_math_functions():
@@ -172,7 +170,7 @@ def test_signal_where():
     s1 = Signal(5)
     s2 = Signal(10)
 
-    result = condition.where(s1, s2)
+    result = condition.rx.where(s1, s2)
     assert result.value == 5
 
     condition.value = False
@@ -324,6 +322,42 @@ def test_effect_dispose_stops_all_tracked_deps():
     assert results == [3]  # no new calls after dispose
 
 
+def test_batch_coalesces_effect_reruns_until_exit():
+    from signified import Effect
+
+    left = Signal(1)
+    right = Signal(2)
+    seen: list[int] = []
+
+    effect = Effect(lambda: seen.append(left.value + right.value))
+
+    assert seen == [3]
+
+    with batch():
+        left.value = 10
+        right.value = 20
+        assert seen == [3]
+
+    assert seen == [3, 30]
+    effect.dispose()
+
+
+def test_disposed_effect_does_not_run_when_batch_flushes():
+    from signified import Effect
+
+    source = Signal(1)
+    seen: list[int] = []
+
+    effect = Effect(lambda: seen.append(source.value))
+    assert seen == [1]
+
+    with batch():
+        source.value = 2
+        effect.dispose()
+
+    assert seen == [1]
+
+
 def test_signal_rx_len():
     """Test reactive length via signal.rx.len."""
     values = Signal([1, 2, 3])
@@ -369,23 +403,3 @@ def test_signal_rx_in():
     assert result.value == False  # noqa: E712
     haystack.value = [4, 5]
     assert result.value == True  # noqa: E712
-
-
-def test_legacy_non_dunder_methods_emit_deprecation_warning():
-    """Test that legacy non-dunder methods warn and still function."""
-    s = Signal([1, 2, 3])
-
-    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.as_bool"):
-        assert Signal(1).as_bool().value == True  # noqa: E712
-
-    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.contains"):
-        assert s.contains(2).value == True  # noqa: E712
-
-    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.is_not"):
-        assert Signal(1).is_not(None).value == True  # noqa: E712
-
-    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.eq"):
-        assert Signal(2).eq(2).value == True  # noqa: E712
-
-    with pytest.warns(DeprecationWarning, match=r"_ReactiveMixIn\.where"):
-        assert Signal(True).where("a", "b").value == "a"

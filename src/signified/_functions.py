@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import importlib.util
-import warnings
 from collections.abc import Iterable
 from functools import wraps
-from typing import Any, Callable, Concatenate, TypeGuard, cast
+from typing import Any, Awaitable, Callable, TypeGuard, cast
 
+from ._async import AsyncEffect, Resource
 from ._reactive import Computed, Effect, Signal, _is_reactive_value, _track_read
 from ._types import HasValue, ReactiveValue
 
@@ -148,6 +148,72 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
     return wrapper
 
 
+def async_effect(func: Callable[..., Awaitable[Any]]) -> Callable[..., AsyncEffect]:
+    """Wrap an async function so calls produce a reactive [AsyncEffect][signified.AsyncEffect]."""
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> AsyncEffect:
+        # Fast Paths:
+        if not kwargs:
+            if not args:
+                return AsyncEffect(func)
+            if len(args) == 1:
+                arg = args[0]
+                resolve_arg = _get_unref_op(arg)
+                return AsyncEffect(lambda: func(resolve_arg(arg)))
+            if len(args) == 2:
+                left, right = args
+                resolve_left = _get_unref_op(left)
+                resolve_right = _get_unref_op(right)
+                return AsyncEffect(lambda: func(resolve_left(left), resolve_right(right)))
+
+        # General Case:
+        arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
+        kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
+
+        def effect_factory() -> Awaitable[Any]:
+            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
+            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
+            return func(*resolved_args, **resolved_kwargs)
+
+        return AsyncEffect(effect_factory)
+
+    return wrapper
+
+
+def resource[R](func: Callable[..., Awaitable[R]]) -> Callable[..., Resource[R]]:
+    """Wrap an async function so calls produce a reactive [Resource][signified.Resource]."""
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Resource[R]:
+        # Fast Paths:
+        if not kwargs:
+            if not args:
+                return Resource(func)
+            if len(args) == 1:
+                arg = args[0]
+                resolve_arg = _get_unref_op(arg)
+                return Resource(lambda: func(resolve_arg(arg)))
+            if len(args) == 2:
+                left, right = args
+                resolve_left = _get_unref_op(left)
+                resolve_right = _get_unref_op(right)
+                return Resource(lambda: func(resolve_left(left), resolve_right(right)))
+
+        # General Case:
+        arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
+        kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
+
+        def resource_factory() -> Awaitable[R]:
+            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
+            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
+            return func(*resolved_args, **resolved_kwargs)
+
+        return Resource(resource_factory)
+
+    return wrapper
+
+
 def unref[T](value: HasValue[T]) -> T:
     """Unwrap a reactive value to its plain Python value.
 
@@ -271,36 +337,6 @@ def deep_unref(value: Any) -> Any:
     return value
 
 
-def reactive_method[**P, T](
-    *dep_names: str,
-) -> Callable[[Callable[Concatenate[Any, P], T]], Callable[Concatenate[Any, P], Computed[T]]]:
-    """Deprecated helper for method-style computed values.
-
-    This decorator now delegates to :func:`computed`. It is retained only for
-    backwards compatibility and will be removed in a future release.
-
-    Args:
-        *dep_names: Deprecated compatibility argument. Ignored.
-
-    Returns:
-        A decorator that transforms an instance method into one that returns
-        :class:`Computed`.
-    """
-
-    warnings.warn(
-        "`reactive_method(...)` is deprecated and will be removed in a future "
-        "release; use `@computed` instead. Any dependency-name arguments are "
-        "ignored.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    def decorator(func: Callable[Concatenate[Any, P], T]) -> Callable[Concatenate[Any, P], Computed[T]]:
-        return cast(Callable[Concatenate[Any, P], Computed[T]], computed(func))
-
-    return decorator
-
-
 def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
     """Normalize a value to a reactive object.
 
@@ -316,17 +352,3 @@ def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
     if _is_reactive_value(val):
         return val
     return Signal(cast(T, val))
-
-
-def as_signal[T](val: HasValue[T]) -> Signal[T]:
-    """Deprecated alias for :func:`as_rx`.
-
-    Existing reactive values are returned as-is at runtime, including
-    ``Computed`` instances.
-    """
-    warnings.warn(
-        "`as_signal(...)` is deprecated and will be removed in a future release; use `as_rx(...)` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return cast(Signal[T], as_rx(val))

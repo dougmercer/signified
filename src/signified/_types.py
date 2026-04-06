@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import weakref
-from typing import TYPE_CHECKING, Iterable, Iterator, Protocol
+from typing import TYPE_CHECKING, Iterable, Iterator, Protocol, cast
 
 if TYPE_CHECKING:
     from ._reactive import Computed, Signal
@@ -22,6 +22,45 @@ type HasValue[T] = T | ReactiveValue[T]
 
 class _SupportsUpdate(Protocol):
     def update(self) -> None: ...
+
+
+class _OrderedWeakSet[T]:
+    """Ordered weak set for coalescing observer callbacks."""
+
+    __slots__ = ("_data", "__weakref__")
+
+    def __init__(self, values: Iterable[T] = ()) -> None:
+        self._data: dict[weakref.ReferenceType[T], None] = {}
+        for value in values:
+            self.add(value)
+
+    def __bool__(self) -> bool:
+        return bool(self._data)
+
+    def __iter__(self) -> Iterator[T]:
+        for ref in tuple(self._data):
+            value = ref()
+            if value is None:
+                self._data.pop(ref, None)
+            else:
+                yield value
+
+    def add(self, value: T) -> None:
+        probe = weakref.ref(value)
+        if probe in self._data:
+            return
+
+        owner_ref = weakref.ref(self)
+
+        def _cleanup(dead_ref: weakref.ReferenceType[T]) -> None:
+            owner = owner_ref()
+            if owner is not None:
+                cast(_OrderedWeakSet[T], owner)._data.pop(dead_ref, None)
+
+        self._data[weakref.ref(value, _cleanup)] = None
+
+    def clear(self) -> None:
+        self._data.clear()
 
 
 class _ObserverLink[T: _SupportsUpdate]:

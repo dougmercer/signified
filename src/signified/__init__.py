@@ -7,13 +7,16 @@ Classes:
     Variable: Abstract base class for reactive values.
     Signal: A container for mutable reactive values.
     Computed: A container for computed reactive values (from functions).
+    AsyncEffect: Async side effects driven by reactive dependencies.
+    Resource: Async derived state exposed through synchronous accessors.
 
 Functions:
     unref: Dereference a potentially reactive value.
     computed: Decorator to create a reactive value from a function.
-    reactive_method: Decorator to create a reactive method.
+    batch: Group reactive writes and flush side effects once on exit.
+    async_effect: Decorator to create an async side effect from a coroutine function.
+    resource: Decorator to create async derived state from a coroutine function.
     as_rx: Convert a value to a reactive value if it's not already reactive.
-    as_signal: Deprecated alias for as_rx.
     has_value: Type guard to check if an object has a value of a specific type.
 
 Attributes:
@@ -23,8 +26,10 @@ Attributes:
 
 # Import _mixin first to initialize _ReactiveMixIn before runtime classes.
 from . import _mixin
-from ._functions import as_rx, as_signal, computed, deep_unref, effect, has_value, reactive_method, unref
+from ._async import AsyncEffect, Resource
+from ._functions import as_rx, async_effect, computed, deep_unref, effect, has_value, resource, unref
 from ._reactive import Computed, Effect, Signal, Variable
+from ._scheduler import batch
 from ._types import HasValue, ReactiveValue
 
 del _mixin
@@ -34,12 +39,15 @@ __all__ = [
     "Signal",
     "Computed",
     "Effect",
+    "AsyncEffect",
+    "Resource",
     "computed",
     "effect",
-    "reactive_method",
+    "batch",
+    "async_effect",
+    "resource",
     "unref",
     "as_rx",
-    "as_signal",
     "HasValue",
     "ReactiveValue",
     "has_value",

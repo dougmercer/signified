@@ -1,9 +1,7 @@
 import gc
 import weakref
 
-import pytest
-
-from signified import Computed, Signal, unref
+from signified import Computed, Signal, batch, unref
 
 
 def test_signal_basic():
@@ -30,7 +28,7 @@ def test_signal_nested():
 def test_unref():
     """Test the unref function."""
     s = Signal(5)
-    c = Computed(lambda: s.value * 2, dependencies=[s])
+    c = Computed(lambda: s.value * 2)
 
     assert unref(s) == 5
     assert unref(c) == 10
@@ -115,7 +113,60 @@ def test_with_name_sets_display_name():
     assert f"{s:n}" == "counter"
 
 
-def test_add_name_is_deprecated_alias():
-    with pytest.warns(DeprecationWarning, match=r"add_name"):
-        s = Signal(1).add_name("counter")
-    assert f"{s:n}" == "counter"
+def test_batch_defers_non_reactive_observer_updates_until_exit():
+    s = Signal(0)
+
+    class Appender:
+        def __init__(self, source: Signal[int]) -> None:
+            self.source = source
+            self.values: list[int] = []
+
+        def update(self) -> None:
+            self.values.append(self.source.value)
+
+    appender = Appender(s)
+    s.subscribe(appender)
+
+    with batch():
+        s.value = 1
+        s.value = 2
+        assert appender.values == []
+
+    assert appender.values == [2]
+
+
+def test_batch_keeps_computed_reads_current_inside_batch():
+    left = Signal(1)
+    right = Signal(2)
+    total = left + right
+
+    with batch():
+        left.value = 10
+        assert total.value == 12
+        right.value = 20
+        assert total.value == 30
+
+
+def test_nested_batches_only_flush_on_outer_exit():
+    s = Signal(0)
+
+    class Appender:
+        def __init__(self, source: Signal[int]) -> None:
+            self.source = source
+            self.values: list[int] = []
+
+        def update(self) -> None:
+            self.values.append(self.source.value)
+
+    appender = Appender(s)
+    s.subscribe(appender)
+
+    with batch():
+        s.value = 1
+        with batch():
+            s.value = 2
+        assert appender.values == []
+        s.value = 3
+        assert appender.values == []
+
+    assert appender.values == [3]
