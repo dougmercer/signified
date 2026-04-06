@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from functools import wraps
-from typing import Any, Callable, TypeGuard, overload
+from typing import Any, Awaitable, Callable, TypeGuard, overload
 
 from . import migration as _migration
+from ._async import AsyncEffect, Resource
 from ._reactive import Computed, Effect, Signal, is_reactive
 from ._types import HasValue, ReactiveValue
 
@@ -195,3 +196,28 @@ def as_rx(val: Any) -> ReactiveValue[Any]:
     if is_reactive(val):
         return val
     return Signal(val)
+
+
+def async_effect(func: Callable[..., Awaitable[Any]]) -> Callable[..., AsyncEffect]:
+    """Create an async effect; only direct arguments/factory reads are tracked.
+
+    Reads inside the coroutine body do not establish dependencies. Pass reactive
+    inputs as explicit arguments. Synchronous batch/untracked scopes must not
+    span await.
+    """
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> AsyncEffect:
+        return AsyncEffect(_bind_args(func, args, kwargs))
+    return wrapper
+
+
+def resource[R](func: Callable[..., Awaitable[R]]) -> Callable[..., Resource[R]]:
+    """Create async derived state from explicit reactive arguments.
+
+    Only synchronous factory reads are tracked; coroutine-body reads are not.
+    """
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Resource[R]:
+        return Resource(_bind_args(func, args, kwargs))
+    return wrapper
+
