@@ -721,7 +721,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.add)(self, other)
+        return self._binary_computed(self, other, operator.add)
 
     def __and__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise AND of self and other.
@@ -1007,7 +1007,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mul)(self, other)
+        return self._binary_computed(self, other, operator.mul)
 
     def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
         """Return a reactive value for whether `self` is not equal to `other`.
@@ -1128,7 +1128,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.sub)(self, other)
+        return self._binary_computed(self, other, operator.sub)
 
     @overload
     def __truediv__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[float]: ...
@@ -1226,7 +1226,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.add)(other, self)
+        return self._binary_computed(other, self, operator.add)
 
     def __rand__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise AND of `self` and `other`.
@@ -1374,7 +1374,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mul)(other, self)
+        return self._binary_computed(other, self, operator.mul)
 
     def __ror__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
@@ -1449,7 +1449,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.sub)(other, self)
+        return self._binary_computed(other, self, operator.sub)
 
     @overload
     def __rtruediv__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[float]: ...
@@ -1571,6 +1571,20 @@ class _ReactiveMixIn[T]:
         """
         return computed(operator.getitem)(self, key)
 
+    @staticmethod
+    def _binary_computed(left: HasValue[Any], right: HasValue[Any], op: Callable[[Any, Any], Any]) -> Computed[Any]:
+        """Create a binary computed while avoiding generic argument unwrapping."""
+        left_is_reactive = _is_reactive_value(left)
+        right_is_reactive = _is_reactive_value(right)
+
+        if left_is_reactive:
+            if right_is_reactive:
+                return Computed(lambda: op(left.value, right.value))
+            return Computed(lambda: op(left.value, right))
+        if right_is_reactive:
+            return Computed(lambda: op(left, right.value))
+        return Computed(lambda: op(left, right))
+
     @classmethod
     @cache
     def _own_attr_names(cls) -> frozenset[str]:
@@ -1689,4 +1703,4 @@ class _ReactiveMixIn[T]:
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
 from ._functions import computed  # noqa: E402
-from ._reactive import Effect, _bump_global_version, _is_reactive_value  # noqa: E402
+from ._reactive import Computed, Effect, _bump_global_version, _is_reactive_value  # noqa: E402
