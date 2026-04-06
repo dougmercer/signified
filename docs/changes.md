@@ -6,6 +6,31 @@ hide:
 
 This page summarizes notable changes across releases.
 
+## 0.4.0
+
+### `@effect` decorator
+
+A new `@effect` decorator mirrors `@computed`, making it easy to define reactive side effects as plain functions:
+
+```python
+@effect
+def log(x):
+    print(x)
+
+e = log(some_signal)  # runs immediately, re-runs on change
+```
+
+Like `@computed`, arguments are automatically unwrapped, so the function always receives plain Python values. The effect stays active as long as you hold a reference to the returned `Effect`.
+
+### Performance improvements
+
+The internals were substantially reworked for speed:
+
+- Observer subscriptions are now stored as intrusive linked lists, reducing allocation overhead for high-fan-out signals.
+- `Computed` nodes reuse existing dependency links across re-evaluations instead of rebuilding them from scratch.
+- Invalidation uses a global version counter to short-circuit redundant recomputation in deep graphs.
+- Common cases in `computed`, `effect`, and other internal implementation details now have cheaper early-exit paths.
+
 ## 0.3.2
 
 ### Bug fixes
