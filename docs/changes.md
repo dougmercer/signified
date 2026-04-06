@@ -6,6 +6,33 @@ hide:
 
 This page summarizes notable changes across releases.
 
+## 0.5.0
+
+### Deprecations
+
+Functions
+
+* `reactive_method` - Use `computed` instead.
+* `as_signal` - Use `as_rx` instead.
+
+Arguments
+
+* `Computed(fn, dependencies=...)` - Use `Computed(fn)` instead.
+
+Public Methods
+
+* `Variable.add_name` - Use `Variable.with_name` instead.
+* `Variable.as_bool` - Use `Variable.rx.as_bool` instead.
+* `Variable.contains` - Use `Variable.rx.contains` instead.
+* `Variable.is_not` - Use `Variable.rx.is_not` instead.
+* `Variable.eq` - Use `Variable.rx.eq` instead.
+* `Variable.where` - Use `Variable.rx.where` instead.
+
+Plumbing Methods
+
+* `Variable.observe` - Use `Variable._observe` instead.
+* `Variable.unobserve` - Use `Variable._unobserve` instead.
+
 ## 0.4.0
 
 ### `@effect` decorator
