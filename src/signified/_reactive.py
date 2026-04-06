@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
@@ -122,30 +121,12 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
                 item.subscribe(self)
         return self
 
-    def observe(self, items: Any) -> Self:
-        """Deprecated alias for `_observe`."""
-        warnings.warn(
-            "`Variable.observe(...)` is deprecated and will be removed in a future release; this is an internal API.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._observe(items)
-
     def _unobserve(self, items: Any) -> Self:
         """Unsubscribe ``self`` from all reactive values found in ``items``."""
         for item in self._iter_variables(items):
             if item is not self:
                 item.unsubscribe(self)
         return self
-
-    def unobserve(self, items: Any) -> Self:
-        """Deprecated alias for `_unobserve`."""
-        warnings.warn(
-            "`Variable.unobserve(...)` is deprecated and will be removed in a future release; this is an internal API.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._unobserve(items)
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
@@ -213,14 +194,6 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         if HOOKS_ENABLED:
             plugin_manager.hook.named(value=self)
         return self
-
-    def add_name(self, name: str) -> Self:
-        warnings.warn(
-            "`add_name(...)` is deprecated and will be removed in a future release; use `with_name(...)` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.with_name(name)
 
     def __format__(self, format_spec: str) -> str:
         """Format the variable with custom display options.
@@ -854,19 +827,11 @@ class Computed(Variable[T]):
     __slots__ = ["_compute_fn", "_value", "_impl"]
     _IS_COMPUTED = True
 
-    def __init__(self, f: Callable[[], T], dependencies: Any = None) -> None:
+    def __init__(self, f: Callable[[], T]) -> None:
         super().__init__()
         self._compute_fn = f
         self._value: T = cast(T, None)  # placeholder; always set before read via _state guard
         self._impl = _ComputedImpl(self)
-
-        if dependencies is not None:
-            warnings.warn(
-                "`Computed(..., dependencies=...)` is deprecated and ignored; "
-                "dependencies are tracked automatically during evaluation.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
 
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
