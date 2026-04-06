@@ -363,6 +363,25 @@
   
   
     <li class="md-tabs__item">
+      <a href="../comparison/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Comparison
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../api/" class="md-tabs__link">
         
   
@@ -611,6 +630,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/" class="md-nav__link">
         
   
@@ -696,6 +742,45 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#040" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.0
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.4.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#effect-decorator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @effect decorator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance improvements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#032" class="md-nav__link">
@@ -1076,6 +1161,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#040" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4.0
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.4.0">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#effect-decorator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @effect decorator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance improvements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#032" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1424,6 +1548,24 @@
 
 <h1 id="change-log">Change Log<a class="headerlink" href="#change-log" title="Permanent link">&para;</a></h1>
 <p>This page summarizes notable changes across releases.</p>
+<h2 id="040">0.4.0<a class="headerlink" href="#040" title="Permanent link">&para;</a></h2>
+<h3 id="effect-decorator"><code>@effect</code> decorator<a class="headerlink" href="#effect-decorator" title="Permanent link">&para;</a></h3>
+<p>A new <code>@effect</code> decorator mirrors <code>@computed</code>, making it easy to define reactive side effects as plain functions:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@effect</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">e</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">some_signal</span><span class="p">)</span>  <span class="c1"># runs immediately, re-runs on change</span>
+</span></code></pre></div>
+<p>Like <code>@computed</code>, arguments are automatically unwrapped, so the function always receives plain Python values. The effect stays active as long as you hold a reference to the returned <code>Effect</code>.</p>
+<h3 id="performance-improvements">Performance improvements<a class="headerlink" href="#performance-improvements" title="Permanent link">&para;</a></h3>
+<p>The internals were substantially reworked for speed:</p>
+<ul>
+<li>Observer subscriptions are now stored as intrusive linked lists, reducing allocation overhead for high-fan-out signals.</li>
+<li><code>Computed</code> nodes reuse existing dependency links across re-evaluations instead of rebuilding them from scratch.</li>
+<li>Invalidation uses a global version counter to short-circuit redundant recomputation in deep graphs.</li>
+<li>Common cases in <code>computed</code>, <code>effect</code>, and other internal implementation details now have cheaper early-exit paths.</li>
+</ul>
 <h2 id="032">0.3.2<a class="headerlink" href="#032" title="Permanent link">&para;</a></h2>
 <h3 id="bug-fixes">Bug fixes<a class="headerlink" href="#bug-fixes" title="Permanent link">&para;</a></h3>
 <p>Fix bug causing <code>__getattr__</code> to do infinite loops when the object attempts to be deep copied.</p>
@@ -1431,11 +1573,11 @@
 <h2 id="031">0.3.1<a class="headerlink" href="#031" title="Permanent link">&para;</a></h2>
 <h3 id="effect-rework">Effect rework<a class="headerlink" href="#effect-rework" title="Permanent link">&para;</a></h3>
 <p><code>Effect</code> now auto-tracks its dependencies the same way <code>Computed</code> does. The constructor signature has changed: instead of taking a reactive source and a callback, it now takes a single zero-argument callable. Every reactive value read via <code>.value</code> or <code>unref()</code> inside that callable is automatically registered as a dependency.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Before (0.3.0)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># After (0.3.1)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Before (0.3.0)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># After (0.3.1)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
 </span></code></pre></div>
 <p>Conditional branches are handled correctly — only the signals actually read during the most recent run are tracked, and the dependency set updates automatically when branches change.</p>
 <h3 id="unref-now-participates-in-dependency-tracking"><code>unref()</code> now participates in dependency tracking<a class="headerlink" href="#unref-now-participates-in-dependency-tracking" title="Permanent link">&para;</a></h3>
