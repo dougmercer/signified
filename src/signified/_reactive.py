@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextvars
 import math
 from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
@@ -10,7 +11,7 @@ from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 
 from ._mixin import _ReactiveMixIn
-from ._scheduler import queue_batch_observer, should_batch_observers
+from ._scheduler import queue_batch_observer, register_task_context_default, should_batch_observers
 from ._types import HasValue, ReactiveValue, _ObserverLinks
 from .plugins import HOOKS_ENABLED, plugin_manager
 
@@ -222,21 +223,25 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         return super().__format__(format_spec)  # Handles other format specs
 
 
-_ACTIVE_COMPUTED: Any | None = None
-"""Internal state that tracks the currently computing Computed.
+_COMPUTE_STACK: contextvars.ContextVar[list[Any] | None] = contextvars.ContextVar(
+    "signified_compute_stack", default=None
+)
+"""Context-local compute stack used for dependency inference.
 
-This remains optimized for synchronous single-threaded execution. Async
-helpers track dependencies during synchronous setup before background tasks
-are launched.
+Each thread/task gets its own stack object, but nested synchronous
+recomputations reuse that stack without incurring per-refresh ContextVar
+set/reset overhead.
 """
+register_task_context_default(_COMPUTE_STACK, None)
 
 
 def _track_read(variable: Variable[Any]) -> None:
     """Register `variable` as a dependency of the currently computing Computed."""
-    impl = _ACTIVE_COMPUTED
-    if impl is None:
+    stack = _COMPUTE_STACK.get()
+    if not stack:
         # Reads outside Computed evaluation do not participate in dependency tracking.
         return
+    impl = stack[-1]
     owner = impl._owner
     if owner is variable:
         # Ignore self-reads to avoid self-dependency loops.
@@ -707,8 +712,6 @@ class _ComputedImpl:
         return self._dep_state.deps
 
     def refresh(self) -> None:
-        global _ACTIVE_COMPUTED
-
         owner = self._owner
         if self._is_computing:
             raise RuntimeError("Cycle detected while evaluating Computed")
@@ -720,19 +723,24 @@ class _ComputedImpl:
         # 1) Evaluate with dependency tracking enabled.
         self._is_computing = True
         self._dep_state.start_refresh()
-        previous_active = _ACTIVE_COMPUTED
-        _ACTIVE_COMPUTED = self
+        stack = _COMPUTE_STACK.get()
+        if stack is None:
+            stack = []
+            _COMPUTE_STACK.set(stack)
+        stack.append(self)
         try:
             next_value = owner._compute_fn()
         except BaseException:
             # Roll back: leave self._deps and self._state unchanged so the
             # Computed stays subscribed to its previous deps and remains stale
             # for retry on the next .value read.
-            _ACTIVE_COMPUTED = previous_active
+            popped = stack.pop()
+            assert popped is self
             self._dep_state.rollback_refresh()
             self._is_computing = False
             raise
-        _ACTIVE_COMPUTED = previous_active
+        popped = stack.pop()
+        assert popped is self
         self._is_computing = False
 
         # 2) Reconcile subscriptions against the dependency set from this run.
