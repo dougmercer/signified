@@ -1074,7 +1074,7 @@ wheels = [
 
 [[package]]
 name = "signified"
-version = "0.3.2"
+version = "0.4.0"
 source = { virtual = "." }
 
 [package.optional-dependencies]
