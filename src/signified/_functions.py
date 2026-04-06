@@ -5,8 +5,9 @@ from __future__ import annotations
 import importlib.util
 from collections.abc import Iterable
 from functools import wraps
-from typing import Any, Callable, TypeGuard, cast
+from typing import Any, Awaitable, Callable, TypeGuard, cast
 
+from ._async import AsyncEffect, Resource
 from ._reactive import Computed, Effect, Signal, _is_reactive_value, _track_read
 from ._types import HasValue, ReactiveValue
 
@@ -143,6 +144,72 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
             func(*resolved_args, **resolved_kwargs)
 
         return Effect(effect_fn)
+
+    return wrapper
+
+
+def async_effect(func: Callable[..., Awaitable[Any]]) -> Callable[..., AsyncEffect]:
+    """Wrap an async function so calls produce a reactive [AsyncEffect][signified.AsyncEffect]."""
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> AsyncEffect:
+        # Fast Paths:
+        if not kwargs:
+            if not args:
+                return AsyncEffect(func)
+            if len(args) == 1:
+                arg = args[0]
+                resolve_arg = _get_unref_op(arg)
+                return AsyncEffect(lambda: func(resolve_arg(arg)))
+            if len(args) == 2:
+                left, right = args
+                resolve_left = _get_unref_op(left)
+                resolve_right = _get_unref_op(right)
+                return AsyncEffect(lambda: func(resolve_left(left), resolve_right(right)))
+
+        # General Case:
+        arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
+        kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
+
+        def effect_factory() -> Awaitable[Any]:
+            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
+            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
+            return func(*resolved_args, **resolved_kwargs)
+
+        return AsyncEffect(effect_factory)
+
+    return wrapper
+
+
+def resource[R](func: Callable[..., Awaitable[R]]) -> Callable[..., Resource[R]]:
+    """Wrap an async function so calls produce a reactive [Resource][signified.Resource]."""
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Resource[R]:
+        # Fast Paths:
+        if not kwargs:
+            if not args:
+                return Resource(func)
+            if len(args) == 1:
+                arg = args[0]
+                resolve_arg = _get_unref_op(arg)
+                return Resource(lambda: func(resolve_arg(arg)))
+            if len(args) == 2:
+                left, right = args
+                resolve_left = _get_unref_op(left)
+                resolve_right = _get_unref_op(right)
+                return Resource(lambda: func(resolve_left(left), resolve_right(right)))
+
+        # General Case:
+        arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
+        kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
+
+        def resource_factory() -> Awaitable[R]:
+            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
+            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
+            return func(*resolved_args, **resolved_kwargs)
+
+        return Resource(resource_factory)
 
     return wrapper
 

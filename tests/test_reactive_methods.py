@@ -1,6 +1,6 @@
 import math
 
-from signified import Signal
+from signified import Signal, batch
 
 
 def test_signal_arithmetic():
@@ -320,6 +320,42 @@ def test_effect_dispose_stops_all_tracked_deps():
     a.value = 99
     b.value = 99
     assert results == [3]  # no new calls after dispose
+
+
+def test_batch_coalesces_effect_reruns_until_exit():
+    from signified import Effect
+
+    left = Signal(1)
+    right = Signal(2)
+    seen: list[int] = []
+
+    effect = Effect(lambda: seen.append(left.value + right.value))
+
+    assert seen == [3]
+
+    with batch():
+        left.value = 10
+        right.value = 20
+        assert seen == [3]
+
+    assert seen == [3, 30]
+    effect.dispose()
+
+
+def test_disposed_effect_does_not_run_when_batch_flushes():
+    from signified import Effect
+
+    source = Signal(1)
+    seen: list[int] = []
+
+    effect = Effect(lambda: seen.append(source.value))
+    assert seen == [1]
+
+    with batch():
+        source.value = 2
+        effect.dispose()
+
+    assert seen == [1]
 
 
 def test_signal_rx_len():
