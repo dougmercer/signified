@@ -58,8 +58,7 @@ Signified exposes reactive behavior primarily through magic methods on `Signal` 
 
 For operations that Python cannot overload cleanly (`is`, `is not`, and
 truthiness via `bool(...)`) or that have special semantics in Signified
-(`==`), use the `rx` namespace (`x.rx.*`). Legacy direct methods like
-`x.eq(...)` still work, but are deprecated aliases.
+(`==`), use the `rx` namespace (`x.rx.*`).
 
 | Method | Usage example | Notes |
 | --- | --- | --- |

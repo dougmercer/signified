@@ -8,30 +8,33 @@ This page summarizes notable changes across releases.
 
 ## 0.5.0
 
-### Deprecations
+### Removals
+
+The following deprecated APIs were removed. Their replacements are listed
+below.
 
 Functions
 
-* `reactive_method` - Use `computed` instead.
-* `as_signal` - Use `as_rx` instead.
+* `reactive_method` — use `computed` instead.
+* `as_signal` — use `as_rx` instead.
 
 Arguments
 
-* `Computed(fn, dependencies=...)` - Use `Computed(fn)` instead.
+* `Computed(fn, dependencies=...)` — use `Computed(fn)` instead.
 
 Public Methods
 
-* `Variable.add_name` - Use `Variable.with_name` instead.
-* `Variable.as_bool` - Use `Variable.rx.as_bool` instead.
-* `Variable.contains` - Use `Variable.rx.contains` instead.
-* `Variable.is_not` - Use `Variable.rx.is_not` instead.
-* `Variable.eq` - Use `Variable.rx.eq` instead.
-* `Variable.where` - Use `Variable.rx.where` instead.
+* `Variable.add_name` — use `Variable.with_name` instead.
+* `Variable.as_bool` — use `Variable.rx.as_bool` instead.
+* `Variable.contains` — use `Variable.rx.contains` instead.
+* `Variable.is_not` — use `Variable.rx.is_not` instead.
+* `Variable.eq` — use `Variable.rx.eq` instead.
+* `Variable.where` — use `Variable.rx.where` instead.
 
 Plumbing Methods
 
-* `Variable.observe` - Use `Variable._observe` instead.
-* `Variable.unobserve` - Use `Variable._unobserve` instead.
+* `Variable.observe` — use `Variable._observe` instead.
+* `Variable.unobserve` — use `Variable._unobserve` instead.
 
 ## 0.4.0
 
