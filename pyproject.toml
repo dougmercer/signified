@@ -162,4 +162,4 @@ project-includes = [
 
 [tool.pyright]
 pythonVersion = "3.12"
-include = ["src/signified"]
+include = ["src/signified", "tests/type_inference.py"]
