@@ -387,7 +387,10 @@ class Signal[T](Variable[T]):
 
             ```
         """
-        before = self.value
+        # Preserve the stored wrapper as well as its resolved value. Using
+        # ``self.value`` here would flatten a nested Signal/Computed and break
+        # its subscription when the context exits.
+        before = self._value
         try:
             self.value = value
             yield

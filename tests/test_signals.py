@@ -108,6 +108,18 @@ def test_signal_context_manager():
     assert t.value == 5
 
 
+def test_signal_context_manager_restores_nested_signal():
+    inner = Signal(5)
+    outer = Signal(inner)
+
+    with outer.at(10):
+        assert outer.value == 10
+
+    assert outer._value is inner
+    inner.value = 20
+    assert outer.value == 20
+
+
 def test_with_name_sets_display_name():
     s = Signal(1).with_name("counter")
     assert f"{s:n}" == "counter"
