@@ -1074,8 +1074,8 @@ wheels = [
 
 [[package]]
 name = "signified"
-version = "0.4.0"
-source = { virtual = "." }
+version = "0.5.0"
+source = { editable = "." }
 
 [package.optional-dependencies]
 ipython = [
