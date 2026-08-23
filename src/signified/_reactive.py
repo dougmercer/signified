@@ -411,6 +411,8 @@ class Signal[T](Variable[T]):
             data is unchanged. Prefer assigning to `.value` when possible.
         """
         self._bump_version()
+        if HOOKS_ENABLED:
+            plugin_manager.hook.updated(value=self)
         self.notify()
 
 

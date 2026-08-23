@@ -1647,6 +1647,8 @@ class _ReactiveMixIn[T]:
             setattr(wrapped, name, value)
             if _is_reactive_value(self):
                 self._bump_version()
+                if HOOKS_ENABLED:
+                    plugin_manager.hook.updated(value=self)
             self.notify()
             return
 
@@ -1682,6 +1684,8 @@ class _ReactiveMixIn[T]:
             self.value[key] = value
             if _is_reactive_value(self):
                 self._bump_version()
+                if HOOKS_ENABLED:
+                    plugin_manager.hook.updated(value=self)
             self.notify()
         else:
             raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
@@ -1690,3 +1694,4 @@ class _ReactiveMixIn[T]:
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
 from ._functions import computed  # noqa: E402
 from ._reactive import Effect, _bump_global_version, _is_reactive_value  # noqa: E402
+from .plugins import HOOKS_ENABLED, plugin_manager  # noqa: E402
