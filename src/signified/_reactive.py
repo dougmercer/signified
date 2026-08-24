@@ -89,6 +89,13 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
             return
         if isinstance(item, str):
             return
+        if isinstance(item, dict):
+            for key, value in item.items():
+                if type(key) not in _PLAIN_SCALAR_TYPES:
+                    yield from Variable._iter_variables(key)
+                if type(value) not in _PLAIN_SCALAR_TYPES:
+                    yield from Variable._iter_variables(value)
+            return
         if isinstance(item, Iterable):
             for sub_item in item:
                 yield from Variable._iter_variables(sub_item)
