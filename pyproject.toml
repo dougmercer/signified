@@ -142,9 +142,6 @@ markers = [
     "benchmark: performance-focused benchmark tests",
     "slow_benchmark: longer-running benchmark tests reserved for manual pre-merge runs",
 ]
-pythonpath = [
-    "src",
-]
 testpaths = [
 	"tests",
     "src"
