@@ -4,20 +4,24 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Iterable
+from collections.abc import Generator
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
+from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast
 
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
 from .plugins import HOOKS_ENABLED, plugin_manager
 
-__all__ = ["Variable", "Signal", "Computed", "Effect"]
+__all__ = ["Variable", "Signal", "Computed", "Binding", "Effect"]
 
 
-_PLAIN_SCALAR_TYPES = {int, float, str, bool, bytes, complex, type(None)}
 _GLOBAL_VERSION = 0
+
+# `_ReactiveMixIn.__setattr__` forwards unknown names to the wrapped value, so
+# it costs a Python-level call on every assignment. Internal writes on the hot
+# path bypass it; `_ReactiveMixIn._bump_version` does the same.
+_setattr = object.__setattr__
 
 
 def _bump_global_version() -> int:
@@ -31,15 +35,6 @@ def _is_reactive_value[T](value: HasValue[T]) -> TypeGuard[ReactiveValue[T]]:
     """Return whether ``value`` is a signified reactive wrapper."""
     # Note: We use a specific attribute instead of isinstance to reduce overhead.
     return getattr(type(value), "_IS_REACTIVE", False)
-
-
-def _may_have_reactive_children(value: Any) -> bool:
-    """Return whether `value` could contain reactive values that need subscriptions."""
-    if type(value) in _PLAIN_SCALAR_TYPES:
-        return False
-    if _is_reactive_value(value):
-        return True
-    return isinstance(value, Iterable) and not isinstance(value, str)
 
 
 def _coerce_to_bool(value: Any) -> bool:
@@ -64,8 +59,8 @@ class _Observer(Protocol):
 class Variable[T](ABC, _ReactiveMixIn[T]):
     """Abstract base class for reactive values.
 
-    Both [Signal][signified.Signal] and [Computed][signified.Computed] extend this
-    class. *You should use them directly.*
+    [Signal][signified.Signal], [Computed][signified.Computed], and
+    [Binding][signified.Binding] extend this class. *You should use them directly.*
 
     Variable is only exposed for type hinting or subclassing purposes.
     """
@@ -75,30 +70,9 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     def __init__(self):
         """Initialize the variable."""
-        self._observers = _ObserverLinks[_Observer]()
-        self._name = ""
-        self._version = 0
-
-    @staticmethod
-    def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
-        """Yield `Variable` instances found in arbitrarily nested containers."""
-        if type(item) in _PLAIN_SCALAR_TYPES:
-            return
-        if _is_reactive_value(item):
-            yield item
-            return
-        if isinstance(item, str):
-            return
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if type(key) not in _PLAIN_SCALAR_TYPES:
-                    yield from Variable._iter_variables(key)
-                if type(value) not in _PLAIN_SCALAR_TYPES:
-                    yield from Variable._iter_variables(value)
-            return
-        if isinstance(item, Iterable):
-            for sub_item in item:
-                yield from Variable._iter_variables(sub_item)
+        _setattr(self, "_observers", _ObserverLinks[_Observer]())
+        _setattr(self, "_name", "")
+        _setattr(self, "_version", 0)
 
     def subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer to this variable.
@@ -120,20 +94,6 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
             observer: The observer to unsubscribe.
         """
         self._observers.discard(observer)
-
-    def _observe(self, items: Any) -> Self:
-        """Subscribe ``self`` to all reactive values found in ``items``."""
-        for item in self._iter_variables(items):
-            if item is not self:
-                item.subscribe(self)
-        return self
-
-    def _unobserve(self, items: Any) -> Self:
-        """Unsubscribe ``self`` from all reactive values found in ``items``."""
-        for item in self._iter_variables(items):
-            if item is not self:
-                item.unsubscribe(self)
-        return self
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
@@ -247,21 +207,10 @@ def _track_read(variable: Variable[Any]) -> None:
     impl._dep_state.register_dependency(variable)
 
 
-def _resolve[T](value: HasValue[T]) -> T:
-    """Unwrap nested reactive containers without registering any dependencies.
-
-    Used internally by ``.value`` property getters so that resolving a stored
-    nested reactive (e.g. ``Signal(Signal(5))``) does not create a redundant
-    direct subscription that bypasses the outer variable's own observe chain.
-    """
-    current: T | HasValue[T] = value
-    if type(current) in _PLAIN_SCALAR_TYPES:
-        return cast(T, current)
-    while _is_reactive_value(current):
-        if current._IS_COMPUTED:
-            current._impl.ensure_uptodate()
-        current = current._value
-    return cast(T, current)
+def _reject_reactive(value: Any) -> None:
+    """Raise if `value` is reactive, which `Signal` stores and `Binding` follows."""
+    if _is_reactive_value(value):
+        raise TypeError("Signal cannot store a reactive value; use Binding(source) instead")
 
 
 def _has_changed(previous: Any, current: Any) -> bool:
@@ -282,12 +231,6 @@ def _has_changed(previous: Any, current: Any) -> bool:
     # to preserve stable references as unchanged.
     if callable(previous) or callable(current):
         return previous is not current
-    # Reactive wrappers compare by identity rather than value equality.
-    # Distinct wrapper objects should invalidate even if they currently resolve
-    # to equal values.
-    if _is_reactive_value(previous) or _is_reactive_value(current):
-        return previous is not current
-
     # Keep NaN stable: treat NaN -> NaN as unchanged.
     if isinstance(previous, float) and isinstance(current, float) and math.isnan(previous) and math.isnan(current):
         return False
@@ -329,17 +272,10 @@ class Signal[T](Variable[T]):
 
     __slots__ = ["_value"]
 
-    @overload
-    def __init__(self, value: ReactiveValue[T]) -> None: ...
-
-    @overload
-    def __init__(self, value: T) -> None: ...
-
-    def __init__(self, value: HasValue[T]) -> None:
+    def __init__(self, value: T) -> None:
         super().__init__()
-        self._value = value
-        if _may_have_reactive_children(value):
-            self._observe(value)
+        _reject_reactive(value)
+        _setattr(self, "_value", value)
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
 
@@ -347,30 +283,23 @@ class Signal[T](Variable[T]):
     def value(self) -> T:
         """The current value.
 
-        Getting this property returns the plain Python value, unwrapping any
-        nested reactive. Setting it updates the stored value and notifies
-        observers if the value changed.
+        Getting this property returns the stored Python value. Setting it
+        updates the stored value and notifies observers if the value changed.
         """
         if HOOKS_ENABLED:
             plugin_manager.hook.read(value=self)
         _track_read(self)
-        value = self._value
-        if type(value) in _PLAIN_SCALAR_TYPES:
-            return cast(T, value)
-        return _resolve(value)
+        return self._value
 
     @value.setter
-    def value(self, new_value: HasValue[T]) -> None:
+    def value(self, new_value: T) -> None:
+        _reject_reactive(new_value)
         old_value = self._value
         if _has_changed(old_value, new_value):
-            self._value = new_value
+            _setattr(self, "_value", new_value)
             self._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=self)
-            if _may_have_reactive_children(old_value):
-                self._unobserve(old_value)
-            if _may_have_reactive_children(new_value):
-                self._observe(new_value)
             self.notify()
 
     @contextmanager
@@ -394,9 +323,6 @@ class Signal[T](Variable[T]):
 
             ```
         """
-        # Preserve the stored wrapper as well as its resolved value. Using
-        # ``self.value`` here would flatten a nested Signal/Computed and break
-        # its subscription when the context exits.
         before = self._value
         try:
             self.value = value
@@ -438,44 +364,45 @@ class _State(IntEnum):
 
 
 class _DependencyLink:
-    """Reusable edge between a Computed consumer and one producer dependency."""
+    """Edge between a Computed consumer and one producer dependency.
 
-    __slots__ = ["dep", "version", "prev", "next", "active", "seen_token"]
+    Links are reused across refreshes. ``seen_token`` records the refresh that
+    last read this dependency and ``born_token`` the refresh that created the
+    link, which is what lets commit and rollback both work as a single sweep.
+    """
 
-    def __init__(self, dep: Variable[Any]) -> None:
+    __slots__ = ["dep", "version", "prev", "next", "active", "seen_token", "born_token"]
+
+    def __init__(self, dep: Variable[Any], token: int) -> None:
         self.dep = dep
         self.version = -1
         self.prev: _DependencyLink | None = None
         self.next: _DependencyLink | None = None
         self.active = False
-        self.seen_token = 0
+        self.seen_token = token
+        self.born_token = token
 
 
 class _PythonDependencyState:
-    """Dependency bookkeeping with reusable producer/consumer edges."""
+    """Dependency bookkeeping as mark-and-sweep over one linked list.
 
-    __slots__ = [
-        "_subscriber",
-        "_head",
-        "_tail",
-        "_lookup",
-        "_next_single",
-        "_next_links",
-        "_refresh_token",
-        "_refresh_cursor",
-        "_stable_order",
-    ]
+    Each consumer keeps its dependency edges in insertion order, plus an index
+    keyed by ``id()`` of the producer. Every refresh bumps a token; reads stamp
+    their edge with it; ``commit_refresh`` walks the list once, subscribing to
+    stamped edges and dropping unstamped ones.
+
+    The index is safe to key on ``id()`` because a link holds its producer
+    strongly for as long as the link is in the index.
+    """
+
+    __slots__ = ["_subscriber", "_head", "_tail", "_lookup", "_token"]
 
     def __init__(self, subscriber: Any) -> None:
         self._subscriber = subscriber
         self._head: _DependencyLink | None = None
         self._tail: _DependencyLink | None = None
-        self._lookup: dict[Variable[Any], _DependencyLink] = {}
-        self._next_single: _DependencyLink | None = None
-        self._next_links: list[_DependencyLink] | None = None
-        self._refresh_token = 0
-        self._refresh_cursor: _DependencyLink | None = None
-        self._stable_order = False
+        self._lookup: dict[int, _DependencyLink] = {}
+        self._token = 0
 
     @property
     def deps(self) -> tuple[Variable[Any], ...]:
@@ -487,212 +414,95 @@ class _PythonDependencyState:
         return tuple(deps)
 
     def start_refresh(self) -> None:
-        self._refresh_token += 1
-        self._next_single = None
-        self._next_links = None
-        self._refresh_cursor = self._head
-        self._stable_order = self._head is not None
+        self._token += 1
 
     def register_dependency(self, dependency: Variable[Any]) -> None:
-        token = self._refresh_token
-        next_single = self._next_single
-        next_links = self._next_links
-        if next_links is None and next_single is None:
-            head = self._head
-            if head is not None and head.next is None and dependency is head.dep:
-                link = head
-            else:
-                link = self._lookup.get(dependency)
-                if link is None:
-                    link = _DependencyLink(dependency)
-                    self._lookup[dependency] = link
-            if link.seen_token == token:
-                return
-            link.seen_token = token
-            self._next_single = link
-            cursor = self._refresh_cursor
-            if cursor is link:
-                assert cursor is not None
-                self._refresh_cursor = cursor.next
-            else:
-                self._stable_order = False
-            return
-
-        if next_links is None:
-            assert next_single is not None
-            if next_single.seen_token == token and dependency is next_single.dep:
-                return
-            next_links = [next_single]
-            self._next_links = next_links
-            self._next_single = None
-
-        link = self._lookup.get(dependency)
+        link = self._lookup.get(id(dependency))
         if link is None:
-            link = _DependencyLink(dependency)
-            self._lookup[dependency] = link
-        if link.seen_token == token:
-            return
-
-        link.seen_token = token
-        next_links.append(link)
-        cursor = self._refresh_cursor
-        if cursor is link:
-            assert cursor is not None
-            self._refresh_cursor = cursor.next
+            link = _DependencyLink(dependency, self._token)
+            self._lookup[id(dependency)] = link
+            tail = self._tail
+            link.prev = tail
+            if tail is None:
+                self._head = link
+            else:
+                tail.next = link
+            self._tail = link
         else:
-            self._stable_order = False
+            link.seen_token = self._token
+
+    def commit_refresh(self) -> None:
+        """Subscribe to every dependency read this run and drop the rest."""
+        token = self._token
+        subscriber = self._subscriber
+        link = self._head
+        while link is not None:
+            next_link = link.next
+            if link.seen_token == token:
+                if not link.active:
+                    link.dep.subscribe(subscriber)
+                    link.active = True
+                link.version = link.dep._version
+            else:
+                self._detach(link)
+            link = next_link
 
     def rollback_refresh(self) -> None:
-        next_single = self._next_single
-        if next_single is not None and not next_single.active and self._lookup.get(next_single.dep) is next_single:
-            self._lookup.pop(next_single.dep, None)
-        next_links = self._next_links
-        if next_links is not None:
-            for link in next_links:
-                if not link.active and self._lookup.get(link.dep) is link:
-                    self._lookup.pop(link.dep, None)
-        self._next_single = None
-        self._next_links = None
-        self._refresh_cursor = None
-        self._stable_order = False
+        """Undo a failed run by dropping only the links it created.
 
-    def commit_refresh(self, subscriber: Any) -> None:
-        del subscriber
-
-        next_single = self._next_single
-        next_links = self._next_links
-        if next_links is None and next_single is not None:
-            link = next_single
-            if self._stable_order and self._refresh_cursor is None and self._head is link and link.next is None:
-                link.version = link.dep._version
-                self._next_single = None
-                self._refresh_cursor = None
-                self._stable_order = False
-                return
-
-            current = self._head
-            while current is not None:
-                next_current = current.next
-                if current is not link:
-                    current.dep.unsubscribe(self._subscriber)
-                    current.active = False
-                current.prev = None
-                current.next = None
-                if current is not link:
-                    self._lookup.pop(current.dep, None)
-                current = next_current
-
-            if not link.active:
-                link.dep.subscribe(self._subscriber)
-                link.active = True
-            link.version = link.dep._version
-            link.prev = None
-            link.next = None
-            self._head = link
-            self._tail = link
-            self._next_single = None
-            self._refresh_cursor = None
-            self._stable_order = False
-            return
-
-        if next_links is None:
-            current = self._head
-            while current is not None:
-                next_current = current.next
-                current.dep.unsubscribe(self._subscriber)
-                current.active = False
-                current.prev = None
-                current.next = None
-                self._lookup.pop(current.dep, None)
-                current = next_current
-            self._head = None
-            self._tail = None
-            self._refresh_cursor = None
-            self._stable_order = False
-            return
-
-        if self._stable_order and self._refresh_cursor is None:
-            for link in next_links:
-                link.version = link.dep._version
-            self._next_single = None
-            self._next_links = None
-            self._refresh_cursor = None
-            self._stable_order = False
-            return
-
-        current = self._head
-        while current is not None:
-            next_current = current.next
-            if current.seen_token != self._refresh_token:
-                current.dep.unsubscribe(self._subscriber)
-                current.active = False
-                current.prev = None
-                current.next = None
-                self._lookup.pop(current.dep, None)
-            current = next_current
-
-        head: _DependencyLink | None = None
-        prev: _DependencyLink | None = None
-        for link in next_links:
-            if not link.active:
-                link.dep.subscribe(self._subscriber)
-                link.active = True
-            link.version = link.dep._version
-            link.prev = prev
-            if prev is None:
-                head = link
-            else:
-                prev.next = link
-            prev = link
-
-        if head is None:
-            self._head = None
-            self._tail = None
-        else:
-            head.prev = None
-            assert prev is not None
-            prev.next = None
-            self._head = head
-            self._tail = prev
-
-        self._next_single = None
-        self._next_links = None
-        self._refresh_cursor = None
-        self._stable_order = False
+        Links that predate the failed run keep their recorded versions, so the
+        consumer stays subscribed to its previous dependencies and stale for
+        retry.
+        """
+        token = self._token
+        link = self._head
+        while link is not None:
+            next_link = link.next
+            if link.born_token == token:
+                self._detach(link)
+            link = next_link
 
     def dependencies_changed(self) -> bool:
-        current = self._head
-        if current is None:
-            return False
-        if current.next is None:
-            dep = current.dep
+        link = self._head
+        while link is not None:
+            dep = link.dep
             if dep._IS_COMPUTED:
                 dep._impl.ensure_uptodate()
-            return current.version != dep._version
-        while current is not None:
-            dep = current.dep
-            if dep._IS_COMPUTED:
-                dep._impl.ensure_uptodate()
-            if current.version != dep._version:
+            if link.version != dep._version:
                 return True
-            current = current.next
+            link = link.next
         return False
 
     def clear(self) -> None:
-        current = self._head
-        while current is not None:
-            next_current = current.next
-            current.active = False
-            current.prev = None
-            current.next = None
-            current = next_current
+        link = self._head
+        while link is not None:
+            next_link = link.next
+            link.active = False
+            link.prev = None
+            link.next = None
+            link = next_link
         self._head = None
         self._tail = None
         self._lookup.clear()
-        self._next_single = None
-        self._next_links = None
-        self._refresh_cursor = None
-        self._stable_order = False
+
+    def _detach(self, link: _DependencyLink) -> None:
+        """Unlink `link`, unsubscribe from its producer, and drop it from the index."""
+        prev_link = link.prev
+        next_link = link.next
+        if prev_link is None:
+            self._head = next_link
+        else:
+            prev_link.next = next_link
+        if next_link is None:
+            self._tail = prev_link
+        else:
+            next_link.prev = prev_link
+        link.prev = None
+        link.next = None
+        del self._lookup[id(link.dep)]
+        if link.active:
+            link.dep.unsubscribe(self._subscriber)
+            link.active = False
 
 
 _DependencyState = _PythonDependencyState
@@ -701,7 +511,7 @@ _DependencyState = _PythonDependencyState
 class _ComputedImpl:
     """Internal state and dependency tracking for :class:`Computed`."""
 
-    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing", "_global_version_seen"]
+    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing", "_global_version_seen", "_skip_equality"]
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
@@ -709,6 +519,7 @@ class _ComputedImpl:
         self._state = _State.UNINITIALIZED
         self._is_computing = False
         self._global_version_seen = -1
+        self._skip_equality = False
 
     @property
     def _deps(self) -> Any:
@@ -729,6 +540,8 @@ class _ComputedImpl:
         _COMPUTE_STACK.append(self)
         try:
             next_value = owner._compute_fn()
+            if _is_reactive_value(next_value):
+                raise TypeError("Computed functions must return plain values; use Binding(source) to switch sources")
         except BaseException:
             # Roll back: leave self._deps and self._state unchanged so the
             # Computed stays subscribed to its previous deps and remains stale
@@ -743,18 +556,22 @@ class _ComputedImpl:
         self._is_computing = False
 
         # 2) Reconcile subscriptions against the dependency set from this run.
-        self._dep_state.commit_refresh(owner)
+        self._dep_state.commit_refresh()
 
         # 3) Commit value/version if the computed result actually changed.
         self._state = _State.FRESH
-        value_changed = not had_value or _has_changed(previous_value, next_value)
+        skip_equality = self._skip_equality
+        self._skip_equality = False
+        value_changed = not had_value or skip_equality or _has_changed(previous_value, next_value)
         if value_changed:
-            owner._value = next_value
+            _setattr(owner, "_value", next_value)
             self._global_version_seen = owner._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=owner)
         elif forced_refresh:
             self._global_version_seen = owner._bump_version()
+            if HOOKS_ENABLED:
+                plugin_manager.hook.updated(value=owner)
         else:
             self._global_version_seen = _GLOBAL_VERSION
 
@@ -782,13 +599,14 @@ class _ComputedImpl:
         # Slow path: recompute and reconcile dependencies.
         self.refresh()
 
-    def invalidate(self, *, force: bool = False) -> bool:
+    def invalidate(self, *, force: bool = False, skip_equality: bool = False) -> bool:
         """Mark stale and return True when transitioning out of FRESH.
 
         ``force=True`` upgrades the state to ``MUST_REFRESH``, bypassing the
         dep-version check on the next read even if dep versions look unchanged.
         """
         was_fresh = self._state == _State.FRESH
+        self._skip_equality = self._skip_equality or skip_equality
         self._state = max(self._state, _State.MUST_REFRESH if force else _State.STALE)
         return was_fresh
 
@@ -841,9 +659,9 @@ class Computed(Variable[T]):
 
     def __init__(self, f: Callable[[], T]) -> None:
         super().__init__()
-        self._compute_fn = f
-        self._value: T = cast(T, None)  # placeholder; always set before read via _state guard
-        self._impl = _ComputedImpl(self)
+        _setattr(self, "_compute_fn", f)
+        _setattr(self, "_value", cast(T, None))  # placeholder; always set before read via _state guard
+        _setattr(self, "_impl", _ComputedImpl(self))
 
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
@@ -898,7 +716,11 @@ class Computed(Variable[T]):
 
             ```
         """
-        if not self._impl.invalidate(force=True):
+        self._force_invalidate()
+
+    def _force_invalidate(self, *, skip_equality: bool = False) -> None:
+        """Force refresh, optionally treating the next result as changed."""
+        if not self._impl.invalidate(force=True, skip_equality=skip_equality):
             return
         _bump_global_version()
         self.notify()
@@ -910,10 +732,119 @@ class Computed(Variable[T]):
             plugin_manager.hook.read(value=self)
         _track_read(self)
         self._impl.ensure_uptodate()
-        value = self._value
-        if type(value) in _PLAIN_SCALAR_TYPES:
-            return value
-        return _resolve(value)
+        return self._value
+
+
+class Binding(Computed[T]):
+    """A stable reactive handle whose current source can be replaced.
+
+    Use a `Binding` when an object must keep the same public reactive identity
+    while changing which `Signal`, `Computed`, or `Binding` supplies its value.
+    Selecting a distinct source always invalidates downstream computations;
+    `bind()` deliberately does not compare the old and new resolved values.
+
+    Args:
+        source: A reactive source to follow, or an initial plain value managed
+            by a private `Signal`.
+    """
+
+    __slots__ = ("_owned", "_source", "_override")
+
+    def __init__(self, source: T | ReactiveValue[T]) -> None:
+        self._owned: Signal[T] | None
+        self._override: Signal[T] | None = None
+        if _is_reactive_value(source):
+            self._source: ReactiveValue[T] = cast(ReactiveValue[T], source)
+            self._owned = None
+        else:
+            owned = Signal(cast(T, source))
+            self._owned = owned
+            self._source = owned
+        super().__init__(self._read_source)
+
+    def _read_source(self) -> T:
+        return self._source.value
+
+    @Computed.value.setter
+    def value(self, new_value: T) -> None:
+        """Reject assignment; a binding selects a source rather than storing a value."""
+        raise AttributeError(
+            "Binding.value is read-only; use .set(value) for a plain value or .bind(source) for a reactive source"
+        )
+
+    @property
+    def source(self) -> ReactiveValue[T]:
+        """Return the exact current source without resolving it."""
+        return self._source
+
+    def bind(self, source: ReactiveValue[T]) -> Self:
+        """Follow `source`, including its future value changes."""
+        if source is self:
+            raise ValueError("A Binding cannot bind itself")
+        if not _is_reactive_value(source):
+            raise TypeError("bind() requires a Signal, Computed, or Binding")
+        if source is self._source:
+            return self
+
+        self._source = source
+        # Source identity is the change. The lazy refresh also skips equality.
+        self._force_invalidate(skip_equality=True)
+        return self
+
+    def set(self, value: T) -> Self:
+        """Select and update this binding's private plain-value source."""
+        _reject_reactive(value)
+        owned = self._owned
+        if owned is None:
+            owned = Signal(value)
+            self._owned = owned
+        elif self._source is owned:
+            owned.value = value
+            return self
+        else:
+            owned.value = value
+        return self.bind(owned)
+
+    def derive(self, build: Callable[[ReactiveValue[T]], ReactiveValue[T]]) -> Self:
+        """Build and select a source from the exact pre-rebind source.
+
+        Capturing the old source prevents the common cycle created by building
+        a new computation from the `Binding` that will receive that computation.
+        """
+        previous = self._source
+        next_source = build(previous)
+        if not _is_reactive_value(next_source):
+            raise TypeError("derive() must return a Signal, Computed, or Binding")
+        return self.bind(next_source)
+
+    @contextmanager
+    def at(self, value: T) -> Generator[None, None, None]:
+        """Temporarily select a plain value and restore the exact prior source.
+
+        One private override signal is reused across calls rather than allocated
+        per entry. Nested contexts therefore share that signal, so an inner exit
+        restores the outer value instead of rebinding.
+        """
+        _reject_reactive(value)
+        previous = self._source
+        override = self._override
+        if override is None:
+            override = Signal(value)
+            self._override = override
+            restore = value
+        else:
+            restore = override._value
+            override.value = value
+        self.bind(override)
+        try:
+            yield
+        finally:
+            if previous is override:
+                # Nested: the override is already selected, so rebinding it is a
+                # no-op and the previous value has to be put back instead.
+                override.value = restore
+            else:
+                self.bind(previous)
 
 
 class Effect:

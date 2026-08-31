@@ -30,6 +30,38 @@ def _get_unref_op(value: Any) -> Callable[[Any], Any]:
     return deep_unref
 
 
+def _bind_args[R](func: Callable[..., R], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Callable[[], R]:
+    """Return a zero-argument callable that resolves `args`/`kwargs` and calls `func`.
+
+    Each argument's resolver is chosen once, from the shape of the outer
+    argument, and reused on every evaluation: reactive values use
+    [unref][signified.unref], exact plain scalars pass through unchanged, and
+    everything else uses [deep_unref][signified.deep_unref].
+    """
+    if not kwargs:
+        if not args:
+            return func
+        if len(args) == 1:
+            arg = args[0]
+            resolve_arg = _get_unref_op(arg)
+            return lambda: func(resolve_arg(arg))
+        if len(args) == 2:
+            left, right = args
+            resolve_left = _get_unref_op(left)
+            resolve_right = _get_unref_op(right)
+            return lambda: func(resolve_left(left), resolve_right(right))
+
+    arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
+    kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
+
+    def call() -> R:
+        resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
+        resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
+        return func(*resolved_args, **resolved_kwargs)
+
+    return call
+
+
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
     """Wrap a function so calls produce a reactive [Computed][signified.Computed] result.
 
@@ -49,30 +81,7 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Computed[R]:
-        # Fast Paths:
-        if not kwargs:
-            if not args:
-                return Computed(func)
-            if len(args) == 1:
-                arg = args[0]
-                resolve_arg = _get_unref_op(arg)
-                return Computed(lambda: func(resolve_arg(arg)))
-            if len(args) == 2:
-                left, right = args
-                resolve_left = _get_unref_op(left)
-                resolve_right = _get_unref_op(right)
-                return Computed(lambda: func(resolve_left(left), resolve_right(right)))
-
-        # General Case:
-        arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
-        kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
-
-        def compute_func() -> R:
-            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
-            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
-            return func(*resolved_args, **resolved_kwargs)
-
-        return Computed(compute_func)
+        return Computed(_bind_args(func, args, kwargs))
 
     return wrapper
 
@@ -119,30 +128,7 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Effect:
-        # Fast Paths:
-        if not kwargs:
-            if not args:
-                return Effect(func)
-            if len(args) == 1:
-                arg = args[0]
-                resolve_arg = _get_unref_op(arg)
-                return Effect(lambda: func(resolve_arg(arg)))
-            if len(args) == 2:
-                left, right = args
-                resolve_left = _get_unref_op(left)
-                resolve_right = _get_unref_op(right)
-                return Effect(lambda: func(resolve_left(left), resolve_right(right)))
-
-        # General Case:
-        arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
-        kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
-
-        def effect_fn() -> None:
-            resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
-            resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
-            func(*resolved_args, **resolved_kwargs)
-
-        return Effect(effect_fn)
+        return Effect(_bind_args(func, args, kwargs))
 
     return wrapper
 
@@ -150,32 +136,30 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
 def unref[T](value: HasValue[T]) -> T:
     """Unwrap a reactive value to its plain Python value.
 
-    Repeatedly follows the `.value` chain until a non-reactive value is
-    reached. When called inside a [Computed][signified.Computed] or [Effect][signified.Effect] evaluation,
-    each unwrapped reactive registers as a dependency — equivalent to
-    reading `.value` directly.
+    When called inside a [Computed][signified.Computed] or [Effect][signified.Effect]
+    evaluation, the reactive registers as a dependency — equivalent to reading
+    `.value` directly.
 
     Args:
-        value: Plain value, reactive value, or nested reactive value.
+        value: Plain value or reactive value.
 
     Returns:
         The fully unwrapped value.
 
     Example:
         ```py
-        >>> nested = Signal(Signal(5))
-        >>> unref(nested)
+        >>> source = Signal(5)
+        >>> unref(source)
         5
 
         ```
     """
-    current: Any = value
-    while _is_reactive_value(current):
-        if current._IS_COMPUTED:
-            current._impl.ensure_uptodate()
-        _track_read(current)
-        current = current._value
-    return current
+    if not _is_reactive_value(value):
+        return cast(T, value)
+    if value._IS_COMPUTED:
+        value._impl.ensure_uptodate()
+    _track_read(value)
+    return cast(T, value._value)
 
 
 def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
