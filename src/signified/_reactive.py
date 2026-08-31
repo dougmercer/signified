@@ -438,44 +438,45 @@ class _State(IntEnum):
 
 
 class _DependencyLink:
-    """Reusable edge between a Computed consumer and one producer dependency."""
+    """Edge between a Computed consumer and one producer dependency.
 
-    __slots__ = ["dep", "version", "prev", "next", "active", "seen_token"]
+    Links are reused across refreshes. ``seen_token`` records the refresh that
+    last read this dependency and ``born_token`` the refresh that created the
+    link, which is what lets commit and rollback both work as a single sweep.
+    """
 
-    def __init__(self, dep: Variable[Any]) -> None:
+    __slots__ = ["dep", "version", "prev", "next", "active", "seen_token", "born_token"]
+
+    def __init__(self, dep: Variable[Any], token: int) -> None:
         self.dep = dep
         self.version = -1
         self.prev: _DependencyLink | None = None
         self.next: _DependencyLink | None = None
         self.active = False
-        self.seen_token = 0
+        self.seen_token = token
+        self.born_token = token
 
 
 class _PythonDependencyState:
-    """Dependency bookkeeping with reusable producer/consumer edges."""
+    """Dependency bookkeeping as mark-and-sweep over one linked list.
 
-    __slots__ = [
-        "_subscriber",
-        "_head",
-        "_tail",
-        "_lookup",
-        "_next_single",
-        "_next_links",
-        "_refresh_token",
-        "_refresh_cursor",
-        "_stable_order",
-    ]
+    Each consumer keeps its dependency edges in insertion order, plus an index
+    keyed by ``id()`` of the producer. Every refresh bumps a token; reads stamp
+    their edge with it; ``commit_refresh`` walks the list once, subscribing to
+    stamped edges and dropping unstamped ones.
+
+    The index is safe to key on ``id()`` because a link holds its producer
+    strongly for as long as the link is in the index.
+    """
+
+    __slots__ = ["_subscriber", "_head", "_tail", "_lookup", "_token"]
 
     def __init__(self, subscriber: Any) -> None:
         self._subscriber = subscriber
         self._head: _DependencyLink | None = None
         self._tail: _DependencyLink | None = None
-        self._lookup: dict[Variable[Any], _DependencyLink] = {}
-        self._next_single: _DependencyLink | None = None
-        self._next_links: list[_DependencyLink] | None = None
-        self._refresh_token = 0
-        self._refresh_cursor: _DependencyLink | None = None
-        self._stable_order = False
+        self._lookup: dict[int, _DependencyLink] = {}
+        self._token = 0
 
     @property
     def deps(self) -> tuple[Variable[Any], ...]:
@@ -487,212 +488,95 @@ class _PythonDependencyState:
         return tuple(deps)
 
     def start_refresh(self) -> None:
-        self._refresh_token += 1
-        self._next_single = None
-        self._next_links = None
-        self._refresh_cursor = self._head
-        self._stable_order = self._head is not None
+        self._token += 1
 
     def register_dependency(self, dependency: Variable[Any]) -> None:
-        token = self._refresh_token
-        next_single = self._next_single
-        next_links = self._next_links
-        if next_links is None and next_single is None:
-            head = self._head
-            if head is not None and head.next is None and dependency is head.dep:
-                link = head
-            else:
-                link = self._lookup.get(dependency)
-                if link is None:
-                    link = _DependencyLink(dependency)
-                    self._lookup[dependency] = link
-            if link.seen_token == token:
-                return
-            link.seen_token = token
-            self._next_single = link
-            cursor = self._refresh_cursor
-            if cursor is link:
-                assert cursor is not None
-                self._refresh_cursor = cursor.next
-            else:
-                self._stable_order = False
-            return
-
-        if next_links is None:
-            assert next_single is not None
-            if next_single.seen_token == token and dependency is next_single.dep:
-                return
-            next_links = [next_single]
-            self._next_links = next_links
-            self._next_single = None
-
-        link = self._lookup.get(dependency)
+        link = self._lookup.get(id(dependency))
         if link is None:
-            link = _DependencyLink(dependency)
-            self._lookup[dependency] = link
-        if link.seen_token == token:
-            return
-
-        link.seen_token = token
-        next_links.append(link)
-        cursor = self._refresh_cursor
-        if cursor is link:
-            assert cursor is not None
-            self._refresh_cursor = cursor.next
+            link = _DependencyLink(dependency, self._token)
+            self._lookup[id(dependency)] = link
+            tail = self._tail
+            link.prev = tail
+            if tail is None:
+                self._head = link
+            else:
+                tail.next = link
+            self._tail = link
         else:
-            self._stable_order = False
+            link.seen_token = self._token
+
+    def commit_refresh(self) -> None:
+        """Subscribe to every dependency read this run and drop the rest."""
+        token = self._token
+        subscriber = self._subscriber
+        link = self._head
+        while link is not None:
+            next_link = link.next
+            if link.seen_token == token:
+                if not link.active:
+                    link.dep.subscribe(subscriber)
+                    link.active = True
+                link.version = link.dep._version
+            else:
+                self._detach(link)
+            link = next_link
 
     def rollback_refresh(self) -> None:
-        next_single = self._next_single
-        if next_single is not None and not next_single.active and self._lookup.get(next_single.dep) is next_single:
-            self._lookup.pop(next_single.dep, None)
-        next_links = self._next_links
-        if next_links is not None:
-            for link in next_links:
-                if not link.active and self._lookup.get(link.dep) is link:
-                    self._lookup.pop(link.dep, None)
-        self._next_single = None
-        self._next_links = None
-        self._refresh_cursor = None
-        self._stable_order = False
+        """Undo a failed run by dropping only the links it created.
 
-    def commit_refresh(self, subscriber: Any) -> None:
-        del subscriber
-
-        next_single = self._next_single
-        next_links = self._next_links
-        if next_links is None and next_single is not None:
-            link = next_single
-            if self._stable_order and self._refresh_cursor is None and self._head is link and link.next is None:
-                link.version = link.dep._version
-                self._next_single = None
-                self._refresh_cursor = None
-                self._stable_order = False
-                return
-
-            current = self._head
-            while current is not None:
-                next_current = current.next
-                if current is not link:
-                    current.dep.unsubscribe(self._subscriber)
-                    current.active = False
-                current.prev = None
-                current.next = None
-                if current is not link:
-                    self._lookup.pop(current.dep, None)
-                current = next_current
-
-            if not link.active:
-                link.dep.subscribe(self._subscriber)
-                link.active = True
-            link.version = link.dep._version
-            link.prev = None
-            link.next = None
-            self._head = link
-            self._tail = link
-            self._next_single = None
-            self._refresh_cursor = None
-            self._stable_order = False
-            return
-
-        if next_links is None:
-            current = self._head
-            while current is not None:
-                next_current = current.next
-                current.dep.unsubscribe(self._subscriber)
-                current.active = False
-                current.prev = None
-                current.next = None
-                self._lookup.pop(current.dep, None)
-                current = next_current
-            self._head = None
-            self._tail = None
-            self._refresh_cursor = None
-            self._stable_order = False
-            return
-
-        if self._stable_order and self._refresh_cursor is None:
-            for link in next_links:
-                link.version = link.dep._version
-            self._next_single = None
-            self._next_links = None
-            self._refresh_cursor = None
-            self._stable_order = False
-            return
-
-        current = self._head
-        while current is not None:
-            next_current = current.next
-            if current.seen_token != self._refresh_token:
-                current.dep.unsubscribe(self._subscriber)
-                current.active = False
-                current.prev = None
-                current.next = None
-                self._lookup.pop(current.dep, None)
-            current = next_current
-
-        head: _DependencyLink | None = None
-        prev: _DependencyLink | None = None
-        for link in next_links:
-            if not link.active:
-                link.dep.subscribe(self._subscriber)
-                link.active = True
-            link.version = link.dep._version
-            link.prev = prev
-            if prev is None:
-                head = link
-            else:
-                prev.next = link
-            prev = link
-
-        if head is None:
-            self._head = None
-            self._tail = None
-        else:
-            head.prev = None
-            assert prev is not None
-            prev.next = None
-            self._head = head
-            self._tail = prev
-
-        self._next_single = None
-        self._next_links = None
-        self._refresh_cursor = None
-        self._stable_order = False
+        Links that predate the failed run keep their recorded versions, so the
+        consumer stays subscribed to its previous dependencies and stale for
+        retry.
+        """
+        token = self._token
+        link = self._head
+        while link is not None:
+            next_link = link.next
+            if link.born_token == token:
+                self._detach(link)
+            link = next_link
 
     def dependencies_changed(self) -> bool:
-        current = self._head
-        if current is None:
-            return False
-        if current.next is None:
-            dep = current.dep
+        link = self._head
+        while link is not None:
+            dep = link.dep
             if dep._IS_COMPUTED:
                 dep._impl.ensure_uptodate()
-            return current.version != dep._version
-        while current is not None:
-            dep = current.dep
-            if dep._IS_COMPUTED:
-                dep._impl.ensure_uptodate()
-            if current.version != dep._version:
+            if link.version != dep._version:
                 return True
-            current = current.next
+            link = link.next
         return False
 
     def clear(self) -> None:
-        current = self._head
-        while current is not None:
-            next_current = current.next
-            current.active = False
-            current.prev = None
-            current.next = None
-            current = next_current
+        link = self._head
+        while link is not None:
+            next_link = link.next
+            link.active = False
+            link.prev = None
+            link.next = None
+            link = next_link
         self._head = None
         self._tail = None
         self._lookup.clear()
-        self._next_single = None
-        self._next_links = None
-        self._refresh_cursor = None
-        self._stable_order = False
+
+    def _detach(self, link: _DependencyLink) -> None:
+        """Unlink `link`, unsubscribe from its producer, and drop it from the index."""
+        prev_link = link.prev
+        next_link = link.next
+        if prev_link is None:
+            self._head = next_link
+        else:
+            prev_link.next = next_link
+        if next_link is None:
+            self._tail = prev_link
+        else:
+            next_link.prev = prev_link
+        link.prev = None
+        link.next = None
+        del self._lookup[id(link.dep)]
+        if link.active:
+            link.dep.unsubscribe(self._subscriber)
+            link.active = False
 
 
 _DependencyState = _PythonDependencyState
@@ -743,7 +627,7 @@ class _ComputedImpl:
         self._is_computing = False
 
         # 2) Reconcile subscriptions against the dependency set from this run.
-        self._dep_state.commit_refresh(owner)
+        self._dep_state.commit_refresh()
 
         # 3) Commit value/version if the computed result actually changed.
         self._state = _State.FRESH
