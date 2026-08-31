@@ -1,7 +1,7 @@
 from math import ceil, floor, trunc
 from typing import Any, TypeVar, Union, assert_type
 
-from signified import Computed, Effect, Signal, computed, reactive_method, unref
+from signified import Computed, Effect, Signal, computed, unref
 
 T = TypeVar("T")
 Numeric = Union[int, float]
@@ -70,7 +70,7 @@ def test_abs():
 
 
 def test_as_bool():
-    result = Signal(1).as_bool()
+    result = Signal(1).rx.as_bool()
     assert_type(result, Computed[bool])
     assert_type(unref(result), bool)
 
@@ -250,11 +250,11 @@ def test_and():
 
 
 def test_contains():
-    result = Signal([1, 2, 3]).contains(2)
+    result = Signal([1, 2, 3]).rx.contains(2)
     assert_type(result, Computed[bool])
     assert_type(unref(result), bool)
 
-    text_contains = Signal("abc").contains("b")
+    text_contains = Signal("abc").rx.contains("b")
     assert_type(text_contains, Computed[bool])
     assert_type(unref(text_contains), bool)
 
@@ -275,18 +275,6 @@ def test_divmod():
     float_divmod_float = divmod(Signal(10.0), 3.0)
     assert_type(float_divmod_float, Computed[tuple[float, float]])
     assert_type(unref(float_divmod_float), tuple[float, float])
-
-
-def test_is_not():
-    result = Signal(10).is_not(None)
-    assert_type(result, Computed[bool])
-    assert_type(unref(result), bool)
-
-
-def test_eq():
-    result = Signal(10).eq(10)
-    assert_type(result, Computed[bool])
-    assert_type(unref(result), bool)
 
 
 def test_floordiv():
@@ -653,7 +641,7 @@ def test_where():
     b = Signal(2.0)
     condition = Signal(True)
 
-    result = condition.where(a, b)
+    result = condition.rx.where(a, b)
     assert_type(result, Computed[Numeric])
     assert_type(unref(result), Numeric)
 
@@ -676,18 +664,3 @@ def test_complex_expression():
     result = (a + b) * c
     assert_type(result, Computed[Numeric])
     assert_type(unref(result), Numeric)
-
-
-def test_reactive_method():
-    class Counter:
-        def __init__(self) -> None:
-            self.value = Signal(1)
-
-        @reactive_method("value")
-        def plus(self, delta: int) -> int:
-            return self.value.value + delta
-
-    counter = Counter()
-    result = counter.plus(2)
-    assert_type(result, Computed[int])
-    assert_type(unref(result), int)

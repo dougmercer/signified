@@ -1,8 +1,6 @@
 import gc
 import weakref
 
-import pytest
-
 from signified import Computed, Signal, unref
 
 
@@ -30,7 +28,7 @@ def test_signal_nested():
 def test_unref():
     """Test the unref function."""
     s = Signal(5)
-    c = Computed(lambda: s.value * 2, dependencies=[s])
+    c = Computed(lambda: s.value * 2)
 
     assert unref(s) == 5
     assert unref(c) == 10
@@ -110,12 +108,18 @@ def test_signal_context_manager():
     assert t.value == 5
 
 
+def test_signal_context_manager_restores_nested_signal():
+    inner = Signal(5)
+    outer = Signal(inner)
+
+    with outer.at(10):
+        assert outer.value == 10
+
+    assert outer._value is inner
+    inner.value = 20
+    assert outer.value == 20
+
+
 def test_with_name_sets_display_name():
     s = Signal(1).with_name("counter")
-    assert f"{s:n}" == "counter"
-
-
-def test_add_name_is_deprecated_alias():
-    with pytest.warns(DeprecationWarning, match=r"add_name"):
-        s = Signal(1).add_name("counter")
     assert f"{s:n}" == "counter"

@@ -1,6 +1,4 @@
-import pytest
-
-from signified import Computed, Signal, as_rx, as_signal, computed, has_value, reactive_method, unref
+from signified import Computed, Signal, as_rx, computed, has_value, unref
 from signified._reactive import _coerce_to_bool, _has_changed
 
 
@@ -19,66 +17,6 @@ def test_unref_nested_signals():
     """Test unref function with deeply nested Signals."""
     s = Signal(Signal(Signal(Signal(5))))
     assert unref(s) == 5
-
-
-def test_reactive_method_decorator():
-    """Test the reactive_method decorator."""
-    with pytest.warns(DeprecationWarning, match=r"reactive_method\(\.\.\.\)"):
-
-        class MyClass:
-            def __init__(self):
-                self.x = Signal(5)
-                self.y = Signal(10)
-
-            @reactive_method("x", "y")
-            def sum(self):
-                return self.x.value + self.y.value
-
-    obj = MyClass()
-    result = obj.sum()
-
-    assert result.value == 15
-    obj.x.value = 7
-    assert result.value == 17
-
-
-def test_reactive_method_dep_names_are_deprecated_and_ignored():
-    with pytest.warns(DeprecationWarning, match=r"reactive_method\(\.\.\.\)"):
-
-        class MyClass:
-            def __init__(self):
-                self.x = Signal(2)
-                self.y = Signal(3)
-
-            @reactive_method("nonexistent", "still_unused")
-            def sum(self):
-                return self.x.value + self.y.value
-
-    obj = MyClass()
-    result = obj.sum()
-
-    assert result.value == 5
-    obj.x.value = 10
-    assert result.value == 13
-
-
-def test_reactive_method_without_dep_names_still_warns():
-    with pytest.warns(DeprecationWarning, match=r"reactive_method\(\.\.\.\)"):
-
-        class MyClass:
-            def __init__(self):
-                self.x = Signal(4)
-
-            @reactive_method()
-            def doubled(self):
-                return self.x.value * 2
-
-    obj = MyClass()
-    result = obj.doubled()
-
-    assert result.value == 8
-    obj.x.value = 6
-    assert result.value == 12
 
 
 def test_computed_decorator_on_method_tracks_instance_state():
@@ -127,12 +65,6 @@ def test_as_rx():
     assert isinstance(s2, Signal)
     assert s1.value == 5
     assert s2.value == 10
-
-
-def test_as_signal_is_deprecated_alias():
-    with pytest.warns(DeprecationWarning, match=r"as_signal"):
-        value = as_signal(5)
-    assert value.value == 5
 
 
 def test_has_changed_treats_nan_as_unchanged():

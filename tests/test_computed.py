@@ -8,7 +8,7 @@ from signified import Computed, Signal, computed
 def test_computed_basic():
     """Test basic Computed functionality."""
     s = Signal(5)
-    c = Computed(lambda: s.value * 2, dependencies=[s])
+    c = Computed(lambda: s.value * 2)
 
     assert c.value == 10
 
@@ -167,28 +167,6 @@ def test_computed_skips_downstream_recompute_when_upstream_value_stable():
     assert downstream.value == 10
     assert upstream_runs == 2
     assert downstream_runs == 1
-
-
-def test_computed_dependencies_argument_is_deprecated_and_ignored():
-    source = Signal(1)
-    unrelated = Signal(10)
-
-    with pytest.warns(DeprecationWarning, match=r"Computed\(\.\.\., dependencies=.*\)"):
-        derived = Computed(lambda: source.value + 1, dependencies=[unrelated])
-
-    calls = 0
-    original_update = derived.update
-
-    def wrapped_update() -> None:
-        nonlocal calls
-        calls += 1
-        original_update()
-
-    derived.update = wrapped_update  # type: ignore[method-assign]
-    unrelated.value = 11
-
-    assert calls == 0
-    assert derived.value == 2
 
 
 def test_nested_signal_change_invalidates_computed_once():
