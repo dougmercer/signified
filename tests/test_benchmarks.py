@@ -2,7 +2,7 @@
 
 import pytest
 
-from signified import Computed, Effect, Signal, computed, deep_unref, effect, unref
+from signified import Binding, Computed, Effect, Signal, computed, deep_unref, effect, unref
 
 pytestmark = pytest.mark.benchmark
 slow_benchmark = pytest.mark.slow_benchmark
@@ -134,18 +134,18 @@ def test_bench_operator_chain_v1(benchmark):
 # ---------------------------------------------------------------------------
 
 
-def test_bench_nested_signal_read_v1(benchmark):
-    """Benchmark reading through nested Signals (3 levels)."""
+def test_bench_binding_chain_read_v1(benchmark):
+    """Benchmark reading through a three-level Binding chain."""
     inner = Signal(7)
-    mid = Signal(inner)
-    outer = Signal(mid)
+    mid = Binding(inner)
+    outer = Binding(mid)
     benchmark(lambda: outer.value)
 
 
 def test_bench_unref_v1(benchmark):
-    """Benchmark unref on a nested Signal."""
+    """Benchmark unref on a Binding."""
     inner = Signal(99)
-    outer = Signal(inner)
+    outer = Binding(inner)
     benchmark(unref, outer)
 
 
