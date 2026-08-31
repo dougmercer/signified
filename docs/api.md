@@ -23,6 +23,18 @@ hide:
         - with_name
         - invalidate
 
+::: signified.Binding
+    options:
+      members:
+        - value
+        - source
+        - bind
+        - set
+        - derive
+        - at
+        - rx
+        - with_name
+
 ::: signified.Effect
     options:
       members:
@@ -111,6 +123,7 @@ subscript, and attribute-access operations all return reactive
 ## Functions
 
 ::: signified.computed
+::: signified.effect
 ::: signified.unref
 ::: signified.deep_unref
 ::: signified.has_value
@@ -118,11 +131,11 @@ subscript, and attribute-access operations all return reactive
 
 ## Types
 
-**`HasValue[T]`** — `T | Computed[T] | Signal[T]`
+**`HasValue[T]`** — `T | Computed[T] | Signal[T] | Binding[T]`
 
 A plain or reactive value that resolves to `T`. Use as a type hint when a
 parameter accepts either a raw value or a reactive wrapper.
 
-**`ReactiveValue[T]`** — `Computed[T] | Signal[T]`
+**`ReactiveValue[T]`** — `Computed[T] | Signal[T] | Binding[T]`
 
 A reactive wrapper that resolves to `T`.

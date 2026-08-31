@@ -14,17 +14,13 @@ pip install signified
 
 ## Why Care?
 
-`signified` is built around two core types:
+`signified` is built around three core types:
 
-- ``Signal``: mutable reactive state
+- ``Signal``: mutable plain state
 - ``Computed``: derived reactive state
+- ``Binding``: a stable reactive handle with a replaceable source
 
 If you update a `Signal`, dependent `Computed` values update automatically.
-
-`Signal` and `Computed` follow both the `Observer` and `Observable` design patterns:
-
-- reactive values can subscribe to upstream values
-- upstream changes notify and propagate through dependent computations
 
 That allows you to write declarative expressions that stay up-to-date, even as underlying values change:
 
@@ -64,6 +60,7 @@ print(x_squared.value)  # 100
 2. Build derived values with overloaded Python operators or `@computed`.
 3. Read reactive outputs from `.value`.
 4. Update the `.value` of `Signal`s to trigger updates.
+5. Use `Binding` only when a stable handle must switch sources.
 
 ## Ready to learn more?
 

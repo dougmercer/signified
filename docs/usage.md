@@ -7,11 +7,13 @@ hide:
 
 This guide walks through common usage patterns with examples. For a complete reference, see the [API docs](api.md).
 
-## Signals and Computed Values
+## Signals, Computed Values, and Bindings
 
-`Signal` holds mutable state.
+`Signal` holds a mutable plain value.
 
 `Computed` represents derived state. It subscribes to dependencies and updates when they change.
+
+`Binding` is a stable read-only handle whose current reactive source can be replaced.
 
 ### Reading the underlying value (`.value`)
 
@@ -94,6 +96,47 @@ print(y)  # <26>
 
 This composition is the core pattern: define state once, derive the rest.
 
+### Replacing a reactive source with `Binding`
+
+Use `Binding` when other code needs to retain one reactive object while you
+replace the `Signal`, `Computed`, or `Binding` that supplies its value.
+
+```python
+from signified import Binding, Signal
+
+left = Signal(1)
+right = Signal(10)
+selected = Binding(left)
+doubled = selected * 2
+
+print(doubled.value)  # 2
+selected.bind(right)
+print(doubled.value)  # 20
+right.value = 12
+print(doubled.value)  # 24
+
+selected.set(5)       # switch to a private plain-value source
+print(doubled.value)  # 10
+```
+
+A `Binding` may follow another `Binding`. Its `.source` property returns the
+exact current source. For accumulated operations, use `.derive(...)` so the
+new computation is built from the source that existed before the rebind:
+
+```python
+from signified import Binding, Signal, computed
+
+value = Binding(Signal(2))
+value.derive(lambda previous: computed(lambda x: x * 3)(previous))
+print(value.value)  # 6
+```
+
+Building the new computation from `value` itself would create a reactive cycle.
+Direct self-binding is rejected immediately; indirect cycles raise when read.
+
+`Signal` cannot directly store a reactive value, and a `Computed` function
+cannot directly return one. Use `Binding` for source indirection.
+
 ## Attribute Access, Method Calls, and Assignment
 
 You can reactively read attributes and call methods from objects inside signals.
@@ -152,6 +195,23 @@ print(total)       # <6>
 
 numbers[0] = 9
 print(total)       # <14>
+```
+
+A container stored in a `Signal` is opaque: the signal does not automatically
+follow reactive objects placed inside that container. Pass an ordinary nested
+container directly to a decorated function when you want deep argument
+resolution:
+
+```python
+from signified import Signal, computed
+
+a = Signal(1)
+b = Signal(2)
+total = computed(sum)([a, b])
+
+print(total.value)  # 3
+a.value = 10
+print(total.value)  # 12
 ```
 
 ```python

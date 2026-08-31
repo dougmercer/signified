@@ -136,32 +136,30 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
 def unref[T](value: HasValue[T]) -> T:
     """Unwrap a reactive value to its plain Python value.
 
-    Repeatedly follows the `.value` chain until a non-reactive value is
-    reached. When called inside a [Computed][signified.Computed] or [Effect][signified.Effect] evaluation,
-    each unwrapped reactive registers as a dependency — equivalent to
-    reading `.value` directly.
+    When called inside a [Computed][signified.Computed] or [Effect][signified.Effect]
+    evaluation, the reactive registers as a dependency — equivalent to reading
+    `.value` directly.
 
     Args:
-        value: Plain value, reactive value, or nested reactive value.
+        value: Plain value or reactive value.
 
     Returns:
         The fully unwrapped value.
 
     Example:
         ```py
-        >>> nested = Signal(Signal(5))
-        >>> unref(nested)
+        >>> source = Signal(5)
+        >>> unref(source)
         5
 
         ```
     """
-    current: Any = value
-    while _is_reactive_value(current):
-        if current._IS_COMPUTED:
-            current._impl.ensure_uptodate()
-        _track_read(current)
-        current = current._value
-    return current
+    if not _is_reactive_value(value):
+        return cast(T, value)
+    if value._IS_COMPUTED:
+        value._impl.ensure_uptodate()
+    _track_read(value)
+    return cast(T, value._value)
 
 
 def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
