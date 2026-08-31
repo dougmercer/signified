@@ -1,4 +1,4 @@
-from signified import Computed, Signal, as_rx, computed, has_value, unref
+from signified import Binding, Computed, Signal, as_rx, computed, has_value, unref
 from signified._reactive import _coerce_to_bool, _has_changed
 
 
@@ -13,9 +13,9 @@ def test_has_value():
     assert not has_value(s, str)
 
 
-def test_unref_nested_signals():
-    """Test unref function with deeply nested Signals."""
-    s = Signal(Signal(Signal(Signal(5))))
+def test_unref_binding_chain():
+    """Test unref with deeply nested Bindings."""
+    s = Binding(Binding(Binding(Signal(5))))
     assert unref(s) == 5
 
 

@@ -23,10 +23,11 @@ pip install signified
 
 ## Why care?
 
-`signified` is a reactive programming library that implements two primary data structures: `Signal` and `Computed`.
+`signified` is a reactive programming library built around three data structures:
 
-Both of these objects implement the *Observer* and *Observable* design patterns. This means that they can notify
-other *Observers* if they change, and they can subscribe to be notified if another *Observable* changes.
+- `Signal` stores a mutable plain value.
+- `Computed` calculates a read-only plain value.
+- `Binding` is a stable handle that can switch between reactive sources.
 
 This allows us to create a network of computation, where one value being modified can trigger other objects to update.
 
@@ -40,7 +41,7 @@ x.value = 10  # Will immediately notify x_squared, whose value will become 100.
 
 Here, `x_squared` became a reactive expression (more specifically, a `Computed` object) whose value is always equal to `x ** 2`. Neat!
 
-`signified`'s `Signal` object effectively gives us a container which stores a value, and `Computed` gives us a container to store the current value of a function. In the above example, we generated the Computed object on-the-fly using overloaded Python operators like `**`, but we could have just as easily done,
+`signified`'s `Signal` object gives us a container which stores a value, and `Computed` stores the current value of a function. In the above example, we generated the Computed object on-the-fly using overloaded Python operators like `**`, but we could have just as easily done,
 
 ```python
 from signified import computed
@@ -58,13 +59,13 @@ Together, these data structures allow us to implement a wide variety of capabili
 
 Other reactive Python libraries don't really attempt to implement type hints (e.g., [param](https://param.holoviz.org/)).
 
-``signified`` is type hinted and supports type narrowing even for nested reactive values.
+``signified`` is type hinted, including rebindable values.
 
 ```python
-from signified import Signal
+from signified import Binding, Signal
 
 a = Signal(1.0)
-b = Signal(Signal(Signal(2)))
+b = Binding(Signal(2))
 reveal_type(a + b)  # Computed[float]
 ```
 

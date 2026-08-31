@@ -1,7 +1,9 @@
 import gc
 import weakref
 
-from signified import Computed, Signal, unref
+import pytest
+
+from signified import Binding, Computed, Signal, deep_unref, unref
 
 
 def test_signal_basic():
@@ -13,16 +15,36 @@ def test_signal_basic():
     assert s.value == 10
 
 
-def test_signal_nested():
-    """Test nested Signal functionality."""
-    s1 = Signal(5)
-    s2 = Signal(s1)
-    s3 = Signal(s2)
+def test_signal_rejects_reactive_initial_value():
+    with pytest.raises(TypeError, match="use Binding"):
+        Signal(Signal(5))
 
-    assert s3.value == 5
 
-    s1.value = 10
-    assert s3.value == 10
+def test_signal_rejects_reactive_assignment():
+    outer = Signal(5)
+    with pytest.raises(TypeError, match="use Binding"):
+        outer.value = Signal(10)  # type: ignore[assignment]
+    assert outer.value == 5
+
+
+def test_signal_container_is_opaque_to_reactive_children():
+    child = Signal(1)
+    outer = Signal([child])
+    runs = 0
+
+    def read_outer():
+        nonlocal runs
+        runs += 1
+        return outer.value
+
+    derived = Computed(read_outer)
+    assert derived.value == [child]
+    assert runs == 1
+
+    child.value = 2
+    assert derived.value == [child]
+    assert runs == 1
+    assert deep_unref(outer) == [2]
 
 
 def test_unref():
@@ -98,7 +120,7 @@ def test_signal_drops_garbage_collected_observers():
 def test_signal_context_manager():
     """Test the Signal's context manager functionality."""
     s = Signal(5)
-    t = Signal(s)
+    t = Binding(s)
 
     with s.at(10):
         assert s.value == 10
@@ -108,14 +130,14 @@ def test_signal_context_manager():
     assert t.value == 5
 
 
-def test_signal_context_manager_restores_nested_signal():
+def test_binding_context_manager_restores_source():
     inner = Signal(5)
-    outer = Signal(inner)
+    outer = Binding(inner)
 
     with outer.at(10):
         assert outer.value == 10
 
-    assert outer._value is inner
+    assert outer.source is inner
     inner.value = 20
     assert outer.value == 20
 

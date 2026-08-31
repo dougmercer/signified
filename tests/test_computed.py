@@ -2,7 +2,7 @@ import gc
 
 import pytest
 
-from signified import Computed, Signal, computed
+from signified import Binding, Computed, Signal, computed
 
 
 def test_computed_basic():
@@ -50,10 +50,10 @@ def test_computed_dependencies():
     assert c.value == 20
 
 
-def test_computed_with_nested_signals():
-    """Test Computed with multiple nested Signals."""
-    s1 = Signal(Signal(5))
-    s2 = Signal(Signal(Signal(3)))
+def test_computed_with_bindings():
+    """Test Computed with multiple Binding layers."""
+    s1 = Binding(Signal(5))
+    s2 = Binding(Binding(Signal(3)))
 
     @computed
     def complex_computation(a, b):
@@ -62,7 +62,7 @@ def test_computed_with_nested_signals():
     result = complex_computation(s1, s2)
     assert result.value == 15
 
-    s1.value = 7
+    s1.set(7)
     assert result.value == 21
 
 
@@ -169,9 +169,9 @@ def test_computed_skips_downstream_recompute_when_upstream_value_stable():
     assert downstream_runs == 1
 
 
-def test_nested_signal_change_invalidates_computed_once():
+def test_binding_source_change_invalidates_computed_once():
     inner = Signal(1)
-    outer = Signal(inner)
+    outer = Binding(inner)
     derived = Computed(lambda: outer.value + 1)
     _ = derived.value
 
