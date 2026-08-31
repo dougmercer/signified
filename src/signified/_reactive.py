@@ -19,6 +19,10 @@ __all__ = ["Variable", "Signal", "Computed", "Effect"]
 _PLAIN_SCALAR_TYPES = {int, float, str, bool, bytes, complex, type(None)}
 _GLOBAL_VERSION = 0
 
+# `_ReactiveMixIn.__setattr__` forwards unknown names to the wrapped value, so
+# internal writes on the hot path bypass that Python-level call.
+_setattr = object.__setattr__
+
 
 def _bump_global_version() -> int:
     """Advance the module-wide reactive version clock and return the new value."""
@@ -75,9 +79,9 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     def __init__(self):
         """Initialize the variable."""
-        self._observers = _ObserverLinks[_Observer]()
-        self._name = ""
-        self._version = 0
+        _setattr(self, "_observers", _ObserverLinks[_Observer]())
+        _setattr(self, "_name", "")
+        _setattr(self, "_version", 0)
 
     @staticmethod
     def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
@@ -337,7 +341,7 @@ class Signal[T](Variable[T]):
 
     def __init__(self, value: HasValue[T]) -> None:
         super().__init__()
-        self._value = value
+        _setattr(self, "_value", value)
         if _may_have_reactive_children(value):
             self._observe(value)
         if HOOKS_ENABLED:
@@ -363,7 +367,7 @@ class Signal[T](Variable[T]):
     def value(self, new_value: HasValue[T]) -> None:
         old_value = self._value
         if _has_changed(old_value, new_value):
-            self._value = new_value
+            _setattr(self, "_value", new_value)
             self._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=self)
@@ -633,7 +637,7 @@ class _ComputedImpl:
         self._state = _State.FRESH
         value_changed = not had_value or _has_changed(previous_value, next_value)
         if value_changed:
-            owner._value = next_value
+            _setattr(owner, "_value", next_value)
             self._global_version_seen = owner._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=owner)
@@ -725,9 +729,9 @@ class Computed(Variable[T]):
 
     def __init__(self, f: Callable[[], T]) -> None:
         super().__init__()
-        self._compute_fn = f
-        self._value: T = cast(T, None)  # placeholder; always set before read via _state guard
-        self._impl = _ComputedImpl(self)
+        _setattr(self, "_compute_fn", f)
+        _setattr(self, "_value", cast(T, None))  # placeholder; always set before read via _state guard
+        _setattr(self, "_impl", _ComputedImpl(self))
 
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
