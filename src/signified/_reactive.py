@@ -22,6 +22,7 @@ _GLOBAL_VERSION = 0
 # it costs a Python-level call on every assignment. Internal writes on the hot
 # path bypass it; `_ReactiveMixIn._bump_version` does the same.
 _setattr = object.__setattr__
+_BINDING_UNSET = object()
 
 
 def _bump_global_version() -> int:
@@ -215,13 +216,17 @@ def _has_changed(previous: Any, current: Any) -> bool:
     """
     previous_type = type(previous)
     current_type = type(current)
-    if _is_reactive_value(previous) or _is_reactive_value(current):
-        return previous is not current
     if previous_type is current_type:
         if previous_type in {int, bool, str, bytes, complex, type(None)}:
             return previous != current
         if previous_type is float:
             return not (math.isnan(previous) and math.isnan(current)) and previous != current
+
+    # Reactive wrappers compare by identity rather than their overloaded value
+    # equality. Keep this after the scalar fast path: change detection runs for
+    # every recomputed node, and most graph values are plain scalars.
+    if _is_reactive_value(previous) or _is_reactive_value(current):
+        return previous is not current
 
     # Compare callables by identity to avoid invoking custom `__eq__` logic and
     # to preserve stable references as unchanged.
@@ -505,7 +510,7 @@ _DependencyState = _PythonDependencyState
 class _ComputedImpl:
     """Internal state and dependency tracking for :class:`Computed`."""
 
-    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing", "_global_version_seen", "_skip_equality"]
+    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing", "_global_version_seen"]
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
@@ -513,7 +518,6 @@ class _ComputedImpl:
         self._state = _State.UNINITIALIZED
         self._is_computing = False
         self._global_version_seen = -1
-        self._skip_equality = False
 
     @property
     def _deps(self) -> Any:
@@ -552,9 +556,7 @@ class _ComputedImpl:
 
         # 3) Commit value/version if the computed result actually changed.
         self._state = _State.FRESH
-        skip_equality = self._skip_equality
-        self._skip_equality = False
-        value_changed = not had_value or skip_equality or _has_changed(previous_value, next_value)
+        value_changed = not had_value or _has_changed(previous_value, next_value)
         if value_changed:
             _setattr(owner, "_value", next_value)
             self._global_version_seen = owner._bump_version()
@@ -591,14 +593,13 @@ class _ComputedImpl:
         # Slow path: recompute and reconcile dependencies.
         self.refresh()
 
-    def invalidate(self, *, force: bool = False, skip_equality: bool = False) -> bool:
+    def invalidate(self, *, force: bool = False) -> bool:
         """Mark stale and return True when transitioning out of FRESH.
 
         ``force=True`` upgrades the state to ``MUST_REFRESH``, bypassing the
         dep-version check on the next read even if dep versions look unchanged.
         """
         was_fresh = self._state == _State.FRESH
-        self._skip_equality = self._skip_equality or skip_equality
         self._state = max(self._state, _State.MUST_REFRESH if force else _State.STALE)
         return was_fresh
 
@@ -710,9 +711,9 @@ class Computed(Variable[T]):
         """
         self._force_invalidate()
 
-    def _force_invalidate(self, *, skip_equality: bool = False) -> None:
-        """Force refresh, optionally treating the next result as changed."""
-        if not self._impl.invalidate(force=True, skip_equality=skip_equality):
+    def _force_invalidate(self) -> None:
+        """Force refresh even when dependency versions appear unchanged."""
+        if not self._impl.invalidate(force=True):
             return
         _bump_global_version()
         self.notify()
@@ -779,8 +780,11 @@ class Binding(Computed[T]):
             return self
 
         self._source = source
-        # Source identity is the change. The lazy refresh also skips equality.
-        self._force_invalidate(skip_equality=True)
+        # Source identity is the change. Clear the cached value so the lazy
+        # refresh commits the new source's exact value even when it compares
+        # equal to the previous source's value.
+        _setattr(self, "_value", _BINDING_UNSET)
+        self._force_invalidate()
         return self
 
     def set(self, value: T) -> Self:

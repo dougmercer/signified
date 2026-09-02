@@ -51,6 +51,18 @@ def test_binding_distinct_equal_source_forces_direct_dependent_recompute() -> No
     assert runs == 2
 
 
+def test_binding_rebind_commits_equal_but_distinct_value() -> None:
+    first = [1]
+    second = [1]
+    binding = Binding(Signal(first))
+
+    assert binding.value is first
+
+    binding.bind(Signal(second))
+
+    assert binding.value is second
+
+
 def test_binding_rebind_does_not_compare_resolved_values() -> None:
     class EqualityMustNotRun:
         def __eq__(self, other: object) -> bool:

@@ -149,10 +149,16 @@ def test_bench_binding_chain_read_v1(benchmark):
 
 
 def test_bench_unref_v1(benchmark):
-    """Benchmark unref on a Binding."""
+    """Benchmark shallow unref on a Signal containing another Signal."""
     inner = Signal(99)
-    outer = Binding(inner)
+    outer = Signal(inner)
     benchmark(unref, outer)
+
+
+def test_bench_binding_unref_v1(benchmark):
+    """Benchmark unref on a Binding separately from shallow Signal unref."""
+    binding = Binding(Signal(99))
+    benchmark(unref, binding)
 
 
 def test_bench_deep_unref_dict_v1(benchmark):
