@@ -1,7 +1,7 @@
 import gc
 import weakref
 
-from signified import Computed, Signal, unref
+from signified import Binding, Computed, Signal, deep, deep_unref, unref
 
 
 def test_signal_basic():
@@ -13,16 +13,79 @@ def test_signal_basic():
     assert s.value == 10
 
 
-def test_signal_nested():
-    """Test nested Signal functionality."""
-    s1 = Signal(5)
-    s2 = Signal(s1)
-    s3 = Signal(s2)
+def test_signal_can_store_reactive_initial_value():
+    inner = Signal(5)
+    outer = Signal(inner)
 
-    assert s3.value == 5
+    assert outer.value is inner
 
-    s1.value = 10
-    assert s3.value == 10
+
+def test_stored_reactive_value_does_not_create_containment_dependency():
+    inner = Signal(1)
+    outer = Signal(inner)
+    runs = 0
+
+    def read_outer():
+        nonlocal runs
+        runs += 1
+        return outer.value
+
+    derived = Computed(read_outer)
+    assert derived.value is inner
+    assert runs == 1
+
+    inner.value = 2
+    assert derived.value is inner
+    assert runs == 1
+
+
+def test_signal_can_be_assigned_a_reactive_value():
+    inner = Computed(lambda: 10)
+    outer: Signal[object] = Signal(5)
+
+    outer.value = inner
+
+    assert outer.value is inner
+
+
+def test_signal_reactive_assignment_uses_identity_for_change_detection():
+    first = Signal(1)
+    second = Signal(1)
+    outer = Signal(first)
+    derived = Computed(lambda: outer.value)
+
+    assert derived.value is first
+    outer.value = second
+    assert derived.value is second
+
+
+def test_signal_container_is_opaque_to_reactive_children():
+    child = Signal(1)
+    outer = Signal([child])
+    runs = 0
+
+    def read_outer():
+        nonlocal runs
+        runs += 1
+        return outer.value
+
+    derived = Computed(read_outer)
+    assert derived.value == [child]
+    assert runs == 1
+
+    child.value = 2
+    assert derived.value == [child]
+    assert runs == 1
+    assert deep.unref(outer) == [2]
+
+
+def test_unref_is_shallow_and_deep_unref_is_recursive():
+    inner = Signal(1)
+    outer = Signal(inner)
+
+    assert unref(outer) is inner
+    assert deep.unref(outer) == 1
+    assert deep_unref(outer) == 1
 
 
 def test_unref():
@@ -98,7 +161,7 @@ def test_signal_drops_garbage_collected_observers():
 def test_signal_context_manager():
     """Test the Signal's context manager functionality."""
     s = Signal(5)
-    t = Signal(s)
+    t = Binding(s)
 
     with s.at(10):
         assert s.value == 10
@@ -108,14 +171,14 @@ def test_signal_context_manager():
     assert t.value == 5
 
 
-def test_signal_context_manager_restores_nested_signal():
+def test_binding_context_manager_restores_source():
     inner = Signal(5)
-    outer = Signal(inner)
+    outer = Binding(inner)
 
     with outer.at(10):
         assert outer.value == 10
 
-    assert outer._value is inner
+    assert outer.source is inner
     inner.value = 20
     assert outer.value == 20
 

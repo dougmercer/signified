@@ -1,24 +1,40 @@
 from math import ceil, floor, trunc
 from typing import Any, TypeVar, Union, assert_type
 
-from signified import Computed, Effect, Signal, computed, unref
+from signified import Binding, Computed, Effect, Signal, computed, unref
 
 T = TypeVar("T")
 Numeric = Union[int, float]
 
 
-def test_signal_init():
+def test_signal_and_binding_init():
     a = Signal(1)
     assert_type(a, Signal[int])
     assert_type(a.value, int)
 
-    b = Signal(a)
-    assert_type(b, Signal[int])
+    b = Binding(a)
+    assert_type(b, Binding[int])
     assert_type(b.value, int)
 
-    c = Signal(Signal(Signal(Signal(Signal(1.2)))))
-    assert_type(c, Signal[float])
+    c = Binding(Binding(Binding(Binding(Signal(1.2)))))
+    assert_type(c, Binding[float])
     assert_type(c.value, float)
+
+    assert_type(c.source, Computed[float] | Signal[float] | Binding[float])
+    assert_type(c.bind(Signal(2.0)), Binding[float])
+    assert_type(c.set(3.0), Binding[float])
+
+
+def test_higher_order_reactive_values():
+    source = Signal(1)
+    stored = Signal(source)
+    calculated = Computed(lambda: source)
+
+    assert_type(stored, Signal[Signal[int]])
+    assert_type(stored.value, Signal[int])
+    assert_type(unref(stored), Signal[int])
+    assert_type(calculated, Computed[Signal[int]])
+    assert_type(calculated.value, Signal[int])
 
 
 def test_computed_init():
@@ -648,7 +664,7 @@ def test_where():
 
 def test_unref():
     a = Signal(1)
-    b = Signal(Signal(2.0))
+    b = Binding(Signal(2.0))
     c = Computed(lambda: "three")
 
     assert_type(unref(a), int)

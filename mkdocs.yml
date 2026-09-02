@@ -126,6 +126,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Usage: usage.md
+  - Compute Contract: compute-contract.md
   - Playground: playground.md
   - Magic Methods: magic-methods.md
   - Plugins: plugins.md

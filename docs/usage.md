@@ -7,11 +7,14 @@ hide:
 
 This guide walks through common usage patterns with examples. For a complete reference, see the [API docs](api.md).
 
-## Signals and Computed Values
+## Signals, Computed Values, and Bindings
 
-`Signal` holds mutable state.
+`Signal` holds a mutable value. Reactive objects and containers are valid
+stored values and remain opaque until explicitly read.
 
 `Computed` represents derived state. It subscribes to dependencies and updates when they change.
+
+`Binding` is a stable read-only handle whose current reactive source can be replaced.
 
 ### Reading the underlying value (`.value`)
 
@@ -94,6 +97,48 @@ print(y)  # <26>
 
 This composition is the core pattern: define state once, derive the rest.
 
+### Replacing a reactive source with `Binding`
+
+Use `Binding` when other code needs to retain one reactive object while you
+replace the `Signal`, `Computed`, or `Binding` that supplies its value.
+
+```python
+from signified import Binding, Signal
+
+left = Signal(1)
+right = Signal(10)
+selected = Binding(left)
+doubled = selected * 2
+
+print(doubled.value)  # 2
+selected.bind(right)
+print(doubled.value)  # 20
+right.value = 12
+print(doubled.value)  # 24
+
+selected.set(5)       # switch to a private plain-value source
+print(doubled.value)  # 10
+```
+
+A `Binding` may follow another `Binding`. Its `.source` property returns the
+exact current source. For accumulated operations, use `.derive(...)` so the
+new computation is built from the source that existed before the rebind:
+
+```python
+from signified import Binding, Signal, computed
+
+value = Binding(Signal(2))
+value.derive(lambda previous: computed(lambda x: x * 3)(previous))
+print(value.value)  # 6
+```
+
+Building the new computation from `value` itself would create a reactive cycle.
+Direct self-binding is rejected immediately; indirect cycles raise when read.
+
+`Signal` may directly store a reactive value, and a `Computed` function may
+return one. Those operations preserve the reactive object itself; use `Binding`
+when the stable outer identity should follow the source's current value.
+
 ## Attribute Access, Method Calls, and Assignment
 
 You can reactively read attributes and call methods from objects inside signals.
@@ -152,6 +197,23 @@ print(total)       # <6>
 
 numbers[0] = 9
 print(total)       # <14>
+```
+
+A container stored in a `Signal` is opaque: the signal does not automatically
+follow reactive objects placed inside that container. Ordinary containers
+passed to `computed` and `effect` are opaque too. Use `deep.computed` when you
+want explicit recursive argument resolution:
+
+```python
+from signified import Signal, deep
+
+a = Signal(1)
+b = Signal(2)
+total = deep.computed(sum)([a, b])
+
+print(total.value)  # 3
+a.value = 10
+print(total.value)  # 12
 ```
 
 ```python
@@ -248,7 +310,8 @@ Use `peek` when you want a side-effect to fire only when you explicitly read `.v
 
 ## Utility Helpers
 
-`unref` makes functions work with either plain values or reactive values.
+`unref` makes functions work with either plain values or reactive values. It
+unwraps exactly one reactive boundary.
 
 ```python
 from signified import HasValue, Signal, unref
@@ -262,10 +325,45 @@ print(process_data(Signal(5)))  # 10
 
 Related helpers:
 
-- `deep_unref`: recursively unwraps nested containers of reactive values
+- `deep.unref`: recursively unwraps nested containers of reactive values
+- `deep.computed` and `deep.effect`: opt into recursive argument resolution
 - `as_rx`: wraps plain values into `Signal` (or returns the input reactive value)
 - `has_value`: type guard for checking `HasValue[T]`
 - `Signal.at(...)`: temporary scoped value override via context manager
+
+## Shallow and deep argument resolution
+
+Dependencies come from reactive reads, not containment. `computed` and `effect`
+unwrap direct reactive arguments, but ordinary Python containers are opaque:
+
+```python
+from signified import Signal, computed
+
+x = Signal(2)
+config = {"nested": {"x": x}}
+
+@computed
+def double(config):
+    return config["nested"]["x"].value * 2
+
+result = double(config)
+```
+
+The explicit `.value` access tracks `x`. If a function should recursively
+resolve and track every reactive value in its arguments, import the `deep`
+namespace:
+
+```python
+from signified import Signal, deep
+
+values = [Signal(1), Signal(2)]
+total = deep.computed(sum)(values)
+assert total.value == 3
+```
+
+Reactive values are also ordinary values. `Signal(other_signal)` stores that
+signal, and `Computed(lambda: other_signal)` returns it. Use `Binding` when a
+stable reactive identity should follow another reactive source.
 
 ## Manual Invalidation
 

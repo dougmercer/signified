@@ -8,6 +8,36 @@ This page summarizes notable changes across releases.
 
 ## 0.5.0
 
+### Explicit source bindings
+
+Added `Binding[T]`, a stable reactive handle whose current source can be
+replaced with `.bind(...)`, changed to a private plain source with `.set(...)`,
+or accumulated safely with `.derive(...)`.
+
+This replaces implicit reactive values stored inside `Signal`:
+
+```python
+# Before
+selected = Signal(source)
+selected.value = other_source
+
+# After
+selected = Binding(source)
+selected.bind(other_source)
+```
+
+### Breaking: explicit deep resolution
+
+Dependencies now come from reactive reads, not containment. `Signal` can store
+reactive values, `Computed` can return reactive values, and `unref` unwraps one
+reactive boundary. Containers stored in a `Signal` are opaque: the outer signal
+does not scan for or forward changes from reactive objects inside them.
+
+`computed` and `effect` now unwrap direct reactive arguments only. Recursive
+argument resolution is an explicit opt-in through `deep.computed` and
+`deep.effect`; `deep.unref` is the recursive counterpart to `unref`. The old
+`deep_unref` name remains as a deprecated compatibility alias.
+
 ### Removals
 
 The following deprecated APIs were removed. Their replacements are listed
@@ -101,7 +131,7 @@ Added `invalidate()` to all reactive values. For `Computed`, pass `force=True` t
 !!! danger "Breaking Changes"
 
     - **`Effect` constructor**: the two-argument form `Effect(source, fn)` is gone. Replace with `Effect(lambda: fn(source.value))`.
-    - **`NestedValue` removed from public exports**: `from signified import NestedValue` will raise `ImportError`. The type alias is still available in `signified._types` if needed.
+    - **`NestedValue` removed**: `from signified import NestedValue` will raise `ImportError`. Use `HasValue` or `ReactiveValue`; explicit source chains use `Binding`.
     - **Internal module renames**: the private implementation modules have been reorganised. Any code importing directly from `signified.core`, `signified.types`, or `signified.display` will break. Use the public `signified` namespace instead.
 
 !!! warning "Deprecations"
