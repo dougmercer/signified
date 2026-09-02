@@ -208,12 +208,36 @@ def _track_read(variable: Variable[Any]) -> None:
     impl._dep_state.register_dependency(variable)
 
 
+## Consider simplifying _has_changed.
+# _VALUE_TYPES = {int, str, bytes, complex}
+
+
+# def _has_changed(previous: Any, current: Any) -> bool:
+#     if previous is current:
+#         return False
+
+#     value_type = type(previous)
+#     if value_type is not type(current):
+#         return True
+
+#     if value_type is float:
+#         return previous != current and not (math.isnan(previous) and math.isnan(current))
+
+#     if value_type in _VALUE_TYPES:
+#         return previous != current
+
+#     return True
+
+
 def _has_changed(previous: Any, current: Any) -> bool:
     """Best-effort change detection for assignments into reactive values.
 
     This function is intentionally fail-open: if comparison is ambiguous or
     raises, we treat the value as changed to avoid missing invalidations.
     """
+    if previous is _BINDING_UNSET:
+        return True
+
     previous_type = type(previous)
     current_type = type(current)
     if previous_type is current_type:
@@ -741,11 +765,10 @@ class Binding(Computed[T]):
             by a private `Signal`.
     """
 
-    __slots__ = ("_owned", "_source", "_override")
+    __slots__ = ("_owned", "_source")
 
     def __init__(self, source: T | ReactiveValue[T]) -> None:
         self._owned: Signal[T] | None
-        self._override: Signal[T] | None = None
         if _is_reactive_value(source):
             self._source: ReactiveValue[T] = cast(ReactiveValue[T], source)
             self._owned = None
@@ -791,15 +814,14 @@ class Binding(Computed[T]):
         """Select and update this binding's private plain-value source."""
         if _is_reactive_value(value):
             raise TypeError("set() requires a plain value; use bind(source) for a reactive source")
+
         owned = self._owned
         if owned is None:
             owned = Signal(value)
             self._owned = owned
-        elif self._source is owned:
-            owned.value = value
-            return self
         else:
             owned.value = value
+
         return self.bind(owned)
 
     def derive(self, build: Callable[[ReactiveValue[T]], ReactiveValue[T]]) -> Self:
