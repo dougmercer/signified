@@ -25,8 +25,8 @@ pip install signified
 
 `signified` is a reactive programming library built around three data structures:
 
-- `Signal` stores a mutable plain value.
-- `Computed` calculates a read-only plain value.
+- `Signal[T]` stores a mutable value of any Python type `T`.
+- `Computed[T]` calculates a read-only value of any Python type `T`.
 - `Binding` is a stable handle that can switch between reactive sources.
 
 This allows us to create a network of computation, where one value being modified can trigger other objects to update.
@@ -54,6 +54,10 @@ x_squared = power(x, 2)  # equivalent to the above
 ```
 
 Together, these data structures allow us to implement a wide variety of capabilities. In particular, I wrote this library to make my to-be-released animation library easier to maintain and more fun to work with.
+
+Dependencies come from reactive reads, not containment. Normal `computed` and
+`effect` calls unwrap direct reactive arguments, while ordinary containers are
+opaque. Use `from signified import deep` when recursive resolution is intended.
 
 ## ... what do you mean by "kind-of working type narrowing"?
 

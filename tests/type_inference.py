@@ -25,6 +25,18 @@ def test_signal_and_binding_init():
     assert_type(c.set(3.0), Binding[float])
 
 
+def test_higher_order_reactive_values():
+    source = Signal(1)
+    stored = Signal(source)
+    calculated = Computed(lambda: source)
+
+    assert_type(stored, Signal[Signal[int]])
+    assert_type(stored.value, Signal[int])
+    assert_type(unref(stored), Signal[int])
+    assert_type(calculated, Computed[Signal[int]])
+    assert_type(calculated.value, Signal[int])
+
+
 def test_computed_init():
     c_int = Computed(lambda: 1)
     assert_type(c_int, Computed[int])

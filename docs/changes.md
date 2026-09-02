@@ -26,10 +26,17 @@ selected = Binding(source)
 selected.bind(other_source)
 ```
 
-Direct reactive `Signal` values and direct reactive `Computed` results now
-raise `TypeError`. Containers stored in a `Signal` are opaque: the outer signal
-does not scan for or forward changes from reactive objects inside them. Deep
-argument resolution for `@computed` and `@effect` remains supported.
+### Breaking: explicit deep resolution
+
+Dependencies now come from reactive reads, not containment. `Signal` can store
+reactive values, `Computed` can return reactive values, and `unref` unwraps one
+reactive boundary. Containers stored in a `Signal` are opaque: the outer signal
+does not scan for or forward changes from reactive objects inside them.
+
+`computed` and `effect` now unwrap direct reactive arguments only. Recursive
+argument resolution is an explicit opt-in through `deep.computed` and
+`deep.effect`; `deep.unref` is the recursive counterpart to `unref`. The old
+`deep_unref` name remains as a deprecated compatibility alias.
 
 ### Removals
 

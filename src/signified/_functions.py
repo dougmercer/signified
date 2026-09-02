@@ -2,61 +2,34 @@
 
 from __future__ import annotations
 
-import importlib.util
-from collections.abc import Iterable
 from functools import wraps
 from typing import Any, Callable, TypeGuard, cast
+from warnings import warn
 
 from ._reactive import Computed, Effect, Signal, _is_reactive_value, _track_read
 from ._types import HasValue, ReactiveValue
-
-if importlib.util.find_spec("numpy") is not None:
-    import numpy as np  # pyright: ignore[reportMissingImports]
-else:
-    np = None  # User does not have numpy installed
-
-_PLAIN_ARG_TYPES = {int, float, str, bool, bytes, complex, type(None)}
-
-
-def _identity[T](value: T) -> T:
-    return value
-
-
-def _get_unref_op(value: Any) -> Callable[[Any], Any]:
-    if _is_reactive_value(value):
-        return unref
-    if type(value) in _PLAIN_ARG_TYPES:
-        return _identity
-    return deep_unref
 
 
 def _bind_args[R](func: Callable[..., R], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Callable[[], R]:
     """Return a zero-argument callable that resolves `args`/`kwargs` and calls `func`.
 
-    Each argument's resolver is chosen once, from the shape of the outer
-    argument, and reused on every evaluation: reactive values use
-    [unref][signified.unref], exact plain scalars pass through unchanged, and
-    everything else uses [deep_unref][signified.deep_unref].
+    Direct reactive arguments are shallowly unwrapped on every evaluation.
+    Plain values, including containers with reactive descendants, pass through
+    unchanged.
     """
     if not kwargs:
         if not args:
             return func
         if len(args) == 1:
             arg = args[0]
-            resolve_arg = _get_unref_op(arg)
-            return lambda: func(resolve_arg(arg))
+            return lambda: func(unref(arg))
         if len(args) == 2:
             left, right = args
-            resolve_left = _get_unref_op(left)
-            resolve_right = _get_unref_op(right)
-            return lambda: func(resolve_left(left), resolve_right(right))
-
-    arg_resolvers = tuple(_get_unref_op(arg) for arg in args)
-    kw_resolvers = {key: _get_unref_op(value) for key, value in kwargs.items()}
+            return lambda: func(unref(left), unref(right))
 
     def call() -> R:
-        resolved_args = tuple(resolver(arg) for resolver, arg in zip(arg_resolvers, args, strict=False))
-        resolved_kwargs = {key: kw_resolvers[key](value) for key, value in kwargs.items()}
+        resolved_args = tuple(unref(arg) for arg in args)
+        resolved_kwargs = {key: unref(value) for key, value in kwargs.items()}
         return func(*resolved_args, **resolved_kwargs)
 
     return call
@@ -65,9 +38,10 @@ def _bind_args[R](func: Callable[..., R], args: tuple[Any, ...], kwargs: dict[st
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
     """Wrap a function so calls produce a reactive [Computed][signified.Computed] result.
 
-    The returned wrapper accepts plain values, reactive values, or nested
-    containers. On each recomputation, arguments are resolved with
-    [deep_unref][signified.deep_unref], so `func` always receives plain Python values.
+    Direct reactive arguments are shallowly unwrapped on each recomputation.
+    Plain values, including containers that contain reactive values, are passed
+    through unchanged. Use [deep.computed][signified.deep.computed] for explicit
+    recursive argument resolution.
 
     Any reactive value read during evaluation becomes a dependency; the
     [Computed][signified.Computed] updates automatically when any dependency changes.
@@ -89,9 +63,10 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
 def effect(func: Callable[..., None]) -> Callable[..., Effect]:
     """Wrap a function so calls produce a reactive [Effect][signified.Effect].
 
-    The returned wrapper accepts plain values, reactive values, or nested
-    containers. On each re-run, arguments are resolved with
-    [deep_unref][signified.deep_unref], so `func` always receives plain Python values.
+    Direct reactive arguments are shallowly unwrapped on each re-run. Plain
+    values, including containers that contain reactive values, are passed
+    through unchanged. Use [deep.effect][signified.deep.effect] for explicit
+    recursive argument resolution.
 
     The effect runs immediately when called and re-runs whenever any reactive
     dependency changes. It is active as long as the caller holds a reference to
@@ -134,7 +109,7 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
 
 
 def unref[T](value: HasValue[T]) -> T:
-    """Unwrap a reactive value to its plain Python value.
+    """Unwrap exactly one reactive boundary.
 
     When called inside a [Computed][signified.Computed] or [Effect][signified.Effect]
     evaluation, the reactive registers as a dependency — equivalent to reading
@@ -144,7 +119,7 @@ def unref[T](value: HasValue[T]) -> T:
         value: Plain value or reactive value.
 
     Returns:
-        The fully unwrapped value.
+        The value inside one reactive wrapper, or the original plain value.
 
     Example:
         ```py
@@ -188,70 +163,12 @@ def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
     return isinstance(unref(obj), type_)
 
 
-# ---------------------------------------------------------------------------
-# Utility functions that depend on the reactive types above
-# ---------------------------------------------------------------------------
-
-_SCALAR_TYPES = {int, float, str, bool, type(None)}
-
-
 def deep_unref(value: Any) -> Any:
-    """Recursively resolve reactive values within nested containers.
+    """Deprecated alias for [deep.unref][signified.deep.unref]."""
+    warn("deep_unref() is deprecated; use deep.unref()", DeprecationWarning, stacklevel=2)
+    from .deep import unref as deep_unwrap
 
-    Like [unref][signified.unref], but also descends into `dict`, `list`, `tuple`, and other
-    iterables, replacing any reactive values found within them.
-
-    Supported containers:
-
-    - scalars (`int`, `float`, `str`, `bool`, `None`) are returned unchanged
-    - reactive values are unwrapped recursively
-    - `dict`, `list`, and `tuple` contents are recursively unwrapped
-    - generic iterables are reconstructed when possible; otherwise returned as-is
-    - `numpy.ndarray` with `dtype=object` is unwrapped element-wise
-
-    Args:
-        value: Any value, possibly containing reactive values.
-
-    Returns:
-        Value with reactive nodes recursively replaced by plain values.
-
-    Example:
-        ```py
-        >>> payload = {"a": Signal(1), "b": [Signal(2), 3]}
-        >>> deep_unref(payload)
-        {'a': 1, 'b': [2, 3]}
-
-        ```
-    """
-    value_type = type(value)
-
-    # Fast path for common scalar types (faster than isinstance check)
-    if value_type in _SCALAR_TYPES:
-        return value
-
-    # Unwrap reactive values.
-    value = unref(value)
-    value_type = type(value)
-    if value_type in _SCALAR_TYPES:
-        return value
-
-    # For containers, recursively unref their elements
-    if np is not None and isinstance(value, np.ndarray):
-        assert np is not None
-        return np.array([deep_unref(item) for item in value]).reshape(value.shape) if value.dtype == object else value
-    if value_type is list:
-        return [deep_unref(item) for item in value]
-    if value_type is tuple:
-        return tuple(deep_unref(item) for item in value)
-    if value_type is dict:
-        return {deep_unref(k): deep_unref(v) for k, v in value.items()}
-    if isinstance(value, Iterable) and not isinstance(value, str):
-        try:
-            return type(value)(deep_unref(item) for item in value)  # pyright: ignore[reportCallIssue]
-        except TypeError:
-            return value
-
-    return value
+    return deep_unwrap(value)
 
 
 def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:

@@ -125,9 +125,16 @@ subscript, and attribute-access operations all return reactive
 ::: signified.computed
 ::: signified.effect
 ::: signified.unref
-::: signified.deep_unref
 ::: signified.has_value
 ::: signified.as_rx
+
+## Explicit deep resolution
+
+Import the namespace with `from signified import deep`.
+
+::: signified.deep.unref
+::: signified.deep.computed
+::: signified.deep.effect
 
 ## Types
 
