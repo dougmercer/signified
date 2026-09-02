@@ -816,33 +816,16 @@ class Binding(Computed[T]):
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
-        """Temporarily select a plain value and restore the exact prior source.
-
-        One private override signal is reused across calls rather than allocated
-        per entry. Nested contexts therefore share that signal, so an inner exit
-        restores the outer value instead of rebinding.
-        """
         if _is_reactive_value(value):
-            raise TypeError("at() requires a plain value; use bind(source) for a reactive source")
+            raise TypeError("at() requires a plain value. Use bind(source) for a reactive source.")
+
         previous = self._source
-        override = self._override
-        if override is None:
-            override = Signal(value)
-            self._override = override
-            restore = value
-        else:
-            restore = override._value
-            override.value = value
-        self.bind(override)
+        temporary = Signal(value)
         try:
+            self.bind(temporary)
             yield
         finally:
-            if previous is override:
-                # Nested: the override is already selected, so rebinding it is a
-                # no-op and the previous value has to be put back instead.
-                override.value = restore
-            else:
-                self.bind(previous)
+            self.bind(previous)
 
 
 class Effect:
