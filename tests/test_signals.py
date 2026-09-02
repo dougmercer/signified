@@ -1,9 +1,7 @@
 import gc
 import weakref
 
-import pytest
-
-from signified import Binding, Computed, Signal, deep_unref, unref
+from signified import Binding, Computed, Signal, deep, deep_unref, unref
 
 
 def test_signal_basic():
@@ -15,16 +13,50 @@ def test_signal_basic():
     assert s.value == 10
 
 
-def test_signal_rejects_reactive_initial_value():
-    with pytest.raises(TypeError, match="use Binding"):
-        Signal(Signal(5))
+def test_signal_can_store_reactive_initial_value():
+    inner = Signal(5)
+    outer = Signal(inner)
+
+    assert outer.value is inner
 
 
-def test_signal_rejects_reactive_assignment():
-    outer = Signal(5)
-    with pytest.raises(TypeError, match="use Binding"):
-        outer.value = Signal(10)  # type: ignore[assignment]
-    assert outer.value == 5
+def test_stored_reactive_value_does_not_create_containment_dependency():
+    inner = Signal(1)
+    outer = Signal(inner)
+    runs = 0
+
+    def read_outer():
+        nonlocal runs
+        runs += 1
+        return outer.value
+
+    derived = Computed(read_outer)
+    assert derived.value is inner
+    assert runs == 1
+
+    inner.value = 2
+    assert derived.value is inner
+    assert runs == 1
+
+
+def test_signal_can_be_assigned_a_reactive_value():
+    inner = Computed(lambda: 10)
+    outer: Signal[object] = Signal(5)
+
+    outer.value = inner
+
+    assert outer.value is inner
+
+
+def test_signal_reactive_assignment_uses_identity_for_change_detection():
+    first = Signal(1)
+    second = Signal(1)
+    outer = Signal(first)
+    derived = Computed(lambda: outer.value)
+
+    assert derived.value is first
+    outer.value = second
+    assert derived.value is second
 
 
 def test_signal_container_is_opaque_to_reactive_children():
@@ -44,7 +76,16 @@ def test_signal_container_is_opaque_to_reactive_children():
     child.value = 2
     assert derived.value == [child]
     assert runs == 1
-    assert deep_unref(outer) == [2]
+    assert deep.unref(outer) == [2]
+
+
+def test_unref_is_shallow_and_deep_unref_is_recursive():
+    inner = Signal(1)
+    outer = Signal(inner)
+
+    assert unref(outer) is inner
+    assert deep.unref(outer) == 1
+    assert deep_unref(outer) == 1
 
 
 def test_unref():

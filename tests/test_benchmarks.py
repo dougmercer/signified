@@ -2,10 +2,16 @@
 
 import pytest
 
-from signified import Binding, Computed, Effect, Signal, computed, deep_unref, effect, unref
+from signified import Binding, Computed, Effect, Signal, computed, deep, effect, unref
 
 pytestmark = pytest.mark.benchmark
 slow_benchmark = pytest.mark.slow_benchmark
+
+
+def sum_args(*values):
+    """Sum positional inputs without requiring deep container resolution."""
+    return sum(values)
+
 
 # ---------------------------------------------------------------------------
 # Signal
@@ -150,9 +156,16 @@ def test_bench_unref_v1(benchmark):
 
 
 def test_bench_deep_unref_dict_v1(benchmark):
-    """Benchmark deep_unref on a dict containing reactive values."""
+    """Benchmark explicit deep resolution of a reactive dictionary."""
     payload = {"a": Signal(1), "b": [Signal(2), Signal(3)], "c": {"d": Signal(4)}}
-    benchmark(deep_unref, payload)
+    benchmark(deep.unref, payload)
+
+
+def test_bench_deep_computed_container_v1(benchmark):
+    """Benchmark explicit deep argument resolution in a computed function."""
+    values = [Signal(i) for i in range(32)]
+    total = deep.computed(sum)(values)
+    benchmark(lambda: total.value)
 
 
 # ---------------------------------------------------------------------------
@@ -222,7 +235,7 @@ def test_bench_fanout_v1(benchmark):
     """Benchmark one source update invalidating many downstream nodes."""
     source = Signal(0)
     leaves = [source + offset for offset in range(64)]
-    sink = computed(sum)(leaves)
+    sink = computed(sum_args)(*leaves)
     _ = sink.value
 
     def propagate_fanout():
@@ -241,7 +254,7 @@ def test_bench_diamond_updates_v1(benchmark):
     left = [source * factor for factor in range(1, 25)]
     right = [source + bias for bias in range(24)]
     merged = [lhs - rhs for lhs, rhs in zip(left, right, strict=True)]
-    sink = computed(sum)(merged)
+    sink = computed(sum_args)(*merged)
     _ = sink.value
 
     def propagate_diamond():
@@ -269,7 +282,7 @@ def test_bench_animation_stack_v1(benchmark):
             value = apply_step(value, ease, float(j + 1))
         leaves.append(value)
 
-    sink = computed(sum)(leaves)
+    sink = computed(sum_args)(*leaves)
     _ = sink.value
 
     def animate():
@@ -474,7 +487,7 @@ def test_bench_subscription_churn_v1(benchmark):
     """Benchmark repeated subscribe and unsubscribe cycles."""
     source = Signal(0)
     observers = [source + offset for offset in range(48)]
-    sink = computed(sum)(observers)
+    sink = computed(sum_args)(*observers)
     _ = sink.value
 
     def churn():
@@ -515,7 +528,7 @@ def test_bench_build_fanout_graph_v1(benchmark):
     def build_fanout():
         source = Signal(0)
         leaves = [source + offset for offset in range(256)]
-        sink = computed(sum)(leaves)
+        sink = computed(sum_args)(*leaves)
         return sink.value
 
     benchmark(build_fanout)
@@ -529,7 +542,7 @@ def test_bench_build_diamond_graph_v1(benchmark):
         left = [source * factor for factor in range(1, 193)]
         right = [source + bias for bias in range(192)]
         merged = [lhs - rhs for lhs, rhs in zip(left, right, strict=True)]
-        sink = computed(sum)(merged)
+        sink = computed(sum_args)(*merged)
         return sink.value
 
     benchmark(build_diamond)

@@ -16,7 +16,7 @@ pip install signified
 
 `signified` is built around three core types:
 
-- ``Signal``: mutable plain state
+- ``Signal``: mutable state that can store any Python value
 - ``Computed``: derived reactive state
 - ``Binding``: a stable reactive handle with a replaceable source
 
@@ -61,6 +61,10 @@ print(x_squared.value)  # 100
 3. Read reactive outputs from `.value`.
 4. Update the `.value` of `Signal`s to trigger updates.
 5. Use `Binding` only when a stable handle must switch sources.
+
+Dependencies come from reactive reads, not containment. Normal `computed` and
+`effect` calls unwrap direct reactive arguments only; use `from signified import
+deep` for explicit recursive resolution.
 
 ## Ready to learn more?
 

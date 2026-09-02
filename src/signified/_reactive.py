@@ -207,12 +207,6 @@ def _track_read(variable: Variable[Any]) -> None:
     impl._dep_state.register_dependency(variable)
 
 
-def _reject_reactive(value: Any) -> None:
-    """Raise if `value` is reactive, which `Signal` stores and `Binding` follows."""
-    if _is_reactive_value(value):
-        raise TypeError("Signal cannot store a reactive value; use Binding(source) instead")
-
-
 def _has_changed(previous: Any, current: Any) -> bool:
     """Best-effort change detection for assignments into reactive values.
 
@@ -221,6 +215,8 @@ def _has_changed(previous: Any, current: Any) -> bool:
     """
     previous_type = type(previous)
     current_type = type(current)
+    if _is_reactive_value(previous) or _is_reactive_value(current):
+        return previous is not current
     if previous_type is current_type:
         if previous_type in {int, bool, str, bytes, complex, type(None)}:
             return previous != current
@@ -250,7 +246,7 @@ class Signal[T](Variable[T]):
     `Signal` stores a value and notifies observers when that value changes.
     The `value` property is read/write:
 
-    - reading `value` returns the current plain value
+    - reading `value` returns the exact stored value
     - assigning `value` updates the stored value and notifies observers if it changed
 
 
@@ -274,7 +270,6 @@ class Signal[T](Variable[T]):
 
     def __init__(self, value: T) -> None:
         super().__init__()
-        _reject_reactive(value)
         _setattr(self, "_value", value)
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
@@ -293,7 +288,6 @@ class Signal[T](Variable[T]):
 
     @value.setter
     def value(self, new_value: T) -> None:
-        _reject_reactive(new_value)
         old_value = self._value
         if _has_changed(old_value, new_value):
             _setattr(self, "_value", new_value)
@@ -540,8 +534,6 @@ class _ComputedImpl:
         _COMPUTE_STACK.append(self)
         try:
             next_value = owner._compute_fn()
-            if _is_reactive_value(next_value):
-                raise TypeError("Computed functions must return plain values; use Binding(source) to switch sources")
         except BaseException:
             # Roll back: leave self._deps and self._state unchanged so the
             # Computed stays subscribed to its previous deps and remains stale
@@ -793,7 +785,8 @@ class Binding(Computed[T]):
 
     def set(self, value: T) -> Self:
         """Select and update this binding's private plain-value source."""
-        _reject_reactive(value)
+        if _is_reactive_value(value):
+            raise TypeError("set() requires a plain value; use bind(source) for a reactive source")
         owned = self._owned
         if owned is None:
             owned = Signal(value)
@@ -825,7 +818,8 @@ class Binding(Computed[T]):
         per entry. Nested contexts therefore share that signal, so an inner exit
         restores the outer value instead of rebinding.
         """
-        _reject_reactive(value)
+        if _is_reactive_value(value):
+            raise TypeError("at() requires a plain value; use bind(source) for a reactive source")
         previous = self._source
         override = self._override
         if override is None:

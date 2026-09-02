@@ -2,7 +2,7 @@ import gc
 
 import pytest
 
-from signified import Binding, Computed, Signal, computed
+from signified import Binding, Computed, Signal, computed, deep
 
 
 def test_computed_basic():
@@ -77,29 +77,54 @@ def test_computed_chaining():
     assert c2.value == 23
 
 
-def test_computed_container_with_reactive_values():
-    s = [1, Signal(2), Signal(3)]
-    result = computed(sum)(s)
+def test_computed_container_is_opaque():
+    x = Signal(2)
+    values = {"x": x}
+    runs = 0
+
+    @computed
+    def identity(value):
+        nonlocal runs
+        runs += 1
+        return value
+
+    result = identity(values)
+
+    assert result.value is values
+    assert result.value["x"] is x
+    assert runs == 1
+
+    x.value = 10
+    assert result.value is values
+    assert runs == 1
+
+
+def test_computed_explicit_nested_read_establishes_dependency():
+    x = Signal(2)
+    config = {"nested": {"x": x}}
+
+    @computed
+    def double(value):
+        return value["nested"]["x"].value * 2
+
+    result = double(config)
+    assert result.value == 4
+    x.value = 3
     assert result.value == 6
-    s[-1].value = 10
-    assert result.value == 13
 
 
-def test_computed_container_with_deeply_nestedreactive_values():
-    def flatten(lst):
-        result = []
-        for item in lst:
-            if isinstance(item, list):
-                result.extend(flatten(item))
-            else:
-                result.append(item)
-        return result
+def test_deep_computed_resolves_nested_reactive_values():
+    values = [Signal(1), {"nested": (Signal(2), Signal(3))}]
 
-    s = [1, [Signal(2), Signal([Signal(3), Signal([4, Signal(5)])])], Signal(6)]
-    result = computed(flatten)(s)
-    assert result.value == [1, 2, 3, 4, 5, 6]
-    s[1][0].value = 10
-    assert result.value == [1, 10, 3, 4, 5, 6]
+    @deep.computed
+    def total(value):
+        return value[0] + sum(value[1]["nested"])
+
+    result = total(values)
+    assert result.value == 6
+
+    values[1]["nested"][0].value = 10
+    assert result.value == 14
 
 
 def test_computed_is_lazy_until_read():
