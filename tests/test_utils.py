@@ -13,6 +13,18 @@ def test_has_value():
     assert not has_value(s, str)
 
 
+def test_is_reactive():
+    """Test the is_reactive type guard without resolving the candidate."""
+    signal = Signal(1)
+    computed_value = Computed(lambda: 2)
+    binding = Binding(signal)
+
+    assert is_reactive(signal)
+    assert is_reactive(computed_value)
+    assert is_reactive(binding)
+    assert not is_reactive(1)
+
+
 def test_unref_binding_chain():
     """Test unref with deeply nested Bindings."""
     s = Binding(Binding(Binding(Signal(5))))

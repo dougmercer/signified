@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 
+from . import migration as _migration
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
 from .plugins import HOOKS_ENABLED, plugin_manager
@@ -318,6 +319,8 @@ class Signal[T](Variable[T]):
 
     def __init__(self, value: T) -> None:
         super().__init__()
+        if _migration.WARNINGS_ENABLED and is_reactive(value):
+            _migration._warn_reactive_signal_value()
         _setattr(self, "_value", value)
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
@@ -336,6 +339,8 @@ class Signal[T](Variable[T]):
 
     @value.setter
     def value(self, new_value: T) -> None:
+        if _migration.WARNINGS_ENABLED and is_reactive(new_value):
+            _migration._warn_reactive_signal_value()
         old_value = self._value
         if _has_changed(old_value, new_value):
             _setattr(self, "_value", new_value)
@@ -593,6 +598,8 @@ class _ComputedImpl:
         popped = _COMPUTE_STACK.pop()
         assert popped is self
         self._is_computing = False
+        if _migration.WARNINGS_ENABLED:
+            _migration._warn_reactive_computed_result(owner, next_value)
 
         # 2) Reconcile subscriptions against the dependency set from this run.
         self._dep_state.commit_refresh()
