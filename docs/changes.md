@@ -8,6 +8,9 @@ This page summarizes notable changes across releases.
 
 ## 0.5.0
 
+Added `is_reactive()` for narrowing a `HasValue[T]` to a reactive wrapper
+without reading its value.
+
 ### Explicit source bindings
 
 Added `Binding[T]`, a stable reactive handle whose current source can be

@@ -1,4 +1,4 @@
-"""Known typing gaps for ReactiveMixIn.
+"""Known typing gaps for signified's public API.
 
 To evaluate progress toward desired inference:
 1. Change `USE_CURRENT_INFERENCE` to `Literal[False] = False`.
@@ -9,7 +9,7 @@ When it's ready, move passing desired assertions into `type_inference.py`.
 
 from typing import Any, Literal, assert_type
 
-from signified import Computed, Signal
+from signified import Computed, HasValue, Signal, is_reactive
 
 # NOTE: Keep annotation/value in sync so pyright can treat this as a constant.
 USE_CURRENT_INFERENCE: Literal[True] = True
@@ -67,3 +67,17 @@ def test_todo_getattr_nested_object_attribute():
         assert_type(wrapped.person, Computed[Any])
     else:
         assert_type(wrapped.person, Computed[Person])
+
+
+def test_todo_is_reactive_negative_narrowing[T](value: HasValue[T]):
+    # Why this fails:
+    # TypeGuard narrows only its positive branch. TypeIs does not make the
+    # generic claim sound: T itself may be a reactive type, so excluding every
+    # reactive wrapper from HasValue[T] cannot always leave T. Callers with a
+    # concrete non-reactive T can narrow by another guard if needed.
+    if is_reactive(value):
+        return
+    if USE_CURRENT_INFERENCE:
+        assert_type(value, HasValue[T])
+    else:
+        assert_type(value, T)

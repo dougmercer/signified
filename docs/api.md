@@ -126,6 +126,7 @@ subscript, and attribute-access operations all return reactive
 ::: signified.effect
 ::: signified.unref
 ::: signified.has_value
+::: signified.is_reactive
 ::: signified.as_rx
 
 ## Explicit deep resolution

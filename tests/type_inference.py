@@ -1,10 +1,32 @@
 from math import ceil, floor, trunc
 from typing import Any, TypeVar, Union, assert_type
 
-from signified import Binding, Computed, Effect, Signal, computed, unref
+from signified import Binding, Computed, Effect, HasValue, ReactiveValue, Signal, as_rx, computed, is_reactive, unref
 
 T = TypeVar("T")
 Numeric = Union[int, float]
+
+
+def test_is_reactive_positive_narrowing(value: HasValue[int]):
+    if is_reactive(value):
+        assert_type(value, ReactiveValue[int])
+
+
+def test_unref_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
+    assert_type(unref(value), int | str)
+
+
+def test_is_reactive_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
+    if is_reactive(value):
+        assert_type(value, ReactiveValue[int] | ReactiveValue[str])
+
+
+def test_as_rx_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
+    assert_type(as_rx(value), ReactiveValue[int] | ReactiveValue[str])
+
+
+def test_as_rx_distributes_over_larger_union(value: HasValue[int] | HasValue[str] | HasValue[bytes]):
+    assert_type(as_rx(value), ReactiveValue[int] | ReactiveValue[str] | ReactiveValue[bytes])
 
 
 def test_signal_and_binding_init():

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import wraps
-from typing import Any, Callable, TypeGuard, cast
+from typing import Any, Callable, TypeGuard, overload
 from warnings import warn
 
 from ._reactive import Computed, Effect, Signal, _is_reactive_value, _track_read
@@ -108,7 +108,15 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
     return wrapper
 
 
-def unref[T](value: HasValue[T]) -> T:
+@overload
+def unref[T](value: HasValue[T]) -> T: ...
+
+
+@overload
+def unref[T, U](value: HasValue[T] | HasValue[U]) -> T | U: ...
+
+
+def unref(value: Any) -> Any:
     """Unwrap exactly one reactive boundary.
 
     When called inside a [Computed][signified.Computed] or [Effect][signified.Effect]
@@ -130,11 +138,11 @@ def unref[T](value: HasValue[T]) -> T:
         ```
     """
     if not _is_reactive_value(value):
-        return cast(T, value)
+        return value
     if value._IS_COMPUTED:
         value._impl.ensure_uptodate()
     _track_read(value)
-    return cast(T, value._value)
+    return value._value
 
 
 def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
@@ -163,6 +171,31 @@ def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
     return isinstance(unref(obj), type_)
 
 
+@overload
+def is_reactive[T](obj: HasValue[T]) -> TypeGuard[ReactiveValue[T]]: ...
+
+
+@overload
+def is_reactive[T, U](obj: HasValue[T] | HasValue[U]) -> TypeGuard[ReactiveValue[T] | ReactiveValue[U]]: ...
+
+
+def is_reactive(obj: object) -> bool:
+    """Return whether an object is a signified reactive wrapper.
+
+    This guard narrows a plain-or-reactive [HasValue][signified.HasValue] to
+    [ReactiveValue][signified.ReactiveValue] in the true branch without reading
+    the wrapped value or creating a dependency.
+
+    Args:
+        obj: Value to inspect.
+
+    Returns:
+        `True` for a [Signal][signified.Signal], [Computed][signified.Computed],
+        or [Binding][signified.Binding].
+    """
+    return _is_reactive_value(obj)
+
+
 def deep_unref(value: Any) -> Any:
     """Deprecated alias for [deep.unref][signified.deep.unref]."""
     warn("deep_unref() is deprecated; use deep.unref()", DeprecationWarning, stacklevel=2)
@@ -171,7 +204,15 @@ def deep_unref(value: Any) -> Any:
     return deep_unwrap(value)
 
 
-def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
+@overload
+def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]: ...
+
+
+@overload
+def as_rx[T, U](val: HasValue[T] | HasValue[U]) -> ReactiveValue[T] | ReactiveValue[U]: ...
+
+
+def as_rx(val: Any) -> ReactiveValue[Any]:
     """Normalize a value to a reactive object.
 
     If `val` is already reactive, it is returned unchanged. Otherwise a new
@@ -185,4 +226,4 @@ def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
     """
     if _is_reactive_value(val):
         return val
-    return Signal(cast(T, val))
+    return Signal(val)

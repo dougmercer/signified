@@ -1,4 +1,4 @@
-from signified import Binding, Computed, Signal, as_rx, computed, has_value, unref
+from signified import Binding, Computed, Signal, as_rx, computed, has_value, is_reactive, unref
 from signified._reactive import _coerce_to_bool, _has_changed
 
 
@@ -11,6 +11,18 @@ def test_has_value():
     assert has_value(c, int)
     assert has_value(15, int)
     assert not has_value(s, str)
+
+
+def test_is_reactive():
+    """Test the is_reactive type guard without resolving the candidate."""
+    signal = Signal(1)
+    computed_value = Computed(lambda: 2)
+    binding = Binding(signal)
+
+    assert is_reactive(signal)
+    assert is_reactive(computed_value)
+    assert is_reactive(binding)
+    assert not is_reactive(1)
 
 
 def test_unref_binding_chain():

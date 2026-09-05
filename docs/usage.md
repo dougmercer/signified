@@ -329,6 +329,7 @@ Related helpers:
 - `deep.computed` and `deep.effect`: opt into recursive argument resolution
 - `as_rx`: wraps plain values into `Signal` (or returns the input reactive value)
 - `has_value`: type guard for checking `HasValue[T]`
+- `is_reactive`: type guard for narrowing `HasValue[T]` to `ReactiveValue[T]`
 - `Signal.at(...)`: temporary scoped value override via context manager
 
 ## Shallow and deep argument resolution
