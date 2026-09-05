@@ -757,8 +757,9 @@ class Binding(Computed[T]):
 
     Use a `Binding` when an object must keep the same public reactive identity
     while changing which `Signal`, `Computed`, or `Binding` supplies its value.
-    Selecting a distinct source always invalidates downstream computations;
-    `bind()` deliberately does not compare the old and new resolved values.
+    Assigning a reactive object follows it, while assigning a plain value
+    selects a private `Signal`. Selecting a distinct source always invalidates
+    downstream computations without comparing resolved values.
 
     Args:
         source: A reactive source to follow, or an initial plain value managed
@@ -782,23 +783,19 @@ class Binding(Computed[T]):
         return self._source.value
 
     @Computed.value.setter
-    def value(self, new_value: T) -> None:
-        """Reject assignment; a binding selects a source rather than storing a value."""
-        raise AttributeError(
-            "Binding.value is read-only; use .set(value) for a plain value or .bind(source) for a reactive source"
-        )
+    def value(self, new_source: HasValue[T]) -> None:
+        """Select a plain value or follow a reactive source."""
+        self.set(new_source)
 
     @property
     def source(self) -> ReactiveValue[T]:
         """Return the exact current source without resolving it."""
         return self._source
 
-    def bind(self, source: ReactiveValue[T]) -> Self:
+    def _select_source(self, source: ReactiveValue[T]) -> Self:
         """Follow `source`, including its future value changes."""
         if source is self:
-            raise ValueError("A Binding cannot bind itself")
-        if not _is_reactive_value(source):
-            raise TypeError("bind() requires a Signal, Computed, or Binding")
+            raise ValueError("A Binding cannot use itself as its source")
         if source is self._source:
             return self
 
@@ -810,11 +807,12 @@ class Binding(Computed[T]):
         self._force_invalidate()
         return self
 
-    def set(self, value: T) -> Self:
-        """Select and update this binding's private plain-value source."""
-        if _is_reactive_value(value):
-            raise TypeError("set() requires a plain value; use bind(source) for a reactive source")
+    def set(self, source: HasValue[T]) -> Self:
+        """Select a plain value or follow a reactive source."""
+        if _is_reactive_value(source):
+            return self._select_source(source)
 
+        value = cast(T, source)
         owned = self._owned
         if owned is None:
             owned = Signal(value)
@@ -822,7 +820,7 @@ class Binding(Computed[T]):
         else:
             owned.value = value
 
-        return self.bind(owned)
+        return self._select_source(owned)
 
     def derive(self, build: Callable[[ReactiveValue[T]], ReactiveValue[T]]) -> Self:
         """Build and select a source from the exact pre-rebind source.
@@ -834,20 +832,20 @@ class Binding(Computed[T]):
         next_source = build(previous)
         if not _is_reactive_value(next_source):
             raise TypeError("derive() must return a Signal, Computed, or Binding")
-        return self.bind(next_source)
+        return self.set(next_source)
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
         if _is_reactive_value(value):
-            raise TypeError("at() requires a plain value. Use bind(source) for a reactive source.")
+            raise TypeError("at() requires a plain value. Use set(source) for a reactive source.")
 
         previous = self._source
         temporary = Signal(value)
         try:
-            self.bind(temporary)
+            self.set(temporary)
             yield
         finally:
-            self.bind(previous)
+            self.set(previous)
 
 
 class Effect:

@@ -21,7 +21,9 @@ def test_signal_and_binding_init():
     assert_type(c.value, float)
 
     assert_type(c.source, Computed[float] | Signal[float] | Binding[float])
-    assert_type(c.bind(Signal(2.0)), Binding[float])
+    c.value = Signal(2.0)
+    assert_type(c.value, float)
+    assert_type(c.set(Signal(2.0)), Binding[float])
     assert_type(c.set(3.0), Binding[float])
 
 

@@ -24,16 +24,16 @@ progress.value = animation  # animation is a reactive value
 
 # After
 progress = Binding(0.0)
-progress.bind(animation)
+progress.value = animation
 ```
 
-A binding has a stable reactive identity while its source changes. Use
-`bind()` to follow a reactive source and `set()` to select a plain value:
+A binding has a stable reactive identity while its source changes. Assignment
+and `set()` both follow reactive sources and select private plain values:
 
 ```python
 progress = Binding(0.0)
-progress.bind(animation)
-progress.set(1.0)
+progress.value = animation
+progress.value = 1.0
 ```
 
 This pattern is useful for public properties that downstream computations have
@@ -47,14 +47,14 @@ class Player:
 
 player = Player()
 doubled = computed(lambda value: value * 2)(player.progress)
-player.progress.bind(animation)
+player.progress.value = animation
 ```
 
 Update annotations according to the role of the value: use `Signal[T]` for
 mutable stored state, `Binding[T]` for a stable handle that can change sources,
 and `ReactiveValue[T]` when an API only needs to consume any reactive source.
-`Binding.value` is read-only; assigning to it raises an error so that selecting
-a plain value and following a reactive source remain explicit operations.
+Assigning a reactive object to `Binding.value` follows that source; assigning a
+plain object selects a private `Signal` containing it.
 
 `unref` now unwraps one boundary. Use `deep.unref` for recursive resolution:
 

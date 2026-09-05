@@ -14,7 +14,7 @@ stored values and remain opaque until explicitly read.
 
 `Computed` represents derived state. It subscribes to dependencies and updates when they change.
 
-`Binding` is a stable read-only handle whose current reactive source can be replaced.
+`Binding` is a stable handle whose current reactive source can be replaced.
 
 ### Reading the underlying value (`.value`)
 
@@ -111,12 +111,12 @@ selected = Binding(left)
 doubled = selected * 2
 
 print(doubled.value)  # 2
-selected.bind(right)
+selected.value = right
 print(doubled.value)  # 20
 right.value = 12
 print(doubled.value)  # 24
 
-selected.set(5)       # switch to a private plain-value source
+selected.value = 5    # switch to a private plain-value source
 print(doubled.value)  # 10
 ```
 

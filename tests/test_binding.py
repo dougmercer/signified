@@ -3,7 +3,7 @@ import pytest
 from signified import Binding, Computed, Signal, as_rx, computed, effect, unref
 
 
-def test_binding_follows_current_source_and_rebinds() -> None:
+def test_binding_follows_current_source_and_switches_sources() -> None:
     first = Signal(1)
     second = Signal(10)
     binding = Binding(first)
@@ -14,7 +14,7 @@ def test_binding_follows_current_source_and_rebinds() -> None:
     first.value = 2
     assert derived.value == 4
 
-    assert binding.bind(second) is binding
+    assert binding.set(second) is binding
     assert binding.source is second
     assert derived.value == 20
     first.value = 3
@@ -29,7 +29,7 @@ def test_binding_of_binding_follows_rebinding() -> None:
     outer = Binding(inner)
 
     assert outer.value == 1
-    inner.bind(Signal(2))
+    inner.set(Signal(2))
     assert outer.value == 2
 
 
@@ -46,7 +46,7 @@ def test_binding_distinct_equal_source_forces_direct_dependent_recompute() -> No
     assert derived.value == 1
     assert runs == 1
 
-    binding.bind(Signal(1))
+    binding.set(Signal(1))
     assert derived.value == 1
     assert runs == 2
 
@@ -58,7 +58,7 @@ def test_binding_rebind_commits_equal_but_distinct_value() -> None:
 
     assert binding.value is first
 
-    binding.bind(Signal(second))
+    binding.set(Signal(second))
 
     assert binding.value is second
 
@@ -66,12 +66,12 @@ def test_binding_rebind_commits_equal_but_distinct_value() -> None:
 def test_binding_rebind_does_not_compare_resolved_values() -> None:
     class EqualityMustNotRun:
         def __eq__(self, other: object) -> bool:
-            raise AssertionError("Binding.bind must not compare resolved values")
+            raise AssertionError("Binding.set must not compare resolved values")
 
     binding = Binding(Signal(EqualityMustNotRun()))
     _ = binding.value
 
-    binding.bind(Signal(EqualityMustNotRun()))
+    binding.set(Signal(EqualityMustNotRun()))
     _ = binding.value
 
 
@@ -87,7 +87,7 @@ def test_binding_same_source_is_a_noop() -> None:
 
     derived = Computed(read)
     assert derived.value == 1
-    binding.bind(source)
+    binding.set(source)
     assert derived.value == 1
     assert runs == 1
 
@@ -155,19 +155,17 @@ def test_binding_at_restores_exact_source_with_nested_contexts() -> None:
     assert binding.value == 1
 
 
-def test_binding_rejects_invalid_sources() -> None:
+def test_binding_rejects_itself_as_source() -> None:
     binding = Binding(1)
 
-    with pytest.raises(TypeError, match="bind"):
-        binding.bind(2)  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="cannot bind itself"):
-        binding.bind(binding)
+    with pytest.raises(ValueError, match="cannot use itself as its source"):
+        binding.set(binding)
 
 
 def test_binding_cycle_raises_on_read() -> None:
     binding = Binding(1)
     cyclic = Computed(lambda: binding.value + 1)
-    binding.bind(cyclic)
+    binding.set(cyclic)
 
     with pytest.raises(RuntimeError, match="Cycle detected"):
         _ = binding.value
@@ -187,7 +185,7 @@ def test_binding_integrates_with_effect_unref_and_as_rx() -> None:
 
     assert unref(binding) == 1
     assert as_rx(binding) is binding
-    binding.bind(Signal(2))
+    binding.set(Signal(2))
     assert seen == [1, 2]
     watcher.dispose()
 
@@ -229,10 +227,20 @@ def test_binding_at_nests_three_deep() -> None:
     assert binding.value == 6
 
 
-def test_binding_value_is_read_only() -> None:
+def test_binding_value_setter_selects_plain_values_and_reactive_sources() -> None:
     binding = Binding(Signal(1))
+    source = Signal(2)
 
-    with pytest.raises(AttributeError, match=r"read-only.*\.set\(value\).*\.bind\(source\)"):
-        binding.value = 5
+    binding.value = 5
+    assert binding.value == 5
 
-    assert binding.value == 1
+    binding.value = source
+    assert binding.source is source
+    assert binding.value == 2
+
+    source.value = 3
+    assert binding.value == 3
+
+
+def test_binding_has_no_bind_method() -> None:
+    assert not hasattr(Binding(1), "bind")

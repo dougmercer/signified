@@ -11,8 +11,8 @@ This page summarizes notable changes across releases.
 ### Explicit source bindings
 
 Added `Binding[T]`, a stable reactive handle whose current source can be
-replaced with `.bind(...)`, changed to a private plain source with `.set(...)`,
-or accumulated safely with `.derive(...)`.
+replaced with `.value = ...` or `.set(...)`, or accumulated safely with
+`.derive(...)`.
 
 This replaces implicit reactive values stored inside `Signal`:
 
@@ -23,7 +23,7 @@ selected.value = other_source
 
 # After
 selected = Binding(source)
-selected.bind(other_source)
+selected.value = other_source
 ```
 
 ### Breaking: explicit deep resolution
