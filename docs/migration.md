@@ -64,6 +64,10 @@ from signified import deep
 resolved = deep.unref(nested)
 ```
 
+Deep resolution traverses registered container types rather than arbitrary
+iterables. Built-in collections are registered by default; use
+`@deep.register(MyContainer)` to opt a custom container into traversal.
+
 `computed` and `effect` now unwrap direct reactive arguments only. For
 containers of reactive values, either read the required `.value` properties
 inside the function or opt into recursive resolution:

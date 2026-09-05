@@ -11,16 +11,52 @@ def test_deep_unref_resolves_supported_containers():
     nested = {
         Signal("key"): [
             Signal(1),
-            (Signal(2), {Signal(3)}),
-            deque([Signal(4)]),
+            (Signal(2), {Signal(3)}, frozenset({Signal(4)})),
+            deque([Signal(5)], maxlen=2),
         ]
     }
 
-    assert deep.unref(nested) == {"key": [1, (2, {3}), deque([4])]}
+    assert deep.unref(nested) == {"key": [1, (2, {3}, frozenset({4})), deque([5], maxlen=2)]}
 
 
 def test_deep_unref_crosses_multiple_reactive_boundaries():
     assert deep.unref(Signal(Signal(Signal(1)))) == 1
+
+
+def test_deep_unref_leaves_unregistered_iterables_opaque():
+    class Box:
+        def __init__(self, values):
+            self.values = values
+
+        def __iter__(self):
+            return iter(self.values)
+
+    nested = Signal(1)
+    box = Box([nested])
+
+    assert deep.unref(box) is box
+
+
+def test_deep_unref_supports_registered_container_types():
+    class Box:
+        def __init__(self, values):
+            self.values = values
+
+    @deep.register(Box)
+    def resolve_box(box, resolve):
+        return Box([resolve(value) for value in box.values])
+
+    result = deep.unref(Box([Signal(1), {"nested": Signal(2)}]))
+
+    assert result.values == [1, {"nested": 2}]
+
+
+def test_deep_unref_reports_cycles():
+    cyclic = []
+    cyclic.append(cyclic)
+
+    with pytest.raises(ValueError, match="Cycle detected while resolving list"):
+        deep.unref(cyclic)
 
 
 def test_computed_only_shallowly_resolves_arguments():

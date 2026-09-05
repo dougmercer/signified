@@ -71,6 +71,12 @@ assert result.value == 6
 The explicit APIs are `deep.unref`, `deep.computed`, and `deep.effect`.
 `deep_unref` remains as a deprecated compatibility alias for `deep.unref`.
 
+Deep traversal is registry-based. Lists, tuples, dictionaries, sets,
+frozensets, deques, and object-dtype NumPy arrays are supported by default.
+Other objects remain opaque, including arbitrary iterables, unless their exact
+type is registered with `@deep.register(Type)`. A custom resolver receives the
+object and a recursive `resolve` callback. Cycles raise `ValueError`.
+
 ## Choosing the right primitive
 
 | Intent | API |

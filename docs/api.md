@@ -134,6 +134,7 @@ subscript, and attribute-access operations all return reactive
 Import the namespace with `from signified import deep`.
 
 ::: signified.deep.unref
+::: signified.deep.register
 ::: signified.deep.computed
 ::: signified.deep.effect
 

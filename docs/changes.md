@@ -11,6 +11,10 @@ This page summarizes notable changes across releases.
 Added `is_reactive()` for narrowing a `HasValue[T]` to a reactive wrapper
 without reading its value.
 
+`deep.unref` now uses an extensible registry. Common built-in containers are
+registered by default; arbitrary iterables remain opaque unless explicitly
+registered with `@deep.register(Type)`, and cycles raise a clear `ValueError`.
+
 ### Explicit source bindings
 
 Added `Binding[T]`, a stable reactive handle whose current source can be

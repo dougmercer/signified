@@ -325,7 +325,8 @@ print(process_data(Signal(5)))  # 10
 
 Related helpers:
 
-- `deep.unref`: recursively unwraps nested containers of reactive values
+- `deep.unref`: recursively unwraps registered containers of reactive values
+- `deep.register`: teaches deep resolution how to rebuild a custom container
 - `deep.computed` and `deep.effect`: opt into recursive argument resolution
 - `as_rx`: wraps plain values into `Signal` (or returns the input reactive value)
 - `has_value`: type guard for checking `HasValue[T]`
