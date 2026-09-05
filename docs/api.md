@@ -113,15 +113,20 @@ subscript, and attribute-access operations all return reactive
 ::: signified.computed
 ::: signified.unref
 ::: signified.deep_unref
+::: signified.is_reactive
 ::: signified.has_value
 ::: signified.as_rx
 
 ## Types
 
+### HasValue {#signified.HasValue}
+
 **`HasValue[T]`** — `T | Computed[T] | Signal[T]`
 
 A plain or reactive value that resolves to `T`. Use as a type hint when a
 parameter accepts either a raw value or a reactive wrapper.
+
+### ReactiveValue {#signified.ReactiveValue}
 
 **`ReactiveValue[T]`** — `Computed[T] | Signal[T]`
 

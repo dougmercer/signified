@@ -1645,7 +1645,7 @@ class _ReactiveMixIn[T]:
         wrapped = self.value
         if hasattr(wrapped, name):
             setattr(wrapped, name, value)
-            if _is_reactive_value(self):
+            if is_reactive(self):
                 self._bump_version()
                 if HOOKS_ENABLED:
                     plugin_manager.hook.updated(value=self)
@@ -1682,7 +1682,7 @@ class _ReactiveMixIn[T]:
         """
         if isinstance(self.value, (list, dict)):
             self.value[key] = value
-            if _is_reactive_value(self):
+            if is_reactive(self):
                 self._bump_version()
                 if HOOKS_ENABLED:
                     plugin_manager.hook.updated(value=self)
@@ -1693,5 +1693,5 @@ class _ReactiveMixIn[T]:
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
 from ._functions import computed  # noqa: E402
-from ._reactive import Effect, _bump_global_version, _is_reactive_value  # noqa: E402
+from ._reactive import Effect, _bump_global_version, is_reactive  # noqa: E402
 from .plugins import HOOKS_ENABLED, plugin_manager  # noqa: E402
