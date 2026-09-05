@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
+from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload, overload
 
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
