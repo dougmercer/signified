@@ -31,17 +31,35 @@ def _bump_global_version() -> int:
     return _GLOBAL_VERSION
 
 
-def _is_reactive_value[T](value: HasValue[T]) -> TypeGuard[ReactiveValue[T]]:
-    """Return whether ``value`` is a signified reactive wrapper."""
-    # Note: We use a specific attribute instead of isinstance to reduce overhead.
-    return getattr(type(value), "_IS_REACTIVE", False)
+@overload
+def is_reactive[T](obj: HasValue[T]) -> TypeGuard[ReactiveValue[T]]: ...
+
+
+@overload
+def is_reactive[T, U](obj: HasValue[T] | HasValue[U]) -> TypeGuard[ReactiveValue[T] | ReactiveValue[U]]: ...
+
+
+def is_reactive(obj: object) -> bool:
+    """Return whether an object is a signified reactive wrapper.
+
+    This guard narrows a plain-or-reactive [HasValue][signified.HasValue] to
+    [ReactiveValue][signified.ReactiveValue] in the true branch without reading
+    the wrapped value or creating a dependency.
+
+    Args:
+        obj: Value to inspect.
+
+    Returns:
+        `True` for a [Signal][signified.Signal], [Computed][signified.Computed].
+    """
+    return getattr(type(obj), "_IS_REACTIVE", False)
 
 
 def _may_have_reactive_children(value: Any) -> bool:
     """Return whether `value` could contain reactive values that need subscriptions."""
     if type(value) in _PLAIN_SCALAR_TYPES:
         return False
-    if _is_reactive_value(value):
+    if is_reactive(value):
         return True
     return isinstance(value, Iterable) and not isinstance(value, str)
 
@@ -88,7 +106,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         """Yield `Variable` instances found in arbitrarily nested containers."""
         if type(item) in _PLAIN_SCALAR_TYPES:
             return
-        if _is_reactive_value(item):
+        if is_reactive(item):
             yield item
             return
         if isinstance(item, str):
@@ -261,7 +279,7 @@ def _resolve[T](value: HasValue[T]) -> T:
     current: T | HasValue[T] = value
     if type(current) in _PLAIN_SCALAR_TYPES:
         return cast(T, current)
-    while _is_reactive_value(current):
+    while is_reactive(current):
         if current._IS_COMPUTED:
             current._impl.ensure_uptodate()
         current = current._value
@@ -289,7 +307,7 @@ def _has_changed(previous: Any, current: Any) -> bool:
     # Reactive wrappers compare by identity rather than value equality.
     # Distinct wrapper objects should invalidate even if they currently resolve
     # to equal values.
-    if _is_reactive_value(previous) or _is_reactive_value(current):
+    if is_reactive(previous) or is_reactive(current):
         return previous is not current
 
     # Keep NaN stable: treat NaN -> NaN as unchanged.
