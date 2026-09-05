@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Iterable
+from collections.abc import Generator
 from contextlib import contextmanager
 from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
@@ -13,15 +13,16 @@ from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
 from .plugins import HOOKS_ENABLED, plugin_manager
 
-__all__ = ["Variable", "Signal", "Computed", "Effect"]
+__all__ = ["Variable", "Signal", "Computed", "Binding", "Effect"]
 
 
-_PLAIN_SCALAR_TYPES = {int, float, str, bool, bytes, complex, type(None)}
 _GLOBAL_VERSION = 0
 
 # `_ReactiveMixIn.__setattr__` forwards unknown names to the wrapped value, so
-# internal writes on the hot path bypass that Python-level call.
+# it costs a Python-level call on every assignment. Internal writes on the hot
+# path bypass it; `_ReactiveMixIn._bump_version` does the same.
 _setattr = object.__setattr__
+_BINDING_UNSET = object()
 
 
 def _bump_global_version() -> int:
@@ -50,18 +51,10 @@ def is_reactive(obj: object) -> bool:
         obj: Value to inspect.
 
     Returns:
-        `True` for a [Signal][signified.Signal], [Computed][signified.Computed].
+        `True` for a [Signal][signified.Signal], [Computed][signified.Computed],
+        or [Binding][signified.Binding].
     """
     return getattr(type(obj), "_IS_REACTIVE", False)
-
-
-def _may_have_reactive_children(value: Any) -> bool:
-    """Return whether `value` could contain reactive values that need subscriptions."""
-    if type(value) in _PLAIN_SCALAR_TYPES:
-        return False
-    if is_reactive(value):
-        return True
-    return isinstance(value, Iterable) and not isinstance(value, str)
 
 
 def _coerce_to_bool(value: Any) -> bool:
@@ -86,8 +79,8 @@ class _Observer(Protocol):
 class Variable[T](ABC, _ReactiveMixIn[T]):
     """Abstract base class for reactive values.
 
-    Both [Signal][signified.Signal] and [Computed][signified.Computed] extend this
-    class. *You should use them directly.*
+    [Signal][signified.Signal], [Computed][signified.Computed], and
+    [Binding][signified.Binding] extend this class. *You should use them directly.*
 
     Variable is only exposed for type hinting or subclassing purposes.
     """
@@ -100,27 +93,6 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         _setattr(self, "_observers", _ObserverLinks[_Observer]())
         _setattr(self, "_name", "")
         _setattr(self, "_version", 0)
-
-    @staticmethod
-    def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
-        """Yield `Variable` instances found in arbitrarily nested containers."""
-        if type(item) in _PLAIN_SCALAR_TYPES:
-            return
-        if is_reactive(item):
-            yield item
-            return
-        if isinstance(item, str):
-            return
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if type(key) not in _PLAIN_SCALAR_TYPES:
-                    yield from Variable._iter_variables(key)
-                if type(value) not in _PLAIN_SCALAR_TYPES:
-                    yield from Variable._iter_variables(value)
-            return
-        if isinstance(item, Iterable):
-            for sub_item in item:
-                yield from Variable._iter_variables(sub_item)
 
     def subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer to this variable.
@@ -142,20 +114,6 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
             observer: The observer to unsubscribe.
         """
         self._observers.discard(observer)
-
-    def _observe(self, items: Any) -> Self:
-        """Subscribe ``self`` to all reactive values found in ``items``."""
-        for item in self._iter_variables(items):
-            if item is not self:
-                item.subscribe(self)
-        return self
-
-    def _unobserve(self, items: Any) -> Self:
-        """Unsubscribe ``self`` from all reactive values found in ``items``."""
-        for item in self._iter_variables(items):
-            if item is not self:
-                item.unsubscribe(self)
-        return self
 
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
@@ -269,21 +227,25 @@ def _track_read(variable: Variable[Any]) -> None:
     impl._dep_state.register_dependency(variable)
 
 
-def _resolve[T](value: HasValue[T]) -> T:
-    """Unwrap nested reactive containers without registering any dependencies.
+## Consider simplifying _has_changed.
+# _VALUE_TYPES = {int, str, bytes, complex}
 
-    Used internally by ``.value`` property getters so that resolving a stored
-    nested reactive (e.g. ``Signal(Signal(5))``) does not create a redundant
-    direct subscription that bypasses the outer variable's own observe chain.
-    """
-    current: T | HasValue[T] = value
-    if type(current) in _PLAIN_SCALAR_TYPES:
-        return cast(T, current)
-    while is_reactive(current):
-        if current._IS_COMPUTED:
-            current._impl.ensure_uptodate()
-        current = current._value
-    return cast(T, current)
+
+# def _has_changed(previous: Any, current: Any) -> bool:
+#     if previous is current:
+#         return False
+
+#     value_type = type(previous)
+#     if value_type is not type(current):
+#         return True
+
+#     if value_type is float:
+#         return previous != current and not (math.isnan(previous) and math.isnan(current))
+
+#     if value_type in _VALUE_TYPES:
+#         return previous != current
+
+#     return True
 
 
 def _has_changed(previous: Any, current: Any) -> bool:
@@ -292,6 +254,9 @@ def _has_changed(previous: Any, current: Any) -> bool:
     This function is intentionally fail-open: if comparison is ambiguous or
     raises, we treat the value as changed to avoid missing invalidations.
     """
+    if previous is _BINDING_UNSET:
+        return True
+
     previous_type = type(previous)
     current_type = type(current)
     if previous_type is current_type:
@@ -300,16 +265,16 @@ def _has_changed(previous: Any, current: Any) -> bool:
         if previous_type is float:
             return not (math.isnan(previous) and math.isnan(current)) and previous != current
 
+    # Reactive wrappers compare by identity rather than their overloaded value
+    # equality. Keep this after the scalar fast path: change detection runs for
+    # every recomputed node, and most graph values are plain scalars.
+    if is_reactive(previous) or is_reactive(current):
+        return previous is not current
+
     # Compare callables by identity to avoid invoking custom `__eq__` logic and
     # to preserve stable references as unchanged.
     if callable(previous) or callable(current):
         return previous is not current
-    # Reactive wrappers compare by identity rather than value equality.
-    # Distinct wrapper objects should invalidate even if they currently resolve
-    # to equal values.
-    if is_reactive(previous) or is_reactive(current):
-        return previous is not current
-
     # Keep NaN stable: treat NaN -> NaN as unchanged.
     if isinstance(previous, float) and isinstance(current, float) and math.isnan(previous) and math.isnan(current):
         return False
@@ -329,7 +294,7 @@ class Signal[T](Variable[T]):
     `Signal` stores a value and notifies observers when that value changes.
     The `value` property is read/write:
 
-    - reading `value` returns the current plain value
+    - reading `value` returns the exact stored value
     - assigning `value` updates the stored value and notifies observers if it changed
 
 
@@ -351,17 +316,9 @@ class Signal[T](Variable[T]):
 
     __slots__ = ["_value"]
 
-    @overload
-    def __init__(self, value: ReactiveValue[T]) -> None: ...
-
-    @overload
-    def __init__(self, value: T) -> None: ...
-
-    def __init__(self, value: HasValue[T]) -> None:
+    def __init__(self, value: T) -> None:
         super().__init__()
         _setattr(self, "_value", value)
-        if _may_have_reactive_children(value):
-            self._observe(value)
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
 
@@ -369,30 +326,22 @@ class Signal[T](Variable[T]):
     def value(self) -> T:
         """The current value.
 
-        Getting this property returns the plain Python value, unwrapping any
-        nested reactive. Setting it updates the stored value and notifies
-        observers if the value changed.
+        Getting this property returns the stored Python value. Setting it
+        updates the stored value and notifies observers if the value changed.
         """
         if HOOKS_ENABLED:
             plugin_manager.hook.read(value=self)
         _track_read(self)
-        value = self._value
-        if type(value) in _PLAIN_SCALAR_TYPES:
-            return cast(T, value)
-        return _resolve(value)
+        return self._value
 
     @value.setter
-    def value(self, new_value: HasValue[T]) -> None:
+    def value(self, new_value: T) -> None:
         old_value = self._value
         if _has_changed(old_value, new_value):
             _setattr(self, "_value", new_value)
             self._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=self)
-            if _may_have_reactive_children(old_value):
-                self._unobserve(old_value)
-            if _may_have_reactive_children(new_value):
-                self._observe(new_value)
             self.notify()
 
     @contextmanager
@@ -416,9 +365,6 @@ class Signal[T](Variable[T]):
 
             ```
         """
-        # Preserve the stored wrapper as well as its resolved value. Using
-        # ``self.value`` here would flatten a nested Signal/Computed and break
-        # its subscription when the context exits.
         before = self._value
         try:
             self.value = value
@@ -661,6 +607,8 @@ class _ComputedImpl:
                 plugin_manager.hook.updated(value=owner)
         elif forced_refresh:
             self._global_version_seen = owner._bump_version()
+            if HOOKS_ENABLED:
+                plugin_manager.hook.updated(value=owner)
         else:
             self._global_version_seen = _GLOBAL_VERSION
 
@@ -804,6 +752,10 @@ class Computed(Variable[T]):
 
             ```
         """
+        self._force_invalidate()
+
+    def _force_invalidate(self) -> None:
+        """Force refresh even when dependency versions appear unchanged."""
         if not self._impl.invalidate(force=True):
             return
         _bump_global_version()
@@ -816,10 +768,103 @@ class Computed(Variable[T]):
             plugin_manager.hook.read(value=self)
         _track_read(self)
         self._impl.ensure_uptodate()
-        value = self._value
-        if type(value) in _PLAIN_SCALAR_TYPES:
-            return value
-        return _resolve(value)
+        return self._value
+
+
+class Binding(Computed[T]):
+    """A stable reactive handle whose current source can be replaced.
+
+    Use a `Binding` when an object must keep the same public reactive identity
+    while changing which `Signal`, `Computed`, or `Binding` supplies its value.
+    Assigning a reactive object follows it, while assigning a plain value
+    selects a private `Signal`. Selecting a distinct source always invalidates
+    downstream computations without comparing resolved values.
+
+    Args:
+        source: A reactive source to follow, or an initial plain value managed
+            by a private `Signal`.
+    """
+
+    __slots__ = ("_owned", "_source")
+
+    def __init__(self, source: T | ReactiveValue[T]) -> None:
+        self._owned: Signal[T] | None
+        if is_reactive(source):
+            self._source: ReactiveValue[T] = cast(ReactiveValue[T], source)
+            self._owned = None
+        else:
+            owned = Signal(cast(T, source))
+            self._owned = owned
+            self._source = owned
+        super().__init__(self._read_source)
+
+    def _read_source(self) -> T:
+        return self._source.value
+
+    @Computed.value.setter
+    def value(self, new_source: HasValue[T]) -> None:
+        """Select a plain value or follow a reactive source."""
+        self.set(new_source)
+
+    @property
+    def source(self) -> ReactiveValue[T]:
+        """Return the exact current source without resolving it."""
+        return self._source
+
+    def _select_source(self, source: ReactiveValue[T]) -> Self:
+        """Follow `source`, including its future value changes."""
+        if source is self:
+            raise ValueError("A Binding cannot use itself as its source")
+        if source is self._source:
+            return self
+
+        self._source = source
+        # Source identity is the change. Clear the cached value so the lazy
+        # refresh commits the new source's exact value even when it compares
+        # equal to the previous source's value.
+        _setattr(self, "_value", _BINDING_UNSET)
+        self._force_invalidate()
+        return self
+
+    def set(self, source: HasValue[T]) -> Self:
+        """Select a plain value or follow a reactive source."""
+        if is_reactive(source):
+            return self._select_source(source)
+
+        value = cast(T, source)
+        owned = self._owned
+        if owned is None:
+            owned = Signal(value)
+            self._owned = owned
+        else:
+            owned.value = value
+
+        return self._select_source(owned)
+
+    def derive(self, build: Callable[[ReactiveValue[T]], ReactiveValue[T]]) -> Self:
+        """Build and select a source from the exact pre-rebind source.
+
+        Capturing the old source prevents the common cycle created by building
+        a new computation from the `Binding` that will receive that computation.
+        """
+        previous = self._source
+        next_source = build(previous)
+        if not is_reactive(next_source):
+            raise TypeError("derive() must return a Signal, Computed, or Binding")
+        return self.set(next_source)
+
+    @contextmanager
+    def at(self, value: T) -> Generator[None, None, None]:
+        if is_reactive(value):
+            raise TypeError("at() requires a plain value. Use set(source) for a reactive source.")
+
+        previous = self._source
+        temporary = Signal(value)
+        try:
+            self.set(temporary)
+            yield
+        finally:
+            self.set(previous)
 
 
 class Effect:

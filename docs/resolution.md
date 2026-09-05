@@ -13,10 +13,13 @@ Lists, tuples, dictionaries (keys and values), sets, frozensets, and deques
 are rebuilt. Object-bearing NumPy arrays preserve their shape and dtype.
 Other objects pass through unchanged unless you register their type.
 
-Shared objects stay shared in the result. Cycles and resolved key/member
-collisions raise `ValueError`; unhashable keys/members raise `TypeError`.
-Errors include the location where resolution failed. Reads inside a computation
-or effect create dependencies on the reactive values reached.
+Each occurrence is resolved independently. Repeated references to a container
+produce separate rebuilt containers; shared identity is not preserved. Cyclic
+inputs eventually raise Python's `RecursionError`.
+
+Resolved key/member collisions raise `ValueError`; unhashable keys/members raise
+`TypeError`. Reads inside a computation or effect create dependencies on the
+reactive values reached. Handler exceptions propagate unchanged.
 
 ## Custom objects
 
@@ -36,8 +39,8 @@ class Position:
 @deep_unref.register(Position)
 def resolve_position(position, resolve):
     return Position(
-        x=resolve(position.x, ".x"),
-        y=resolve(position.y, ".y"),
+        x=resolve(position.x),
+        y=resolve(position.y),
     )
 
 position = Position(Signal(10.0), Signal(20.0))
@@ -49,9 +52,8 @@ assert isinstance(position.x, Signal)  # The input is unchanged.
 Decide which fields to resolve, what metadata to copy unchanged, and which
 object to return. Prefer building a new object instead of mutating the input.
 Use the supplied `resolve` on children rather than calling `deep_unref` again:
-that keeps cycle detection and shared references working across the traversal.
-The optional field label makes errors easier to locate. A handler runs once for
-each encountered object, even if it appears more than once in the input.
+that uses the same registered handlers throughout the traversal. A handler runs
+for each occurrence of an object, including repeated references.
 
 Registration applies to one exact type. Register subclasses separately when
 needed. Refer to the built-in handlers in `src/signified/_resolve.py` for more
@@ -59,13 +61,12 @@ examples, including dictionary keys and NumPy arrays.
 
 ## Migrating unregistered iterables
 
-Automatic traversal of unregistered iterable types is deprecated and will be
-removed in **0.6.0**. It still attempts the old iterable constructor and emits
-a `DeprecationWarning`. If reconstruction is unsupported, the original object
-is returned; errors while resolving children are not hidden.
+Automatic traversal of unregistered iterable types was deprecated in 0.5.1
+and is removed in **0.6.0**. Errors raised by registered handlers propagate
+to the caller.
 
-Register a handler to keep resolving a custom container. In 0.6.0, unregistered
-types will be returned unchanged without inspecting or iterating them.
+Register a handler to keep resolving a custom container. Unregistered
+types are returned unchanged without inspecting or iterating them.
 
 For example, this custom iterable holds reactive readings and a label. Its
 handler resolves every reading and carries the label into the new container:
@@ -83,7 +84,7 @@ class Samples:
 
 @deep_unref.register(Samples)
 def resolve_samples(samples, resolve):
-    values = (resolve(value, f"[{i}]") for i, value in enumerate(samples))
+    values = (resolve(value) for value in samples)
     return Samples(values, label=samples.label)
 
 samples = Samples([Signal(10), Signal(20)], label="sensor A")
