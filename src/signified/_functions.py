@@ -6,6 +6,7 @@ from functools import wraps
 from typing import Any, Callable, TypeGuard, overload
 from warnings import warn
 
+from . import migration as _migration
 from ._reactive import Computed, Effect, Signal, _is_reactive_value, _track_read
 from ._types import HasValue, ReactiveValue
 
@@ -55,6 +56,8 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Computed[R]:
+        if _migration.WARNINGS_ENABLED:
+            _migration._warn_nested_reactive_arguments("computed", args, kwargs)
         return Computed(_bind_args(func, args, kwargs))
 
     return wrapper
@@ -103,6 +106,8 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Effect:
+        if _migration.WARNINGS_ENABLED:
+            _migration._warn_nested_reactive_arguments("effect", args, kwargs)
         return Effect(_bind_args(func, args, kwargs))
 
     return wrapper

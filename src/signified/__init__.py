@@ -16,6 +16,7 @@ Functions:
     has_value: Type guard to check if an object has a value of a specific type.
     is_reactive: Type guard to check if an object is a reactive wrapper.
     deep: Explicit recursive unref, computed, and effect helpers.
+    migration: Opt-in diagnostics for behavior changed in 0.6.
 
 Attributes:
     ReactiveValue: Union of Signal, Computed, and Binding types.
@@ -23,7 +24,7 @@ Attributes:
 """
 
 # Import _mixin first to initialize _ReactiveMixIn before runtime classes.
-from . import _mixin, deep
+from . import _mixin, deep, migration
 from ._functions import as_rx, computed, deep_unref, effect, has_value, is_reactive, unref
 from ._reactive import Binding, Computed, Effect, Signal, Variable
 from ._types import HasValue, ReactiveValue
@@ -46,4 +47,5 @@ __all__ = [
     "is_reactive",
     "deep_unref",
     "deep",
+    "migration",
 ]

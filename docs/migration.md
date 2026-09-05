@@ -1,5 +1,20 @@
 # Migrating to 0.6
 
+To find code that may still rely on the old behavior, enable the optional
+migration diagnostics before exercising the application:
+
+```python
+from signified import migration
+
+migration.enable_warnings()
+```
+
+They can also be enabled before import with
+`SIGNIFIED_MIGRATION_WARNINGS=1`, or scoped with
+`with migration.warnings():`. The warnings cover reactive values stored in a
+`Signal`, reactive descendants passed inside containers to `computed` or
+`effect`, and computations that return another reactive value.
+
 Version 0.6 makes reactive reads explicit: **dependencies come from reads, not
 containment.**
 
