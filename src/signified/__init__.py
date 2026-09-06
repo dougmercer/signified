@@ -25,8 +25,8 @@ Attributes:
 
 # Import _mixin first to initialize _ReactiveMixIn before runtime classes.
 from . import _mixin, deep, migration
-from ._functions import as_rx, computed, deep_unref, effect, has_value, is_reactive, unref
-from ._reactive import Binding, Computed, Effect, Signal, Variable
+from ._functions import as_rx, computed, deep_unref, effect, has_value, unref
+from ._reactive import Binding, Computed, Effect, Signal, Variable, is_reactive
 from ._types import HasValue, ReactiveValue
 
 del _mixin

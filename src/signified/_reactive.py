@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Generator
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast
+from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 
 from . import migration as _migration
 from ._mixin import _ReactiveMixIn
@@ -33,10 +33,29 @@ def _bump_global_version() -> int:
     return _GLOBAL_VERSION
 
 
-def _is_reactive_value[T](value: HasValue[T]) -> TypeGuard[ReactiveValue[T]]:
-    """Return whether ``value`` is a signified reactive wrapper."""
-    # Note: We use a specific attribute instead of isinstance to reduce overhead.
-    return getattr(type(value), "_IS_REACTIVE", False)
+@overload
+def is_reactive[T](obj: HasValue[T]) -> TypeGuard[ReactiveValue[T]]: ...
+
+
+@overload
+def is_reactive[T, U](obj: HasValue[T] | HasValue[U]) -> TypeGuard[ReactiveValue[T] | ReactiveValue[U]]: ...
+
+
+def is_reactive(obj: object) -> bool:
+    """Return whether an object is a signified reactive wrapper.
+
+    This guard narrows a plain-or-reactive [HasValue][signified.HasValue] to
+    [ReactiveValue][signified.ReactiveValue] in the true branch without reading
+    the wrapped value or creating a dependency.
+
+    Args:
+        obj: Value to inspect.
+
+    Returns:
+        `True` for a [Signal][signified.Signal], [Computed][signified.Computed],
+        or [Binding][signified.Binding].
+    """
+    return getattr(type(obj), "_IS_REACTIVE", False)
 
 
 def _coerce_to_bool(value: Any) -> bool:
@@ -250,7 +269,7 @@ def _has_changed(previous: Any, current: Any) -> bool:
     # Reactive wrappers compare by identity rather than their overloaded value
     # equality. Keep this after the scalar fast path: change detection runs for
     # every recomputed node, and most graph values are plain scalars.
-    if _is_reactive_value(previous) or _is_reactive_value(current):
+    if is_reactive(previous) or is_reactive(current):
         return previous is not current
 
     # Compare callables by identity to avoid invoking custom `__eq__` logic and
@@ -300,7 +319,7 @@ class Signal[T](Variable[T]):
 
     def __init__(self, value: T) -> None:
         super().__init__()
-        if _migration.WARNINGS_ENABLED and _is_reactive_value(value):
+        if _migration.WARNINGS_ENABLED and is_reactive(value):
             _migration._warn_reactive_signal_value()
         _setattr(self, "_value", value)
         if HOOKS_ENABLED:
@@ -320,7 +339,7 @@ class Signal[T](Variable[T]):
 
     @value.setter
     def value(self, new_value: T) -> None:
-        if _migration.WARNINGS_ENABLED and _is_reactive_value(new_value):
+        if _migration.WARNINGS_ENABLED and is_reactive(new_value):
             _migration._warn_reactive_signal_value()
         old_value = self._value
         if _has_changed(old_value, new_value):
@@ -777,7 +796,7 @@ class Binding(Computed[T]):
 
     def __init__(self, source: T | ReactiveValue[T]) -> None:
         self._owned: Signal[T] | None
-        if _is_reactive_value(source):
+        if is_reactive(source):
             self._source: ReactiveValue[T] = cast(ReactiveValue[T], source)
             self._owned = None
         else:
@@ -816,7 +835,7 @@ class Binding(Computed[T]):
 
     def set(self, source: HasValue[T]) -> Self:
         """Select a plain value or follow a reactive source."""
-        if _is_reactive_value(source):
+        if is_reactive(source):
             return self._select_source(source)
 
         value = cast(T, source)
@@ -837,13 +856,13 @@ class Binding(Computed[T]):
         """
         previous = self._source
         next_source = build(previous)
-        if not _is_reactive_value(next_source):
+        if not is_reactive(next_source):
             raise TypeError("derive() must return a Signal, Computed, or Binding")
         return self.set(next_source)
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
-        if _is_reactive_value(value):
+        if is_reactive(value):
             raise TypeError("at() requires a plain value. Use set(source) for a reactive source.")
 
         previous = self._source

@@ -7,7 +7,7 @@ from typing import Any, Callable, TypeGuard, overload
 from warnings import warn
 
 from . import migration as _migration
-from ._reactive import Computed, Effect, Signal, _is_reactive_value, _track_read
+from ._reactive import Computed, Effect, Signal, _track_read, is_reactive
 from ._types import HasValue, ReactiveValue
 
 
@@ -142,7 +142,7 @@ def unref(value: Any) -> Any:
 
         ```
     """
-    if not _is_reactive_value(value):
+    if not is_reactive(value):
         return value
     if value._IS_COMPUTED:
         value._impl.ensure_uptodate()
@@ -176,31 +176,6 @@ def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
     return isinstance(unref(obj), type_)
 
 
-@overload
-def is_reactive[T](obj: HasValue[T]) -> TypeGuard[ReactiveValue[T]]: ...
-
-
-@overload
-def is_reactive[T, U](obj: HasValue[T] | HasValue[U]) -> TypeGuard[ReactiveValue[T] | ReactiveValue[U]]: ...
-
-
-def is_reactive(obj: object) -> bool:
-    """Return whether an object is a signified reactive wrapper.
-
-    This guard narrows a plain-or-reactive [HasValue][signified.HasValue] to
-    [ReactiveValue][signified.ReactiveValue] in the true branch without reading
-    the wrapped value or creating a dependency.
-
-    Args:
-        obj: Value to inspect.
-
-    Returns:
-        `True` for a [Signal][signified.Signal], [Computed][signified.Computed],
-        or [Binding][signified.Binding].
-    """
-    return _is_reactive_value(obj)
-
-
 def deep_unref(value: Any) -> Any:
     """Deprecated alias for [deep.unref][signified.deep.unref]."""
     warn("deep_unref() is deprecated; use deep.unref()", DeprecationWarning, stacklevel=2)
@@ -229,6 +204,6 @@ def as_rx(val: Any) -> ReactiveValue[Any]:
     Returns:
         A reactive value.
     """
-    if _is_reactive_value(val):
+    if is_reactive(val):
         return val
     return Signal(val)

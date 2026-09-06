@@ -15,7 +15,7 @@ from typing import Any, Callable, cast
 from ._functions import computed as _computed
 from ._functions import effect as _effect
 from ._functions import unref as _shallow_unref
-from ._reactive import Computed, Effect, _is_reactive_value
+from ._reactive import Computed, Effect, is_reactive
 
 __all__ = ["unref", "computed", "effect", "register"]
 
@@ -123,9 +123,9 @@ def unref(value: Any) -> Any:
         if current_type in _SCALAR_TYPES:
             return current
 
-        is_reactive = _is_reactive_value(current)
+        _is_reactive = is_reactive(current)
         resolver = _RESOLVERS.get(current_type)
-        if not is_reactive and resolver is None:
+        if not _is_reactive and resolver is None:
             return current
 
         identity = id(current)
@@ -133,7 +133,7 @@ def unref(value: Any) -> Any:
             raise ValueError(f"Cycle detected while resolving {current_type.__name__}")
         active.add(identity)
         try:
-            if is_reactive:
+            if _is_reactive:
                 return resolve(_shallow_unref(current))
             assert resolver is not None
             return resolver(current, resolve)
