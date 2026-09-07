@@ -66,6 +66,7 @@ return as reactive values (identity checks, containment, ternary, etc.):
         - eq
         - where
         - as_bool
+        - flatten
 
 ## Magic Methods
 
