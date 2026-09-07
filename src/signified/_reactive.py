@@ -8,7 +8,9 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
+from weakref import ref
 
+from . import _scheduler
 from . import migration as _migration
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
@@ -120,7 +122,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         """Notify all observers by calling their update method."""
         if not self._observers:
             return
-        self._observers.notify()
+        _scheduler.notify(id(self), self._observers.notify)
 
     def invalidate(self) -> None:
         """Force downstream recomputation, bypassing optimization caches.
@@ -214,10 +216,26 @@ top of this stack so dependency subscriptions can be reconciled on refresh.
 """
 
 
+@contextmanager
+def untracked() -> Generator[None, None, None]:
+    """Read without subscribing the enclosing computation or effect.
+
+    Nested computations still collect their own dependencies. Reads return
+    current values and retain normal hooks and errors. Synchronous, single-
+    thread use only; this context must not span await.
+    """
+    _COMPUTE_STACK.append(None)
+    try:
+        yield
+    finally:
+        popped = _COMPUTE_STACK.pop()
+        assert popped is None
+
+
 def _track_read(variable: Variable[Any]) -> None:
     """Register `variable` as a dependency of the currently computing Computed."""
     stack = _COMPUTE_STACK
-    if not stack:
+    if not stack or stack[-1] is None:
         # Reads outside Computed evaluation do not participate in dependency tracking.
         return
     impl = stack[-1]
@@ -378,11 +396,12 @@ class _DependencyLink:
     link, which is what lets commit and rollback both work as a single sweep.
     """
 
-    __slots__ = ["dep", "version", "prev", "next", "active", "seen_token", "born_token"]
+    __slots__ = ["dep", "version", "prev", "next", "active", "seen_token", "born_token", "read_version"]
 
     def __init__(self, dep: Variable[Any], token: int) -> None:
         self.dep = dep
         self.version = -1
+        self.read_version = -1
         self.prev: _DependencyLink | None = None
         self.next: _DependencyLink | None = None
         self.active = False
@@ -402,14 +421,18 @@ class _PythonDependencyState:
     strongly for as long as the link is in the index.
     """
 
-    __slots__ = ["_subscriber", "_head", "_tail", "_lookup", "_token"]
+    __slots__ = ["_subscriber_ref", "_head", "_tail", "_lookup", "_token"]
 
     def __init__(self, subscriber: Any) -> None:
-        self._subscriber = subscriber
+        self._subscriber_ref = ref(subscriber)
         self._head: _DependencyLink | None = None
         self._tail: _DependencyLink | None = None
         self._lookup: dict[int, _DependencyLink] = {}
         self._token = 0
+
+    @property
+    def _subscriber(self) -> Any:
+        return self._subscriber_ref()
 
     @property
     def deps(self) -> tuple[Variable[Any], ...]:
@@ -437,6 +460,7 @@ class _PythonDependencyState:
             self._tail = link
         else:
             link.seen_token = self._token
+        link.read_version = dependency._version
 
     def commit_refresh(self) -> None:
         """Subscribe to every dependency read this run and drop the rest."""
@@ -447,9 +471,11 @@ class _PythonDependencyState:
             next_link = link.next
             if link.seen_token == token:
                 if not link.active:
-                    link.dep.subscribe(subscriber)
+                    # This dependency was already read. Subscribing must not
+                    # evaluate it again if the callback subsequently mutated it.
+                    Variable.subscribe(link.dep, subscriber)
                     link.active = True
-                link.version = link.dep._version
+                link.version = link.read_version
             else:
                 self._detach(link)
             link = next_link
@@ -469,6 +495,16 @@ class _PythonDependencyState:
                 self._detach(link)
             link = next_link
 
+    def invalidated_since_read(self) -> bool:
+        """Check for callback writes without evaluating user computations."""
+        link = self._head
+        while link is not None:
+            dep = link.dep
+            if link.version != dep._version or (dep._IS_COMPUTED and dep._impl._state != _State.FRESH):
+                return True
+            link = link.next
+        return False
+
     def dependencies_changed(self) -> bool:
         link = self._head
         while link is not None:
@@ -479,6 +515,24 @@ class _PythonDependencyState:
                 return True
             link = link.next
         return False
+
+    def enable_retry_notifications(self) -> None:
+        # A failed callback may never read a previously subscribed branch.
+        # Its stale upstream nodes must also forward writes that can retry us.
+        pending: list[_PythonDependencyState] = [self]
+        visited: set[int] = set()
+        while pending:
+            state = pending.pop()
+            if id(state) in visited:
+                continue
+            visited.add(id(state))
+            link = state._head
+            while link is not None:
+                if link.dep._IS_COMPUTED:
+                    impl = cast(Computed[Any], link.dep)._impl
+                    impl._retry_notifications = True
+                    pending.append(impl._dep_state)
+                link = link.next
 
     def clear(self) -> None:
         link = self._head
@@ -518,7 +572,7 @@ _DependencyState = _PythonDependencyState
 class _ComputedImpl:
     """Internal state and dependency tracking for :class:`Computed`."""
 
-    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing", "_global_version_seen"]
+    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing", "_global_version_seen", "_retry_notifications"]
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
@@ -526,6 +580,7 @@ class _ComputedImpl:
         self._state = _State.UNINITIALIZED
         self._is_computing = False
         self._global_version_seen = -1
+        self._retry_notifications = False
 
     @property
     def _deps(self) -> Any:
@@ -560,7 +615,6 @@ class _ComputedImpl:
         popped = _COMPUTE_STACK.pop()
         assert popped is self
         self._is_computing = False
-
         # 2) Reconcile subscriptions against the dependency set from this run.
         self._dep_state.commit_refresh()
 
@@ -594,14 +648,21 @@ class _ComputedImpl:
             self._state = _State.FRESH
             return
 
-        # Fast path 3: stale, but no dep version changed — skip recompute.
-        if self._state == _State.STALE and not self.dependencies_changed():
-            self._state = _State.FRESH
-            self._global_version_seen = _GLOBAL_VERSION
-            return
-
-        # Slow path: recompute and reconcile dependencies.
-        self.refresh()
+        try:
+            # Fast path 3: stale, but no dep version changed — skip recompute.
+            if self._state == _State.STALE and not self.dependencies_changed():
+                self._state = _State.FRESH
+                self._global_version_seen = _GLOBAL_VERSION
+            else:
+                self.refresh()
+        except BaseException:
+            # Failed reads (including failures in upstream refreshes) leave
+            # consumers stale. Later writes must reach them so effects retry.
+            self._retry_notifications = True
+            self._dep_state.enable_retry_notifications()
+            raise
+        else:
+            self._retry_notifications = False
 
     def invalidate(self, *, force: bool = False) -> bool:
         """Mark stale and return True when transitioning out of FRESH.
@@ -683,9 +744,9 @@ class Computed(Variable[T]):
 
     def update(self) -> None:
         """Mark this computed stale when notified by an upstream dependency."""
-        if not self._impl.invalidate():
-            return
-        self.notify()
+        impl = self._impl
+        if impl.invalidate() or impl._retry_notifications:
+            self.notify()
 
     def _ensure_uptodate(self) -> None:
         self._impl.ensure_uptodate()
@@ -733,8 +794,8 @@ class Computed(Variable[T]):
         """Get the current value, recomputing lazily when stale."""
         if HOOKS_ENABLED:
             plugin_manager.hook.read(value=self)
-        _track_read(self)
         self._impl.ensure_uptodate()
+        _track_read(self)
         return self._value
 
 
@@ -839,7 +900,8 @@ class Effect:
 
     Any reactive value read inside `fn` — via `.value` or [unref][signified.unref] — is
     automatically tracked as a dependency. The function runs once immediately on
-    construction, then again each time a dependency changes.
+    construction (or at batch exit), then again when dependencies change.
+    Pending notifications coalesce; cascading writes may cause further runs.
 
     Warning:
         Dependencies are tracked dynamically on each run. Only values that are read on the branch executed in the last run are tracked.
@@ -883,20 +945,51 @@ class Effect:
         ```
     """
 
-    __slots__ = ("_computed", "__weakref__")
+    __slots__ = ("_fn", "_dep_state", "_active", "__weakref__")
 
     def __init__(self, fn: Callable[[], None]) -> None:
-        self._computed = Computed(fn)
-        self._computed.subscribe(self)  # triggers initial evaluation
+        self._fn = fn
+        self._dep_state = _DependencyState(self)
+        self._active = True
+        _scheduler.schedule(self)
+
+    @property
+    def _owner(self) -> Effect:
+        return self
 
     def update(self) -> None:
-        """Called by a dependency when its value changes."""
-        self._computed._impl.invalidate(force=True)
-        self._computed._impl.ensure_uptodate()
+        """Schedule a run after dependency invalidation has finished."""
+        _scheduler.schedule(self)
+
+    def _run(self) -> None:
+        self._dep_state.start_refresh()
+        _COMPUTE_STACK.append(self)
+        try:
+            self._fn()
+        except BaseException:
+            self._dep_state.rollback_refresh()
+            self._dep_state.enable_retry_notifications()
+            raise
+        else:
+            if self._active:
+                self._dep_state.commit_refresh()
+                # Also catches writes after a read during the first run, when
+                # subscriptions did not exist yet.
+                if self._dep_state.invalidated_since_read():
+                    _scheduler.schedule(self)
+        finally:
+            popped = _COMPUTE_STACK.pop()
+            assert popped is self
+            if not self._active:
+                self._clear_dependencies()
+
+    def _clear_dependencies(self) -> None:
+        for dep in self._dep_state.deps:
+            dep.unsubscribe(self)
+        self._dep_state.clear()
 
     def dispose(self) -> None:
-        """Unsubscribe from all dependencies and stop the effect."""
-        self._computed.unsubscribe(self)
-        for dep in tuple(self._computed._impl._deps):
-            dep.unsubscribe(self._computed)
-        self._computed._impl.clear_deps()
+        """Stop this effect, including any pending run. Safe to repeat."""
+        self._active = False
+        _scheduler.discard(self)
+        self._clear_dependencies()
