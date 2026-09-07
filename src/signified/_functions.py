@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from functools import wraps
 from typing import Any, Callable, TypeGuard, overload
-from warnings import warn
 
 from . import migration as _migration
 from ._reactive import Computed, Effect, Signal, _track_read, is_reactive
@@ -41,8 +40,8 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
     Direct reactive arguments are shallowly unwrapped on each recomputation.
     Plain values, including containers that contain reactive values, are passed
-    through unchanged. Use [deep.computed][signified.deep.computed] for explicit
-    recursive argument resolution.
+    through unchanged. Call [deep_unref][signified.deep_unref] inside the function for explicit
+    recursive resolution.
 
     Any reactive value read during evaluation becomes a dependency; the
     [Computed][signified.Computed] updates automatically when any dependency changes.
@@ -68,8 +67,8 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
 
     Direct reactive arguments are shallowly unwrapped on each re-run. Plain
     values, including containers that contain reactive values, are passed
-    through unchanged. Use [deep.effect][signified.deep.effect] for explicit
-    recursive argument resolution.
+    through unchanged. Call [deep_unref][signified.deep_unref] inside the function for explicit
+    recursive resolution.
 
     The effect runs immediately when called and re-runs whenever any reactive
     dependency changes. It is active as long as the caller holds a reference to
@@ -174,14 +173,6 @@ def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
         ```
     """
     return isinstance(unref(obj), type_)
-
-
-def deep_unref(value: Any) -> Any:
-    """Deprecated alias for [deep.unref][signified.deep.unref]."""
-    warn("deep_unref() is deprecated; use deep.unref()", DeprecationWarning, stacklevel=2)
-    from .deep import unref as deep_unwrap
-
-    return deep_unwrap(value)
 
 
 @overload

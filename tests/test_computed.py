@@ -2,7 +2,7 @@ import gc
 
 import pytest
 
-from signified import Binding, Computed, Signal, computed, deep
+from signified import Binding, Computed, Signal, computed, deep_unref
 
 
 def test_computed_basic():
@@ -116,8 +116,9 @@ def test_computed_explicit_nested_read_establishes_dependency():
 def test_deep_computed_resolves_nested_reactive_values():
     values = [Signal(1), {"nested": (Signal(2), Signal(3))}]
 
-    @deep.computed
+    @computed
     def total(value):
+        value = deep_unref(value)
         return value[0] + sum(value[1]["nested"])
 
     result = total(values)

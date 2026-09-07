@@ -2,7 +2,7 @@
 
 import pytest
 
-from signified import Binding, Computed, Effect, Signal, computed, deep, effect, unref
+from signified import Binding, Computed, Effect, Signal, computed, deep_unref, effect, unref
 
 pytestmark = pytest.mark.benchmark
 slow_benchmark = pytest.mark.slow_benchmark
@@ -164,13 +164,13 @@ def test_bench_binding_unref_v1(benchmark):
 def test_bench_deep_unref_dict_v1(benchmark):
     """Benchmark explicit deep resolution of a reactive dictionary."""
     payload = {"a": Signal(1), "b": [Signal(2), Signal(3)], "c": {"d": Signal(4)}}
-    benchmark(deep.unref, payload)
+    benchmark(deep_unref, payload)
 
 
 def test_bench_deep_computed_container_v1(benchmark):
     """Benchmark explicit deep argument resolution in a computed function."""
     values = [Signal(i) for i in range(32)]
-    total = deep.computed(sum)(values)
+    total = computed(lambda: sum(deep_unref(values)))()
     benchmark(lambda: total.value)
 
 

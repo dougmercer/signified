@@ -108,7 +108,7 @@ def _warn_nested_reactive_arguments(kind: str, args: tuple[Any, ...], kwargs: di
     warn(
         f"{kind} received a container with reactive descendants. Signified 0.6 "
         "only unwraps direct reactive arguments; read .value inside the function "
-        f"or use deep.{kind}.",
+        "or call deep_unref inside the function.",
         SignifiedMigrationWarning,
         stacklevel=2,
         skip_file_prefixes=(_PACKAGE_ROOT,),

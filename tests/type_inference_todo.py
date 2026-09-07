@@ -18,7 +18,7 @@ from signified import (
     Signal,
     as_rx,
     computed,
-    deep,
+    deep_unref,
     effect,
     is_reactive,
     unref,
@@ -192,10 +192,10 @@ def test_todo_binding_accepts_distributed_union_sources(
 
 def test_todo_deep_unref_result_type():
     # Why this fails:
-    # deep.unref recursively transforms reactive boundaries and containers.
+    # deep_unref recursively transforms reactive boundaries and containers.
     # Python has no recursive conditional type that can describe its general
     # output, so even a statically known chain of Signals returns Any.
-    result = deep.unref(Signal(Signal(Signal(1.0))))
+    result = deep_unref(Signal(Signal(Signal(1.0))))
     if USE_CURRENT_INFERENCE:
         assert_type(result, Any)
     else:

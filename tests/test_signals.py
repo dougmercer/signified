@@ -1,7 +1,7 @@
 import gc
 import weakref
 
-from signified import Binding, Computed, Signal, deep, deep_unref, unref
+from signified import Binding, Computed, Signal, deep_unref, unref
 
 
 def test_signal_basic():
@@ -76,7 +76,7 @@ def test_signal_container_is_opaque_to_reactive_children():
     child.value = 2
     assert derived.value == [child]
     assert runs == 1
-    assert deep.unref(outer) == [2]
+    assert deep_unref(outer) == [2]
 
 
 def test_unref_is_shallow_and_deep_unref_is_recursive():
@@ -84,7 +84,6 @@ def test_unref_is_shallow_and_deep_unref_is_recursive():
     outer = Signal(inner)
 
     assert unref(outer) is inner
-    assert deep.unref(outer) == 1
     assert deep_unref(outer) == 1
 
 
