@@ -187,6 +187,21 @@ def test_with_name_sets_display_name():
     assert f"{s:n}" == "counter"
 
 
+def test_repr_identifies_the_reactive_type():
+    source = Signal(1)
+
+    assert repr(source) == "Signal(1)"
+    assert repr(Computed(lambda: source.value + 1)) == "Computed(2)"
+    assert repr(Binding(source)) == "Binding(1)"
+
+
+def test_str_and_default_format_use_angle_brackets():
+    source = Signal("hello")
+
+    assert str(source) == "<hello>"
+    assert f"{source}" == "<hello>"
+
+
 def test_equal_distinct_containers_replace_and_invalidate():
     from signified import Effect
 

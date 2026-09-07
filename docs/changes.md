@@ -11,6 +11,9 @@ This page summarizes notable changes across releases.
 Added `is_reactive()` for narrowing a `HasValue[T]` to a reactive wrapper
 without reading its value.
 
+Reactive `repr` output now includes its concrete type (for example,
+`Signal(1)`), while `str` and default formatting use the compact `<1>` form.
+
 Added `batch()` for deferred, coalesced effect execution, including initial
 runs inside batches. Writes remain immediate and computed reads remain fresh.
 Added `untracked()` for incidental reads without subscribing the enclosing

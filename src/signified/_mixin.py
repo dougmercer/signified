@@ -446,15 +446,15 @@ class _ReactiveMixIn[T]:
         return _ReactiveNamespace(self)
 
     def __str__(self) -> str:
-        """Return a string of the current value.
+        """Return the current value inside angle brackets.
 
         Note:
             This is not reactive.
 
         Returns:
-            A string representation of `self.value`.
+            A compact string representation that remains visibly reactive.
         """
-        return str(self.value)
+        return f"<{self.value}>"
 
     @overload
     def __round__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
