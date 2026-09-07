@@ -185,3 +185,62 @@ def test_binding_context_manager_restores_source():
 def test_with_name_sets_display_name():
     s = Signal(1).with_name("counter")
     assert f"{s:n}" == "counter"
+
+
+def test_equal_distinct_containers_replace_and_invalidate():
+    from signified import Effect
+
+    for old, new in [([1], [1]), ({"a": 1}, {"a": 1})]:
+        source = Signal(old)
+        derived = Computed(lambda: source.value)
+        seen = []
+        watcher = Effect(lambda: seen.append(derived.value))
+        source.value = new
+        assert source.value is new
+        assert derived.value is new
+        assert len(seen) == 2
+        assert seen[0] is old and seen[1] is new
+        watcher.dispose()
+
+
+def test_identity_equality_does_not_call_user_equality():
+    class Value:
+        def __eq__(self, other):
+            raise AssertionError("must not compare")
+
+    value = Value()
+    source = Signal(value)
+    version = source._version
+    source.value = value
+    assert source._version == version
+    replacement = Value()
+    source.value = replacement
+    assert source.value is replacement
+
+
+def test_scalar_equality_retains_previous_value_and_distinguishes_types():
+    from signified import Effect
+
+    nan = float("nan")
+    source = Signal(nan)
+    seen = []
+    watcher = Effect(lambda: seen.append(source.value))
+    source.value = float("nan")
+    assert source.value is nan
+    assert len(seen) == 1
+    source.value = 1
+    source.value = True
+    assert source.value is True
+    assert len(seen) == 3
+    watcher.dispose()
+
+
+def test_binding_follows_one_boundary_even_when_result_is_reactive():
+    inner = Signal(1)
+    outer = Signal(inner)
+    binding = Binding(outer)
+    assert binding.value is inner
+    assert unref(binding) is inner
+    replacement = Signal(2)
+    outer.value = replacement
+    assert binding.value is replacement

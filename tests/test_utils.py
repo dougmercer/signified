@@ -124,7 +124,7 @@ def test_has_changed_with_broken_eq_is_treated_as_changed():
     assert _has_changed(BrokenEq(), BrokenEq()) is True
 
 
-def test_has_changed_with_ambiguous_equality_all_true_is_unchanged():
+def test_has_changed_does_not_invoke_ambiguous_equality():
     class AmbiguousEqResult:
         def __bool__(self):
             raise ValueError("ambiguous truth value")
@@ -136,7 +136,7 @@ def test_has_changed_with_ambiguous_equality_all_true_is_unchanged():
         def __eq__(self, other):  # type: ignore
             return AmbiguousEqResult()
 
-    assert _has_changed(object(), WithAmbiguousEq()) is False
+    assert _has_changed(object(), WithAmbiguousEq()) is True
 
 
 def test_coerce_to_bool_handles_ambiguous_bool_with_all_fallback():

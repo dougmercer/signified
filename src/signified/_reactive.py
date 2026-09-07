@@ -228,65 +228,22 @@ def _track_read(variable: Variable[Any]) -> None:
     impl._dep_state.register_dependency(variable)
 
 
-## Consider simplifying _has_changed.
-# _VALUE_TYPES = {int, str, bytes, complex}
-
-
-# def _has_changed(previous: Any, current: Any) -> bool:
-#     if previous is current:
-#         return False
-
-#     value_type = type(previous)
-#     if value_type is not type(current):
-#         return True
-
-#     if value_type is float:
-#         return previous != current and not (math.isnan(previous) and math.isnan(current))
-
-#     if value_type in _VALUE_TYPES:
-#         return previous != current
-
-#     return True
-
-
 def _has_changed(previous: Any, current: Any) -> bool:
-    """Best-effort change detection for assignments into reactive values.
+    """Exact built-in scalars compare by value; other objects by identity.
 
-    This function is intentionally fail-open: if comparison is ambiguous or
-    raises, we treat the value as changed to avoid missing invalidations.
+    Equal values retain the previous stored object. No user equality methods
+    or array comparisons are invoked implicitly.
     """
-    if previous is _BINDING_UNSET:
-        return True
-
-    previous_type = type(previous)
-    current_type = type(current)
-    if previous_type is current_type:
-        if previous_type in {int, bool, str, bytes, complex, type(None)}:
-            return previous != current
-        if previous_type is float:
-            return not (math.isnan(previous) and math.isnan(current)) and previous != current
-
-    # Reactive wrappers compare by identity rather than their overloaded value
-    # equality. Keep this after the scalar fast path: change detection runs for
-    # every recomputed node, and most graph values are plain scalars.
-    if is_reactive(previous) or is_reactive(current):
-        return previous is not current
-
-    # Compare callables by identity to avoid invoking custom `__eq__` logic and
-    # to preserve stable references as unchanged.
-    if callable(previous) or callable(current):
-        return previous is not current
-    # Keep NaN stable: treat NaN -> NaN as unchanged.
-    if isinstance(previous, float) and isinstance(current, float) and math.isnan(previous) and math.isnan(current):
+    if previous is current:
         return False
-
-    try:
-        # `==` may return non-scalar array-like values; coerce those with
-        # all-elements semantics before negating.
-        return not _coerce_to_bool(current == previous)
-    except Exception:
-        # Fail-open for exotic/buggy equality implementations.
+    value_type = type(previous)
+    if value_type is not type(current):
         return True
+    if value_type is float:
+        return previous != current and not (math.isnan(previous) and math.isnan(current))
+    if value_type in {int, bool, str, bytes, complex, type(None)}:
+        return previous != current
+    return True
 
 
 class Signal[T](Variable[T]):
