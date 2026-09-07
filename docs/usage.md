@@ -37,6 +37,32 @@ print(subtotal.value)  # 59.97
 
 `Signal.value` is read/write. `Computed.value` is read-only and updates from dependencies.
 
+### Flattening nested reactive values
+
+Use `.rx.flatten()` when a reactive value directly contains another reactive
+value and you want to follow the entire wrapper chain:
+
+```python
+from signified import Signal
+
+inner = Signal(5)
+outer = Signal(inner)
+
+assert outer.value is inner  # one boundary
+assert outer.rx.flatten() == 5  # all consecutive reactive boundaries
+```
+
+Each wrapper read by `.rx.flatten()` becomes a dependency inside a computation.
+Flattening stops at the first non-reactive object, so containers remain opaque:
+
+```python
+items = Signal([Signal(1)])
+assert items.rx.flatten() == items.value
+```
+
+Use `deep_unref(...)` instead when reactive values inside supported containers
+should also be resolved.
+
 ### Computed from operators
 
 ```python
@@ -329,6 +355,7 @@ print(process_data(Signal(5)))  # 10
 Related helpers:
 
 - `deep_unref`: recursively unwraps registered containers of reactive values
+- `value.rx.flatten()`: follows consecutive reactive wrappers, leaving containers opaque
 - `deep_unref.register`: teaches deep resolution how to rebuild a custom container
 - `batch()`: defer effects across multiple writes
 - `untracked()`: read without subscribing the enclosing consumer

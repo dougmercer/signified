@@ -23,7 +23,8 @@ assert Binding(outer).value is inner
 
 `unref` crosses exactly one boundary. `computed` and `effect` unwrap only direct
 reactive arguments, once per evaluation. Plain arguments, including containers,
-pass through unchanged.
+pass through unchanged. `.rx.flatten()` explicitly follows a consecutive chain
+of wrappers while leaving containers opaque.
 
 ```python
 from signified import Signal, computed

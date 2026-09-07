@@ -26,8 +26,8 @@ assert result.value == 4
 
 `Computed(lambda: source)` now returns the source object itself. `Binding`
 follows one boundary too; following a source whose value is another reactive
-object returns that object. Use explicit `.value` reads to follow additional
-boundaries, or `deep_unref` for recursive container traversal.
+object returns that object. Use `.rx.flatten()` for a consecutive chain of
+wrappers or `deep_unref` for recursive container traversal.
 
 Binding retains a stable identity while `.set(source)` or `.value = source`
 selects another source. Assigning a plain value selects a private Signal.

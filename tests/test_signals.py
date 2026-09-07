@@ -1,6 +1,8 @@
 import gc
 import weakref
 
+import pytest
+
 from signified import Binding, Computed, Signal, deep_unref, unref
 
 
@@ -85,6 +87,38 @@ def test_unref_is_shallow_and_deep_unref_is_recursive():
 
     assert unref(outer) is inner
     assert deep_unref(outer) == 1
+
+
+def test_flatten_follows_only_consecutive_reactive_values():
+    child = Signal(1)
+    nested = Signal(Computed(lambda: Binding(child)))
+
+    assert nested.rx.flatten() == 1
+    assert Signal([child]).rx.flatten() == [child]
+
+
+def test_flatten_tracks_every_reactive_value_read():
+    inner = Signal(1)
+    outer = Signal(inner)
+    flattened = Computed(outer.rx.flatten)
+
+    assert flattened.value == 1
+    inner.value = 2
+    assert flattened.value == 2
+
+    replacement = Signal(3)
+    outer.value = replacement
+    assert flattened.value == 3
+    replacement.value = 4
+    assert flattened.value == 4
+
+
+def test_flatten_rejects_reactive_cycles():
+    cyclic: Signal[object] = Signal(None)
+    cyclic.value = cyclic
+
+    with pytest.raises(ValueError, match="Cycle detected while flattening Signal"):
+        cyclic.rx.flatten()
 
 
 def test_unref():

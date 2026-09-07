@@ -5,9 +5,9 @@ from __future__ import annotations
 import math
 import operator
 from functools import cache
-from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, cast, overload
 
-from ._types import HasValue
+from ._types import HasValue, _FlattenableReactive
 
 if TYPE_CHECKING:
     from ._reactive import Computed
@@ -31,6 +31,13 @@ class _ReactiveSupportsAdd[OtherT, ResultT](Protocol):
 class _ReactiveSupportsGetItem[KeyT, ValueT](Protocol):
     @property
     def value(self) -> _SupportsGetItem[KeyT, ValueT]: ...
+
+
+class _FlattenableNamespace[T](Protocol):
+    """Type-only namespace view that exposes a flattenable reactive source."""
+
+    @property
+    def _source(self) -> _FlattenableReactive[T]: ...
 
 
 class _ReactiveNamespace[T]:
@@ -310,6 +317,38 @@ class _ReactiveNamespace[T]:
             ```
         """
         return computed(bool)(self._source)
+
+    def flatten[U](self: _FlattenableNamespace[U]) -> U:
+        """Read through consecutive reactive values and return the first plain value.
+
+        Unlike [deep_unref][signified.deep_unref], this follows reactive wrappers
+        only. Containers and other non-reactive objects remain opaque. Every
+        reactive value read becomes a dependency when called during a
+        [Computed][signified.Computed] or [Effect][signified.Effect] evaluation.
+
+        Returns:
+            The innermost value after following consecutive reactive wrappers.
+
+        Raises:
+            ValueError: If the reactive wrappers contain a cycle.
+
+        Example:
+            ```py
+            >>> nested = Signal(Signal(Signal(5)))
+            >>> nested.rx.flatten()
+            5
+
+            ```
+        """
+        current: Any = self._source
+        active: set[int] = set()
+        while is_reactive(current):
+            identity = id(current)
+            if identity in active:
+                raise ValueError(f"Cycle detected while flattening {type(current).__name__}")
+            active.add(identity)
+            current = current.value
+        return cast(U, current)
 
 
 class _ReactiveMixIn[T]:

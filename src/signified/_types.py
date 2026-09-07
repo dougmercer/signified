@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import weakref
-from typing import TYPE_CHECKING, Iterable, Iterator, Protocol
+from typing import TYPE_CHECKING, Iterable, Iterator, Literal, Protocol
 
 if TYPE_CHECKING:
     from ._reactive import Binding, Computed, Signal
@@ -15,6 +15,16 @@ type ReactiveValue[T] = Computed[T] | Signal[T] | Binding[T]
 
 type HasValue[T] = T | ReactiveValue[T]
 """This object would return a value of type T when calling unref(obj)."""
+
+
+class _FlattenableReactive[T](Protocol):
+    """Type-only view that carries the leaf type through nested reactives."""
+
+    @property
+    def _IS_REACTIVE(self) -> Literal[True]: ...
+
+    @property
+    def value(self) -> T | _FlattenableReactive[T]: ...
 
 
 class _SupportsUpdate(Protocol):

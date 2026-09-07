@@ -61,6 +61,22 @@ def test_higher_order_reactive_values():
     assert_type(calculated.value, Signal[int])
 
 
+def test_flatten_inference():
+    direct = Signal(1.0)
+    nested = Signal(Signal(Signal(Signal(1.0))))
+    mixed_wrappers = Signal(Computed(lambda: Signal("value")))
+    container = Signal([Signal(1)])
+    union: Signal[Signal[int] | Signal[str] | Signal[bytes]] = Signal(Signal(1))
+    mixed_depths: Signal[int | Signal[str] | Signal[Signal[bytes]]] = Signal(1)
+
+    assert_type(direct.rx.flatten(), float)
+    assert_type(nested.rx.flatten(), float)
+    assert_type(mixed_wrappers.rx.flatten(), str)
+    assert_type(container.rx.flatten(), list[Signal[int]])
+    assert_type(union.rx.flatten(), int | str | bytes)
+    assert_type(mixed_depths.rx.flatten(), int | str | bytes)
+
+
 def test_computed_init():
     c_int = Computed(lambda: 1)
     assert_type(c_int, Computed[int])

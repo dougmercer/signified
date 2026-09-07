@@ -58,6 +58,10 @@ does not scan for or forward changes from reactive objects inside them.
 resolution is explicit via `deep_unref` inside a normal computed/effect
 callback. `deep_unref` is not deprecated.
 
+Reactive values also provide `.rx.flatten()`, which follows consecutive reactive
+wrappers to their first non-reactive value while leaving containers opaque.
+Its return type preserves the innermost type across arbitrarily nested wrappers.
+
 ## 0.5.0
 
 ### Removals
