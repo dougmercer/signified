@@ -52,3 +52,40 @@ def test_warns_once_when_computed_returns_a_reactive_value():
             assert result.value is source
 
     assert not [warning for warning in seen if warning.category is migration.SignifiedMigrationWarning]
+
+
+def test_warns_for_nested_signal_contents_and_computed_results():
+    child = Signal(1)
+    with migration.warnings():
+        with pytest.warns(migration.SignifiedMigrationWarning, match="container"):
+            source = Signal({"child": child})
+        with pytest.warns(migration.SignifiedMigrationWarning, match="container"):
+            source.value = [child]
+        result = Computed(lambda: [child])
+        with pytest.warns(migration.SignifiedMigrationWarning, match="descendants"):
+            assert result.value[0] is child
+
+
+def test_diagnostics_do_not_read_reactives_or_consume_unknown_iterables():
+    class Opaque:
+        def __iter__(self):
+            raise AssertionError("must not inspect")
+
+    child = Computed(lambda: pytest.fail("must not read"))
+    with migration.warnings():
+        with pytest.warns(migration.SignifiedMigrationWarning):
+            Signal([child])
+        Signal(Opaque())
+
+
+def test_warning_as_error_restores_computation_tracking():
+    source = Signal(1)
+    result = Computed(lambda: source)
+    with migration.warnings(), warnings.catch_warnings():
+        warnings.simplefilter("error", migration.SignifiedMigrationWarning)
+        with pytest.raises(migration.SignifiedMigrationWarning):
+            _ = result.value
+    other = Computed(lambda: source.value * 2)
+    assert other.value == 2
+    source.value = 2
+    assert other.value == 4
