@@ -130,6 +130,7 @@ nav:
   - Magic Methods: magic-methods.md
   - Plugins: plugins.md
   - Comparison: comparison.md
+  - Resolving nested values: resolution.md
   - API Reference: api.md
   - Change Log: changes.md
   - Limitations: limitations.md
