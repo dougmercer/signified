@@ -144,8 +144,8 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         return
 
     def __repr__(self) -> str:
-        """Represent the object in a way that shows the inner value."""
-        return f"<{self.value!r}>"
+        """Represent the object with its concrete reactive type and value."""
+        return f"{type(self).__name__}({self.value!r})"
 
     @abstractmethod
     def update(self) -> None:
@@ -194,7 +194,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         empty - just the value in brackets (default)
         """
         if not format_spec:  # Default - just show value in brackets
-            return f"<{self.value}>"
+            return str(self)
         if format_spec == "n":  # Name only
             return self._name if self._name else f"{type(self).__name__}(id={id(self)})"
         if format_spec == "d":  # Debug
