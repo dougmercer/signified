@@ -116,13 +116,28 @@ def _warn_nested_reactive_arguments(kind: str, args: tuple[Any, ...], kwargs: di
 
 
 def _warn_reactive_computed_result(owner: Any, result: Any) -> None:
-    if not _is_reactive(result) or owner in _WARNED_COMPUTED_RESULTS:
+    if owner in _WARNED_COMPUTED_RESULTS or not _contains_reactive(result):
         return
     _WARNED_COMPUTED_RESULTS.add(owner)
     warn(
-        "Computed produced a reactive value. Signified 0.6 returns that object "
-        "without unwrapping it; return source.value when the current value is intended.",
+        "Computed produced a reactive value or a container with reactive descendants. "
+        "Signified 0.6 returns that object without recursive resolution; use explicit "
+        ".value reads or deep_unref inside the function when resolved values are intended.",
         SignifiedMigrationWarning,
         stacklevel=2,
         skip_file_prefixes=(_PACKAGE_ROOT,),
     )
+
+
+def _warn_signal_value(value: Any) -> None:
+    if _is_reactive(value):
+        _warn_reactive_signal_value()
+    elif _contains_reactive(value):
+        warn(
+            "Signal received a container with reactive descendants. Signified 0.6 "
+            "stores it unchanged and does not follow its children; use explicit "
+            ".value reads or deep_unref inside a computation when resolved values are intended.",
+            SignifiedMigrationWarning,
+            stacklevel=2,
+            skip_file_prefixes=(_PACKAGE_ROOT,),
+        )
