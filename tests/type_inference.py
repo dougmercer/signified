@@ -121,8 +121,8 @@ def test_rx_map():
     assert_type(unref(result), int)
 
 
-def test_rx_peek():
-    result = Signal(2).rx.peek(lambda x: x + 1)
+def test_rx_tap():
+    result = Signal(2).rx.tap(lambda x: x + 1)
     assert_type(result, Computed[int])
     assert_type(unref(result), int)
 

@@ -123,9 +123,9 @@ safety is provided. Single batch flush failures now use `ExceptionGroup`; use
 `except*` to handle individual error types. See the [compute contract](compute-contract.md)
 for combined errors, recovery, and lifetime rules.
 
-`.rx.peek(callback)` is lazy and cached: the callback runs on evaluation,
-not on every cached read. For a current value without subscribing, use
-`untracked()`.
+Rename `.rx.peek(callback)` to `.rx.tap(callback)`. Peek remains a deprecated
+alias. Tap is lazy and cached: the callback runs on evaluation, not on every
+cached read. For a current value without subscribing, use `untracked()`.
 
 ## Optional migration diagnostics
 

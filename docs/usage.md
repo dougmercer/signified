@@ -287,7 +287,7 @@ inside `batch()`. Its first run is also deferred when created inside a batch.
     from signified import Signal
 
     price = Signal(10)
-    total = price.rx.map(lambda p: p * 1.2).rx.peek(lambda v: print("total:", v))
+    total = price.rx.map(lambda p: p * 1.2).rx.tap(lambda v: print("total:", v))
 
     price.value = 10  # Nothing happens
     price.value = 20  # Nothing happens

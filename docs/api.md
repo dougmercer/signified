@@ -55,6 +55,7 @@ return as reactive values (identity checks, containment, ternary, etc.):
       members:
         - map
         - effect
+        - tap
         - peek
         - len
         - is_

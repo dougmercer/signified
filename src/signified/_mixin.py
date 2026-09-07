@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import operator
+import warnings
 from functools import cache
 from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
 
@@ -105,7 +106,7 @@ class _ReactiveNamespace[T]:
         source = self._source
         return Effect(lambda: fn(source.value))
 
-    def peek(self, fn: Callable[[T], Any]) -> Computed[T]:
+    def tap(self, fn: Callable[[T], Any]) -> Computed[T]:
         """Lazily call fn on evaluation and pass through the source value.
 
         This returns a cached Computed: repeated reads without invalidation do
@@ -115,11 +116,16 @@ class _ReactiveNamespace[T]:
         """
 
         @computed
-        def _peek(value: T) -> T:
+        def tapped(value: T) -> T:
             fn(value)
             return value
 
-        return _peek(self._source)
+        return tapped(self._source)
+
+    def peek(self, fn: Callable[[T], Any]) -> Computed[T]:
+        """Deprecated alias for rx.tap(fn), not an untracked getter."""
+        warnings.warn("rx.peek(fn) is deprecated; use rx.tap(fn)", DeprecationWarning, stacklevel=2)
+        return self.tap(fn)
 
     def len(self) -> Computed[int]:
         """Return a reactive value for ``len(source.value)``.

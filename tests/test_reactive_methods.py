@@ -367,3 +367,22 @@ def test_signal_rx_in():
     assert result.value == False  # noqa: E712
     haystack.value = [4, 5]
     assert result.value == True  # noqa: E712
+
+
+def test_tap_cached_reads_and_peek_deprecation():
+    import pytest
+
+    source = Signal(1)
+    seen = []
+    tapped = source.rx.tap(seen.append)
+    assert seen == []
+    assert tapped.value == tapped.value == 1
+    assert seen == [1]
+    source.value = 2
+    source.value = 3
+    assert seen == [1]
+    assert tapped.value == 3
+    assert seen == [1, 3]
+    with pytest.deprecated_call(match="rx.tap"):
+        alias = source.rx.peek(seen.append)
+    assert alias.value == 3

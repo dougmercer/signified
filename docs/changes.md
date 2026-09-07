@@ -26,6 +26,9 @@ invalidate dependents; arbitrary equality methods are not called.
 or colliding keys/members raise with path diagnostics. Unknown objects pass
 through without inspection. The development-only `deep` module is removed.
 
+Added `rx.tap(fn)` for lazy cached callback observation. The previously shipped
+`rx.peek(fn)` remains a deprecated alias, not an untracked getter.
+
 See [Migrating to 0.6](migration.md), especially the new equality policy,
 explicit recursive resolution, effect error groups, and scheduling guarantees.
 

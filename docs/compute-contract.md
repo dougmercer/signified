@@ -145,9 +145,10 @@ computations still collect their own dependencies and refresh normally. Reads,
 plugin hooks, errors, and writes are not suppressed. Scopes nest and restore
 tracking even on exceptions.
 
-`rx.peek(fn)` creates a lazy cached computation that invokes a callback and
-passes through the source value. It skips unread intermediate updates and does
-not repeat its callback on cached reads. It is not an untracked getter.
+`rx.tap(fn)` is different: it creates a lazy cached computation that invokes a
+callback and passes through the source value. It skips unread intermediate
+updates and does not repeat its callback on cached reads. `rx.peek(fn)` remains
+a deprecated alias for tap, not an untracked getter.
 
 ## Batching and effect lifetime
 
