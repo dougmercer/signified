@@ -6,14 +6,28 @@ hide:
 
 This page summarizes notable changes across releases.
 
-## 0.5.0
+## 0.6.0 (unreleased)
 
 Added `is_reactive()` for narrowing a `HasValue[T]` to a reactive wrapper
 without reading its value.
 
-`deep.unref` now uses an extensible registry. Common built-in containers are
-registered by default; arbitrary iterables remain opaque unless explicitly
-registered with `@deep.register(Type)`, and cycles raise a clear `ValueError`.
+Added `batch()` for deferred, coalesced effect execution, including initial
+runs inside batches. Writes remain immediate and computed reads remain fresh.
+Added `untracked()` for incidental reads without subscribing the enclosing
+consumer. Effects now recover after callback or intermediate-computed failures;
+notification waves invalidate all branches before running effects.
+
+Change detection compares exact built-in scalars by value and all other objects
+by identity. Equal-but-distinct containers now replace the stored value and
+invalidate dependents; arbitrary equality methods are not called.
+
+`deep_unref` keeps its name and gains an exact-type registry at
+`deep_unref.register(Type)`. Aliases are preserved, cycles rejected, and invalid
+or colliding keys/members raise with path diagnostics. Unknown objects pass
+through without inspection. The development-only `deep` module is removed.
+
+See [Migrating to 0.6](migration.md), especially the new equality policy,
+explicit recursive resolution, effect error groups, and scheduling guarantees.
 
 ### Explicit source bindings
 
@@ -41,9 +55,10 @@ reactive boundary. Containers stored in a `Signal` are opaque: the outer signal
 does not scan for or forward changes from reactive objects inside them.
 
 `computed` and `effect` now unwrap direct reactive arguments only. Recursive
-argument resolution is an explicit opt-in through `deep.computed` and
-`deep.effect`; `deep.unref` is the recursive counterpart to `unref`. The old
-`deep_unref` name remains as a deprecated compatibility alias.
+resolution is explicit via `deep_unref` inside a normal computed/effect
+callback. `deep_unref` is not deprecated.
+
+## 0.5.0
 
 ### Removals
 

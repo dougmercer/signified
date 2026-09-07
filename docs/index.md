@@ -63,8 +63,8 @@ print(x_squared.value)  # 100
 5. Use `Binding` only when a stable handle must switch sources.
 
 Dependencies come from reactive reads, not containment. Normal `computed` and
-`effect` calls unwrap direct reactive arguments only; use `from signified import
-deep` for explicit recursive resolution.
+`effect` calls unwrap direct reactive arguments only; call `deep_unref` inside the callback for explicit recursive resolution. Use
+`batch()` to group writes and `untracked()` for reads without subscribing.
 
 ## Ready to learn more?
 

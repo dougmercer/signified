@@ -28,7 +28,6 @@ hide:
       members:
         - value
         - source
-        - bind
         - set
         - derive
         - at
@@ -128,15 +127,26 @@ subscript, and attribute-access operations all return reactive
 ::: signified.has_value
 ::: signified.is_reactive
 ::: signified.as_rx
+::: signified.batch
+::: signified.untracked
 
-## Explicit deep resolution
+## Explicit deep resolution {#signified.deep_unref}
 
-Import the namespace with `from signified import deep`.
+Use `deep_unref(value)` and `@deep_unref.register(Type)`. The resolver is a
+callable registry with exact-type dispatch; it returns `Any` because traversal
+and custom handlers can change the result's shape.
 
-::: signified.deep.unref
-::: signified.deep.register
-::: signified.deep.computed
-::: signified.deep.effect
+::: signified._resolve._DeepUnref
+    options:
+      show_root_heading: false
+      members:
+        - __call__
+        - register
+
+::: signified.ResolveContext
+    options:
+      members:
+        - __call__
 
 ## Migration diagnostics
 
@@ -150,10 +160,14 @@ Import the namespace with `from signified import migration`.
 
 ## Types
 
+### HasValue {#signified.HasValue}
+
 **`HasValue[T]`** — `T | Computed[T] | Signal[T] | Binding[T]`
 
 A plain or reactive value that resolves to `T`. Use as a type hint when a
 parameter accepts either a raw value or a reactive wrapper.
+
+### ReactiveValue {#signified.ReactiveValue}
 
 **`ReactiveValue[T]`** — `Computed[T] | Signal[T] | Binding[T]`
 

@@ -57,7 +57,8 @@ Together, these data structures allow us to implement a wide variety of capabili
 
 Dependencies come from reactive reads, not containment. Normal `computed` and
 `effect` calls unwrap direct reactive arguments, while ordinary containers are
-opaque. Use `from signified import deep` when recursive resolution is intended.
+opaque. Call `deep_unref` inside a computation when recursive resolution is intended.
+Use `batch()` to group writes and `untracked()` for reads without subscribing.
 
 ## ... what do you mean by "kind-of working type narrowing"?
 

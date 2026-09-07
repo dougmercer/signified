@@ -201,15 +201,15 @@ print(total)       # <14>
 
 A container stored in a `Signal` is opaque: the signal does not automatically
 follow reactive objects placed inside that container. Ordinary containers
-passed to `computed` and `effect` are opaque too. Use `deep.computed` when you
-want explicit recursive argument resolution:
+passed to `computed` and `effect` are opaque too. Call `deep_unref` inside a computation when you
+want explicit recursive resolution:
 
 ```python
-from signified import Signal, deep
+from signified import Signal, Computed, deep_unref
 
 a = Signal(1)
 b = Signal(2)
-total = deep.computed(sum)([a, b])
+total = Computed(lambda: sum(deep_unref([a, b])))
 
 print(total.value)  # 3
 a.value = 10
@@ -270,15 +270,18 @@ temperature_c.value = 25
 print(temperature_f.value)  # 77.0
 ```
 
-### `peek` vs `effect`
+### `tap` vs `effect`
 
-Use `peek` when you want a side-effect to fire only when you explicitly read `.value` — useful for debugging or logging on demand. Use `effect` when you want a side-effect to fire automatically on every change.
+Use `tap` when you want a side-effect to fire only when you explicitly read `.value` — useful for debugging or logging on demand. Use `effect` when you want a side-effect to fire automatically on every change.
 
-`peek` is lazy like other `Computed` values: it only runs when `.value` is read.
+`tap` is lazy and cached: its callback runs on evaluation, not on every cached
+read. Unread intermediate values are skipped. The old `peek(fn)` name is a
+deprecated alias, not an untracked getter.
 
-`effect` is eager: it runs immediately and again on every source update.
+`effect` runs synchronously after updates, with pending executions coalesced
+inside `batch()`. Its first run is also deferred when created inside a batch.
 
-=== "peek"
+=== "tap"
 
     ```python
     from signified import Signal
@@ -325,9 +328,10 @@ print(process_data(Signal(5)))  # 10
 
 Related helpers:
 
-- `deep.unref`: recursively unwraps registered containers of reactive values
-- `deep.register`: teaches deep resolution how to rebuild a custom container
-- `deep.computed` and `deep.effect`: opt into recursive argument resolution
+- `deep_unref`: recursively unwraps registered containers of reactive values
+- `deep_unref.register`: teaches deep resolution how to rebuild a custom container
+- `batch()`: defer effects across multiple writes
+- `untracked()`: read without subscribing the enclosing consumer
 - `as_rx`: wraps plain values into `Signal` (or returns the input reactive value)
 - `has_value`: type guard for checking `HasValue[T]`
 - `is_reactive`: type guard for narrowing `HasValue[T]` to `ReactiveValue[T]`
@@ -352,14 +356,14 @@ result = double(config)
 ```
 
 The explicit `.value` access tracks `x`. If a function should recursively
-resolve and track every reactive value in its arguments, import the `deep`
-namespace:
+resolve and track every reactive value in its arguments, call `deep_unref`
+inside it:
 
 ```python
-from signified import Signal, deep
+from signified import Signal, Computed, deep_unref
 
 values = [Signal(1), Signal(2)]
-total = deep.computed(sum)(values)
+total = Computed(lambda: sum(deep_unref(values)))
 assert total.value == 3
 ```
 
@@ -391,3 +395,13 @@ print(derived.value)     # still 10
 derived.invalidate()
 print(derived.value)     # 40
 ```
+
+
+## Scheduling and untracked reads
+
+Use `with batch():` around related writes to defer effects until the outermost
+exit. Writes are immediate and computed reads stay current. Use `with
+untracked():` around incidental reads inside a computation or effect to avoid
+subscribing to those values. Both are synchronous and single-threaded; neither
+context should span `await`. See the [compute contract](compute-contract.md) for
+examples, error handling, and exact guarantees.
