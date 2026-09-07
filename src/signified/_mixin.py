@@ -67,8 +67,9 @@ class _ReactiveNamespace[T]:
     def effect(self, fn: Callable[[T], None]) -> "Effect":
         """Eagerly run `fn` for side effects whenever the source changes.
 
-        `fn` is called immediately on creation and again on every subsequent
-        change — without requiring the caller to read `.value`.
+        `fn` runs synchronously on creation and after updates, without a
+        `.value` read. Inside batch(), initial and subsequent runs are deferred
+        and pending notifications coalesce.
 
         This is a convenience wrapper around [Effect][signified.Effect]. The source value is
         passed as the single argument to `fn` on each run. For effects that need
