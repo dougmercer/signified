@@ -2,18 +2,11 @@
 
 from __future__ import annotations
 
-import importlib.util
-from collections.abc import Iterable
 from functools import wraps
 from typing import Any, Callable, TypeGuard, overload
 
 from ._reactive import Computed, Effect, Signal, _track_read, is_reactive
 from ._types import HasValue, ReactiveValue
-
-if importlib.util.find_spec("numpy") is not None:
-    import numpy as np  # pyright: ignore[reportMissingImports]
-else:
-    np = None  # User does not have numpy installed
 
 _PLAIN_ARG_TYPES = {int, float, str, bool, bytes, complex, type(None)}
 
@@ -198,72 +191,6 @@ def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
     return isinstance(unref(obj), type_)
 
 
-# ---------------------------------------------------------------------------
-# Utility functions that depend on the reactive types above
-# ---------------------------------------------------------------------------
-
-_SCALAR_TYPES = {int, float, str, bool, type(None)}
-
-
-def deep_unref(value: Any) -> Any:
-    """Recursively resolve reactive values within nested containers.
-
-    Like [unref][signified.unref], but also descends into `dict`, `list`, `tuple`, and other
-    iterables, replacing any reactive values found within them.
-
-    Supported containers:
-
-    - scalars (`int`, `float`, `str`, `bool`, `None`) are returned unchanged
-    - reactive values are unwrapped recursively
-    - `dict`, `list`, and `tuple` contents are recursively unwrapped
-    - generic iterables are reconstructed when possible; otherwise returned as-is
-    - `numpy.ndarray` with `dtype=object` is unwrapped element-wise
-
-    Args:
-        value: Any value, possibly containing reactive values.
-
-    Returns:
-        Value with reactive nodes recursively replaced by plain values.
-
-    Example:
-        ```py
-        >>> payload = {"a": Signal(1), "b": [Signal(2), 3]}
-        >>> deep_unref(payload)
-        {'a': 1, 'b': [2, 3]}
-
-        ```
-    """
-    value_type = type(value)
-
-    # Fast path for common scalar types (faster than isinstance check)
-    if value_type in _SCALAR_TYPES:
-        return value
-
-    # Unwrap reactive values.
-    value = unref(value)
-    value_type = type(value)
-    if value_type in _SCALAR_TYPES:
-        return value
-
-    # For containers, recursively unref their elements
-    if np is not None and isinstance(value, np.ndarray):
-        assert np is not None
-        return np.array([deep_unref(item) for item in value]).reshape(value.shape) if value.dtype == object else value
-    if value_type is list:
-        return [deep_unref(item) for item in value]
-    if value_type is tuple:
-        return tuple(deep_unref(item) for item in value)
-    if value_type is dict:
-        return {deep_unref(k): deep_unref(v) for k, v in value.items()}
-    if isinstance(value, Iterable) and not isinstance(value, str):
-        try:
-            return type(value)(deep_unref(item) for item in value)  # pyright: ignore[reportCallIssue]
-        except TypeError:
-            return value
-
-    return value
-
-
 @overload
 def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]: ...
 
@@ -287,3 +214,7 @@ def as_rx(val: Any) -> ReactiveValue[Any]:
     if is_reactive(val):
         return val
     return Signal(val)
+
+
+# Loaded after unref is defined to avoid an import cycle.
+from ._resolve import deep_unref  # noqa: E402
