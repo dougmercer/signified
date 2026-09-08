@@ -1527,6 +1527,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#signified.is_reactive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;is_reactive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified.has_value" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1556,6 +1567,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signified.HasValue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HasValue
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.ReactiveValue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ReactiveValue
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2460,6 +2499,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#signified.is_reactive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;is_reactive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified.has_value" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2489,6 +2539,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signified.HasValue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HasValue
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.ReactiveValue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ReactiveValue
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -7925,6 +8003,10 @@ containers. On each recomputation, arguments are resolved with
 
 
 <a href="#signified.unref" class="headerlink" title="Permanent link">&para;</a></h2>
+          <div class="doc-overloads">
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unref</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="T">T</span></span>
+</span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unref</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="U">U</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="T">T</span></span> <span class="o">|</span> <span class="n"><span title="U">U</span></span>
+</span></code></pre></div>          </div>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">unref</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 </span></code></pre></div>
 
@@ -7953,7 +8035,7 @@ reading <code>.value</code> directly.</p>
                 <code>value</code>
             </td>
             <td>
-                  <code><span title="signified._types.HasValue">HasValue</span>[<span title="signified._functions.unref[T]">T</span>]</code>
+                  <code><span title="typing.Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -7979,7 +8061,7 @@ reading <code>.value</code> directly.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="signified._functions.unref[T]">T</span></code>
+                  <code><span title="typing.Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -8098,6 +8180,91 @@ iterables, replacing any reactive values found within them.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="signified.is_reactive" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.is_reactive</span>
+
+
+<a href="#signified.is_reactive" class="headerlink" title="Permanent link">&para;</a></h2>
+          <div class="doc-overloads">
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_reactive</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.TypeGuard">TypeGuard</span></span><span class="p">[</span><span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">]]</span>
+</span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_reactive</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="U">U</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.TypeGuard">TypeGuard</span></span><span class="p">[</span><span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="U">U</span></span><span class="p">]]</span>
+</span></code></pre></div>          </div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_reactive</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Return whether an object is a signified reactive wrapper.</p>
+<p>This guard narrows a plain-or-reactive <a class="autorefs autorefs-internal" href="#signified.HasValue">HasValue</a> to
+<a class="autorefs autorefs-internal" href="#signified.ReactiveValue">ReactiveValue</a> in the true branch without reading
+the wrapped value or creating a dependency.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>obj</code>
+            </td>
+            <td>
+                  <code><span title="object">object</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Value to inspect.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>True</code> for a <a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a>, <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="signified.has_value" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.has_value</span>
 
@@ -8205,6 +8372,12 @@ plain value or a reactive wrapper and you need to narrow the type.</p>
 
 
 <a href="#signified.as_rx" class="headerlink" title="Permanent link">&para;</a></h2>
+          <div class="doc-overloads">
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">as_rx</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="T">T</span></span><span class="p">]</span>
+</span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">as_rx</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">val</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="U">U</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="U">U</span></span><span class="p">]</span>
+</span></code></pre></div>          </div>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">as_rx</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 </span></code></pre></div>
 
@@ -8231,7 +8404,7 @@ plain value or a reactive wrapper and you need to narrow the type.</p>
                 <code>val</code>
             </td>
             <td>
-                  <code><span title="signified._types.HasValue">HasValue</span>[<span title="signified._functions.as_rx[T]">T</span>]</code>
+                  <code><span title="typing.Any">Any</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -8257,7 +8430,7 @@ plain value or a reactive wrapper and you need to narrow the type.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><span title="signified._types.ReactiveValue">ReactiveValue</span>[<span title="signified._functions.as_rx[T]">T</span>]</code>
+                  <code><span title="signified._types.ReactiveValue">ReactiveValue</span>[<span title="typing.Any">Any</span>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -8272,9 +8445,11 @@ plain value or a reactive wrapper and you need to narrow the type.</p>
     </div>
 
 </div><h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
+<h3 id="signified.HasValue">HasValue<a class="headerlink" href="#signified.HasValue" title="Permanent link">&para;</a></h3>
 <p><strong><code>HasValue[T]</code></strong> — <code>T | Computed[T] | Signal[T]</code></p>
 <p>A plain or reactive value that resolves to <code>T</code>. Use as a type hint when a
 parameter accepts either a raw value or a reactive wrapper.</p>
+<h3 id="signified.ReactiveValue">ReactiveValue<a class="headerlink" href="#signified.ReactiveValue" title="Permanent link">&para;</a></h3>
 <p><strong><code>ReactiveValue[T]</code></strong> — <code>Computed[T] | Signal[T]</code></p>
 <p>A reactive wrapper that resolves to <code>T</code>.</p>
 
