@@ -6,6 +6,11 @@ hide:
 
 This page summarizes notable changes across releases.
 
+## 0.5.1 (unreleased)
+
+Add `is_reactive` to inspect wrappers without reading their values. Improve
+union inference for `unref` and `as_rx`; runtime resolution is unchanged.
+
 ## 0.5.0
 
 ### Removals

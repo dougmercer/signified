@@ -5,9 +5,9 @@ from __future__ import annotations
 import importlib.util
 from collections.abc import Iterable
 from functools import wraps
-from typing import Any, Callable, TypeGuard, cast
+from typing import Any, Callable, TypeGuard, overload
 
-from ._reactive import Computed, Effect, Signal, _is_reactive_value, _track_read
+from ._reactive import Computed, Effect, Signal, _track_read, is_reactive
 from ._types import HasValue, ReactiveValue
 
 if importlib.util.find_spec("numpy") is not None:
@@ -23,7 +23,7 @@ def _identity[T](value: T) -> T:
 
 
 def _get_unref_op(value: Any) -> Callable[[Any], Any]:
-    if _is_reactive_value(value):
+    if is_reactive(value):
         return unref
     if type(value) in _PLAIN_ARG_TYPES:
         return _identity
@@ -133,7 +133,15 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
     return wrapper
 
 
-def unref[T](value: HasValue[T]) -> T:
+@overload
+def unref[T](value: HasValue[T]) -> T: ...
+
+
+@overload
+def unref[T, U](value: HasValue[T] | HasValue[U]) -> T | U: ...
+
+
+def unref(value: Any) -> Any:
     """Unwrap a reactive value to its plain Python value.
 
     Repeatedly follows the `.value` chain until a non-reactive value is
@@ -156,7 +164,7 @@ def unref[T](value: HasValue[T]) -> T:
         ```
     """
     current: Any = value
-    while _is_reactive_value(current):
+    while is_reactive(current):
         if current._IS_COMPUTED:
             current._impl.ensure_uptodate()
         _track_read(current)
@@ -256,7 +264,15 @@ def deep_unref(value: Any) -> Any:
     return value
 
 
-def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
+@overload
+def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]: ...
+
+
+@overload
+def as_rx[T, U](val: HasValue[T] | HasValue[U]) -> ReactiveValue[T] | ReactiveValue[U]: ...
+
+
+def as_rx(val: Any) -> ReactiveValue[Any]:
     """Normalize a value to a reactive object.
 
     If `val` is already reactive, it is returned unchanged. Otherwise a new
@@ -268,6 +284,6 @@ def as_rx[T](val: HasValue[T]) -> ReactiveValue[T]:
     Returns:
         A reactive value.
     """
-    if _is_reactive_value(val):
+    if is_reactive(val):
         return val
-    return Signal(cast(T, val))
+    return Signal(val)

@@ -1,4 +1,4 @@
-from signified import Computed, Signal, as_rx, computed, has_value, unref
+from signified import Computed, Signal, as_rx, computed, has_value, is_reactive, unref
 from signified._reactive import _coerce_to_bool, _has_changed
 
 
@@ -147,3 +147,14 @@ def test_coerce_to_bool_uses_all_fallback():
             return False
 
     assert _coerce_to_bool(AmbiguousBool()) is False
+
+
+def test_is_reactive_does_not_evaluate_or_subscribe():
+    source = Signal(1)
+    lazy = Computed(lambda: (_ for _ in ()).throw(AssertionError("must not evaluate")))
+    assert is_reactive(source)
+    assert is_reactive(lazy)
+    assert not is_reactive(1)
+    observer = Computed(lambda: is_reactive(source))
+    assert observer.value is True
+    assert not source._observers
