@@ -67,8 +67,9 @@ class _ReactiveNamespace[T]:
     def effect(self, fn: Callable[[T], None]) -> "Effect":
         """Eagerly run `fn` for side effects whenever the source changes.
 
-        `fn` is called immediately on creation and again on every subsequent
-        change — without requiring the caller to read `.value`.
+        `fn` runs synchronously on creation and after updates, without a
+        `.value` read. Inside batch(), initial and subsequent runs are deferred
+        and pending notifications coalesce.
 
         This is a convenience wrapper around [Effect][signified.Effect]. The source value is
         passed as the single argument to `fn` on each run. For effects that need
@@ -105,48 +106,12 @@ class _ReactiveNamespace[T]:
         return Effect(lambda: fn(source.value))
 
     def peek(self, fn: Callable[[T], Any]) -> Computed[T]:
-        """Run `fn` for side effects and pass through the original value.
+        """Lazily call fn on evaluation and pass through the source value.
 
-        `fn` only executes when the returned [Computed][signified.Computed] is read, not on every
-        upstream change. Intermediate values are skipped if the source changes
-        multiple times between reads.
-
-        Warning:
-            The returned [Computed][signified.Computed] must be kept alive by the caller.
-            Observers are held as weak references, so if nothing holds a strong
-            reference to the returned value, it will be garbage-collected and
-            `fn` will silently stop running.
-
-            `fn` fires on each explicit `.value` read — **not** on creation and
-            not on upstream changes alone. If the returned object is
-            garbage-collected before any `.value` read, `fn` never fires at all:
-
-            ```python
-            s.rx.peek(print)  # GC'd immediately — print never called
-            ```
-
-            For eager side effects, use the `effect` method or [Effect][signified.Effect] directly.
-
-        Args:
-            fn: Side-effect callback that receives the current source value.
-
-        Returns:
-            A reactive value that always equals `source.value`.
-
-        Example:
-            ```py
-            >>> seen = []
-            >>> s = Signal(1)
-            >>> passthrough = s.rx.peek(lambda x: seen.append(x))
-            >>> passthrough.value
-            1
-            >>> s.value = 3
-            >>> passthrough.value
-            3
-            >>> seen
-            [1, 3]
-
-            ```
+        This returns a cached Computed: repeated reads without invalidation do
+        not repeat the callback, and unread intermediate values are skipped.
+        Keep the result alive. Use rx.effect for eager side effects, or
+        untracked() to inspect a value without subscribing.
         """
 
         @computed
