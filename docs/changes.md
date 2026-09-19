@@ -26,7 +26,7 @@ This page summarizes notable changes across releases.
 See [Migrating to 0.6](migration.md) for required code changes and
 [How updates work](compute-contract.md) for the full behavior.
 
-## 0.5.1 (unreleased)
+## 0.5.1
 
 Add `is_reactive` to inspect wrappers without reading their values. Improve
 union inference for `unref` and `as_rx`; runtime resolution is unchanged.
