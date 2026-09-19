@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 import operator
-from functools import cache
 from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
 from warnings import warn
 
@@ -340,6 +339,9 @@ class _ReactiveNamespace[T]:
 class _ReactiveMixIn[T]:
     """Methods for easily creating reactive values."""
 
+    # No instance __dict__: an unknown attribute write on any wrapper raises
+    # AttributeError instead of silently shadowing the reactive proxy.
+    __slots__ = ()
     _IS_REACTIVE = True
 
     @property
@@ -1561,127 +1563,12 @@ class _ReactiveMixIn[T]:
         """
         return computed(operator.getitem)(self, key)
 
-    @classmethod
-    @cache
-    def _own_attr_names(cls) -> frozenset[str]:
-        return frozenset(name for base in cls.__mro__ for name in base.__dict__)
-
-    @classmethod
-    def _is_own_attr(cls, name: str) -> bool:
-        """Return whether `name` is defined on this wrapper type or one of its bases."""
-        return name in cls._own_attr_names()
-
     def _bump_version(self) -> int:
         """Increment the local version counter and the shared global version clock."""
         object.__setattr__(self, "_version", self._version + 1)
         return _bump_global_version()
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Assign `name` on the wrapper or forward it to the wrapped value.
-
-        Private attributes and names owned by the wrapper type are assigned on the
-        wrapper itself. Other names are forwarded to the wrapped value when that
-        object already defines the attribute, then observers are notified so
-        dependents recompute.
-
-        This allows `signal.name = "Bob"` to update the wrapped object while still
-        preserving the wrapper's own API such as `.value` and `.rx`.
-
-        Args:
-            name: The attribute name to assign.
-            value: The value to assign.
-
-        Example:
-            ```py
-            >>> class Person:
-            ...     def __init__(self, name: str):
-            ...         self.name = name
-            ...     def greet(self) -> str:
-            ...         return f"Hi, I'm {self.name}!"
-            >>> s = Signal(Person("Alice"))
-            >>> result = s.greet()
-            >>> result.value
-            "Hi, I'm Alice!"
-            >>> s.name = "Bob"
-            >>> result.value
-            "Hi, I'm Bob!"
-
-            ```
-        """
-        # Internal state always belongs to the wrapper, never the wrapped value.
-        if name[:1] == "_":
-            super().__setattr__(name, value)
-            return
-
-        # During __init__, `_value` may not exist yet. Check it directly so we
-        # do not accidentally use __getattr__ while the wrapper is only
-        # partially constructed.
-        try:
-            object.__getattribute__(self, "_value")
-        except AttributeError:
-            super().__setattr__(name, value)
-            return
-
-        # Attributes defined on the wrapper itself stay on the wrapper.
-        # This preserves the wrapper's API like `.value`, `.rx`, and helper
-        # methods.
-        if self._is_own_attr(name):
-            super().__setattr__(name, value)
-            return
-
-        # For everything else, proxy the write only if the wrapped object
-        # already exposes that attribute. Successful forwarded writes are
-        # treated like in-place mutations, so dependents are invalidated.
-        wrapped = self.value
-        if hasattr(wrapped, name):
-            setattr(wrapped, name, value)
-            if is_reactive(self):
-                self._bump_version()
-                if HOOKS_ENABLED:
-                    plugin_manager.hook.updated(value=self)
-            self.notify()
-            return
-
-        # If the wrapped object does not own the name either, fall back to
-        # normal Python assignment on the wrapper instance.
-        super().__setattr__(name, value)
-
-    def __setitem__(self, key: Any, value: Any) -> None:
-        """Set an item on the underlying `self.value`.
-
-        Note:
-            It is necessary to set the item via the Signal, rather than the
-            underlying `signal.value`, to properly notify downstream observers
-            of changes. Reason being, mutable objects that, for example, fallback
-            to id comparison for equality checks will appear as if nothing changed
-            even an element of the object is changed.
-
-        Args:
-            key: The key to change.
-            value: The value to set it to.
-
-        Example:
-            ```py
-            >>> s = Signal([1, 2, 3])
-            >>> result = computed(sum)(s)
-            >>> result.value
-            6
-            >>> s[1] = 4
-            >>> result.value
-            8
-        """
-        if isinstance(self.value, (list, dict)):
-            self.value[key] = value
-            if is_reactive(self):
-                self._bump_version()
-                if HOOKS_ENABLED:
-                    plugin_manager.hook.updated(value=self)
-            self.notify()
-        else:
-            raise TypeError(f"'{type(self.value).__name__}' object does not support item assignment")
-
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
 from ._functions import computed  # noqa: E402
-from ._reactive import Effect, _bump_global_version, is_reactive  # noqa: E402
-from .plugins import HOOKS_ENABLED, plugin_manager  # noqa: E402
+from ._reactive import Effect, _bump_global_version  # noqa: E402

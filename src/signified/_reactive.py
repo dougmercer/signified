@@ -22,9 +22,9 @@ __all__ = ["Variable", "Signal", "Computed", "Binding", "Effect"]
 
 _GLOBAL_VERSION = 0
 
-# `_ReactiveMixIn.__setattr__` forwards unknown names to the wrapped value, so
-# it costs a Python-level call on every assignment. Internal writes on the hot
-# path bypass it; `_ReactiveMixIn._bump_version` does the same.
+# `Signal.__setattr__` is a Python-level method, so it costs a call on every
+# assignment to a Signal. Internal writes on the hot path bypass it;
+# `_ReactiveMixIn._bump_version` does the same. Computed has no override.
 _setattr = object.__setattr__
 
 
@@ -328,6 +328,88 @@ class Signal[T](Variable[T]):
                 plugin_manager.hook.updated(value=self)
             self.notify()
 
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Forward a public attribute write to the wrapped object and notify.
+
+        Private names and `Signal`'s own attributes (such as `value`) are
+        assigned on the wrapper. Any other name must already exist on the
+        wrapped object; the write is applied there and observers are notified,
+        exactly like `signal[key] = value`. Unknown names raise `AttributeError`
+        instead of silently creating an attribute on the wrapper.
+
+        Only `Signal` forwards writes, because only a `Signal` owns its value.
+        A [Computed][signified.Computed] holds a cache that the next refresh
+        replaces, so writing through it would mutate state it does not own.
+
+        Args:
+            name: The attribute name to assign.
+            value: The value to assign.
+
+        Raises:
+            AttributeError: If the wrapped object has no attribute `name`.
+
+        Example:
+            ```py
+            >>> class Person:
+            ...     def __init__(self, name: str):
+            ...         self.name = name
+            ...     def greet(self) -> str:
+            ...         return f"Hi, I'm {self.name}!"
+            >>> s = Signal(Person("Alice"))
+            >>> result = s.greet()
+            >>> result.value
+            "Hi, I'm Alice!"
+            >>> s.name = "Bob"
+            >>> result.value
+            "Hi, I'm Bob!"
+
+            ```
+        """
+        # Names defined on the wrapper's class (including subclasses) stay on
+        # the wrapper; `value` reaches its property setter this way.
+        if name[:1] == "_" or hasattr(type(self), name):
+            _setattr(self, name, value)
+            return
+        wrapped = self._value
+        if not hasattr(wrapped, name):
+            raise AttributeError(f"'{type(wrapped).__name__}' object has no attribute '{name}'")
+        setattr(wrapped, name, value)
+        self.update()
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        """Set an item on the wrapped `list` or `dict` and notify observers.
+
+        Assigning through the `Signal` rather than through `signal.value` is
+        what notifies dependents: in-place mutation of the wrapped object is not
+        observed on its own. Only `Signal` forwards item assignment, because
+        only a `Signal` owns its value; a [Computed][signified.Computed] holds
+        a cache that the next refresh replaces.
+
+        Args:
+            key: The key to change.
+            value: The value to set it to.
+
+        Raises:
+            TypeError: If the wrapped value is not a `list` or `dict`.
+
+        Example:
+            ```py
+            >>> s = Signal([1, 2, 3])
+            >>> result = computed(sum)(s)
+            >>> result.value
+            6
+            >>> s[1] = 4
+            >>> result.value
+            8
+
+            ```
+        """
+        wrapped = self._value
+        if not isinstance(wrapped, (list, dict)):
+            raise TypeError(f"'{type(wrapped).__name__}' object does not support item assignment")
+        wrapped[key] = value
+        self.update()
+
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
         """Temporarily set the signal to a given value within a context.
@@ -625,7 +707,7 @@ class _ComputedImpl:
             not had_outcome or had_error or next_error is not None or _has_changed(previous_value, next_value)
         )
         if outcome_changed:
-            _setattr(owner, "_value", next_value)
+            owner._value = next_value
             self._global_version_seen = owner._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=owner)
@@ -726,9 +808,9 @@ class Computed(Variable[T]):
 
     def __init__(self, f: Callable[[], T]) -> None:
         super().__init__()
-        _setattr(self, "_compute_fn", f)
-        _setattr(self, "_value", cast(T, None))  # placeholder; always set before read via _state guard
-        _setattr(self, "_impl", _ComputedImpl(self))
+        self._compute_fn = f
+        self._value = cast(T, None)  # placeholder; always set before read via _state guard
+        self._impl = _ComputedImpl(self)
 
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)

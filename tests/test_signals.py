@@ -1,6 +1,8 @@
 import gc
 import weakref
 
+import pytest
+
 from signified import Binding, Computed, Signal, deep_unref, unref
 
 
@@ -244,3 +246,66 @@ def test_binding_follows_one_boundary_even_when_result_is_reactive():
     replacement = Signal(2)
     outer.value = replacement
     assert binding.value is replacement
+
+
+class _Box:
+    def __init__(self) -> None:
+        self.count = 0
+
+
+def test_signal_forwards_attribute_writes_to_the_wrapped_object_and_notifies():
+    box = _Box()
+    signal = Signal(box)
+    count = signal.count
+    assert count.value == 0
+
+    signal.count = 1  # type: ignore[attr-defined]
+
+    assert box.count == 1
+    assert count.value == 1
+
+
+def test_signal_unknown_attribute_write_raises_instead_of_shadowing():
+    box = _Box()
+    signal = Signal(box)
+
+    with pytest.raises(AttributeError, match="cuont"):
+        signal.cuont = 1  # type: ignore[attr-defined]
+    assert not hasattr(box, "cuont")
+    assert isinstance(signal.count, Computed)  # proxying is intact
+
+
+def test_computed_and_binding_do_not_forward_attribute_writes():
+    box = _Box()
+    signal = Signal(box)
+    passthrough = Computed(lambda: signal.value)
+    binding = Binding(signal)
+
+    with pytest.raises(AttributeError):
+        passthrough.count = 1  # type: ignore[attr-defined]
+    with pytest.raises(AttributeError):
+        binding.count = 1  # type: ignore[attr-defined]
+    assert box.count == 0
+
+
+def test_signal_item_assignment_mutates_and_notifies():
+    numbers = Signal([1, 2, 3])
+    total = Computed(lambda: sum(numbers.value))
+    assert total.value == 6
+
+    numbers[1] = 10
+
+    assert numbers.value == [1, 10, 3]
+    assert total.value == 14
+
+
+def test_computed_and_binding_do_not_forward_item_assignment():
+    numbers = Signal([1, 2, 3])
+    passthrough = Computed(lambda: numbers.value)
+    binding = Binding(numbers)
+
+    with pytest.raises(TypeError):
+        passthrough[0] = 9  # type: ignore[index]
+    with pytest.raises(TypeError):
+        binding[0] = 9  # type: ignore[index]
+    assert numbers.value == [1, 2, 3]

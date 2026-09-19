@@ -199,18 +199,16 @@ def test_computed_skips_downstream_recompute_when_upstream_value_stable():
 def test_binding_source_change_invalidates_computed_once():
     inner = Signal(1)
     outer = Binding(inner)
-    derived = Computed(lambda: outer.value + 1)
-    _ = derived.value
-
     calls = 0
-    original_update = derived.update
 
-    def wrapped_update() -> None:
-        nonlocal calls
-        calls += 1
-        original_update()
+    class CountingComputed(Computed):
+        def update(self) -> None:
+            nonlocal calls
+            calls += 1
+            super().update()
 
-    derived.update = wrapped_update  # type: ignore[method-assign]
+    derived = CountingComputed(lambda: outer.value + 1)
+    _ = derived.value
     inner.value = 2
 
     assert calls == 1
