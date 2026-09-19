@@ -505,3 +505,37 @@ def test_invalidate_forces_downstream_recompute_without_signal_change():
 
     assert downstream.value == 2
     assert runs == 2
+
+
+def test_evaluate_at_preserves_cached_failure_and_binding_source():
+    from signified import Binding
+
+    source = Signal(0)
+    binding = Binding(source)
+    calls = []
+
+    def divide():
+        calls.append(source.value)
+        return 10 / binding.value
+
+    result = Computed(divide)
+    with pytest.raises(ZeroDivisionError):
+        result.value
+    assert result.evaluate_at({source: 2}) == 5
+    assert source.value == 0
+    assert binding.source is source
+    with pytest.raises(ZeroDivisionError):
+        result.value
+    assert calls == [0, 2]
+    source.value = 5
+    assert result.value == 2
+
+
+def test_evaluate_at_restores_scope_after_failure():
+    source = Signal(2)
+    result = Computed(lambda: 10 / source.value)
+    assert result.value == 5
+    with pytest.raises(ZeroDivisionError):
+        result.evaluate_at({source: 0})
+    assert result.value == 5
+    assert source.value == 2

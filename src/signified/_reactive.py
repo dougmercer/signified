@@ -912,9 +912,8 @@ class Computed(Variable[T]):
         _EVALUATE_STACK.append(self)
         try:
             if _OVERRIDE_STACK and _OVERRIDE_STACK[-1] is overrides:
-                with untracked():
-                    return self._compute_fn()
-            with _push_overrides(overrides), untracked():
+                return self._compute_fn()
+            with _push_overrides(overrides):
                 return self._compute_fn()
         finally:
             popped = _EVALUATE_STACK.pop()
