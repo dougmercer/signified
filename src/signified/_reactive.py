@@ -93,7 +93,8 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     def __init__(self):
         """Initialize the variable."""
-        _setattr(self, "_observers", _ObserverLinks[_Observer]())
+        observers: _ObserverLinks[_Observer] = _ObserverLinks()
+        _setattr(self, "_observers", observers)
         _setattr(self, "_name", "")
         _setattr(self, "_version", 0)
 
