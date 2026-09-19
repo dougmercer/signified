@@ -6,6 +6,75 @@ hide:
 
 This page summarizes notable changes across releases.
 
+## 0.6.0 (unreleased)
+
+Added `batch()` for deferred, coalesced effect execution, including initial
+runs inside batches. Writes remain immediate and computed reads remain fresh.
+Added `untracked()` for incidental reads without subscribing the enclosing
+consumer. A callback that raises keeps the dependencies it read before raising,
+so effects and computeds recover once any of those inputs change, matching
+Angular, Vue, preact-signals, and reaktiv. Notification waves invalidate all
+branches before running effects.
+
+Computed values now cache ordinary exceptions until a dependency changes or
+`invalidate()` forces another evaluation. Reads re-raise cached errors without
+rerunning the callback. New failed evaluations and recovery count as changed
+outcomes; control-flow exceptions remain uncached.
+
+Change detection compares exact built-in scalars by value and all other objects
+by identity. Equal-but-distinct containers now replace the stored value and
+invalidate dependents; arbitrary equality methods are not called.
+Effects also skip their callbacks when computed dependencies refresh to
+unchanged outcomes, including equal-valued Binding rebinds.
+
+Attribute and item writes are forwarded to the wrapped object only by `Signal`,
+which owns its value. On `Computed` and `Binding` they raise `AttributeError` or
+`TypeError`. Unknown attribute names raise `AttributeError` instead of silently
+setting an attribute on the wrapper.
+
+Remove the deprecated `rx.peek(fn)` alias. Use `rx.tap(fn)`, available since
+0.5.1, for the lazy cached callback helper, or `untracked()` for reads without
+subscribing.
+
+`deep_unref` no longer traverses unregistered iterable types. This behavior
+was deprecated in 0.5.1; register a handler to keep resolving a custom container.
+Unknown objects pass through unchanged without inspection.
+
+See [Migrating to 0.6](migration.md), especially the new equality policy,
+explicit recursive resolution, effect error groups, and scheduling guarantees.
+
+### Explicit source bindings
+
+Added `Binding[T]`, a stable reactive handle whose current source can be
+replaced with `.value = ...` or `.set(...)`, or accumulated safely with
+`.derive(...)`. A `Binding` is a `Computed` over a `Signal` holding the
+current source, so rebinding follows the ordinary equality policy: dependents
+recompute only when the resolved value changed.
+The internal source holder does not emit user-facing migration warnings.
+
+This replaces implicit reactive values stored inside `Signal`:
+
+```python
+# Before
+selected = Signal(source)
+selected.value = other_source
+
+# After
+selected = Binding(source)
+selected.value = other_source
+```
+
+### Breaking: explicit deep resolution
+
+Dependencies now come from reactive reads, not containment. `Signal` can store
+reactive values, `Computed` can return reactive values, and `unref` unwraps one
+reactive boundary. Containers stored in a `Signal` are opaque: the outer signal
+does not scan for or forward changes from reactive objects inside them.
+
+`computed` and `effect` now unwrap direct reactive arguments only. Recursive
+resolution is explicit via `deep_unref` inside a normal computed/effect
+callback. `deep_unref` is not deprecated.
+
 ## 0.5.1 (unreleased)
 
 Add `is_reactive` to inspect wrappers without reading their values. Improve
@@ -124,7 +193,7 @@ Added `invalidate()` to all reactive values. For `Computed`, pass `force=True` t
 !!! danger "Breaking Changes"
 
     - **`Effect` constructor**: the two-argument form `Effect(source, fn)` is gone. Replace with `Effect(lambda: fn(source.value))`.
-    - **`NestedValue` removed from public exports**: `from signified import NestedValue` will raise `ImportError`. The type alias is still available in `signified._types` if needed.
+    - **`NestedValue` removed**: `from signified import NestedValue` will raise `ImportError`. Use `HasValue` or `ReactiveValue`; explicit source chains use `Binding`.
     - **Internal module renames**: the private implementation modules have been reorganised. Any code importing directly from `signified.core`, `signified.types`, or `signified.display` will break. Use the public `signified` namespace instead.
 
 !!! warning "Deprecations"

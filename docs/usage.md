@@ -7,11 +7,14 @@ hide:
 
 This guide walks through common usage patterns with examples. For a complete reference, see the [API docs](api.md).
 
-## Signals and Computed Values
+## Signals, Computed Values, and Bindings
 
-`Signal` holds mutable state.
+`Signal` holds a mutable value. Reactive objects and containers are valid
+stored values and remain opaque until explicitly read.
 
 `Computed` represents derived state. It subscribes to dependencies and updates when they change.
+
+`Binding` is a stable handle whose current reactive source can be replaced.
 
 ### Reading the underlying value (`.value`)
 
@@ -94,6 +97,48 @@ print(y)  # <26>
 
 This composition is the core pattern: define state once, derive the rest.
 
+### Replacing a reactive source with `Binding`
+
+Use `Binding` when other code needs to retain one reactive object while you
+replace the `Signal`, `Computed`, or `Binding` that supplies its value.
+
+```python
+from signified import Binding, Signal
+
+left = Signal(1)
+right = Signal(10)
+selected = Binding(left)
+doubled = selected * 2
+
+print(doubled.value)  # 2
+selected.value = right
+print(doubled.value)  # 20
+right.value = 12
+print(doubled.value)  # 24
+
+selected.value = 5    # switch to a private plain-value source
+print(doubled.value)  # 10
+```
+
+A `Binding` may follow another `Binding`. Its `.source` property returns the
+exact current source. For accumulated operations, use `.derive(...)` so the
+new computation is built from the source that existed before the rebind:
+
+```python
+from signified import Binding, Signal, computed
+
+value = Binding(Signal(2))
+value.derive(lambda previous: computed(lambda x: x * 3)(previous))
+print(value.value)  # 6
+```
+
+Building the new computation from `value` itself would create a reactive cycle.
+Direct self-binding is rejected immediately; indirect cycles raise when read.
+
+`Signal` may directly store a reactive value, and a `Computed` function may
+return one. Those operations preserve the reactive object itself; use `Binding`
+when the stable outer identity should follow the source's current value.
+
 ## Attribute Access, Method Calls, and Assignment
 
 You can reactively read attributes and call methods from objects inside signals.
@@ -118,11 +163,16 @@ greeting = person.greet()
 print(name_display)  # <"Alice">
 print(greeting)      # <"Hello, I'm Alice and I'm 30 years old!">
 
-# __setattr__ support updates the wrapped object and notifies dependents
+# Attribute writes on a Signal update the wrapped object and notify dependents
 person.name = "Bob"
 print(name_display)  # <"Bob">
 print(greeting)      # <"Hello, I'm Bob and I'm 30 years old!">
 ```
+
+Only `Signal` forwards attribute writes, because only a `Signal` owns its
+value; a `Computed` or `Binding` holds a cache. Writing a name the wrapped
+object does not have raises `AttributeError` instead of creating an attribute
+on the wrapper.
 
 Method chaining works too:
 
@@ -152,6 +202,23 @@ print(total)       # <6>
 
 numbers[0] = 9
 print(total)       # <14>
+```
+
+A container stored in a `Signal` is opaque: the signal does not automatically
+follow reactive objects placed inside that container. Ordinary containers
+passed to `computed` and `effect` are opaque too. Call `deep_unref` inside a computation when you
+want explicit recursive resolution:
+
+```python
+from signified import Signal, Computed, deep_unref
+
+a = Signal(1)
+b = Signal(2)
+total = Computed(lambda: sum(deep_unref([a, b])))
+
+print(total.value)  # 3
+a.value = 10
+print(total.value)  # 12
 ```
 
 ```python
@@ -213,11 +280,14 @@ print(temperature_f.value)  # 77.0
 Use `tap` for debugging or logging when a derived value is evaluated. Use
 `effect` for side effects that run automatically when tracked inputs change.
 
-`tap` is lazy and cached: the callback runs on evaluation, not on every cached
-read. Unread intermediate values are skipped. `peek(fn)` is a deprecated alias
-that will be removed in 0.6.0. Neither method is an untracked getter.
+`tap` is lazy and cached: its callback runs on evaluation, not on every cached
+read. Unread intermediate values are skipped. The old `peek(fn)` alias was
+deprecated in 0.5.1 and removed in 0.6. Use `untracked()` for a read without
+subscribing.
 
-`effect` is eager: it runs immediately and again on every source update.
+`effect` runs synchronously after updates, with pending executions coalesced
+inside `batch()`. Its first run is also deferred when created inside a batch.
+If its computed inputs refresh to unchanged outcomes, the callback is skipped.
 
 === "tap"
 
@@ -251,7 +321,8 @@ that will be removed in 0.6.0. Neither method is an untracked getter.
 
 ## Utility Helpers
 
-`unref` makes functions work with either plain values or reactive values.
+`unref` makes functions work with either plain values or reactive values. It
+unwraps exactly one reactive boundary.
 
 ```python
 from signified import HasValue, Signal, unref
@@ -265,10 +336,48 @@ print(process_data(Signal(5)))  # 10
 
 Related helpers:
 
-- `deep_unref`: recursively unwraps nested containers of reactive values
+- `deep_unref`: recursively unwraps registered containers of reactive values
+- `deep_unref.register`: teaches deep resolution how to rebuild a custom container
+- `batch()`: defer effects across multiple writes
+- `untracked()`: read without subscribing the enclosing consumer
 - `as_rx`: wraps plain values into `Signal` (or returns the input reactive value)
 - `has_value`: type guard for checking `HasValue[T]`
+- `is_reactive`: type guard for narrowing `HasValue[T]` to `ReactiveValue[T]`
 - `Signal.at(...)`: temporary scoped value override via context manager
+
+## Shallow and deep argument resolution
+
+Dependencies come from reactive reads, not containment. `computed` and `effect`
+unwrap direct reactive arguments, but ordinary Python containers are opaque:
+
+```python
+from signified import Signal, computed
+
+x = Signal(2)
+config = {"nested": {"x": x}}
+
+@computed
+def double(config):
+    return config["nested"]["x"].value * 2
+
+result = double(config)
+```
+
+The explicit `.value` access tracks `x`. If a function should recursively
+resolve and track every reactive value in its arguments, call `deep_unref`
+inside it:
+
+```python
+from signified import Signal, Computed, deep_unref
+
+values = [Signal(1), Signal(2)]
+total = Computed(lambda: sum(deep_unref(values)))
+assert total.value == 3
+```
+
+Reactive values are also ordinary values. `Signal(other_signal)` stores that
+signal, and `Computed(lambda: other_signal)` returns it. Use `Binding` when a
+stable reactive identity should follow another reactive source.
 
 ## Manual Invalidation
 
@@ -294,3 +403,13 @@ print(derived.value)     # still 10
 derived.invalidate()
 print(derived.value)     # 40
 ```
+
+
+## Scheduling and untracked reads
+
+Use `with batch():` around related writes to defer effects until the outermost
+exit. Writes are immediate and computed reads stay current. Use `with
+untracked():` around incidental reads inside a computation or effect to avoid
+subscribing to those values. Both are synchronous and single-threaded; neither
+context should span `await`. See the [compute contract](compute-contract.md) for
+examples, error handling, and exact guarantees.
