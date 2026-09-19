@@ -368,7 +368,7 @@ class Signal[T](Variable[T]):
         """
         # Names defined on the wrapper's class (including subclasses) stay on
         # the wrapper; `value` reaches its property setter this way.
-        if name[:1] == "_" or hasattr(type(self), name):
+        if name == "value" or name[:1] == "_" or hasattr(type(self), name):
             _setattr(self, name, value)
             return
         wrapped = self._value
