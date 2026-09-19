@@ -2,7 +2,7 @@
 
 This page summarizes notable changes across releases.
 
-## 0.6.0 (unreleased)
+## 0.6.0
 
 - Added `Binding` for switching the source followed by existing calculations.
 - Added `batch()` to group writes before effects run, and `untracked()` to read

@@ -13,10 +13,7 @@ Assessed on 2026-09-19 with Python **3.12.12** and Signified **0.6.0**
 | **ty** | **0.0.82** | **Not recommended yet.** `unref`, `Binding`, and operators frequently infer incorrect unions, `Unknown`, or `Any`. |
 | **mypy** | **2.3.1** | **Not recommended for Signified inference.** `unref`, `Binding`, and reactive operators frequently produce errors or lose type precision. |
 
-The [264-assertion inference suite](https://github.com/dougmercer/signified/blob/e55aaaac328fa3a98299afcb9343f2f6424e9bb4/tests/type_inference.py),
-checked against an installed build, produced **0 / 15 / 154 / 265 diagnostics**
-respectively, including assertion mismatches and rejected calls. Mypy used
-`--check-untyped-defs` so test bodies were checked.
+The [264-assertion inference suite](https://github.com/dougmercer/signified/blob/e55aaaac328fa3a98299afcb9343f2f6424e9bb4/tests/type_inference.py), checked against an installed build, produced **0 / 15 / 154 / 265 diagnostics** respectively, including assertion mismatches and rejected calls. Mypy used `--check-untyped-defs` so test bodies were checked.
 
 Even with Pyright, arbitrary proxy attributes and `deep_unref` lose precision to
 `Any`, and `@computed` / `@effect` do not check argument types.
