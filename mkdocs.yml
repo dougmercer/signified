@@ -124,18 +124,23 @@ markdown_extensions:
   - pymdownx.superfences
 
 nav:
-  - Home: index.md
-  - Usage: usage.md
-  - Migrating to 0.6: migration.md
-  - Compute Contract: compute-contract.md
+  - Home:
+      - Overview: index.md
+      - Comparison: comparison.md
+  - Guides:
+      - Usage: usage.md
+      - Resolving nested values: resolution.md
+      - Plugins: plugins.md
+      - Type Checkers: type-checkers.md
+  - Reference:
+      - API Reference: api.md
+      - Compute Contract: compute-contract.md
+      - Magic Methods: magic-methods.md
+      - Limitations: limitations.md
   - Playground: playground.md
-  - Magic Methods: magic-methods.md
-  - Plugins: plugins.md
-  - Comparison: comparison.md
-  - Resolving nested values: resolution.md
-  - API Reference: api.md
-  - Change Log: changes.md
-  - Limitations: limitations.md
+  - Releases:
+      - Change Log: changes.md
+      - Migrating to 0.6: migration.md
 
 extra_css:
   - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css

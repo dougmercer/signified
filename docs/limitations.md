@@ -6,7 +6,9 @@ hide:
 
 ## Type Inference
 
-This library's type hints do not work with `mypy`, but they do work well with `pyright`.
+We recommend **Pyright**; **Pyrefly** is usable with caveats. See
+[Type Checkers](type-checkers.md) for assessed versions, compatibility with ty and
+mypy, and typing limitations that remain with every checker.
 
 ## In-place mutation
 

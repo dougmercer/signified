@@ -74,7 +74,9 @@ b = Binding(Signal(2))
 reveal_type(a + b)  # Computed[float]
 ```
 
-Unfortunately, our type hints only work with ``pyright``.
+We recommend **Pyright** for type inference; **Pyrefly** is usable with caveats.
+See [Type Checkers](docs/type-checkers.md) for assessed versions and compatibility
+with ty and mypy.
 
 ## Ready to learn more?
 
