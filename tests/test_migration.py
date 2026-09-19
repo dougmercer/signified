@@ -131,3 +131,19 @@ def test_warning_as_error_restores_computation_tracking():
     assert other.value == 2
     source.value = 2
     assert other.value == 4
+
+
+def test_direct_operator_calls_do_not_diagnose_container_arguments():
+    child = Signal(1)
+    source = Signal([])
+    fn = Signal(len)
+    with migration.warnings(), warnings.catch_warnings():
+        warnings.simplefilter("error", migration.SignifiedMigrationWarning)
+        added = source + [child]
+        assert source.rx.eq([child]).value is False
+        assert fn([child]).value == 1
+
+    # Result diagnostics still belong to Computed itself.
+    with migration.warnings():
+        with pytest.warns(migration.SignifiedMigrationWarning, match="descendants"):
+            assert added.value == [child]
