@@ -8,7 +8,7 @@ authors = [
 maintainers = [
     {name = "Doug Mercer", email = "dougmerceryt@gmail.com"},
 ]
-description = "Reactive Signals and Computed values."
+description = "A fast, fully-typed Python library for reactive programming."
 readme = "README.md"
 license = "BSD-3-Clause"
 keywords = ["reactive", "signals"]
