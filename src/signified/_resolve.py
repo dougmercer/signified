@@ -248,6 +248,7 @@ if importlib.util.find_spec("numpy") is not None:
 
     @deep_unref.register(np.ndarray)
     def _ndarray(value: Any, resolve: ResolveContext) -> Any:
+        assert np is not None
         if not value.dtype.hasobject:
             return value
         result = np.empty(value.shape, dtype=value.dtype)
