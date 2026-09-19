@@ -1,74 +1,117 @@
----
-hide:
-  - navigation
----
 # Signified
 
-A Python library for reactive programming (with kind-of working type narrowing).
-
-## Quickstart
+A fast, fully-typed Python library for reactive programming.
 
 ```bash
 pip install signified
 ```
 
-## Why Care?
+## Values that *reactively* stay up to date
 
-`signified` is built around three core types:
+Ordinary Python assignment takes a snapshot:
 
-- ``Signal``: mutable state that can store any Python value
-- ``Computed``: derived reactive state
-- ``Binding``: a stable reactive handle with a replaceable source
+```python
+price = 10
+quantity = 2
+total = price * quantity  # 20
 
-If you update a `Signal`, dependent `Computed` values update automatically.
+quantity = 3
+print(total)  # still 20
+```
 
-That allows you to write declarative expressions that stay up-to-date, even as underlying values change:
+`total` holds the number that `price * quantity` produced at that moment.
+If price or quanity change, you have to remember to recalculate `total`,
+along with anything calculated from `total`, and anything else calculated using
+*those* values. In a large program, that bookkeeping can easily miss something.
+
+**Reactive programming** removes that bookkeeping. You describe how values
+depend on one another and `signified`
+works out what needs to be recalculated when an input changes.
+
+## Signals
+
+In Signified, a value you plan to change goes in a **signal**. When a
+calculation reads a signal, Signified records that the calculation depends on
+it, so changing the signal marks those results as out-of-date.
+
+Here is the example above written with signals:
 
 ```python
 from signified import Signal
 
-x = Signal(3)
-x_squared = x ** 2
+price = Signal(10)
+quantity = Signal(2)
+total = price * quantity
 
-print(x_squared.value)  # 9
-x.value = 10
-print(x_squared.value)  # 100
+print(total.value)  # 20
+quantity.value = 3
+print(total.value)  # 30
 ```
 
-Above, we used `signified`'s rich set of overloaded operators to build a `Computed` object on-the-fly.
+`price` and `quantity` are signals. Multiplying them does not produce a number;
+it produces a `Computed`, a calculation that follows both inputs. Read any of
+them with `.value`, and change a signal by assigning to its `.value`.
 
-Alternatively, you can accomplish the same thing with `@computed`:
+## The building blocks
+
+| Type | What it is | Example |
+| --- | --- | --- |
+| `Signal` | A value you can change | the price, the quantity |
+| `Computed` | A calculation that follows its inputs | the total |
+| `Effect` | An action that runs when the values it reads change | printing the total |
+| `Binding` | A reactive value whose source you can switch without rebuilding the calculations that use it | choosing which item's price to show |
+
+Python operators, attribute access, and method calls on reactive values create
+`Computed` values for you. For your own functions, use `@computed`:
 
 ```python
 from signified import Signal, computed
 
 @computed
-def power(base, exponent):
-    return base ** exponent
+def with_tax(amount: float, rate: float) -> float:
+    return round(amount * (1 + rate), 2)
 
-x = Signal(3)
-x_squared = power(x, 2)
+price = Signal(10)
+quantity = Signal(2)
+tax_rate = Signal(0.08)
 
-print(x_squared.value)  # 9
-x.value = 10
-print(x_squared.value)  # 100
+total = with_tax(price * quantity, tax_rate)
+print(total.value)  # 21.6
+tax_rate.value = 0.1
+print(total.value)  # 22.0
 ```
 
-## Mental Model
+`@computed` makes it so the function receives ordinary values and returns a reactive result, but callers can pass signals, computed values, or plain values.
 
-1. Wrap changing data in `Signal`.
-2. Build derived values with overloaded Python operators or `@computed`.
-3. Read reactive outputs from `.value`.
-4. Update the `.value` of `Signal`s to trigger updates.
-5. Use `Binding` only when a stable handle must switch sources.
+`Computed` objects answer *what a value is*, but when something should *happen* on a change, use an effect. Effects run once immediately, then again whenever the values it depends on have changed:
 
-Dependencies come from reactive reads, not containment. Normal `computed` and
-`effect` calls unwrap direct reactive arguments only; call `deep_unref` inside the callback for explicit recursive resolution. Use
-`batch()` to group writes and `untracked()` for reads without subscribing.
+```python
+from signified import effect
 
-## Ready to learn more?
+@effect
+def show(total: float) -> None:
+    print(f"Total: ${total:.2f}")
 
-- Read this first: [Usage Guide](usage.md)
-- Full API docs: [Core API](api.md)
-- Quick look at available operators: [Magic Methods and Operators](magic-methods.md)
-- Extending `signified` with plugins: [Plugins](plugins.md)
+watcher = show(total)  # Total: $22.00
+quantity.value = 5     # Total: $55.00
+watcher.dispose()      # stop watching
+```
+
+## How updates happen
+
+Signified tries to keep things simple:
+
+- **Dependencies come from reads.** A calculation depends on the reactive values it reads while it runs, and nothing else.
+- **Calculations are lazy and cached.** A `Computed` runs when its value is needed, then saves the result until one of its inputs changes.
+- **Effects are for actions.** When something should *happen* on a change, such as updating a display or writing a log, use an [effect](usage.md#run-actions-when-values-change) instead of a calculation.
+
+[How updates work](compute-contract.md) covers these rules in detail, including equality, batching, and errors.
+
+Signified also carries type hints through these expressions, so your editor knows that `total.value` is a `float`. For maximum compatibility use `pyright`. For more details on current limitations refer to the [type checker guide](type-checkers.md).
+
+## Where to go next
+
+- [Usage guide](usage.md): calculations, effects, containers, and switching inputs.
+- [Playground](playground.md): try examples in your browser.
+- [Library comparison](comparison.md): how Signified relates to other libraries.
+- [API reference](api.md): details on every class, function, or method.

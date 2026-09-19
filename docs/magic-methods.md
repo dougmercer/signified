@@ -1,90 +1,74 @@
----
-hide:
-  - navigation
----
-# Magic Methods and Operators
+# Operators
 
-Signified exposes reactive behavior primarily through magic methods on `Signal` and `Computed`.
+Operators on signals, computed values, and bindings create a `Computed`.
+Read its `.value` to get the result:
 
-## Unary Methods
+```python
+from signified import Signal
 
-| Method | Usage example | Notes |
-| --- | --- | --- |
-| [`__abs__`](api.md#signified._mixin._ReactiveMixIn.__abs__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(-5)`<br>`#!pycon >>> abs(x)`<br>`#!pycon <5>` |  |
-| [`__neg__`](api.md#signified._mixin._ReactiveMixIn.__neg__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> -x`<br>`#!pycon <-10>` |  |
-| [`__pos__`](api.md#signified._mixin._ReactiveMixIn.__pos__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> +x`<br>`#!pycon <10>` |  |
-| [`__invert__`](api.md#signified._mixin._ReactiveMixIn.__invert__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> flags = Signal(0b0011)`<br>`#!pycon >>> ~flags`<br>`#!pycon <-4>` |  |
-| [`__round__`](api.md#signified._mixin._ReactiveMixIn.__round__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(3.14159)`<br>`#!pycon >>> round(x, 2)`<br>`#!pycon <3.14>` |  |
-| [`__trunc__`](api.md#signified._mixin._ReactiveMixIn.__trunc__) | `#!pycon >>> import math`<br>`#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(3.9)`<br>`#!pycon >>> math.trunc(x)`<br>`#!pycon <3>` |  |
-| [`__floor__`](api.md#signified._mixin._ReactiveMixIn.__floor__) | `#!pycon >>> import math`<br>`#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(3.9)`<br>`#!pycon >>> math.floor(x)`<br>`#!pycon <3>` |  |
-| [`__ceil__`](api.md#signified._mixin._ReactiveMixIn.__ceil__) | `#!pycon >>> import math`<br>`#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(3.1)`<br>`#!pycon >>> math.ceil(x)`<br>`#!pycon <4>` |  |
+x = Signal(10)
+result = x + 3
+print(result.value)  # 13
+x.value = 20
+print(result.value)  # 23
+```
 
-## Arithmetic and Bitwise Methods
+## Unary methods
 
-| Method | Usage example | Notes |
-| --- | --- | --- |
-| [`__add__`](api.md#signified._mixin._ReactiveMixIn.__add__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a + b`<br>`#!pycon <13>` |  |
-| [`__sub__`](api.md#signified._mixin._ReactiveMixIn.__sub__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a - b`<br>`#!pycon <7>` |  |
-| [`__mul__`](api.md#signified._mixin._ReactiveMixIn.__mul__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a * b`<br>`#!pycon <30>` |  |
-| [`__truediv__`](api.md#signified._mixin._ReactiveMixIn.__truediv__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a / b`<br>`#!pycon <3.3333333333333335>` |  |
-| [`__floordiv__`](api.md#signified._mixin._ReactiveMixIn.__floordiv__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a // b`<br>`#!pycon <3>` |  |
-| [`__mod__`](api.md#signified._mixin._ReactiveMixIn.__mod__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a % b`<br>`#!pycon <1>` |  |
-| [`__pow__`](api.md#signified._mixin._ReactiveMixIn.__pow__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a ** b`<br>`#!pycon <1000>` |  |
-| [`__divmod__`](api.md#signified._mixin._ReactiveMixIn.__divmod__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> divmod(a, b)`<br>`#!pycon <(3, 1)>` |  |
-| [`__matmul__`](api.md#signified._mixin._ReactiveMixIn.__matmul__) | `#!pycon >>> import numpy as np`<br>`#!pycon >>> from signified import Signal`<br>`#!pycon >>> left = Signal(np.array([1, 2]))`<br>`#!pycon >>> right = Signal(np.array([1, 1]))`<br>`#!pycon >>> left @ right`<br>`#!pycon <3>` |  |
-| [`__and__`](api.md#signified._mixin._ReactiveMixIn.__and__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(0b1100)`<br>`#!pycon >>> b = Signal(0b1010)`<br>`#!pycon >>> a & b`<br>`#!pycon <8>` |  |
-| [`__or__`](api.md#signified._mixin._ReactiveMixIn.__or__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(0b1100)`<br>`#!pycon >>> b = Signal(0b1010)`<br>`#!pycon >>> a | b`<br>`#!pycon <14>` |  |
-| [`__xor__`](api.md#signified._mixin._ReactiveMixIn.__xor__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(0b1100)`<br>`#!pycon >>> b = Signal(0b1010)`<br>`#!pycon >>> a ^ b`<br>`#!pycon <6>` |  |
-| [`__lshift__`](api.md#signified._mixin._ReactiveMixIn.__lshift__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> x << 1`<br>`#!pycon <20>` |  |
-| [`__rshift__`](api.md#signified._mixin._ReactiveMixIn.__rshift__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> x >> 1`<br>`#!pycon <5>` |  |
+| Operation | Examples |
+| --- | --- |
+| Sign and absolute value | `-x`, `+x`, `abs(x)` |
+| Bitwise inversion | `~x` |
+| Rounding | `round(x)`, `round(x, 2)` |
+| Integer rounding with `math` | `math.floor(x)`, `math.ceil(x)`, `math.trunc(x)` |
 
-## Reverse Arithmetic and Bitwise Methods
+## Arithmetic and bitwise methods
 
-| Method | Usage example | Notes |
-| --- | --- | --- |
-| [`__radd__`](api.md#signified._mixin._ReactiveMixIn.__radd__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> 5 + x`<br>`#!pycon <15>` |  |
-| [`__rsub__`](api.md#signified._mixin._ReactiveMixIn.__rsub__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> 50 - x`<br>`#!pycon <40>` |  |
-| [`__rmul__`](api.md#signified._mixin._ReactiveMixIn.__rmul__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> 5 * x`<br>`#!pycon <50>` |  |
-| [`__rtruediv__`](api.md#signified._mixin._ReactiveMixIn.__rtruediv__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> 50 / x`<br>`#!pycon <5.0>` |  |
-| [`__rfloordiv__`](api.md#signified._mixin._ReactiveMixIn.__rfloordiv__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> 50 // x`<br>`#!pycon <5>` |  |
-| [`__rmod__`](api.md#signified._mixin._ReactiveMixIn.__rmod__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> 50 % x`<br>`#!pycon <0>` |  |
-| [`__rpow__`](api.md#signified._mixin._ReactiveMixIn.__rpow__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> 2 ** x`<br>`#!pycon <1024>` |  |
-| [`__rdivmod__`](api.md#signified._mixin._ReactiveMixIn.__rdivmod__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> divmod(50, x)`<br>`#!pycon <(5, 0)>` |  |
-| [`__rand__`](api.md#signified._mixin._ReactiveMixIn.__rand__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(0b0101)`<br>`#!pycon >>> 0b1111 & x`<br>`#!pycon <5>` |  |
-| [`__ror__`](api.md#signified._mixin._ReactiveMixIn.__ror__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(0b0101)`<br>`#!pycon >>> 0b1111 | x`<br>`#!pycon <15>` |  |
-| [`__rxor__`](api.md#signified._mixin._ReactiveMixIn.__rxor__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(0b0101)`<br>`#!pycon >>> 0b1111 ^ x`<br>`#!pycon <10>` |  |
+Operands can be plain or reactive values. The values they hold must support
+the operation, just as in ordinary Python.
 
-## Comparisons, Predicates, and Truthiness
+| Operation | Examples |
+| --- | --- |
+| Arithmetic | `x + y`, `x - y`, `x * y`, `x / y`, `x // y`, `x % y`, `x ** y` |
+| Quotient and remainder | `divmod(x, y)` |
+| Matrix multiplication | `x @ y` |
+| Bitwise operations | `x & y`, `x \| y`, `x ^ y`, `x << y`, `x >> y` |
 
-For operations that Python cannot overload cleanly (`is`, `is not`, and
-truthiness via `bool(...)`) or that have special semantics in Signified
-(`==`), use the `rx` namespace (`x.rx.*`).
+## Reverse arithmetic and bitwise methods
 
-| Method | Usage example | Notes |
-| --- | --- | --- |
-| [`__lt__`](api.md#signified._mixin._ReactiveMixIn.__lt__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a < b`<br>`#!pycon <False>` |  |
-| [`__le__`](api.md#signified._mixin._ReactiveMixIn.__le__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a <= b`<br>`#!pycon <False>` |  |
-| [`__gt__`](api.md#signified._mixin._ReactiveMixIn.__gt__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a > b`<br>`#!pycon <True>` |  |
-| [`__ge__`](api.md#signified._mixin._ReactiveMixIn.__ge__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a >= b`<br>`#!pycon <True>` |  |
-| [`__ne__`](api.md#signified._mixin._ReactiveMixIn.__ne__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a != b`<br>`#!pycon <True>` |  |
-| [`rx.is_`](api.md#signified._mixin._ReactiveNamespace.is_) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> marker = object()`<br>`#!pycon >>> s = Signal(marker)`<br>`#!pycon >>> s.rx.is_(marker)`<br>`#!pycon <True>` | `is` is not overloadable. Use this for reactive identity checks. |
-| [`rx.is_not`](api.md#signified._mixin._ReactiveNamespace.is_not) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> maybe_user = Signal(None)`<br>`#!pycon >>> maybe_user.rx.is_not(None)`<br>`#!pycon <False>` | `is not` is not overloadable. |
-| [`rx.eq`](api.md#signified._mixin._ReactiveNamespace.eq) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> a = Signal(10)`<br>`#!pycon >>> b = Signal(3)`<br>`#!pycon >>> a.rx.eq(b)`<br>`#!pycon <False>` | `__eq__` is intentionally not overloaded; use `rx.eq` for reactive equality. |
-| [`rx.in_`](api.md#signified._mixin._ReactiveNamespace.in_) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> needle = Signal(2)`<br>`#!pycon >>> haystack = Signal([1, 2, 3])`<br>`#!pycon >>> needle.rx.in_(haystack)`<br>`#!pycon <True>` |  |
-| [`rx.contains`](api.md#signified._mixin._ReactiveNamespace.contains) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> nums = Signal([1, 2, 3])`<br>`#!pycon >>> nums.rx.contains(2)`<br>`#!pycon <True>` | |
-| [`rx.where`](api.md#signified._mixin._ReactiveNamespace.where) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> flag = Signal(True)`<br>`#!pycon >>> flag.rx.where("yes", "no")`<br>`#!pycon <"yes">` |  |
-| [`rx.as_bool`](api.md#signified._mixin._ReactiveNamespace.as_bool) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> x = Signal(10)`<br>`#!pycon >>> x.rx.as_bool()`<br>`#!pycon <True>` | `__bool__` is not overloaded. Use `rx.as_bool()`.|
+Plain values can also appear on the left: `3 + x`, `50 / x`, `2 ** x`,
+`divmod(50, x)`, `3 & x`, `3 | x`, and `3 ^ x`.
 
-## Object and Container Access
+## Comparisons, predicates, and truthiness
 
-| Method | Usage example | Notes |
-| --- | --- | --- |
-| [`__getattr__`](api.md#signified._mixin._ReactiveMixIn.__getattr__) | `#!pycon >>> from types import SimpleNamespace`<br>`#!pycon >>> from signified import Signal`<br>`#!pycon >>> person = Signal(SimpleNamespace(name="Alice"))`<br>`#!pycon >>> person.name`<br>`#!pycon <Alice>` |  |
-| [`__call__`](api.md#signified._mixin._ReactiveMixIn.__call__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> fn = Signal(lambda x: x + 1)`<br>`#!pycon >>> fn(10)`<br>`#!pycon <11>` |  |
-| [`__getitem__`](api.md#signified._mixin._ReactiveMixIn.__getitem__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> Signal([1, 2, 3])[1]`<br>`#!pycon <2>`<br>`#!pycon >>> Signal({"x": 1})["x"]`<br>`#!pycon <1>` |  |
-| [`__setattr__`](api.md#signified.Signal.__setattr__) | `#!pycon >>> from types import SimpleNamespace`<br>`#!pycon >>> from signified import Signal`<br>`#!pycon >>> person = Signal(SimpleNamespace(name="Alice"))`<br>`#!pycon >>> name = person.name`<br>`#!pycon >>> person.name = "Bob"`<br>`#!pycon >>> name`<br>`#!pycon <Bob>` | `Signal` only. Updates wrapped object attributes and notifies dependents; unknown names raise `AttributeError`. |
-| [`__setitem__`](api.md#signified.Signal.__setitem__) | `#!pycon >>> from signified import Signal`<br>`#!pycon >>> nums = Signal([1, 2, 3])`<br>`#!pycon >>> first = nums[0]`<br>`#!pycon >>> nums[0] = 10`<br>`#!pycon >>> first`<br>`#!pycon <10>` | `Signal` only. Works for wrapped `list`/`dict` item updates. |
+`<`, `<=`, `>`, `>=`, and `!=` produce reactive results. Use `.rx` for the
+following operations:
 
-## Complete API Reference
+| To calculate… | Use |
+| --- | --- |
+| Value equality | `x.rx.eq(y)` |
+| Object identity | `x.rx.is_(y)`, `x.rx.is_not(y)` |
+| Membership | `x.rx.in_(items)`, `items.rx.contains(x)` |
+| Truthiness | `x.rx.as_bool()` |
+| Length | `items.rx.len()` |
+| A conditional result | `condition.rx.where(when_true, when_false)` |
 
-See [Core API](api.md) for full signatures, overloads, and docstring examples.
+`==`, `is`, `in`, `bool(x)`, and `len(x)` do not create these reactive
+calculations. Python's `if`, `and`, and `or` also do not build reactive
+expressions. Use `.rx.where(...)` to choose between values, or put ordinary
+Python branching inside a `Computed` function that reads `.value`.
+
+## Object and container access
+
+`x.name`, `x[key]`, and `x(...)` create calculated values. Methods can be
+chained, for example `text.strip().lower()`.
+
+Only `Signal` forwards writes such as `x.name = value` and `x[key] = value`
+to its stored object and sends updates. Attribute names must already exist.
+Changes through the raw `.value` need an explicit `.update()` call; see
+[Lists and dictionaries](usage.md#collections-and-item-assignment).
+
+## Complete API reference
+
+See the [operator API](api.md#magic-methods) for individual methods and the
+[rx API](api.md#reactive-namespace) for additional operations.

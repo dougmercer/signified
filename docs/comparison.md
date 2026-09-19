@@ -3,12 +3,33 @@ hide:
   - navigation
 ---
 
-# Library Comparison
+# Library comparison
+
+This page compares both the syntax and underlying assumptions/logic of several
+other reactive programming libraries.
 
 Signified's core model—tracked reads, cached derivations, and effects—has close
 relatives in established reactive libraries. The differences that affect program
 behavior are dependency discovery, evaluation timing, equality, mutation, and
 effect scheduling. A similar API name does not imply the same contract.
+
+## Python libraries
+
+In each row, `x` starts at `1` and `doubled` calculates twice its value.
+Imports are omitted.
+
+| Library | Create | Read / write | Calculate |
+| --- | --- | --- | --- |
+| Signified | `x = Signal(1)` | `x.value` / `x.value = 2` | `doubled = x * 2` |
+| [reaktiv](https://reaktiv.readthedocs.io/en/latest/) | `x = signal(1)` | `x()` / `x.set(2)` | `doubled = computed(lambda: x() * 2)` |
+| [Param](https://param.holoviz.org/en/docs/latest/user_guide/Reactive_Expressions.html) | `x = rx(1)` | `x.rx.value` / `x.rx.value = 2` | `doubled = x * 2` |
+
+Signified and reaktiv track the reactive values read during a calculation.
+Param's reactive expressions record operations and their inputs. If you are
+already using Param parameters, its expressions and bound functions connect
+to that model.
+
+## How to read the tables
 
 This page compares the Python libraries **signified**, **reaktiv**, and **Param**
 with **Angular signals**, **Vue 3 reactivity**, **Svelte 5 runes**, **Preact Signals
