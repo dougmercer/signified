@@ -1,24 +1,64 @@
 from math import ceil, floor, trunc
 from typing import Any, TypeVar, Union, assert_type
 
-from signified import Computed, Effect, HasValue, ReactiveValue, Signal, as_rx, computed, is_reactive, unref
+from signified import Binding, Computed, Effect, HasValue, ReactiveValue, Signal, as_rx, computed, is_reactive, unref
 
 T = TypeVar("T")
 Numeric = Union[int, float]
 
 
-def test_signal_init():
+def test_is_reactive_positive_narrowing(value: HasValue[int]):
+    if is_reactive(value):
+        assert_type(value, ReactiveValue[int])
+
+
+def test_unref_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
+    assert_type(unref(value), int | str)
+
+
+def test_is_reactive_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
+    if is_reactive(value):
+        assert_type(value, ReactiveValue[int] | ReactiveValue[str])
+
+
+def test_as_rx_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
+    assert_type(as_rx(value), ReactiveValue[int] | ReactiveValue[str])
+
+
+def test_as_rx_distributes_over_larger_union(value: HasValue[int] | HasValue[str] | HasValue[bytes]):
+    assert_type(as_rx(value), ReactiveValue[int] | ReactiveValue[str] | ReactiveValue[bytes])
+
+
+def test_signal_and_binding_init():
     a = Signal(1)
     assert_type(a, Signal[int])
     assert_type(a.value, int)
 
-    b = Signal(a)
-    assert_type(b, Signal[int])
+    b = Binding(a)
+    assert_type(b, Binding[int])
     assert_type(b.value, int)
 
-    c = Signal(Signal(Signal(Signal(Signal(1.2)))))
-    assert_type(c, Signal[float])
+    c = Binding(Binding(Binding(Binding(Signal(1.2)))))
+    assert_type(c, Binding[float])
     assert_type(c.value, float)
+
+    assert_type(c.source, Computed[float] | Signal[float] | Binding[float])
+    c.value = Signal(2.0)
+    assert_type(c.value, float)
+    assert_type(c.set(Signal(2.0)), Binding[float])
+    assert_type(c.set(3.0), Binding[float])
+
+
+def test_higher_order_reactive_values():
+    source = Signal(1)
+    stored = Signal(source)
+    calculated = Computed(lambda: source)
+
+    assert_type(stored, Signal[Signal[int]])
+    assert_type(stored.value, Signal[int])
+    assert_type(unref(stored), Signal[int])
+    assert_type(calculated, Computed[Signal[int]])
+    assert_type(calculated.value, Signal[int])
 
 
 def test_computed_init():
@@ -648,7 +688,7 @@ def test_where():
 
 def test_unref():
     a = Signal(1)
-    b = Signal(Signal(2.0))
+    b = Binding(Signal(2.0))
     c = Computed(lambda: "three")
 
     assert_type(unref(a), int)
@@ -666,23 +706,20 @@ def test_complex_expression():
     assert_type(unref(result), Numeric)
 
 
-def test_is_reactive_positive_narrowing(value: HasValue[int]):
-    if is_reactive(value):
-        assert_type(value, ReactiveValue[int])
+def test_resolution_registration_and_contexts():
+    from typing import Any
 
+    from signified import ResolveContext, batch, deep_unref, untracked
 
-def test_unref_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
-    assert_type(unref(value), int | str)
+    class Box:
+        def __init__(self, child: object) -> None:
+            self.child = child
 
+    @deep_unref.register(Box)
+    def resolve_box(box: Box, resolve: ResolveContext) -> Box:
+        return Box(resolve(box.child))
 
-def test_is_reactive_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
-    if is_reactive(value):
-        assert_type(value, ReactiveValue[int] | ReactiveValue[str])
-
-
-def test_as_rx_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
-    assert_type(as_rx(value), ReactiveValue[int] | ReactiveValue[str])
-
-
-def test_as_rx_distributes_over_larger_union(value: HasValue[int] | HasValue[str] | HasValue[bytes]):
-    assert_type(as_rx(value), ReactiveValue[int] | ReactiveValue[str] | ReactiveValue[bytes])
+    with batch(), untracked():
+        assert_type(deep_unref(Box(Signal(1))), Any)
+        assert_type(unref(Signal(Signal(1))), Signal[int])
+        assert_type(resolve_box(Box(1), ResolveContext({})), Box)

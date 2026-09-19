@@ -1,4 +1,4 @@
-from signified import Computed, Signal, as_rx, computed, has_value, is_reactive, unref
+from signified import Binding, Computed, Signal, as_rx, computed, has_value, is_reactive, unref
 from signified._reactive import _coerce_to_bool, _has_changed
 
 
@@ -13,9 +13,21 @@ def test_has_value():
     assert not has_value(s, str)
 
 
-def test_unref_nested_signals():
-    """Test unref function with deeply nested Signals."""
-    s = Signal(Signal(Signal(Signal(5))))
+def test_is_reactive():
+    """Test the is_reactive type guard without resolving the candidate."""
+    signal = Signal(1)
+    computed_value = Computed(lambda: 2)
+    binding = Binding(signal)
+
+    assert is_reactive(signal)
+    assert is_reactive(computed_value)
+    assert is_reactive(binding)
+    assert not is_reactive(1)
+
+
+def test_unref_binding_chain():
+    """Test unref with deeply nested Bindings."""
+    s = Binding(Binding(Binding(Signal(5))))
     assert unref(s) == 5
 
 
@@ -112,7 +124,7 @@ def test_has_changed_with_broken_eq_is_treated_as_changed():
     assert _has_changed(BrokenEq(), BrokenEq()) is True
 
 
-def test_has_changed_with_ambiguous_equality_all_true_is_unchanged():
+def test_has_changed_does_not_invoke_ambiguous_equality():
     class AmbiguousEqResult:
         def __bool__(self):
             raise ValueError("ambiguous truth value")
@@ -124,7 +136,7 @@ def test_has_changed_with_ambiguous_equality_all_true_is_unchanged():
         def __eq__(self, other):  # type: ignore
             return AmbiguousEqResult()
 
-    assert _has_changed(object(), WithAmbiguousEq()) is False
+    assert _has_changed(object(), WithAmbiguousEq()) is True
 
 
 def test_coerce_to_bool_handles_ambiguous_bool_with_all_fallback():

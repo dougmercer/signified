@@ -1,8 +1,9 @@
 import gc
+import traceback
 
 import pytest
 
-from signified import Computed, Signal, computed
+from signified import Binding, Computed, Signal, computed, deep_unref
 
 
 def test_computed_basic():
@@ -50,10 +51,10 @@ def test_computed_dependencies():
     assert c.value == 20
 
 
-def test_computed_with_nested_signals():
-    """Test Computed with multiple nested Signals."""
-    s1 = Signal(Signal(5))
-    s2 = Signal(Signal(Signal(3)))
+def test_computed_with_bindings():
+    """Test Computed with multiple Binding layers."""
+    s1 = Binding(Signal(5))
+    s2 = Binding(Binding(Signal(3)))
 
     @computed
     def complex_computation(a, b):
@@ -62,7 +63,7 @@ def test_computed_with_nested_signals():
     result = complex_computation(s1, s2)
     assert result.value == 15
 
-    s1.value = 7
+    s1.set(7)
     assert result.value == 21
 
 
@@ -77,29 +78,55 @@ def test_computed_chaining():
     assert c2.value == 23
 
 
-def test_computed_container_with_reactive_values():
-    s = [1, Signal(2), Signal(3)]
-    result = computed(sum)(s)
+def test_computed_container_is_opaque():
+    x = Signal(2)
+    values = {"x": x}
+    runs = 0
+
+    @computed
+    def identity(value):
+        nonlocal runs
+        runs += 1
+        return value
+
+    result = identity(values)
+
+    assert result.value is values
+    assert result.value["x"] is x
+    assert runs == 1
+
+    x.value = 10
+    assert result.value is values
+    assert runs == 1
+
+
+def test_computed_explicit_nested_read_establishes_dependency():
+    x = Signal(2)
+    config = {"nested": {"x": x}}
+
+    @computed
+    def double(value):
+        return value["nested"]["x"].value * 2
+
+    result = double(config)
+    assert result.value == 4
+    x.value = 3
     assert result.value == 6
-    s[-1].value = 10
-    assert result.value == 13
 
 
-def test_computed_container_with_deeply_nestedreactive_values():
-    def flatten(lst):
-        result = []
-        for item in lst:
-            if isinstance(item, list):
-                result.extend(flatten(item))
-            else:
-                result.append(item)
-        return result
+def test_deep_computed_resolves_nested_reactive_values():
+    values = [Signal(1), {"nested": (Signal(2), Signal(3))}]
 
-    s = [1, [Signal(2), Signal([Signal(3), Signal([4, Signal(5)])])], Signal(6)]
-    result = computed(flatten)(s)
-    assert result.value == [1, 2, 3, 4, 5, 6]
-    s[1][0].value = 10
-    assert result.value == [1, 10, 3, 4, 5, 6]
+    @computed
+    def total(value):
+        value = deep_unref(value)
+        return value[0] + sum(value[1]["nested"])
+
+    result = total(values)
+    assert result.value == 6
+
+    values[1]["nested"][0].value = 10
+    assert result.value == 14
 
 
 def test_computed_is_lazy_until_read():
@@ -169,21 +196,19 @@ def test_computed_skips_downstream_recompute_when_upstream_value_stable():
     assert downstream_runs == 1
 
 
-def test_nested_signal_change_invalidates_computed_once():
+def test_binding_source_change_invalidates_computed_once():
     inner = Signal(1)
-    outer = Signal(inner)
-    derived = Computed(lambda: outer.value + 1)
-    _ = derived.value
-
+    outer = Binding(inner)
     calls = 0
-    original_update = derived.update
 
-    def wrapped_update() -> None:
-        nonlocal calls
-        calls += 1
-        original_update()
+    class CountingComputed(Computed):
+        def update(self) -> None:
+            nonlocal calls
+            calls += 1
+            super().update()
 
-    derived.update = wrapped_update  # type: ignore[method-assign]
+    derived = CountingComputed(lambda: outer.value + 1)
+    _ = derived.value
     inner.value = 2
 
     assert calls == 1
@@ -212,7 +237,7 @@ def test_computed_retains_transient_dependencies_across_gc():
     assert outer.value == 20
 
 
-def test_computed_exception_rollback_preserves_previous_dependencies():
+def test_computed_exception_keeps_dependencies_read_before_the_failure():
     flag = Signal(True)
     left = Signal(1)
     right = Signal(10)
@@ -229,16 +254,125 @@ def test_computed_exception_rollback_preserves_previous_dependencies():
     derived = Computed(compute)
 
     assert derived.value == 1
-    before = tuple(derived._impl._deps)
-    assert set(before) == {flag, left}
+    assert set(derived._impl._deps) == {flag, left}
 
     flag.value = False
     fail.value = True
     with pytest.raises(RuntimeError, match="boom"):
         _ = derived.value
 
-    after = tuple(derived._impl._deps)
-    assert set(after) == {flag, left}
+    # The failed run read flag, right, and fail; left was not read.
+    assert set(derived._impl._deps) == {flag, right, fail}
+    fail.value = False
+    assert derived.value == 10
+
+
+@pytest.mark.parametrize("initial", [0, 1])
+def test_computed_caches_errors_until_a_dependency_changes(initial):
+    source = Signal(initial)
+    calls = []
+
+    def divide():
+        calls.append(source.value)
+        return 10 // source.value
+
+    derived = Computed(divide)
+    if initial:
+        assert derived.value == 10
+        source.value = 0
+    for _ in range(3):
+        with pytest.raises(ZeroDivisionError):
+            _ = derived.value
+    assert calls == ([1, 0] if initial else [0])
+
+    # An unrelated write does not discard the cached error.
+    unrelated = Signal(0)
+    unrelated.value = 1
+    with pytest.raises(ZeroDivisionError):
+        _ = derived.value
+    assert calls == ([1, 0] if initial else [0])
+
+    source.value = 1
+    assert derived.value == 10
+    assert calls[-2:] == [0, 1]
+
+
+def test_downstream_computed_can_handle_errors_and_recover_to_the_previous_value():
+    source = Signal(1)
+    quotient = Computed(lambda: 10 // source.value)
+
+    def recover():
+        try:
+            return quotient.value
+        except ZeroDivisionError:
+            return "error"
+
+    recovered = Computed(recover)
+    assert recovered.value == 10
+    source.value = 0
+    assert recovered.value == "error"
+    assert recovered.value == "error"
+    source.value = 1
+    assert recovered.value == 10
+
+
+def test_cached_error_keeps_original_traceback_without_accumulating_read_frames():
+    error = ValueError("failed")
+
+    def fail():
+        raise error
+
+    derived = Computed(fail)
+    traces = []
+    for _ in range(3):
+        with pytest.raises(ValueError) as caught:
+            _ = derived.value
+        assert caught.value is error
+        traces.append([frame.name for frame in traceback.extract_tb(caught.value.__traceback__)])
+    assert traces[0] == traces[1] == traces[2]
+    assert "fail" in traces[0]
+
+
+@pytest.mark.parametrize("initial", [False, True])
+def test_computed_does_not_cache_control_flow_exceptions(initial):
+    source = Signal(initial)
+    interrupted = False
+    calls = 0
+
+    def compute():
+        nonlocal interrupted, calls
+        calls += 1
+        if not source.value and not interrupted:
+            interrupted = True
+            raise KeyboardInterrupt()
+        return 1
+
+    derived = Computed(compute)
+    if initial:
+        assert derived.value == 1
+        source.value = False
+    with pytest.raises(KeyboardInterrupt):
+        _ = derived.value
+    assert derived.value == 1
+    assert calls == (3 if initial else 2)
+
+
+def test_invalidate_retries_a_cached_error_without_dependencies():
+    ready = False
+
+    def compute():
+        if not ready:
+            raise ValueError("not ready")
+        return 1
+
+    derived = Computed(compute)
+    with pytest.raises(ValueError):
+        _ = derived.value
+    ready = True
+    with pytest.raises(ValueError):
+        _ = derived.value
+    derived.invalidate()
+    assert derived.value == 1
 
 
 def test_invalidate_nonreactive_value_replace():

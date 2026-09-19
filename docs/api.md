@@ -14,6 +14,8 @@ hide:
         - rx
         - with_name
         - at
+        - __setattr__
+        - __setitem__
 
 ::: signified.Computed
     options:
@@ -22,6 +24,17 @@ hide:
         - rx
         - with_name
         - invalidate
+
+::: signified.Binding
+    options:
+      members:
+        - value
+        - source
+        - set
+        - derive
+        - at
+        - rx
+        - with_name
 
 ::: signified.Effect
     options:
@@ -45,7 +58,6 @@ return as reactive values (identity checks, containment, ternary, etc.):
         - map
         - effect
         - tap
-        - peek
         - len
         - is_
         - is_not
@@ -106,14 +118,23 @@ subscript, and attribute-access operations all return reactive
         - __gt__
         - __ne__
         - __getitem__
-        - __setattr__
-        - __setitem__
 
 ## Functions
 
 ::: signified.computed
+::: signified.effect
 ::: signified.unref
-### Nested containers {#signified.deep_unref}
+::: signified.has_value
+::: signified.is_reactive
+::: signified.as_rx
+::: signified.batch
+::: signified.untracked
+
+## Explicit deep resolution {#signified.deep_unref}
+
+Use `deep_unref(value)` to replace reactive values inside supported containers.
+For example, `deep_unref({"x": Signal(1)})` returns `{"x": 1}`. To support a
+custom object, register a handler with `@deep_unref.register(MyType)`.
 
 ::: signified._resolve._DeepUnref
     options:
@@ -127,22 +148,29 @@ subscript, and attribute-access operations all return reactive
       members:
         - __call__
 
-See [Resolving nested values](resolution.md) for examples and custom handlers.
-::: signified.is_reactive
-::: signified.has_value
-::: signified.as_rx
+See [Resolving nested values](resolution.md) for custom-handler examples.
+
+## Migration diagnostics
+
+Import the namespace with `from signified import migration`.
+
+::: signified.migration.enable_warnings
+::: signified.migration.disable_warnings
+::: signified.migration.warnings
+::: signified.migration.warnings_enabled
+::: signified.migration.SignifiedMigrationWarning
 
 ## Types
 
 ### HasValue {#signified.HasValue}
 
-**`HasValue[T]`** — `T | Computed[T] | Signal[T]`
+**`HasValue[T]`** — `T | Computed[T] | Signal[T] | Binding[T]`
 
 A plain or reactive value that resolves to `T`. Use as a type hint when a
 parameter accepts either a raw value or a reactive wrapper.
 
 ### ReactiveValue {#signified.ReactiveValue}
 
-**`ReactiveValue[T]`** — `Computed[T] | Signal[T]`
+**`ReactiveValue[T]`** — `Computed[T] | Signal[T] | Binding[T]`
 
 A reactive wrapper that resolves to `T`.

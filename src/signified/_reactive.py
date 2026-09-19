@@ -4,24 +4,27 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from collections.abc import Generator, Iterable
+from collections.abc import Generator
 from contextlib import contextmanager
 from enum import IntEnum
+from types import TracebackType
 from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
+from weakref import ref
 
+from . import _scheduler
 from . import migration as _migration
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
 from .plugins import HOOKS_ENABLED, plugin_manager
 
-__all__ = ["Variable", "Signal", "Computed", "Effect"]
+__all__ = ["Variable", "Signal", "Computed", "Binding", "Effect"]
 
 
-_PLAIN_SCALAR_TYPES = {int, float, str, bool, bytes, complex, type(None)}
 _GLOBAL_VERSION = 0
 
-# `_ReactiveMixIn.__setattr__` forwards unknown names to the wrapped value, so
-# internal writes on the hot path bypass that Python-level call.
+# `Signal.__setattr__` is a Python-level method, so it costs a call on every
+# assignment to a Signal. Internal writes on the hot path bypass it;
+# `_ReactiveMixIn._bump_version` does the same. Computed has no override.
 _setattr = object.__setattr__
 
 
@@ -51,18 +54,10 @@ def is_reactive(obj: object) -> bool:
         obj: Value to inspect.
 
     Returns:
-        `True` for a [Signal][signified.Signal], [Computed][signified.Computed].
+        `True` for a [Signal][signified.Signal], [Computed][signified.Computed],
+        or [Binding][signified.Binding].
     """
     return getattr(type(obj), "_IS_REACTIVE", False)
-
-
-def _may_have_reactive_children(value: Any) -> bool:
-    """Return whether `value` could contain reactive values that need subscriptions."""
-    if type(value) in _PLAIN_SCALAR_TYPES:
-        return False
-    if is_reactive(value):
-        return True
-    return isinstance(value, Iterable) and not isinstance(value, str)
 
 
 def _coerce_to_bool(value: Any) -> bool:
@@ -87,8 +82,8 @@ class _Observer(Protocol):
 class Variable[T](ABC, _ReactiveMixIn[T]):
     """Abstract base class for reactive values.
 
-    Both [Signal][signified.Signal] and [Computed][signified.Computed] extend this
-    class. *You should use them directly.*
+    [Signal][signified.Signal], [Computed][signified.Computed], and
+    [Binding][signified.Binding] extend this class. *You should use them directly.*
 
     Variable is only exposed for type hinting or subclassing purposes.
     """
@@ -101,27 +96,6 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         _setattr(self, "_observers", _ObserverLinks[_Observer]())
         _setattr(self, "_name", "")
         _setattr(self, "_version", 0)
-
-    @staticmethod
-    def _iter_variables(item: Any) -> Generator[Variable[Any], None, None]:
-        """Yield `Variable` instances found in arbitrarily nested containers."""
-        if type(item) in _PLAIN_SCALAR_TYPES:
-            return
-        if is_reactive(item):
-            yield item
-            return
-        if isinstance(item, str):
-            return
-        if isinstance(item, dict):
-            for key, value in item.items():
-                if type(key) not in _PLAIN_SCALAR_TYPES:
-                    yield from Variable._iter_variables(key)
-                if type(value) not in _PLAIN_SCALAR_TYPES:
-                    yield from Variable._iter_variables(value)
-            return
-        if isinstance(item, Iterable):
-            for sub_item in item:
-                yield from Variable._iter_variables(sub_item)
 
     def subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer to this variable.
@@ -144,25 +118,11 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         """
         self._observers.discard(observer)
 
-    def _observe(self, items: Any) -> Self:
-        """Subscribe ``self`` to all reactive values found in ``items``."""
-        for item in self._iter_variables(items):
-            if item is not self:
-                item.subscribe(self)
-        return self
-
-    def _unobserve(self, items: Any) -> Self:
-        """Unsubscribe ``self`` from all reactive values found in ``items``."""
-        for item in self._iter_variables(items):
-            if item is not self:
-                item.unsubscribe(self)
-        return self
-
     def notify(self) -> None:
         """Notify all observers by calling their update method."""
         if not self._observers:
             return
-        self._observers.notify()
+        _scheduler.notify(id(self), self._observers.notify)
 
     def invalidate(self) -> None:
         """Force downstream recomputation, bypassing optimization caches.
@@ -256,10 +216,26 @@ top of this stack so dependency subscriptions can be reconciled on refresh.
 """
 
 
+@contextmanager
+def untracked() -> Generator[None, None, None]:
+    """Read without subscribing the enclosing computation or effect.
+
+    Nested computations still collect their own dependencies. Reads return
+    current values and retain normal hooks and errors. Synchronous, single-
+    thread use only; this context must not span await.
+    """
+    _COMPUTE_STACK.append(None)
+    try:
+        yield
+    finally:
+        popped = _COMPUTE_STACK.pop()
+        assert popped is None
+
+
 def _track_read(variable: Variable[Any]) -> None:
     """Register `variable` as a dependency of the currently computing Computed."""
     stack = _COMPUTE_STACK
-    if not stack:
+    if not stack or stack[-1] is None:
         # Reads outside Computed evaluation do not participate in dependency tracking.
         return
     impl = stack[-1]
@@ -270,58 +246,25 @@ def _track_read(variable: Variable[Any]) -> None:
     impl._dep_state.register_dependency(variable)
 
 
-def _resolve[T](value: HasValue[T]) -> T:
-    """Unwrap nested reactive containers without registering any dependencies.
-
-    Used internally by ``.value`` property getters so that resolving a stored
-    nested reactive (e.g. ``Signal(Signal(5))``) does not create a redundant
-    direct subscription that bypasses the outer variable's own observe chain.
-    """
-    current: T | HasValue[T] = value
-    if type(current) in _PLAIN_SCALAR_TYPES:
-        return cast(T, current)
-    while is_reactive(current):
-        if current._IS_COMPUTED:
-            current._impl.ensure_uptodate()
-        current = current._value
-    return cast(T, current)
+_VALUE_TYPES = frozenset((int, bool, str, bytes, complex, type(None)))
 
 
 def _has_changed(previous: Any, current: Any) -> bool:
-    """Best-effort change detection for assignments into reactive values.
+    """Exact built-in scalars compare by value; other objects by identity.
 
-    This function is intentionally fail-open: if comparison is ambiguous or
-    raises, we treat the value as changed to avoid missing invalidations.
+    Equal values retain the previous stored object. No user equality methods
+    or array comparisons are invoked implicitly.
     """
-    previous_type = type(previous)
-    current_type = type(current)
-    if previous_type is current_type:
-        if previous_type in {int, bool, str, bytes, complex, type(None)}:
-            return previous != current
-        if previous_type is float:
-            return not (math.isnan(previous) and math.isnan(current)) and previous != current
-
-    # Compare callables by identity to avoid invoking custom `__eq__` logic and
-    # to preserve stable references as unchanged.
-    if callable(previous) or callable(current):
-        return previous is not current
-    # Reactive wrappers compare by identity rather than value equality.
-    # Distinct wrapper objects should invalidate even if they currently resolve
-    # to equal values.
-    if is_reactive(previous) or is_reactive(current):
-        return previous is not current
-
-    # Keep NaN stable: treat NaN -> NaN as unchanged.
-    if isinstance(previous, float) and isinstance(current, float) and math.isnan(previous) and math.isnan(current):
+    if previous is current:
         return False
-
-    try:
-        # `==` may return non-scalar array-like values; coerce those with
-        # all-elements semantics before negating.
-        return not _coerce_to_bool(current == previous)
-    except Exception:
-        # Fail-open for exotic/buggy equality implementations.
+    value_type = type(previous)
+    if value_type is not type(current):
         return True
+    if value_type is float:
+        return previous != current and not (math.isnan(previous) and math.isnan(current))
+    if value_type in _VALUE_TYPES:
+        return previous != current
+    return True
 
 
 class Signal[T](Variable[T]):
@@ -330,7 +273,7 @@ class Signal[T](Variable[T]):
     `Signal` stores a value and notifies observers when that value changes.
     The `value` property is read/write:
 
-    - reading `value` returns the current plain value
+    - reading `value` returns the exact stored value
     - assigning `value` updates the stored value and notifies observers if it changed
 
 
@@ -351,20 +294,13 @@ class Signal[T](Variable[T]):
     """
 
     __slots__ = ["_value"]
+    _WARN_ON_VALUE = True
 
-    @overload
-    def __init__(self, value: ReactiveValue[T]) -> None: ...
-
-    @overload
-    def __init__(self, value: T) -> None: ...
-
-    def __init__(self, value: HasValue[T]) -> None:
+    def __init__(self, value: T) -> None:
         super().__init__()
-        if _migration.WARNINGS_ENABLED:
+        if _migration.WARNINGS_ENABLED and self._WARN_ON_VALUE:
             _migration._warn_signal_value(value)
         _setattr(self, "_value", value)
-        if _may_have_reactive_children(value):
-            self._observe(value)
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
 
@@ -372,21 +308,17 @@ class Signal[T](Variable[T]):
     def value(self) -> T:
         """The current value.
 
-        Getting this property returns the plain Python value, unwrapping any
-        nested reactive. Setting it updates the stored value and notifies
-        observers if the value changed.
+        Getting this property returns the stored Python value. Setting it
+        updates the stored value and notifies observers if the value changed.
         """
         if HOOKS_ENABLED:
             plugin_manager.hook.read(value=self)
         _track_read(self)
-        value = self._value
-        if type(value) in _PLAIN_SCALAR_TYPES:
-            return cast(T, value)
-        return _resolve(value)
+        return self._value
 
     @value.setter
-    def value(self, new_value: HasValue[T]) -> None:
-        if _migration.WARNINGS_ENABLED:
+    def value(self, new_value: T) -> None:
+        if _migration.WARNINGS_ENABLED and self._WARN_ON_VALUE:
             _migration._warn_signal_value(new_value)
         old_value = self._value
         if _has_changed(old_value, new_value):
@@ -394,11 +326,89 @@ class Signal[T](Variable[T]):
             self._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=self)
-            if _may_have_reactive_children(old_value):
-                self._unobserve(old_value)
-            if _may_have_reactive_children(new_value):
-                self._observe(new_value)
             self.notify()
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Forward a public attribute write to the wrapped object and notify.
+
+        Private names and `Signal`'s own attributes (such as `value`) are
+        assigned on the wrapper. Any other name must already exist on the
+        wrapped object; the write is applied there and observers are notified,
+        exactly like `signal[key] = value`. Unknown names raise `AttributeError`
+        instead of silently creating an attribute on the wrapper.
+
+        Only `Signal` forwards writes, because only a `Signal` owns its value.
+        A [Computed][signified.Computed] holds a cache that the next refresh
+        replaces, so writing through it would mutate state it does not own.
+
+        Args:
+            name: The attribute name to assign.
+            value: The value to assign.
+
+        Raises:
+            AttributeError: If the wrapped object has no attribute `name`.
+
+        Example:
+            ```py
+            >>> class Person:
+            ...     def __init__(self, name: str):
+            ...         self.name = name
+            ...     def greet(self) -> str:
+            ...         return f"Hi, I'm {self.name}!"
+            >>> s = Signal(Person("Alice"))
+            >>> result = s.greet()
+            >>> result.value
+            "Hi, I'm Alice!"
+            >>> s.name = "Bob"
+            >>> result.value
+            "Hi, I'm Bob!"
+
+            ```
+        """
+        # Names defined on the wrapper's class (including subclasses) stay on
+        # the wrapper; `value` reaches its property setter this way.
+        if name[:1] == "_" or hasattr(type(self), name):
+            _setattr(self, name, value)
+            return
+        wrapped = self._value
+        if not hasattr(wrapped, name):
+            raise AttributeError(f"'{type(wrapped).__name__}' object has no attribute '{name}'")
+        setattr(wrapped, name, value)
+        self.update()
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        """Set an item on the wrapped `list` or `dict` and notify observers.
+
+        Assigning through the `Signal` rather than through `signal.value` is
+        what notifies dependents: in-place mutation of the wrapped object is not
+        observed on its own. Only `Signal` forwards item assignment, because
+        only a `Signal` owns its value; a [Computed][signified.Computed] holds
+        a cache that the next refresh replaces.
+
+        Args:
+            key: The key to change.
+            value: The value to set it to.
+
+        Raises:
+            TypeError: If the wrapped value is not a `list` or `dict`.
+
+        Example:
+            ```py
+            >>> s = Signal([1, 2, 3])
+            >>> result = computed(sum)(s)
+            >>> result.value
+            6
+            >>> s[1] = 4
+            >>> result.value
+            8
+
+            ```
+        """
+        wrapped = self._value
+        if not isinstance(wrapped, (list, dict)):
+            raise TypeError(f"'{type(wrapped).__name__}' object does not support item assignment")
+        wrapped[key] = value
+        self.update()
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
@@ -421,9 +431,6 @@ class Signal[T](Variable[T]):
 
             ```
         """
-        # Preserve the stored wrapper as well as its resolved value. Using
-        # ``self.value`` here would flatten a nested Signal/Computed and break
-        # its subscription when the context exits.
         before = self._value
         try:
             self.value = value
@@ -450,6 +457,13 @@ class Signal[T](Variable[T]):
         self.notify()
 
 
+class _BindingSource[T](Signal[ReactiveValue[T]]):
+    """Internal source selection; storing reactive objects here is intentional."""
+
+    __slots__ = ()
+    _WARN_ON_VALUE = False
+
+
 class _State(IntEnum):
     """Staleness state for a :class:`Computed` value.
 
@@ -461,27 +475,26 @@ class _State(IntEnum):
     FRESH = 0  # Value is current; no recomputation needed.
     STALE = 1  # May be out of date; dep-version check can save a recompute.
     MUST_REFRESH = 2  # Definitely out of date; recompute unconditionally on next read.
-    UNINITIALIZED = 3  # Never computed; recompute on first read, but don't re-notify.
+    UNINITIALIZED = 3  # No cached outcome; compute on first read.
 
 
 class _DependencyLink:
     """Edge between a Computed consumer and one producer dependency.
 
     Links are reused across refreshes. ``seen_token`` records the refresh that
-    last read this dependency and ``born_token`` the refresh that created the
-    link, which is what lets commit and rollback both work as a single sweep.
+    last read this dependency, which lets commit work as a single sweep.
     """
 
-    __slots__ = ["dep", "version", "prev", "next", "active", "seen_token", "born_token"]
+    __slots__ = ["dep", "version", "prev", "next", "active", "seen_token", "read_version"]
 
     def __init__(self, dep: Variable[Any], token: int) -> None:
         self.dep = dep
         self.version = -1
+        self.read_version = -1
         self.prev: _DependencyLink | None = None
         self.next: _DependencyLink | None = None
         self.active = False
         self.seen_token = token
-        self.born_token = token
 
 
 class _PythonDependencyState:
@@ -496,14 +509,18 @@ class _PythonDependencyState:
     strongly for as long as the link is in the index.
     """
 
-    __slots__ = ["_subscriber", "_head", "_tail", "_lookup", "_token"]
+    __slots__ = ["_subscriber_ref", "_head", "_tail", "_lookup", "_token"]
 
     def __init__(self, subscriber: Any) -> None:
-        self._subscriber = subscriber
+        self._subscriber_ref = ref(subscriber)
         self._head: _DependencyLink | None = None
         self._tail: _DependencyLink | None = None
         self._lookup: dict[int, _DependencyLink] = {}
         self._token = 0
+
+    @property
+    def _subscriber(self) -> Any:
+        return self._subscriber_ref()
 
     @property
     def deps(self) -> tuple[Variable[Any], ...]:
@@ -531,9 +548,14 @@ class _PythonDependencyState:
             self._tail = link
         else:
             link.seen_token = self._token
+        link.read_version = dependency._version
 
     def commit_refresh(self) -> None:
-        """Subscribe to every dependency read this run and drop the rest."""
+        """Subscribe to every dependency read this run and drop the rest.
+
+        This runs after successful and failed runs alike, so a consumer always
+        depends on exactly what its last run read before returning or raising.
+        """
         token = self._token
         subscriber = self._subscriber
         link = self._head
@@ -541,27 +563,28 @@ class _PythonDependencyState:
             next_link = link.next
             if link.seen_token == token:
                 if not link.active:
-                    link.dep.subscribe(subscriber)
+                    # This dependency was already read. Subscribing must not
+                    # evaluate it again if the callback subsequently mutated it.
+                    Variable.subscribe(link.dep, subscriber)
                     link.active = True
-                link.version = link.dep._version
+                link.version = link.read_version
             else:
                 self._detach(link)
             link = next_link
 
-    def rollback_refresh(self) -> None:
-        """Undo a failed run by dropping only the links it created.
+    def invalidated_since_read(self) -> bool:
+        """Check for callback writes without evaluating user computations.
 
-        Links that predate the failed run keep their recorded versions, so the
-        consumer stays subscribed to its previous dependencies and stale for
-        retry.
+        Every link was read this run, and a read clears a computed's
+        ``_notified`` flag, so a set flag means it was invalidated afterwards.
         """
-        token = self._token
         link = self._head
         while link is not None:
-            next_link = link.next
-            if link.born_token == token:
-                self._detach(link)
-            link = next_link
+            dep = link.dep
+            if link.version != dep._version or (dep._IS_COMPUTED and dep._impl._notified):
+                return True
+            link = link.next
+        return False
 
     def dependencies_changed(self) -> bool:
         link = self._head
@@ -612,7 +635,16 @@ _DependencyState = _PythonDependencyState
 class _ComputedImpl:
     """Internal state and dependency tracking for :class:`Computed`."""
 
-    __slots__ = ["_owner", "_dep_state", "_state", "_is_computing", "_global_version_seen"]
+    __slots__ = [
+        "_owner",
+        "_dep_state",
+        "_state",
+        "_is_computing",
+        "_global_version_seen",
+        "_notified",
+        "_error",
+        "_error_traceback",
+    ]
 
     def __init__(self, owner: "Computed[Any]") -> None:
         self._owner = owner
@@ -620,6 +652,12 @@ class _ComputedImpl:
         self._state = _State.UNINITIALIZED
         self._is_computing = False
         self._global_version_seen = -1
+        self._error: Exception | None = None
+        self._error_traceback: TracebackType | None = None
+        # True once observers have been told this node is stale. Cleared on
+        # every refresh attempt, so a node that fails to refresh forwards the
+        # next invalidation instead of assuming observers already know.
+        self._notified = False
 
     @property
     def _deps(self) -> Any:
@@ -632,7 +670,9 @@ class _ComputedImpl:
 
         forced_refresh = self._state == _State.MUST_REFRESH
         previous_value = owner._value
-        had_value = self._state != _State.UNINITIALIZED
+        had_outcome = self._state != _State.UNINITIALIZED
+        had_error = self._error is not None
+        next_error: Exception | None = None
 
         # 1) Evaluate with dependency tracking enabled.
         self._is_computing = True
@@ -642,32 +682,39 @@ class _ComputedImpl:
             next_value = owner._compute_fn()
             if _migration.WARNINGS_ENABLED:
                 _migration._warn_reactive_computed_result(owner, next_value)
+        except Exception as error:
+            next_value = None
+            next_error = error
         except BaseException:
-            # Roll back: leave self._deps and self._state unchanged so the
-            # Computed stays subscribed to its previous deps and remains stale
-            # for retry on the next .value read.
+            # Control-flow exceptions abort evaluation rather than becoming
+            # cached outcomes. The next read must retry despite committed deps.
+            self._state = max(self._state, _State.MUST_REFRESH)
+            raise
+        finally:
             popped = _COMPUTE_STACK.pop()
             assert popped is self
-            self._dep_state.rollback_refresh()
             self._is_computing = False
-            raise
-        popped = _COMPUTE_STACK.pop()
-        assert popped is self
-        self._is_computing = False
+            # 2) Subscribe to what this run read, even if it raised.
+            self._dep_state.commit_refresh()
 
-        # 2) Reconcile subscriptions against the dependency set from this run.
-        self._dep_state.commit_refresh()
-
-        # 3) Commit value/version if the computed result actually changed.
+        # 3) Cache the outcome. Every failed evaluation is a new outcome;
+        # recovery changes it even if the value equals the last successful one.
+        # Keep the original traceback so repeated reads do not accumulate frames.
+        self._error = next_error
+        self._error_traceback = next_error.__traceback__ if next_error is not None else None
         self._state = _State.FRESH
-        value_changed = not had_value or _has_changed(previous_value, next_value)
-        if value_changed:
-            _setattr(owner, "_value", next_value)
+        outcome_changed = (
+            not had_outcome or had_error or next_error is not None or _has_changed(previous_value, next_value)
+        )
+        if outcome_changed:
+            owner._value = next_value
             self._global_version_seen = owner._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=owner)
         elif forced_refresh:
             self._global_version_seen = owner._bump_version()
+            if HOOKS_ENABLED:
+                plugin_manager.hook.updated(value=owner)
         else:
             self._global_version_seen = _GLOBAL_VERSION
 
@@ -680,6 +727,10 @@ class _ComputedImpl:
         if self._state == _State.FRESH:
             return
 
+        # Any refresh attempt, successful or not, means observers must be
+        # told again the next time this node is invalidated.
+        self._notified = False
+
         # Fast path 2: the graph has not changed since this computed last
         # became current, so a stale mark can be cleared without scanning deps.
         if self._state == _State.STALE and self._global_version_seen == _GLOBAL_VERSION:
@@ -690,20 +741,21 @@ class _ComputedImpl:
         if self._state == _State.STALE and not self.dependencies_changed():
             self._state = _State.FRESH
             self._global_version_seen = _GLOBAL_VERSION
-            return
-
-        # Slow path: recompute and reconcile dependencies.
-        self.refresh()
+        else:
+            self.refresh()
 
     def invalidate(self, *, force: bool = False) -> bool:
-        """Mark stale and return True when transitioning out of FRESH.
+        """Mark stale and return True when observers still need to be notified.
 
         ``force=True`` upgrades the state to ``MUST_REFRESH``, bypassing the
         dep-version check on the next read even if dep versions look unchanged.
+        Observers are notified at most once per refresh attempt.
         """
-        was_fresh = self._state == _State.FRESH
         self._state = max(self._state, _State.MUST_REFRESH if force else _State.STALE)
-        return was_fresh
+        if self._notified:
+            return False
+        self._notified = True
+        return True
 
     def clear_deps(self) -> None:
         self._dep_state.clear()
@@ -732,6 +784,8 @@ class Computed(Variable[T]):
     than directly using the `Computed` class.
 
     Unlike [Signal][signified.Signal], `Computed.value` is read-only.
+    Ordinary exceptions are cached like values and re-raised on reads until a
+    dependency changes or `invalidate()` forces another evaluation.
 
     Args:
         f: Zero-argument function used to compute the current value.
@@ -754,9 +808,9 @@ class Computed(Variable[T]):
 
     def __init__(self, f: Callable[[], T]) -> None:
         super().__init__()
-        _setattr(self, "_compute_fn", f)
-        _setattr(self, "_value", cast(T, None))  # placeholder; always set before read via _state guard
-        _setattr(self, "_impl", _ComputedImpl(self))
+        self._compute_fn = f
+        self._value = cast(T, None)  # placeholder; always set before read via _state guard
+        self._impl = _ComputedImpl(self)
 
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
@@ -775,9 +829,8 @@ class Computed(Variable[T]):
 
     def update(self) -> None:
         """Mark this computed stale when notified by an upstream dependency."""
-        if not self._impl.invalidate():
-            return
-        self.notify()
+        if self._impl.invalidate():
+            self.notify()
 
     def _ensure_uptodate(self) -> None:
         self._impl.ensure_uptodate()
@@ -811,6 +864,10 @@ class Computed(Variable[T]):
 
             ```
         """
+        self._force_invalidate()
+
+    def _force_invalidate(self) -> None:
+        """Force refresh even when dependency versions appear unchanged."""
         if not self._impl.invalidate(force=True):
             return
         _bump_global_version()
@@ -821,12 +878,115 @@ class Computed(Variable[T]):
         """Get the current value, recomputing lazily when stale."""
         if HOOKS_ENABLED:
             plugin_manager.hook.read(value=self)
-        _track_read(self)
-        self._impl.ensure_uptodate()
-        value = self._value
-        if type(value) in _PLAIN_SCALAR_TYPES:
-            return value
-        return _resolve(value)
+        try:
+            self._impl.ensure_uptodate()
+        finally:
+            # Register the read even when the refresh raises, so the reader
+            # is retried once this node's dependencies change.
+            _track_read(self)
+        if self._impl._error is not None:
+            raise self._impl._error.with_traceback(self._impl._error_traceback)
+        return self._value
+
+
+class Binding(Computed[T]):
+    """A stable reactive handle whose current source can be replaced.
+
+    Use a `Binding` when an object must keep the same public reactive identity
+    while changing which `Signal`, `Computed`, or `Binding` supplies its value.
+    Assigning a reactive object follows it, while assigning a plain value
+    selects a private `Signal`.
+
+    A `Binding` is an ordinary `Computed` over a `Signal` that holds the
+    current source: it reads that signal, then reads the source's value.
+    Rebinding therefore follows the normal contract. The switch invalidates
+    the binding, and dependents recompute only if the resolved value changed
+    under the usual equality policy.
+
+    Args:
+        source: A reactive source to follow, or an initial plain value managed
+            by a private `Signal`.
+    """
+
+    __slots__ = ("_owned", "_holder")
+
+    def __init__(self, source: T | ReactiveValue[T]) -> None:
+        self._owned: Signal[T] | None
+        if is_reactive(source):
+            self._owned = None
+        else:
+            source = self._owned = Signal(cast(T, source))
+        self._holder: Signal[ReactiveValue[T]] = _BindingSource(cast(ReactiveValue[T], source))
+        super().__init__(self._read_source)
+
+    def _read_source(self) -> T:
+        return self._holder.value.value
+
+    @Computed.value.setter
+    def value(self, new_source: HasValue[T]) -> None:
+        """Select a plain value or follow a reactive source."""
+        self.set(new_source)
+
+    @property
+    def source(self) -> ReactiveValue[T]:
+        """Return the exact current source without resolving it."""
+        return self._holder._value
+
+    def _select_source(self, source: ReactiveValue[T]) -> Self:
+        """Follow `source`, including its future value changes."""
+        if source is self:
+            raise ValueError("A Binding cannot use itself as its source")
+        # Sources compare by identity, so re-selecting the current source is a no-op.
+        self._holder.value = source
+        return self
+
+    def set(self, source: HasValue[T]) -> Self:
+        """Select a plain value or follow a reactive source."""
+        if is_reactive(source):
+            return self._select_source(source)
+
+        value = cast(T, source)
+        owned = self._owned
+        if owned is None:
+            owned = Signal(value)
+            self._owned = owned
+        else:
+            owned.value = value
+
+        return self._select_source(owned)
+
+    def derive(self, build: Callable[[ReactiveValue[T]], ReactiveValue[T]]) -> Self:
+        """Build and select a source from the exact pre-rebind source.
+
+        Capturing the old source prevents the common cycle created by building
+        a new computation from the `Binding` that will receive that computation.
+        """
+        previous = self.source
+        next_source = build(previous)
+        if not is_reactive(next_source):
+            raise TypeError("derive() must return a Signal, Computed, or Binding")
+        return self.set(next_source)
+
+    @contextmanager
+    def at(self, value: T) -> Generator[None, None, None]:
+        """Temporarily follow a private `Signal` holding `value`.
+
+        The previous source is restored when the context exits, even if an
+        exception is raised.
+
+        Args:
+            value: The temporary plain value.
+        """
+        if is_reactive(value):
+            raise TypeError("at() requires a plain value. Use set(source) for a reactive source.")
+
+        previous = self.source
+        temporary = Signal(value)
+        try:
+            self.set(temporary)
+            yield
+        finally:
+            self.set(previous)
 
 
 class Effect:
@@ -834,7 +994,10 @@ class Effect:
 
     Any reactive value read inside `fn` — via `.value` or [unref][signified.unref] — is
     automatically tracked as a dependency. The function runs once immediately on
-    construction, then again each time a dependency changes.
+    construction (or at batch exit), then again when dependencies change.
+    Pending notifications coalesce; cascading writes may cause further runs.
+    If computed dependencies refresh to unchanged outcomes, the callback is
+    skipped. A new failed evaluation and recovery both count as changes.
 
     Warning:
         Dependencies are tracked dynamically on each run. Only values that are read on the branch executed in the last run are tracked.
@@ -878,20 +1041,55 @@ class Effect:
         ```
     """
 
-    __slots__ = ("_computed", "__weakref__")
+    __slots__ = ("_fn", "_dep_state", "_active", "_has_run", "__weakref__")
 
     def __init__(self, fn: Callable[[], None]) -> None:
-        self._computed = Computed(fn)
-        self._computed.subscribe(self)  # triggers initial evaluation
+        self._fn = fn
+        self._dep_state = _DependencyState(self)
+        self._active = True
+        self._has_run = False
+        _scheduler.schedule(self)
+
+    @property
+    def _owner(self) -> Effect:
+        return self
 
     def update(self) -> None:
-        """Called by a dependency when its value changes."""
-        self._computed._impl.invalidate(force=True)
-        self._computed._impl.ensure_uptodate()
+        """Schedule a run after dependency invalidation has finished."""
+        _scheduler.schedule(self)
+
+    def _run(self) -> None:
+        if self._has_run and not self._dep_state.dependencies_changed():
+            return
+        # Refreshing a dependency can dispose this effect through user code.
+        if not self._active:
+            return
+        self._has_run = True
+        self._dep_state.start_refresh()
+        _COMPUTE_STACK.append(self)
+        try:
+            self._fn()
+        finally:
+            popped = _COMPUTE_STACK.pop()
+            assert popped is self
+            if self._active:
+                # Subscribe to what this run read, even if it raised, so a
+                # change to any of it retries the callback.
+                self._dep_state.commit_refresh()
+            else:
+                self._clear_dependencies()
+        # Also catches writes after a read during the first run, when
+        # subscriptions did not exist yet.
+        if self._active and self._dep_state.invalidated_since_read():
+            _scheduler.schedule(self)
+
+    def _clear_dependencies(self) -> None:
+        for dep in self._dep_state.deps:
+            dep.unsubscribe(self)
+        self._dep_state.clear()
 
     def dispose(self) -> None:
-        """Unsubscribe from all dependencies and stop the effect."""
-        self._computed.unsubscribe(self)
-        for dep in tuple(self._computed._impl._deps):
-            dep.unsubscribe(self._computed)
-        self._computed._impl.clear_deps()
+        """Stop this effect, including any pending run. Safe to repeat."""
+        self._active = False
+        _scheduler.discard(self)
+        self._clear_dependencies()
