@@ -11,10 +11,10 @@
         <link rel="canonical" href="https://dougmercer.github.io/signified/dev/magic-methods/">
       
       
-        <link rel="prev" href="../playground/">
+        <link rel="prev" href="../compute-contract/">
       
       
-        <link rel="next" href="../plugins/">
+        <link rel="next" href="../playground/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Magic Methods - Signified</title>
+        <title>Operators - Signified</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#magic-methods-and-operators" class="md-skip">
+        <a href="#operators" class="md-skip">
           Skip to content
         </a>
       
@@ -146,7 +146,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Magic Methods
+              Operators
             
           </span>
         </div>
@@ -267,17 +267,20 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
   
   
     
   
   Home
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -286,17 +289,20 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../usage/" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href="../usage/" class="md-tabs__link">
+          
   
   
     
   
-  Usage
+  Guides
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -304,37 +310,23 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../migration/" class="md-tabs__link">
-        
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../api/" class="md-tabs__link">
+          
   
   
     
   
-  Migrating to 0.6
+  Reference
 
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../compute-contract/" class="md-tabs__link">
-        
-  
-  
+        </a>
+      </li>
     
-  
-  Compute Contract
-
-      </a>
-    </li>
   
 
       
@@ -361,134 +353,21 @@
   
   
   
-    
-  
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
-        
-  
   
     
-  
-  Magic Methods
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../plugins/" class="md-tabs__link">
-        
+    
+      <li class="md-tabs__item">
+        <a href="../changes/" class="md-tabs__link">
+          
   
   
     
   
-  Plugins
+  Releases
 
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../comparison/" class="md-tabs__link">
-        
-  
-  
+        </a>
+      </li>
     
-  
-  Comparison
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../resolution/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Resolving nested values
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../api/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  API Reference
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../changes/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Change Log
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../limitations/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Limitations
-
-      </a>
-    </li>
   
 
       
@@ -509,9 +388,7 @@
           
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -551,9 +428,32 @@
   
   
   
-    <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href=".." class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -567,13 +467,125 @@
   
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Home
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison
+  
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
     
       
       
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
   
   
   
@@ -598,22 +610,23 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
   
     <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
+      <a href="../resolution/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Migrating to 0.6
+    Resolving nested values
   
 
     
@@ -625,9 +638,164 @@
     </li>
   
 
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../type-checkers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type Checkers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
     
       
       
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
   
   
   
@@ -640,7 +808,7 @@
   <span class="md-ellipsis">
     
   
-    Compute Contract
+    How Updates Work
   
 
     
@@ -649,6 +817,155 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unary-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unary methods
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#arithmetic-and-bitwise-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arithmetic and bitwise methods
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reverse-arithmetic-and-bitwise-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reverse arithmetic and bitwise methods
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparisons-predicates-and-truthiness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparisons, predicates, and truthiness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#object-and-container-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Object and container access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete API reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -684,26 +1001,37 @@
       
   
   
+  
+  
     
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
+    
       
         
       
+        
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
           
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
     
   
-    Magic Methods
+    Releases
   
 
     
@@ -711,225 +1039,22 @@
   
   
 
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
   
-  
-  <span class="md-ellipsis">
-    
-  
-    Magic Methods
-  
-
-    
-  </span>
-  
+    Releases
   
 
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#unary-methods" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unary Methods
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#arithmetic-and-bitwise-methods" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Arithmetic and Bitwise Methods
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#reverse-arithmetic-and-bitwise-methods" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reverse Arithmetic and Bitwise Methods
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#comparisons-predicates-and-truthiness" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Comparisons, Predicates, and Truthiness
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#object-and-container-access" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Object and Container Access
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#complete-api-reference" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Complete API Reference
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../plugins/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Plugins
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../comparison/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Comparison
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../resolution/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Resolving nested values
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
   
   
   
@@ -954,22 +1079,23 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
   
     <li class="md-nav__item">
-      <a href="../limitations/" class="md-nav__link">
+      <a href="../migration/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Limitations
+    Migrating to 0.6
   
 
     
@@ -981,6 +1107,14 @@
     </li>
   
 
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
     
   </ul>
 </nav>
@@ -989,8 +1123,6 @@
               </div>
             
             
-              
-                
               
               <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
@@ -1014,7 +1146,7 @@
   <a href="#unary-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Unary Methods
+        Unary methods
       
     </span>
   </a>
@@ -1025,7 +1157,7 @@
   <a href="#arithmetic-and-bitwise-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Arithmetic and Bitwise Methods
+        Arithmetic and bitwise methods
       
     </span>
   </a>
@@ -1036,7 +1168,7 @@
   <a href="#reverse-arithmetic-and-bitwise-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reverse Arithmetic and Bitwise Methods
+        Reverse arithmetic and bitwise methods
       
     </span>
   </a>
@@ -1047,7 +1179,7 @@
   <a href="#comparisons-predicates-and-truthiness" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Comparisons, Predicates, and Truthiness
+        Comparisons, predicates, and truthiness
       
     </span>
   </a>
@@ -1058,7 +1190,7 @@
   <a href="#object-and-container-access" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Object and Container Access
+        Object and container access
       
     </span>
   </a>
@@ -1069,7 +1201,7 @@
   <a href="#complete-api-reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Complete API Reference
+        Complete API reference
       
     </span>
   </a>
@@ -1089,342 +1221,140 @@
               
                 
 
-  
 
-
-
-  
 
 
               
               <article class="md-content__inner md-typeset">
                 
                   
-  
-
 
 
   
   
 
 
-<h1 id="magic-methods-and-operators">Magic Methods and Operators<a class="headerlink" href="#magic-methods-and-operators" title="Permanent link">&para;</a></h1>
-<p>Signified exposes reactive behavior primarily through magic methods on <code>Signal</code> and <code>Computed</code>.</p>
-<h2 id="unary-methods">Unary Methods<a class="headerlink" href="#unary-methods" title="Permanent link">&para;</a></h2>
+<h1 id="operators">Operators<a class="headerlink" href="#operators" title="Permanent link">&para;</a></h1>
+<p>Operators on signals, computed values, and bindings create a <code>Computed</code>.
+Read its <code>.value</code> to get the result:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">3</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 13</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">20</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 23</span>
+</span></code></pre></div>
+<h2 id="unary-methods">Unary methods<a class="headerlink" href="#unary-methods" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Method</th>
-<th>Usage example</th>
-<th>Notes</th>
+<th>Operation</th>
+<th>Examples</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__abs__"><code>__abs__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="nb">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;5&gt;</span></code></td>
-<td></td>
+<td>Sign and absolute value</td>
+<td><code>-x</code>, <code>+x</code>, <code>abs(x)</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__neg__"><code>__neg__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="o">-</span><span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;-10&gt;</span></code></td>
-<td></td>
+<td>Bitwise inversion</td>
+<td><code>~x</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__pos__"><code>__pos__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="o">+</span><span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;10&gt;</span></code></td>
-<td></td>
+<td>Rounding</td>
+<td><code>round(x)</code>, <code>round(x, 2)</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__invert__"><code>__invert__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">flags</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b0011</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="o">~</span><span class="n">flags</span></code><br><code class="language-pycon highlight"><span class="go">&lt;-4&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__round__"><code>__round__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">3.14159</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;3.14&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__trunc__"><code>__trunc__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">3.9</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">math</span><span class="o">.</span><span class="n">trunc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;3&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__floor__"><code>__floor__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">3.9</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;3&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__ceil__"><code>__ceil__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">math</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">3.1</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;4&gt;</span></code></td>
-<td></td>
+<td>Integer rounding with <code>math</code></td>
+<td><code>math.floor(x)</code>, <code>math.ceil(x)</code>, <code>math.trunc(x)</code></td>
 </tr>
 </tbody>
 </table>
-<h2 id="arithmetic-and-bitwise-methods">Arithmetic and Bitwise Methods<a class="headerlink" href="#arithmetic-and-bitwise-methods" title="Permanent link">&para;</a></h2>
+<h2 id="arithmetic-and-bitwise-methods">Arithmetic and bitwise methods<a class="headerlink" href="#arithmetic-and-bitwise-methods" title="Permanent link">&para;</a></h2>
+<p>Operands can be plain or reactive values. The values they hold must support
+the operation, just as in ordinary Python.</p>
 <table>
 <thead>
 <tr>
-<th>Method</th>
-<th>Usage example</th>
-<th>Notes</th>
+<th>Operation</th>
+<th>Examples</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__add__"><code>__add__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;13&gt;</span></code></td>
-<td></td>
+<td>Arithmetic</td>
+<td><code>x + y</code>, <code>x - y</code>, <code>x * y</code>, <code>x / y</code>, <code>x // y</code>, <code>x % y</code>, <code>x ** y</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__sub__"><code>__sub__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">-</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;7&gt;</span></code></td>
-<td></td>
+<td>Quotient and remainder</td>
+<td><code>divmod(x, y)</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__mul__"><code>__mul__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">*</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;30&gt;</span></code></td>
-<td></td>
+<td>Matrix multiplication</td>
+<td><code>x @ y</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__truediv__"><code>__truediv__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">/</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;3.3333333333333335&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__floordiv__"><code>__floordiv__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">//</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;3&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__mod__"><code>__mod__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">%</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;1&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__pow__"><code>__pow__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">**</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;1000&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__divmod__"><code>__divmod__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="nb">divmod</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;(3, 1)&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__matmul__"><code>__matmul__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">left</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]))</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">right</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">left</span> <span class="o">@</span> <span class="n">right</span></code><br><code class="language-pycon highlight"><span class="go">&lt;3&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__and__"><code>__and__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b1100</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b1010</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">&amp;</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;8&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__or__"><code>__or__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b1100</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b1010</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">|</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;14&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__xor__"><code>__xor__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b1100</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b1010</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">^</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;6&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__lshift__"><code>__lshift__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span></code><br><code class="language-pycon highlight"><span class="go">&lt;20&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rshift__"><code>__rshift__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span></code><br><code class="language-pycon highlight"><span class="go">&lt;5&gt;</span></code></td>
-<td></td>
+<td>Bitwise operations</td>
+<td><code>x &amp; y</code>, <code>x \| y</code>, <code>x ^ y</code>, <code>x &lt;&lt; y</code>, <code>x &gt;&gt; y</code></td>
 </tr>
 </tbody>
 </table>
-<h2 id="reverse-arithmetic-and-bitwise-methods">Reverse Arithmetic and Bitwise Methods<a class="headerlink" href="#reverse-arithmetic-and-bitwise-methods" title="Permanent link">&para;</a></h2>
+<h2 id="reverse-arithmetic-and-bitwise-methods">Reverse arithmetic and bitwise methods<a class="headerlink" href="#reverse-arithmetic-and-bitwise-methods" title="Permanent link">&para;</a></h2>
+<p>Plain values can also appear on the left: <code>3 + x</code>, <code>50 / x</code>, <code>2 ** x</code>,
+<code>divmod(50, x)</code>, <code>3 &amp; x</code>, <code>3 | x</code>, and <code>3 ^ x</code>.</p>
+<h2 id="comparisons-predicates-and-truthiness">Comparisons, predicates, and truthiness<a class="headerlink" href="#comparisons-predicates-and-truthiness" title="Permanent link">&para;</a></h2>
+<p><code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, and <code>!=</code> produce reactive results. Use <code>.rx</code> for the
+following operations:</p>
 <table>
 <thead>
 <tr>
-<th>Method</th>
-<th>Usage example</th>
-<th>Notes</th>
+<th>To calculate…</th>
+<th>Use</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__radd__"><code>__radd__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mi">5</span> <span class="o">+</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;15&gt;</span></code></td>
-<td></td>
+<td>Value equality</td>
+<td><code>x.rx.eq(y)</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rsub__"><code>__rsub__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mi">50</span> <span class="o">-</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;40&gt;</span></code></td>
-<td></td>
+<td>Object identity</td>
+<td><code>x.rx.is_(y)</code>, <code>x.rx.is_not(y)</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rmul__"><code>__rmul__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mi">5</span> <span class="o">*</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;50&gt;</span></code></td>
-<td></td>
+<td>Membership</td>
+<td><code>x.rx.in_(items)</code>, <code>items.rx.contains(x)</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rtruediv__"><code>__rtruediv__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mi">50</span> <span class="o">/</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;5.0&gt;</span></code></td>
-<td></td>
+<td>Truthiness</td>
+<td><code>x.rx.as_bool()</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rfloordiv__"><code>__rfloordiv__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mi">50</span> <span class="o">//</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;5&gt;</span></code></td>
-<td></td>
+<td>Length</td>
+<td><code>items.rx.len()</code></td>
 </tr>
 <tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rmod__"><code>__rmod__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mi">50</span> <span class="o">%</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;0&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rpow__"><code>__rpow__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mi">2</span> <span class="o">**</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;1024&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rdivmod__"><code>__rdivmod__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="nb">divmod</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;(5, 0)&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rand__"><code>__rand__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b0101</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mb">0b1111</span> <span class="o">&amp;</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;5&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__ror__"><code>__ror__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b0101</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mb">0b1111</span> <span class="o">|</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;15&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__rxor__"><code>__rxor__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mb">0b0101</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="mb">0b1111</span> <span class="o">^</span> <span class="n">x</span></code><br><code class="language-pycon highlight"><span class="go">&lt;10&gt;</span></code></td>
-<td></td>
+<td>A conditional result</td>
+<td><code>condition.rx.where(when_true, when_false)</code></td>
 </tr>
 </tbody>
 </table>
-<h2 id="comparisons-predicates-and-truthiness">Comparisons, Predicates, and Truthiness<a class="headerlink" href="#comparisons-predicates-and-truthiness" title="Permanent link">&para;</a></h2>
-<p>For operations that Python cannot overload cleanly (<code>is</code>, <code>is not</code>, and
-truthiness via <code>bool(...)</code>) or that have special semantics in Signified
-(<code>==</code>), use the <code>rx</code> namespace (<code>x.rx.*</code>).</p>
-<table>
-<thead>
-<tr>
-<th>Method</th>
-<th>Usage example</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__lt__"><code>__lt__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">&lt;</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;False&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__le__"><code>__le__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">&lt;=</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;False&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__gt__"><code>__gt__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">&gt;</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;True&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__ge__"><code>__ge__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">&gt;=</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;True&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__ne__"><code>__ne__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">!=</span> <span class="n">b</span></code><br><code class="language-pycon highlight"><span class="go">&lt;True&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveNamespace.is_"><code>rx.is_</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">marker</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">is_</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;True&gt;</span></code></td>
-<td><code>is</code> is not overloadable. Use this for reactive identity checks.</td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveNamespace.is_not"><code>rx.is_not</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">maybe_user</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">maybe_user</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">is_not</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;False&gt;</span></code></td>
-<td><code>is not</code> is not overloadable.</td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveNamespace.eq"><code>rx.eq</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="n">b</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;False&gt;</span></code></td>
-<td><code>__eq__</code> is intentionally not overloaded; use <code>rx.eq</code> for reactive equality.</td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveNamespace.in_"><code>rx.in_</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">needle</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">haystack</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">needle</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">in_</span><span class="p">(</span><span class="n">haystack</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;True&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveNamespace.contains"><code>rx.contains</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">nums</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">nums</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;True&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveNamespace.where"><code>rx.where</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">flag</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">flag</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;no&quot;</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;&quot;yes&quot;&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveNamespace.as_bool"><code>rx.as_bool</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">as_bool</span><span class="p">()</span></code><br><code class="language-pycon highlight"><span class="go">&lt;True&gt;</span></code></td>
-<td><code>__bool__</code> is not overloaded. Use <code>rx.as_bool()</code>.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="object-and-container-access">Object and Container Access<a class="headerlink" href="#object-and-container-access" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Method</th>
-<th>Usage example</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__getattr__"><code>__getattr__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">person</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Alice&quot;</span><span class="p">))</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">person</span><span class="o">.</span><span class="n">name</span></code><br><code class="language-pycon highlight"><span class="go">&lt;Alice&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__call__"><code>__call__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">fn</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></code><br><code class="language-pycon highlight"><span class="go">&lt;11&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified._mixin._ReactiveMixIn.__getitem__"><code>__getitem__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">Signal</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span></code><br><code class="language-pycon highlight"><span class="go">&lt;2&gt;</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">Signal</span><span class="p">({</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span></code><br><code class="language-pycon highlight"><span class="go">&lt;1&gt;</span></code></td>
-<td></td>
-</tr>
-<tr>
-<td><a href="../api/#signified.Signal.__setattr__"><code>__setattr__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">person</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Alice&quot;</span><span class="p">))</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">name</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">name</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">person</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Bob&quot;</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">name</span></code><br><code class="language-pycon highlight"><span class="go">&lt;Bob&gt;</span></code></td>
-<td><code>Signal</code> only. Updates wrapped object attributes and notifies dependents; unknown names raise <code>AttributeError</code>.</td>
-</tr>
-<tr>
-<td><a href="../api/#signified.Signal.__setitem__"><code>__setitem__</code></a></td>
-<td><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">nums</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">first</span> <span class="o">=</span> <span class="n">nums</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">nums</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span></code><br><code class="language-pycon highlight"><span class="gp">&gt;&gt;&gt; </span><span class="n">first</span></code><br><code class="language-pycon highlight"><span class="go">&lt;10&gt;</span></code></td>
-<td><code>Signal</code> only. Works for wrapped <code>list</code>/<code>dict</code> item updates.</td>
-</tr>
-</tbody>
-</table>
-<h2 id="complete-api-reference">Complete API Reference<a class="headerlink" href="#complete-api-reference" title="Permanent link">&para;</a></h2>
-<p>See <a href="../api/">Core API</a> for full signatures, overloads, and docstring examples.</p>
+<p><code>==</code>, <code>is</code>, <code>in</code>, <code>bool(x)</code>, and <code>len(x)</code> do not create these reactive
+calculations. Python's <code>if</code>, <code>and</code>, and <code>or</code> also do not build reactive
+expressions. Use <code>.rx.where(...)</code> to choose between values, or put ordinary
+Python branching inside a <code>Computed</code> function that reads <code>.value</code>.</p>
+<h2 id="object-and-container-access">Object and container access<a class="headerlink" href="#object-and-container-access" title="Permanent link">&para;</a></h2>
+<p><code>x.name</code>, <code>x[key]</code>, and <code>x(...)</code> create calculated values. Methods can be
+chained, for example <code>text.strip().lower()</code>.</p>
+<p>Only <code>Signal</code> forwards writes such as <code>x.name = value</code> and <code>x[key] = value</code>
+to its stored object and sends updates. Attribute names must already exist.
+Changes through the raw <code>.value</code> need an explicit <code>.update()</code> call; see
+<a href="../usage/#collections-and-item-assignment">Lists and dictionaries</a>.</p>
+<h2 id="complete-api-reference">Complete API reference<a class="headerlink" href="#complete-api-reference" title="Permanent link">&para;</a></h2>
+<p>See the <a href="../api/#magic-methods">operator API</a> for individual methods and the
+<a href="../api/#reactive-namespace">rx API</a> for additional operations.</p>
 
 
 
@@ -1432,13 +1362,8 @@ truthiness via <code>bool(...)</code>) or that have special semantics in Signifi
 
 
 
-  
-  
 
 
-
-
-  
 
 
 
@@ -1464,12 +1389,10 @@ truthiness via <code>bool(...)</code>) or that have special semantics in Signifi
   
     
       
-        
-      
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../playground/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Playground">
+          <a href="../compute-contract/" class="md-footer__link md-footer__link--prev" aria-label="Previous: How Updates Work">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1479,20 +1402,20 @@ truthiness via <code>bool(...)</code>) or that have special semantics in Signifi
                 Previous
               </span>
               <div class="md-ellipsis">
-                Playground
+                How Updates Work
               </div>
             </div>
           </a>
         
         
           
-          <a href="../plugins/" class="md-footer__link md-footer__link--next" aria-label="Next: Plugins">
+          <a href="../playground/" class="md-footer__link md-footer__link--next" aria-label="Next: Playground">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Plugins
+                Playground
               </div>
             </div>
             <div class="md-footer__button md-icon">
