@@ -4,7 +4,7 @@ from collections import OrderedDict
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from typing import Protocol
-from weakref import ReferenceType, WeakKeyDictionary, ref
+from weakref import ReferenceType, ref
 
 
 class _ScheduledEffect(Protocol):
@@ -31,15 +31,15 @@ def _raise_errors(errors: list[Exception]) -> None:
 
 def _run_pending(
     effect_ref: ReferenceType[_ScheduledEffect],
-    runs: WeakKeyDictionary[_ScheduledEffect, int],
+    runs: dict[ReferenceType[_ScheduledEffect], int],
     errors: list[Exception],
 ) -> bool:
     # Keep the strong local reference scoped to one execution, not the flush.
     effect = effect_ref()
     if effect is None or not effect._active:
         return True
-    count = runs.get(effect, 0) + 1
-    runs[effect] = count
+    count = runs.get(effect_ref, 0) + 1
+    runs[effect_ref] = count
     if count > _MAX_RUNS_PER_EFFECT:
         errors.append(RuntimeError(f"Effect did not settle after {_MAX_RUNS_PER_EFFECT} runs"))
         return False
@@ -56,7 +56,8 @@ def _flush() -> None:
         return
     _flushing = True
     errors: list[Exception] = []
-    runs: WeakKeyDictionary[_ScheduledEffect, int] = WeakKeyDictionary()
+    # Weak keys do not retain effects; dead entries can wait until flush exit.
+    runs: dict[ReferenceType[_ScheduledEffect], int] = {}
     try:
         while _pending:
             _, effect_ref = _pending.popitem(last=False)
@@ -71,14 +72,8 @@ def _flush() -> None:
 def schedule(effect: _ScheduledEffect) -> None:
     if not effect._active:
         return
-    identity = id(effect)
-    if identity not in _pending:
-
-        def discard_dead(effect_ref: ReferenceType[_ScheduledEffect]) -> None:
-            if _pending.get(identity) is effect_ref:
-                del _pending[identity]
-
-        _pending[identity] = ref(effect, discard_dead)
+    # Replace stale entries if an object ID is reused before the batch flushes.
+    _pending[id(effect)] = ref(effect)
     _flush()
 
 

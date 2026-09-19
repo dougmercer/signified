@@ -127,6 +127,26 @@ def test_batch_initial_effect_deferred_and_disposed_effect_skipped():
     first.dispose()
 
 
+@pytest.mark.parametrize("dispose_first", [False, True])
+def test_batch_distinguishes_effects_that_compare_equal(dispose_first):
+    class EqualEffect(Effect):
+        def __eq__(self, other):
+            return isinstance(other, EqualEffect)
+
+        def __hash__(self):
+            return 0
+
+    seen = []
+    with batch():
+        first = EqualEffect(lambda: seen.append("first"))
+        second = EqualEffect(lambda: seen.append("second"))
+        if dispose_first:
+            first.dispose()
+    assert seen == (["second"] if dispose_first else ["first", "second"])
+    first.dispose()
+    second.dispose()
+
+
 def test_cascading_writes_requeue_an_already_run_effect():
     a, b = Signal(0), Signal(0)
     seen = []
@@ -448,6 +468,19 @@ def test_nonsettling_feedback_is_bounded_and_scheduler_recovers():
     source.value = 200
     assert seen[-1] == 200
     healthy.dispose()
+
+
+def test_effect_run_limit_resets_between_flushes():
+    source = Signal(0)
+    seen = []
+    watcher = Effect(lambda: seen.append(source.value))
+    try:
+        # Total executions exceed the feedback limit, but each flush settles.
+        for value in range(1, 151):
+            source.value = value
+        assert seen == list(range(151))
+    finally:
+        watcher.dispose()
 
 
 def test_untracked_nested_computed_keeps_its_own_dependencies():
