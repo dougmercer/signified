@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://dougmercer.github.io/signified/dev/playground/">
+        <link rel="canonical" href="https://dougmercer.github.io/signified/dev/resolution/">
       
       
-        <link rel="prev" href="../usage/">
+        <link rel="prev" href="../comparison/">
       
       
-        <link rel="next" href="../magic-methods/">
+        <link rel="next" href="../migration/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Playground - Signified</title>
+        <title>Resolving nested values - Signified</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#playground" class="md-skip">
+        <a href="#resolving-nested-values" class="md-skip">
           Skip to content
         </a>
       
@@ -146,7 +146,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Playground
+              Resolving nested values
             
           </span>
         </div>
@@ -304,11 +304,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../playground/" class="md-tabs__link">
         
   
   
@@ -382,9 +380,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../resolution/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -490,9 +490,7 @@
           
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -584,19 +582,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../playground/" class="md-nav__link">
         
   
   
@@ -612,7 +601,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -702,10 +690,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../resolution/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resolving nested values
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -721,6 +736,48 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#custom-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom objects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migrating-unregistered-iterables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrating unregistered iterables
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -841,8 +898,6 @@
             
             
               
-                
-              
               <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
@@ -855,6 +910,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#custom-objects" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom objects
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migrating-unregistered-iterables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrating unregistered iterables
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -866,8 +951,6 @@
               
                 
 
-  
-
 
 
   
@@ -877,186 +960,107 @@
               <article class="md-content__inner md-typeset">
                 
                   
-  
-
-
-
-  
-  
-
-
-<h1 id="playground">Playground<a class="headerlink" href="#playground" title="Permanent link">&para;</a></h1>
-<p>Run Python snippets directly in your browser with a Web Worker powered by Pyodide.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This page downloads Pyodide at runtime and attempts to install <code>signified</code> with <code>micropip</code>.</p>
-</div>
-<p>Use the example dropdown to load snippets, then press <code>Ctrl+Enter</code> (or <code>Cmd+Enter</code> on macOS) to run.</p>
-<div class="signified-playground" data-signified-playground>
-  <label for="signified-playground-code" class="signified-playground-label-code">Code</label>
-  <label class="signified-playground-label-output">Output</label>
-  <div class="signified-playground-editor">
-    <textarea id="signified-playground-code" data-playground-code spellcheck="false">from signified import Signal
-
-x = Signal(2)
-double = 2 * x
-
-print("double:", double.value)
-x.value = 5
-print("double:", double.value)
-</textarea>
-  </div>
-  <div class="signified-playground-output" data-playground-output aria-live="polite"></div>
-  <div class="signified-playground-controls">
-    <button type="button" class="md-button md-button--primary" data-playground-run disabled>Run</button>
-    <button type="button" class="md-button" data-playground-reset>Reset</button>
-    <button type="button" class="md-button" data-playground-clear>Clear</button>
-    <span class="signified-playground-status" data-playground-status aria-live="polite">Loading interpreter...</span>
-  </div>
-  <div class="signified-playground-examples">
-    <label for="signified-playground-example">Example</label>
-    <select id="signified-playground-example" data-playground-example>
-      <option value="basic">Basic Signal</option>
-      <option value="decorator">Computed Decorator</option>
-      <option value="rx-tap">rx.tap() (lazy)</option>
-      <option value="rx-effect">rx.effect() (eager)</option>
-      <option value="collections">Collections and Mutation</option>
-      <option value="where">Conditional where()</option>
-      <option value="method-chain">Method Chaining</option>
-    </select>
-  </div>
-</div>
-
-<style>
-.signified-playground {
-  --playground-pane-height: 16rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto var(--playground-pane-height) auto;
-  grid-template-areas:
-    "label-code  label-output"
-    "editor      output"
-    "controls    examples";
-  column-gap: 0.75rem;
-  row-gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.signified-playground-label-code   { grid-area: label-code; }
-.signified-playground-label-output { grid-area: label-output; }
-.signified-playground-editor       { grid-area: editor; overflow: hidden; align-self: stretch; min-height: 0; }
-.signified-playground-output       { grid-area: output; align-self: stretch; min-height: 0; }
-.signified-playground-controls     { grid-area: controls; align-self: center; }
-.signified-playground-examples     { grid-area: examples; align-self: center; }
-
-.signified-playground-editor textarea {
-  width: 100%;
-  height: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  font-family: var(--md-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--md-code-fg-color);
-  background: var(--md-code-bg-color);
-  overflow-y: auto;
-}
-
-.signified-playground .CodeMirror {
-  height: 100%;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  font-family: var(--md-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-.signified-playground-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.signified-playground-status {
-  font-size: 0.75rem;
-  color: var(--md-default-fg-color--light);
-}
-
-.signified-playground-status.error {
-  color: var(--md-accent-fg-color);
-}
-
-.signified-playground-examples {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.signified-playground-examples label {
-  white-space: nowrap;
-}
-
-.signified-playground-examples select {
-  flex: 1 1 auto;
-  width: auto;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  font-size: 0.75rem;
-  color: var(--md-default-fg-color);
-  background: var(--md-default-bg-color);
-}
-
-.signified-playground-output {
-  height: 100%;
-  margin: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  overflow-y: auto;
-  font-family: var(--md-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--md-code-fg-color);
-  background: var(--md-code-bg-color);
-}
-
-@media (max-width: 600px) {
-  .signified-playground {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto var(--playground-pane-height) auto auto var(--playground-pane-height) auto;
-    grid-template-areas:
-      "label-code"
-      "editor"
-      "controls"
-      "label-output"
-      "output"
-      "examples";
-  }
-}
-</style>
-
-
-
-
-
 
 
   
   
 
 
+<h1 id="resolving-nested-values">Resolving nested values<a class="headerlink" href="#resolving-nested-values" title="Permanent link">&para;</a></h1>
+<p>Use <code>deep_unref</code> to replace reactive values inside nested containers:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)]}</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">assert</span> <span class="n">deep_unref</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]}</span>
+</span></code></pre></div>
+<p>Lists, tuples, dictionaries (keys and values), sets, frozensets, and deques
+are rebuilt. Object-bearing NumPy arrays preserve their shape and dtype.
+Unregistered iterables still use the deprecated reconstruction fallback below.
+Other objects pass through unchanged unless you register their exact type.</p>
+<p>Each occurrence is resolved independently. Repeated references to a container
+produce separate rebuilt containers; shared identity is not preserved. Cyclic
+inputs eventually raise Python's <code>RecursionError</code>.</p>
+<p>Resolved key/member collisions raise <code>ValueError</code>; unhashable keys/members raise
+<code>TypeError</code>. Reads inside a computation or effect create dependencies on the
+reactive values reached. Handler exceptions propagate unchanged.</p>
+<h2 id="custom-objects">Custom objects<a class="headerlink" href="#custom-objects" title="Permanent link">&para;</a></h2>
+<p>A position can contain reactive coordinates without being iterable. Register a
+handler to tell <code>deep_unref</code> which fields to visit:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nd">@dataclass</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">Position</span><span class="p">:</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Signal</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Signal</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="nd">@deep_unref</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Position</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_position</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">resolve</span><span class="p">):</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">return</span> <span class="n">Position</span><span class="p">(</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="n">x</span><span class="o">=</span><span class="n">resolve</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">x</span><span class="p">),</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="n">y</span><span class="o">=</span><span class="n">resolve</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">y</span><span class="p">),</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="p">)</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">position</span> <span class="o">=</span> <span class="n">Position</span><span class="p">(</span><span class="n">Signal</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">20.0</span><span class="p">))</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">plain</span> <span class="o">=</span> <span class="n">deep_unref</span><span class="p">({</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">})</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="k">assert</span> <span class="n">plain</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">20.0</span><span class="p">)}</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">Signal</span><span class="p">)</span>  <span class="c1"># The input is unchanged.</span>
+</span></code></pre></div>
+<p>Decide which fields to resolve, what metadata to copy unchanged, and which
+object to return. Prefer building a new object instead of mutating the input.
+Use the supplied <code>resolve</code> on children rather than calling <code>deep_unref</code> again:
+that uses the same registered handlers throughout the traversal. A handler runs
+for each occurrence of an object, including repeated references.</p>
+<p>Registration applies to one exact type. Register subclasses separately when
+needed. Refer to the built-in handlers in <code>src/signified/_resolve.py</code> for more
+examples, including dictionary keys and NumPy arrays.</p>
+<h2 id="migrating-unregistered-iterables">Migrating unregistered iterables<a class="headerlink" href="#migrating-unregistered-iterables" title="Permanent link">&para;</a></h2>
+<p>Automatic traversal of unregistered iterable types is deprecated and will be
+removed in <strong>0.6.0</strong>. It still attempts the old iterable constructor and emits
+a <code>DeprecationWarning</code>. If reconstruction is unsupported, the original object
+is returned; errors while resolving children are not hidden.</p>
+<p>Register a handler to keep resolving a custom container. In 0.6.0, unregistered
+types will be returned unchanged without inspecting or iterating them.</p>
+<p>For example, this custom iterable holds reactive readings and a label. Its
+handler resolves every reading and carries the label into the new container:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">Samples</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nd">@deep_unref</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Samples</span><span class="p">)</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_samples</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">resolve</span><span class="p">):</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="n">resolve</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">)</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="k">return</span> <span class="n">Samples</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">samples</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">samples</span> <span class="o">=</span> <span class="n">Samples</span><span class="p">([</span><span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sensor A&quot;</span><span class="p">)</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">plain</span> <span class="o">=</span> <span class="n">deep_unref</span><span class="p">({</span><span class="s2">&quot;readings&quot;</span><span class="p">:</span> <span class="n">samples</span><span class="p">})</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">plain</span><span class="p">[</span><span class="s2">&quot;readings&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="k">assert</span> <span class="n">plain</span><span class="p">[</span><span class="s2">&quot;readings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="s2">&quot;sensor A&quot;</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Signal</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The old iterable fallback could reconstruct the readings but lose the label,
+because it only passed items to the constructor. Registration explicitly
+preserves both. It also avoids the pre-0.6 deprecation warning and keeps the
+container's contents resolving in 0.6.0.</p>
+<p>This helper does not make every Python object JSON-serializable. Dates and
+other unsupported objects remain unchanged; format conversion belongs to the
+serializer you use afterward.</p>
 
 
-  
+
+
+
+
+
+
+
 
 
 
@@ -1082,12 +1086,10 @@ print("double:", double.value)
   
     
       
-        
-      
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../usage/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Usage">
+          <a href="../comparison/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Comparison">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1097,20 +1099,20 @@ print("double:", double.value)
                 Previous
               </span>
               <div class="md-ellipsis">
-                Usage
+                Comparison
               </div>
             </div>
           </a>
         
         
           
-          <a href="../magic-methods/" class="md-footer__link md-footer__link--next" aria-label="Next: Magic Methods">
+          <a href="../migration/" class="md-footer__link md-footer__link--next" aria-label="Next: Preparing for 0.6">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Magic Methods
+                Preparing for 0.6
               </div>
             </div>
             <div class="md-footer__button md-icon">

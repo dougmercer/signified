@@ -382,6 +382,44 @@
   
   
     <li class="md-tabs__item">
+      <a href="../resolution/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Resolving nested values
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Preparing for 0.6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../api/" class="md-tabs__link">
         
   
@@ -638,6 +676,60 @@
     
   
     Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resolving nested values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Preparing for 0.6
   
 
     
@@ -1629,6 +1721,20 @@
 <h2 id="051-unreleased">0.5.1 (unreleased)<a class="headerlink" href="#051-unreleased" title="Permanent link">&para;</a></h2>
 <p>Add <code>is_reactive</code> to inspect wrappers without reading their values. Improve
 union inference for <code>unref</code> and <code>as_rx</code>; runtime resolution is unchanged.</p>
+<p>Add <code>deep_unref.register(Type)</code> for custom containers and retain NumPy shape/dtype.
+Repeated references are resolved independently; cycles raise <code>RecursionError</code>.
+Resolved key/member collisions raise <code>ValueError</code> instead of silently discarding
+entries, and unhashable keys/members raise <code>TypeError</code>.
+Legacy traversal of unregistered iterables warns that it will be removed in 0.6.0.</p>
+<p>Add opt-in migration diagnostics with <code>migration.enable_warnings()</code> or
+<code>SIGNIFIED_MIGRATION_WARNINGS=1</code>, including nested containers and safe cleanup
+when warnings are treated as errors. Existing resolution and propagation stay
+in place while applications identify affected patterns.</p>
+<p>Add <code>rx.tap(fn)</code> for the lazy cached callback helper. <code>rx.peek(fn)</code> remains a
+deprecated alias until its removal in 0.6.0. Repeated cached reads do not rerun
+the callback; unread intermediate updates are skipped.</p>
+<p>See <a href="../migration/">Preparing for 0.6</a> for changes you can make on 0.5.1 and
+changes that require upgrading the runtime.</p>
 <h2 id="050">0.5.0<a class="headerlink" href="#050" title="Permanent link">&para;</a></h2>
 <h3 id="removals">Removals<a class="headerlink" href="#removals" title="Permanent link">&para;</a></h3>
 <p>The following deprecated APIs were removed. Their replacements are listed

@@ -384,6 +384,44 @@
   
   
     <li class="md-tabs__item">
+      <a href="../resolution/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Resolving nested values
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Preparing for 0.6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../api/" class="md-tabs__link">
         
   
@@ -699,10 +737,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#peek-vs-effect" class="md-nav__link">
+  <a href="#tap-vs-effect" class="md-nav__link">
     <span class="md-ellipsis">
       
-        peek vs effect
+        tap vs effect
       
     </span>
   </a>
@@ -840,6 +878,60 @@
     
   
     Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resolving nested values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Preparing for 0.6
   
 
     
@@ -1079,10 +1171,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#peek-vs-effect" class="md-nav__link">
+  <a href="#tap-vs-effect" class="md-nav__link">
     <span class="md-ellipsis">
       
-        peek vs effect
+        tap vs effect
       
     </span>
   </a>
@@ -1309,17 +1401,20 @@ Use <code>.value</code> when you need the plain Python value.</p>
 </span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="n">temperature_c</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">25</span>
 </span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">temperature_f</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 77.0</span>
 </span></code></pre></div>
-<h3 id="peek-vs-effect"><code>peek</code> vs <code>effect</code><a class="headerlink" href="#peek-vs-effect" title="Permanent link">&para;</a></h3>
-<p>Use <code>peek</code> when you want a side-effect to fire only when you explicitly read <code>.value</code> — useful for debugging or logging on demand. Use <code>effect</code> when you want a side-effect to fire automatically on every change.</p>
-<p><code>peek</code> is lazy like other <code>Computed</code> values: it only runs when <code>.value</code> is read.</p>
+<h3 id="tap-vs-effect"><code>tap</code> vs <code>effect</code><a class="headerlink" href="#tap-vs-effect" title="Permanent link">&para;</a></h3>
+<p>Use <code>tap</code> for debugging or logging when a derived value is evaluated. Use
+<code>effect</code> for side effects that run automatically when tracked inputs change.</p>
+<p><code>tap</code> is lazy and cached: the callback runs on evaluation, not on every cached
+read. Unread intermediate values are skipped. <code>peek(fn)</code> is a deprecated alias
+that will be removed in 0.6.0. Neither method is an untracked getter.</p>
 <p><code>effect</code> is eager: it runs immediately and again on every source update.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="peek-vs-effect-peek" name="__tabbed_1" type="radio" /><input id="peek-vs-effect-effect" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="peek-vs-effect-peek">peek</label><label for="peek-vs-effect-effect">effect</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="tap-vs-effect-tap" name="__tabbed_1" type="radio" /><input id="tap-vs-effect-effect" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="tap-vs-effect-tap">tap</label><label for="tap-vs-effect-effect">effect</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">price</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">total</span> <span class="o">=</span> <span class="n">price</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">)</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;total:&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">total</span> <span class="o">=</span> <span class="n">price</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span> <span class="o">*</span> <span class="mf">1.2</span><span class="p">)</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">tap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;total:&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">))</span>
 </span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
 </span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># Nothing happens</span>
 </span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">20</span>  <span class="c1"># Nothing happens</span>

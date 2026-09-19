@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://dougmercer.github.io/signified/dev/playground/">
+        <link rel="canonical" href="https://dougmercer.github.io/signified/dev/migration/">
       
       
-        <link rel="prev" href="../usage/">
+        <link rel="prev" href="../resolution/">
       
       
-        <link rel="next" href="../magic-methods/">
+        <link rel="next" href="../api/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Playground - Signified</title>
+        <title>Preparing for 0.6 - Signified</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#playground" class="md-skip">
+        <a href="#preparing-for-06" class="md-skip">
           Skip to content
         </a>
       
@@ -146,7 +146,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Playground
+              Preparing for 0.6
             
           </span>
         </div>
@@ -304,11 +304,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../playground/" class="md-tabs__link">
         
   
   
@@ -401,9 +399,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../migration/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -490,9 +490,7 @@
           
             
               
-                
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -584,19 +582,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../playground/" class="md-nav__link">
         
   
   
@@ -612,7 +601,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -729,10 +717,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Preparing for 0.6
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -748,6 +763,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#changes-you-can-make-on-051" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changes you can make on 0.5.1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changes you can make on 0.5.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-migration-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable migration diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-explicit-reads-and-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use explicit reads and resolution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#register-custom-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Register custom containers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rename-peek-calls-to-tap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rename peek calls to tap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#review-mutation-and-equality-assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Review mutation and equality assumptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changes-that-require-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changes that require 0.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -841,8 +959,6 @@
             
             
               
-                
-              
               <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
@@ -855,6 +971,97 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#changes-you-can-make-on-051" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changes you can make on 0.5.1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Changes you can make on 0.5.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-migration-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enable migration diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-explicit-reads-and-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use explicit reads and resolution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#register-custom-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Register custom containers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rename-peek-calls-to-tap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rename peek calls to tap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#review-mutation-and-equality-assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Review mutation and equality assumptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changes-that-require-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changes that require 0.6
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -866,8 +1073,6 @@
               
                 
 
-  
-
 
 
   
@@ -877,186 +1082,100 @@
               <article class="md-content__inner md-typeset">
                 
                   
-  
-
-
-
-  
-  
-
-
-<h1 id="playground">Playground<a class="headerlink" href="#playground" title="Permanent link">&para;</a></h1>
-<p>Run Python snippets directly in your browser with a Web Worker powered by Pyodide.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This page downloads Pyodide at runtime and attempts to install <code>signified</code> with <code>micropip</code>.</p>
-</div>
-<p>Use the example dropdown to load snippets, then press <code>Ctrl+Enter</code> (or <code>Cmd+Enter</code> on macOS) to run.</p>
-<div class="signified-playground" data-signified-playground>
-  <label for="signified-playground-code" class="signified-playground-label-code">Code</label>
-  <label class="signified-playground-label-output">Output</label>
-  <div class="signified-playground-editor">
-    <textarea id="signified-playground-code" data-playground-code spellcheck="false">from signified import Signal
-
-x = Signal(2)
-double = 2 * x
-
-print("double:", double.value)
-x.value = 5
-print("double:", double.value)
-</textarea>
-  </div>
-  <div class="signified-playground-output" data-playground-output aria-live="polite"></div>
-  <div class="signified-playground-controls">
-    <button type="button" class="md-button md-button--primary" data-playground-run disabled>Run</button>
-    <button type="button" class="md-button" data-playground-reset>Reset</button>
-    <button type="button" class="md-button" data-playground-clear>Clear</button>
-    <span class="signified-playground-status" data-playground-status aria-live="polite">Loading interpreter...</span>
-  </div>
-  <div class="signified-playground-examples">
-    <label for="signified-playground-example">Example</label>
-    <select id="signified-playground-example" data-playground-example>
-      <option value="basic">Basic Signal</option>
-      <option value="decorator">Computed Decorator</option>
-      <option value="rx-tap">rx.tap() (lazy)</option>
-      <option value="rx-effect">rx.effect() (eager)</option>
-      <option value="collections">Collections and Mutation</option>
-      <option value="where">Conditional where()</option>
-      <option value="method-chain">Method Chaining</option>
-    </select>
-  </div>
-</div>
-
-<style>
-.signified-playground {
-  --playground-pane-height: 16rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto var(--playground-pane-height) auto;
-  grid-template-areas:
-    "label-code  label-output"
-    "editor      output"
-    "controls    examples";
-  column-gap: 0.75rem;
-  row-gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.signified-playground-label-code   { grid-area: label-code; }
-.signified-playground-label-output { grid-area: label-output; }
-.signified-playground-editor       { grid-area: editor; overflow: hidden; align-self: stretch; min-height: 0; }
-.signified-playground-output       { grid-area: output; align-self: stretch; min-height: 0; }
-.signified-playground-controls     { grid-area: controls; align-self: center; }
-.signified-playground-examples     { grid-area: examples; align-self: center; }
-
-.signified-playground-editor textarea {
-  width: 100%;
-  height: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  font-family: var(--md-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--md-code-fg-color);
-  background: var(--md-code-bg-color);
-  overflow-y: auto;
-}
-
-.signified-playground .CodeMirror {
-  height: 100%;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  font-family: var(--md-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-.signified-playground-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.signified-playground-status {
-  font-size: 0.75rem;
-  color: var(--md-default-fg-color--light);
-}
-
-.signified-playground-status.error {
-  color: var(--md-accent-fg-color);
-}
-
-.signified-playground-examples {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.signified-playground-examples label {
-  white-space: nowrap;
-}
-
-.signified-playground-examples select {
-  flex: 1 1 auto;
-  width: auto;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  font-size: 0.75rem;
-  color: var(--md-default-fg-color);
-  background: var(--md-default-bg-color);
-}
-
-.signified-playground-output {
-  height: 100%;
-  margin: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  overflow-y: auto;
-  font-family: var(--md-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--md-code-fg-color);
-  background: var(--md-code-bg-color);
-}
-
-@media (max-width: 600px) {
-  .signified-playground {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto var(--playground-pane-height) auto auto var(--playground-pane-height) auto;
-    grid-template-areas:
-      "label-code"
-      "editor"
-      "controls"
-      "label-output"
-      "output"
-      "examples";
-  }
-}
-</style>
-
-
-
-
-
 
 
   
   
 
 
+<h1 id="preparing-for-06">Preparing for 0.6<a class="headerlink" href="#preparing-for-06" title="Permanent link">&para;</a></h1>
+<p>Version 0.5.1 is the transition release. It retains implicit following, recursive
+decorator arguments, and the existing equality and effect behavior. It adds
+migration diagnostics, custom resolver registration, and <code>rx.tap()</code> so you can
+prepare before upgrading to 0.6.</p>
+<h2 id="changes-you-can-make-on-051">Changes you can make on 0.5.1<a class="headerlink" href="#changes-you-can-make-on-051" title="Permanent link">&para;</a></h2>
+<h3 id="enable-migration-diagnostics">Enable migration diagnostics<a class="headerlink" href="#enable-migration-diagnostics" title="Permanent link">&para;</a></h3>
+<p>Enable diagnostics before exercising representative application workflows:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">migration</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">migration</span><span class="o">.</span><span class="n">enable_warnings</span><span class="p">()</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Or: with migration.warnings(): ...</span>
+</span></code></pre></div>
+<p>Alternatively set <code>SIGNIFIED_MIGRATION_WARNINGS=1</code> before import. To make the
+migration warnings fail tests:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">SIGNIFIED_MIGRATION_WARNINGS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pytest<span class="w"> </span>-W<span class="w"> </span>error::signified.migration.SignifiedMigrationWarning
+</span></code></pre></div>
+<p>Diagnostics recognize reactive values stored inside Signals, returned from
+computations, or passed inside ordinary container arguments to decorated
+functions. They do not change runtime resolution or propagation. Diagnostics
+themselves do not evaluate reactive values or consume unknown iterables; the
+legacy runtime still performs its usual reads and traversal afterward.</p>
+<p>These are heuristics. Unknown types may hide affected values, and intentional
+storage of reactive objects can warn too. Equality, scheduling, and forwarded
+writes need separate review; a warning-free run is not proof of compatibility.</p>
+<h3 id="use-explicit-reads-and-resolution">Use explicit reads and resolution<a class="headerlink" href="#use-explicit-reads-and-resolution" title="Permanent link">&para;</a></h3>
+<p>Return <code>source.value</code> when a computation should return the current value of a
+source. Resolve nested containers inside the callback that should subscribe to
+their contents. These patterns work in both releases:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">source</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">following</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">source</span><span class="p">,</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">total</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">deep_unref</span><span class="p">(</span><span class="n">values</span><span class="p">)))</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">source</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">assert</span> <span class="n">following</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">3</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="k">assert</span> <span class="n">total</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">5</span>
+</span></code></pre></div>
+<p>Resolving before constructing the callback does not subscribe that callback to
+the original leaves. Test propagation after updates as well as initial values.</p>
+<h3 id="register-custom-containers">Register custom containers<a class="headerlink" href="#register-custom-containers" title="Permanent link">&para;</a></h3>
+<p>Use <code>@deep_unref.register(MyType)</code> and the supplied one-argument <code>resolve(child)</code>
+function. The handler API is the same in 0.5.1 and 0.6. See
+<a href="../resolution/">Resolving nested values</a> for examples.</p>
+<p>Unregistered iterable reconstruction still works in 0.5.1 with a
+<code>DeprecationWarning</code>. In 0.6, unknown types and unregistered subclasses pass
+through unchanged without inspection or iteration. <code>deep_unref</code> remains
+supported; explicit resolution is the migration path.</p>
+<h3 id="rename-peek-calls-to-tap">Rename <code>peek</code> calls to <code>tap</code><a class="headerlink" href="#rename-peek-calls-to-tap" title="Permanent link">&para;</a></h3>
+<p>Replace <code>rx.peek(callback)</code> with <code>rx.tap(callback)</code>. Version 0.5.1 retains
+<code>peek</code> as a deprecated alias; 0.6 removes it. Both names in 0.5.1 create the
+same lazy, cached computation. The callback runs on evaluation, not on every
+cached read. Neither is an untracked getter.</p>
+<h3 id="review-mutation-and-equality-assumptions">Review mutation and equality assumptions<a class="headerlink" href="#review-mutation-and-equality-assumptions" title="Permanent link">&para;</a></h3>
+<p>Make writes through the Signal that owns the value. Item and attribute writes
+through Computed values will be rejected in 0.6. Raw in-place mutations through
+<code>.value</code> require <code>Signal.update()</code> to notify dependents in either release.</p>
+<p>In 0.6, exact built-in scalars compare by value and other objects compare by
+identity. Equal-but-distinct containers will therefore trigger changes, while
+assigning the same object will not. Different scalar types count as changed.
+Review effects that depend on equality suppression or custom equality methods.</p>
+<h2 id="changes-that-require-06">Changes that require 0.6<a class="headerlink" href="#changes-that-require-06" title="Permanent link">&para;</a></h2>
+<p><code>Binding</code>, <code>batch()</code>, and <code>untracked()</code> are available starting in 0.6. Do not
+import them while the application still needs to run on 0.5.1.</p>
+<p>When upgrading, replace <code>Signal(source)</code> with <code>Binding(source)</code> wherever the
+outer handle should follow a replaceable source. In 0.6, <code>Signal(source)</code>
+stores the reactive object itself, <code>Computed(lambda: source)</code> returns it, and
+<code>unref</code> crosses just one reactive boundary. Containers stored in Signals no
+longer forward their children's updates automatically.</p>
+<p>Decorated <code>computed</code> and <code>effect</code> functions will unwrap only direct reactive
+arguments. Use the explicit reads and <code>deep_unref</code> calls above for nested data.</p>
+<p>Version 0.6 also changes effect scheduling and error recovery. Notification
+waves invalidate dependencies before effects run; <code>batch()</code> defers and
+coalesces effects. Effects skip callbacks when computed inputs refresh to
+unchanged outcomes. Failed runs retain the dependencies they read, and
+Computed exceptions are cached until an input changes or <code>invalidate()</code> is
+called. Test callback counts, error handling, and recovery during the upgrade.</p>
 
 
-  
+
+
+
+
+
+
+
 
 
 
@@ -1082,12 +1201,10 @@ print("double:", double.value)
   
     
       
-        
-      
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../usage/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Usage">
+          <a href="../resolution/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Resolving nested values">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1097,20 +1214,20 @@ print("double:", double.value)
                 Previous
               </span>
               <div class="md-ellipsis">
-                Usage
+                Resolving nested values
               </div>
             </div>
           </a>
         
         
           
-          <a href="../magic-methods/" class="md-footer__link md-footer__link--next" aria-label="Next: Magic Methods">
+          <a href="../api/" class="md-footer__link md-footer__link--next" aria-label="Next: API Reference">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Magic Methods
+                API Reference
               </div>
             </div>
             <div class="md-footer__button md-icon">

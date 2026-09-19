@@ -37,10 +37,10 @@ print(summary.value)
 
 values.value = [10, 20, 30]
 print(summary.value)`,
-    "rx-peek": `from signified import Signal
+    "rx-tap": `from signified import Signal
 
 price = Signal(10)
-total = price.rx.map(lambda p: p * 1.2).rx.peek(lambda v: print("total:", v))
+total = price.rx.map(lambda p: p * 1.2).rx.tap(lambda v: print("total:", v))
 
 price.value = 10
 price.value = 20
