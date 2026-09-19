@@ -13,7 +13,7 @@
 
 ---
 
-A Python library for reactive programming (with kind-of working type narrowing).
+A fast, fully-typed Python library for reactive programming.
 
 ## Getting started
 
