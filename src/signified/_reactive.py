@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from enum import IntEnum
 from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 
+from . import migration as _migration
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
 from .plugins import HOOKS_ENABLED, plugin_manager
@@ -359,6 +360,8 @@ class Signal[T](Variable[T]):
 
     def __init__(self, value: HasValue[T]) -> None:
         super().__init__()
+        if _migration.WARNINGS_ENABLED:
+            _migration._warn_signal_value(value)
         _setattr(self, "_value", value)
         if _may_have_reactive_children(value):
             self._observe(value)
@@ -383,6 +386,8 @@ class Signal[T](Variable[T]):
 
     @value.setter
     def value(self, new_value: HasValue[T]) -> None:
+        if _migration.WARNINGS_ENABLED:
+            _migration._warn_signal_value(new_value)
         old_value = self._value
         if _has_changed(old_value, new_value):
             _setattr(self, "_value", new_value)
@@ -635,6 +640,8 @@ class _ComputedImpl:
         _COMPUTE_STACK.append(self)
         try:
             next_value = owner._compute_fn()
+            if _migration.WARNINGS_ENABLED:
+                _migration._warn_reactive_computed_result(owner, next_value)
         except BaseException:
             # Roll back: leave self._deps and self._state unchanged so the
             # Computed stays subscribed to its previous deps and remains stale

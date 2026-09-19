@@ -21,7 +21,7 @@ Attributes:
 """
 
 # Import _mixin first to initialize _ReactiveMixIn before runtime classes.
-from . import _mixin
+from . import _mixin, migration
 from ._functions import as_rx, computed, effect, has_value, unref
 from ._reactive import Computed, Effect, Signal, Variable, is_reactive
 from ._resolve import ResolveContext, deep_unref
@@ -44,4 +44,5 @@ __all__ = [
     "is_reactive",
     "deep_unref",
     "ResolveContext",
+    "migration",
 ]

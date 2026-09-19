@@ -93,3 +93,21 @@ def test_pre_06_compute_behavior_is_preserved():
     assert total.value == 2
     assert seen == [[1], [2]]
     watcher.dispose()
+
+
+def test_migration_warnings_preserve_legacy_following_and_argument_resolution():
+    from signified import migration
+
+    source = Signal(1)
+    with migration.warnings(), warnings.catch_warnings(record=True) as seen_warnings:
+        warnings.simplefilter("always", migration.SignifiedMigrationWarning)
+        nested = Signal(source)
+        total = computed(sum)([source])
+        seen = []
+        watcher = effect(seen.append)([source])
+        assert nested.value == total.value == 1
+        source.value = 2
+        assert nested.value == total.value == 2
+        assert seen == [[1], [2]]
+        watcher.dispose()
+    assert len(seen_warnings) == 3
