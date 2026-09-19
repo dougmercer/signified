@@ -1,10 +1,6 @@
----
-hide:
-  - navigation
----
 # Signified
 
-A Python library for reactive programming (with kind-of working type narrowing).
+Keep Python values up to date as their inputs change.
 
 ## Quickstart
 
@@ -12,63 +8,26 @@ A Python library for reactive programming (with kind-of working type narrowing).
 pip install signified
 ```
 
-## Why Care?
-
-`signified` is built around three core types:
-
-- ``Signal``: mutable state that can store any Python value
-- ``Computed``: derived reactive state
-- ``Binding``: a stable reactive handle with a replaceable source
-
-If you update a `Signal`, dependent `Computed` values update automatically.
-
-That allows you to write declarative expressions that stay up-to-date, even as underlying values change:
+Wrap changing values in `Signal`, then use them in calculations:
 
 ```python
 from signified import Signal
 
-x = Signal(3)
-x_squared = x ** 2
+price = Signal(10)
+quantity = Signal(2)
+total = price * quantity
 
-print(x_squared.value)  # 9
-x.value = 10
-print(x_squared.value)  # 100
+print(total.value)  # 20
+quantity.value = 3
+print(total.value)  # 30
 ```
 
-Above, we used `signified`'s rich set of overloaded operators to build a `Computed` object on-the-fly.
+`total` is a `Computed`: it remembers how to calculate its value and updates
+when needed. You can also use your own functions with `@computed`.
 
-Alternatively, you can accomplish the same thing with `@computed`:
+## Where to start
 
-```python
-from signified import Signal, computed
-
-@computed
-def power(base, exponent):
-    return base ** exponent
-
-x = Signal(3)
-x_squared = power(x, 2)
-
-print(x_squared.value)  # 9
-x.value = 10
-print(x_squared.value)  # 100
-```
-
-## Mental Model
-
-1. Wrap changing data in `Signal`.
-2. Build derived values with overloaded Python operators or `@computed`.
-3. Read reactive outputs from `.value`.
-4. Update the `.value` of `Signal`s to trigger updates.
-5. Use `Binding` only when a stable handle must switch sources.
-
-Dependencies come from reactive reads, not containment. Normal `computed` and
-`effect` calls unwrap direct reactive arguments only; call `deep_unref` inside the callback for explicit recursive resolution. Use
-`batch()` to group writes and `untracked()` for reads without subscribing.
-
-## Ready to learn more?
-
-- Read this first: [Usage Guide](usage.md)
-- Full API docs: [Core API](api.md)
-- Quick look at available operators: [Magic Methods and Operators](magic-methods.md)
-- Extending `signified` with plugins: [Plugins](plugins.md)
+- [Usage guide](usage.md): calculations, effects, containers, and switching inputs.
+- [Playground](playground.md): try examples in your browser.
+- [Library comparison](comparison.md): see how Signified relates to other libraries.
+- [API reference](api.md): look up a class, function, or method.

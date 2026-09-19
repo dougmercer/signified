@@ -1,415 +1,254 @@
----
-hide:
-  - navigation
----
+# Usage guide
 
-# Usage Guide
+Start with a `Signal` for each value your application changes. Build calculations
+from those signals, then use effects for actions such as logging or updating a display.
 
-This guide walks through common usage patterns with examples. For a complete reference, see the [API docs](api.md).
+## Signals and calculated values {#signals-computed-values-and-bindings}
 
-## Signals, Computed Values, and Bindings
-
-`Signal` holds a mutable value. Reactive objects and containers are valid
-stored values and remain opaque until explicitly read.
-
-`Computed` represents derived state. It subscribes to dependencies and updates when they change.
-
-`Binding` is a stable handle whose current reactive source can be replaced.
-
-### Reading the underlying value (`.value`)
-
-`Signal` and `Computed` display as `<...>` to indicate they are reactive objects.
-Use `.value` when you need the plain Python value.
+Read a signal with `.value` and assign to `.value` to change it. Python operators
+create a `Computed` that follows its inputs:
 
 ```python
 from signified import Signal
 
-price = Signal(19.99)
+price = Signal(10)
 quantity = Signal(2)
-subtotal = price * quantity
+total = price * quantity
 
-print(subtotal)        # <39.98> (reactive)
-print(subtotal.value)  # 39.98   (plain float)
-
+print(total.value)  # 20   (an ordinary Python value)
 quantity.value = 3
-print(subtotal.value)  # 59.97
+print(total.value)  # 30
 ```
 
-`Signal.value` is read/write. `Computed.value` is read-only and updates from dependencies.
+A computed value is calculated when read and saved until an input changes.
+Its `.value` is read-only. You can use it in further calculations, such as
+`with_tax = total * 1.2`.
 
-### Computed from operators
+### Use your own functions {#computed-from-functions-computed}
 
-```python
-from signified import Signal
-
-price = Signal(19.99)
-quantity = Signal(2)
-subtotal = price * quantity
-
-print(subtotal)  # <39.98>
-quantity.value = 3
-print(subtotal)  # <59.97>
-```
-
-### Computed from functions (`@computed`)
+`@computed` makes a function return a `Computed`. Direct signal arguments are
+read for you, so the function receives their values:
 
 ```python
 from signified import Signal, computed
 
-numbers = Signal([1, 2, 3, 4, 5])
-
 @computed
-def stats(nums):
-    return {
-        "sum": sum(nums),
-        "mean": sum(nums) / len(nums),
-        "min": min(nums),
-        "max": max(nums),
-    }
+def average(values):
+    return sum(values) / len(values)
 
-result = stats(numbers)
-print(result)  # <{'sum': 15, 'mean': 3.0, 'min': 1, 'max': 5}>
-
-numbers.value = [2, 4, 6, 8, 10]
-print(result)  # <{'sum': 30, 'mean': 6.0, 'min': 2, 'max': 10}>
+numbers = Signal([2, 4, 6])
+result = average(numbers)
+print(result.value)  # 4.0
+numbers.value = [10, 20]
+print(result.value)  # 15.0
 ```
 
-### Composing Computed values
+For an existing function, use `computed(sum)(numbers)` or
+`numbers.rx.map(sum)`. Keep these functions focused on calculating a result;
+use an effect for work that should happen automatically.
 
-`Computed` values can be used as dependencies for other computed values.
+## Run actions when values change
+
+`@effect` runs a function immediately and again when the values it reads change.
+Keep the returned object while the effect should stay active, then call
+`.dispose()` to stop it:
 
 ```python
-from signified import Signal, computed
+from signified import Signal, effect
 
-x = Signal(3)
-x_squared = x**2
+@effect
+def show_total(total):
+    print("Total:", total)
 
-@computed
-def plus_one(v):
-    return v + 1
-
-y = plus_one(x_squared)
-print(y)  # <10>
-
-x.value = 5
-print(y)  # <26>
+price = Signal(10)
+quantity = Signal(2)
+watcher = show_total(price * quantity)  # Total: 20
+quantity.value = 3                     # Total: 30
+watcher.dispose()
+quantity.value = 4                     # No output
 ```
 
-This composition is the core pattern: define state once, derive the rest.
+If a calculation produces the same result, an effect watching only that result
+can skip running. Use [`rx.tap`](api.md#signified._mixin._ReactiveNamespace.tap)
+for debugging a calculation when it is read; it does not run automatically
+for every change.
 
-### Replacing a reactive source with `Binding`
+### Group related changes {#scheduling-and-untracked-reads}
 
-Use `Binding` when other code needs to retain one reactive object while you
-replace the `Signal`, `Computed`, or `Binding` that supplies its value.
+Use `batch()` to delay effects until a group of writes is finished:
 
 ```python
-from signified import Binding, Signal
+from signified import Effect, Signal, batch
 
-left = Signal(1)
-right = Signal(10)
-selected = Binding(left)
-doubled = selected * 2
-
-print(doubled.value)  # 2
-selected.value = right
-print(doubled.value)  # 20
-right.value = 12
-print(doubled.value)  # 24
-
-selected.value = 5    # switch to a private plain-value source
-print(doubled.value)  # 10
+price, quantity = Signal(10), Signal(2)
+watcher = Effect(lambda: print(price.value * quantity.value))  # 20
+with batch():
+    price.value = 12
+    quantity.value = 3
+# Prints 36 once the block exits.
+watcher.dispose()
 ```
 
-A `Binding` may follow another `Binding`. Its `.source` property returns the
-exact current source. For accumulated operations, use `.derive(...)` so the
-new computation is built from the source that existed before the rebind:
+Values change immediately inside the block; batching does not undo writes if
+an error occurs. Run reactive operations on one thread, and do not put `await`
+inside `batch()` or `untracked()`.
 
-```python
-from signified import Binding, Signal, computed
+Use `untracked()` when a read inside an effect or calculation should not make
+it run again when that value changes. See [How updates work](compute-contract.md)
+for an example, effect timing, and error handling.
 
-value = Binding(Signal(2))
-value.derive(lambda previous: computed(lambda x: x * 3)(previous))
-print(value.value)  # 6
-```
+## Lists and dictionaries {#collections-and-item-assignment}
 
-Building the new computation from `value` itself would create a reactive cycle.
-Direct self-binding is rejected immediately; indirect cycles raise when read.
-
-`Signal` may directly store a reactive value, and a `Computed` function may
-return one. Those operations preserve the reactive object itself; use `Binding`
-when the stable outer identity should follow the source's current value.
-
-## Attribute Access, Method Calls, and Assignment
-
-You can reactively read attributes and call methods from objects inside signals.
-
-```python
-from dataclasses import dataclass
-from signified import Signal
-
-@dataclass
-class Person:
-    name: str
-    age: int
-
-    def greet(self):
-        return f"Hello, I'm {self.name} and I'm {self.age} years old!"
-
-person = Signal(Person("Alice", 30))
-
-name_display = person.name
-greeting = person.greet()
-
-print(name_display)  # <"Alice">
-print(greeting)      # <"Hello, I'm Alice and I'm 30 years old!">
-
-# Attribute writes on a Signal update the wrapped object and notify dependents
-person.name = "Bob"
-print(name_display)  # <"Bob">
-print(greeting)      # <"Hello, I'm Bob and I'm 30 years old!">
-```
-
-Only `Signal` forwards attribute writes, because only a `Signal` owns its
-value; a `Computed` or `Binding` holds a cache. Writing a name the wrapped
-object does not have raises `AttributeError` instead of creating an attribute
-on the wrapper.
-
-Method chaining works too:
-
-```python
-from signified import Signal
-
-text = Signal("  Hello, World!  ")
-processed = text.strip().lower().replace(",", "")
-
-print(processed)  # <"hello world!">
-text.value = "  Goodbye, World!  "
-print(processed)  # <"goodbye world!">
-```
-
-## Collections and Item Assignment
-
-Indexing is reactive, and `__setitem__` can notify dependents for `list` and `dict`.
+Reading an item through a signal creates a calculation. Assigning an item
+through the signal also tells dependent calculations to update:
 
 ```python
 from signified import Signal, computed
 
 numbers = Signal([1, 2, 3])
+first = numbers[0]
 total = computed(sum)(numbers)
 
-print(numbers[0])  # <1>
-print(total)       # <6>
-
 numbers[0] = 9
-print(total)       # <14>
+print(first.value)  # 9
+print(total.value)  # 14
+
+numbers.value.append(4)  # Changing the raw list does not send an update.
+print(total.value)       # 14 (the saved result)
+numbers.update()         # Tell Signified about the change.
+print(total.value)       # 18
+
+numbers.value = [5, 6]   # Replacing the list also sends an update.
+print(total.value)       # 11
 ```
 
-A container stored in a `Signal` is opaque: the signal does not automatically
-follow reactive objects placed inside that container. Ordinary containers
-passed to `computed` and `effect` are opaque too. Call `deep_unref` inside a computation when you
-want explicit recursive resolution:
+Dictionaries work the same way: `settings["theme"] = "light"` sends an update;
+`settings.value["theme"] = "light"` needs a subsequent `settings.update()`.
+Changes made through another reference to the raw object also need notification.
+
+### Signals inside containers {#shallow-and-deep-argument-resolution}
+
+A list or dictionary can contain signals. Merely storing them does not make
+calculations follow their values. Read the signals inside your function, or
+use `deep_unref` to read all of them:
 
 ```python
-from signified import Signal, Computed, deep_unref
-
-a = Signal(1)
-b = Signal(2)
-total = Computed(lambda: sum(deep_unref([a, b])))
-
-print(total.value)  # 3
-a.value = 10
-print(total.value)  # 12
-```
-
-```python
-from signified import Signal
-
-config = Signal({"theme": "dark", "font_size": 14})
-theme = config["theme"]
-
-print(theme)  # <"dark">
-config["theme"] = "light"
-print(theme)  # <"light">
-```
-
-## Conditional Logic with `where`
-
-`where(a, b)` picks `a` when the condition is truthy, otherwise `b`.
-
-```python
-from signified import Signal, computed
-
-username = Signal(None)
-is_logged_in = username.rx.is_not(None)
-
-@computed
-def welcome(name):
-    return f"Welcome back, {name}!"
-
-message = is_logged_in.rx.where(welcome(username), "Please log in")
-
-print(message)  # <"Please log in">
-username.value = "admin"
-print(message)  # <"Welcome back, admin!">
-```
-
-
-## Applying functions
-
-### `map`
-
-`map` applies a function to a reactive value and returns a new `Computed`. It's a shorthand for `computed(fn)(source)` — the result re-evaluates whenever the source changes.
-
-```python
-from signified import Signal
-
-temperature_c = Signal(20)
-
-
-temperature_f = temperature_c.rx.map(lambda c: (c * 9 / 5) + 32)
-# equivalent to:
-# temperature_f = computed(lambda c: (c * 9 / 5) + 32)(temperature_c)
-
-print(temperature_f.value)  # 68.0
-temperature_c.value = 25
-print(temperature_f.value)  # 77.0
-```
-
-### `tap` vs `effect`
-
-Use `tap` for debugging or logging when a derived value is evaluated. Use
-`effect` for side effects that run automatically when tracked inputs change.
-
-`tap` is lazy and cached: its callback runs on evaluation, not on every cached
-read. Unread intermediate values are skipped. The old `peek(fn)` alias was
-deprecated in 0.5.1 and removed in 0.6. Use `untracked()` for a read without
-subscribing.
-
-`effect` runs synchronously after updates, with pending executions coalesced
-inside `batch()`. Its first run is also deferred when created inside a batch.
-If its computed inputs refresh to unchanged outcomes, the callback is skipped.
-
-=== "tap"
-
-    ```python
-    from signified import Signal
-
-    price = Signal(10)
-    total = price.rx.map(lambda p: p * 1.2).rx.tap(lambda v: print("total:", v))
-
-    price.value = 10  # Nothing happens
-    price.value = 20  # Nothing happens
-    price.value = 30  # Nothing happens
-    price.value = 10  # Nothing happens
-    total.value  # prints: 'total: 12.0'
-    price.value = 20  # Nothing happens
-    total.value  # prints: 'total: 24.0'
-    ```
-
-=== "effect"
-
-    ```python
-    from signified import Signal
-
-    price = Signal(10)
-    total_effect = price.rx.map(lambda p: p * 1.2).rx.effect(lambda v: print("total:", v))  # prints: 'total: 12.0'
-    price.value = 20  # prints: 'total: 24.0'
-
-    total_effect.dispose()
-    price.value = 30  # Nothing happens
-    ```
-
-## Utility Helpers
-
-`unref` makes functions work with either plain values or reactive values. It
-unwraps exactly one reactive boundary.
-
-```python
-from signified import HasValue, Signal, unref
-
-def process_data(value: HasValue[float]) -> float:
-    return unref(value) * 2
-
-print(process_data(4))          # 8
-print(process_data(Signal(5)))  # 10
-```
-
-Related helpers:
-
-- `deep_unref`: recursively unwraps registered containers of reactive values
-- `deep_unref.register`: teaches deep resolution how to rebuild a custom container
-- `batch()`: defer effects across multiple writes
-- `untracked()`: read without subscribing the enclosing consumer
-- `as_rx`: wraps plain values into `Signal` (or returns the input reactive value)
-- `has_value`: type guard for checking `HasValue[T]`
-- `is_reactive`: type guard for narrowing `HasValue[T]` to `ReactiveValue[T]`
-- `Signal.at(...)`: temporary scoped value override via context manager
-
-## Shallow and deep argument resolution
-
-Dependencies come from reactive reads, not containment. `computed` and `effect`
-unwrap direct reactive arguments, but ordinary Python containers are opaque:
-
-```python
-from signified import Signal, computed
-
-x = Signal(2)
-config = {"nested": {"x": x}}
-
-@computed
-def double(config):
-    return config["nested"]["x"].value * 2
-
-result = double(config)
-```
-
-The explicit `.value` access tracks `x`. If a function should recursively
-resolve and track every reactive value in its arguments, call `deep_unref`
-inside it:
-
-```python
-from signified import Signal, Computed, deep_unref
+from signified import Computed, Signal, deep_unref
 
 values = [Signal(1), Signal(2)]
 total = Computed(lambda: sum(deep_unref(values)))
-assert total.value == 3
+print(total.value)  # 3
+values[0].value = 10
+print(total.value)  # 12
 ```
 
-Reactive values are also ordinary values. `Signal(other_signal)` stores that
-signal, and `Computed(lambda: other_signal)` returns it. Use `Binding` when a
-stable reactive identity should follow another reactive source.
+Keep `deep_unref` **inside** the function so its reads are tracked. The
+[nested values guide](resolution.md) covers supported containers, JSON, and
+custom objects.
 
-## Manual Invalidation
+## Attributes and methods {#attribute-access-method-calls-and-assignment}
 
-Most updates flow automatically through the reactive graph. Occasionally you may rewire dependencies through a non-reactive container (e.g. replacing an attribute on a plain Python object). In that case, call `invalidate()` to force a `Computed` to fully re-evaluate on next read.
+You can read attributes and call methods through a signal:
 
 ```python
-from signified import Signal, computed
+from types import SimpleNamespace
+from signified import Signal
 
+person = Signal(SimpleNamespace(name="Alice"))
+name = person.name
+person.name = "Bob"
+print(name.value)  # Bob
 
-class Holder:
-    def __init__(self, sig):
-        self.sig = sig
-
-
-holder = Holder(Signal(5))
-derived = computed(lambda holder: holder.sig * 2)(holder)
-
-print(derived.value)  # 10
-
-holder.sig = Signal(20)  # non-reactive rewire — graph doesn't know
-print(derived.value)     # still 10
-
-derived.invalidate()
-print(derived.value)     # 40
+text = Signal("  Hello, World!  ")
+message = text.strip().lower()
+print(message.value)  # hello, world!
 ```
 
+Only `Signal` forwards attribute and item writes to the object it holds.
+An attribute must already exist on that object. Method calls produce calculated
+values; calling a method that changes the raw object does not automatically
+send an update. For example, use `numbers.value.append(4)` followed by
+`numbers.update()` to change a list.
 
-## Scheduling and untracked reads
+## Choose between values {#conditional-logic-with-where}
 
-Use `with batch():` around related writes to defer effects until the outermost
-exit. Writes are immediate and computed reads stay current. Use `with
-untracked():` around incidental reads inside a computation or effect to avoid
-subscribing to those values. Both are synchronous and single-threaded; neither
-context should span `await`. See the [compute contract](compute-contract.md) for
-examples, error handling, and exact guarantees.
+Use `.rx` for operations that need a reactive alternative to Python syntax:
+
+```python
+from signified import Signal
+
+username = Signal(None)
+message = username.rx.is_not(None).rx.where("Signed in", "Please log in")
+print(message.value)  # Please log in
+username.value = "admin"
+print(message.value)  # Signed in
+```
+
+For a reactive equality check, use `x.rx.eq(y)`. For reactive truthiness, use
+`x.rx.as_bool()`. The [operator cheatsheet](magic-methods.md) lists the other
+operations and their Python counterparts.
+
+## Switch inputs with Binding {#replacing-a-reactive-source-with-binding}
+
+Use `Binding` when existing calculations should switch to a different source:
+
+```python
+from signified import Binding, Signal
+
+left, right = Signal(1), Signal(10)
+selected = Binding(left)
+doubled = selected * 2
+print(doubled.value)  # 2
+selected.value = right
+print(doubled.value)  # 20
+right.value = 12
+print(doubled.value)  # 24
+selected.value = 5    # Use a plain value as the new source.
+print(doubled.value)  # 10
+```
+
+`selected.source` returns the current source. A binding can also follow another
+binding. To build a new calculation from the previous source, use `.derive()`:
+
+```python
+from signified import Binding, Signal
+
+value = Binding(Signal(2))
+value.derive(lambda previous: previous * 3)
+print(value.value)  # 6
+```
+
+Use `previous` inside that function. Referring to `value` would make the binding
+depend on itself. Direct self-binding is rejected; indirect loops raise when read.
+
+`Signal(other_signal)` stores the signal object itself. Use `Binding(other_signal)`
+when you want to follow its current value.
+
+## Force a calculation to refresh {#manual-invalidation}
+
+If you replace an input through an ordinary Python object, Signified may not
+see the change. Call `.invalidate()` to recalculate on the next read:
+
+```python
+from types import SimpleNamespace
+from signified import Computed, Signal
+
+holder = SimpleNamespace(source=Signal(5))
+doubled = Computed(lambda: holder.source.value * 2)
+print(doubled.value)  # 10
+holder.source = Signal(20)
+print(doubled.value)  # 10
+doubled.invalidate()
+print(doubled.value)  # 40
+```
+
+## More helpers {#utility-helpers}
+
+See the [API reference](api.md) for:
+
+- `unref(value)`: accept either a plain value or a signal, computed value, or binding.
+- `as_rx(value)`: wrap a plain value in a signal; leave reactive values unchanged.
+- `has_value` and `is_reactive`: check and narrow types.
+- `Signal.at(value)`: temporarily change a value inside a `with` block.
+
+For editor and type-checking support, see [Type checkers](type-checkers.md).

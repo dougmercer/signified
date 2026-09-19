@@ -1,7 +1,3 @@
----
-hide:
-  - navigation
----
 # API Reference
 
 ## Classes
@@ -14,6 +10,7 @@ hide:
         - rx
         - with_name
         - at
+        - update
         - __setattr__
         - __setitem__
 

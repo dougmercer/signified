@@ -1,43 +1,41 @@
----
-hide:
-  - navigation
----
-# Writing Plugins
+# Writing plugins
 
-Signified provides a plugin system built on top of [pluggy](https://pluggy.readthedocs.io/).
+Plugins let you log or inspect reads and changes to reactive values.
+Signified uses [pluggy](https://pluggy.readthedocs.io/) to call your plugin's
+methods when these events happen.
 
-## Important: Hooks Are Disabled by Default
+## Enable plugins
 
-By default, `signified.plugins.plugin_manager` is a no-op manager. To activate real hooks:
+Install the optional dependency:
 
-1. Install plugin support:
+```bash
+pip install "signified[plugins]"
+```
 
-    ```bash
-    pip install "signified[plugins]"
-    ```
+Set `SIGNIFIED_ENABLE_HOOKS=1` before importing Signified. For example, run a
+script with:
 
-2. Run with:
+```bash
+SIGNIFIED_ENABLE_HOOKS=1 python your_script.py
+```
 
-    ```bash
-    SIGNIFIED_ENABLE_HOOKS=1
-    ```
+Without this setting, registering a plugin has no effect.
 
-Without this environment variable set, plugin hooks will not execute.
+## Available hooks {#plugin-hooks}
 
-## Plugin Hooks
+Each hook receives the reactive object as its `value` argument:
 
-The plugin system provides hooks for key events in a reactive value's lifecycle:
+| Hook | When it runs |
+| --- | --- |
+| `created` | A reactive value is created. |
+| `read` | Its current value is read. |
+| `updated` | It sends a change notification. |
+| `named` | It is given a name. |
 
-- `read`: Called whenever a reactive value's current value is accessed
-- `created`: Called when a new reactive value is instantiated
-- `updated`: Called when a reactive value's content changes
-- `named`: Called when a reactive value is given a name
+## Create and register a plugin {#creating-a-plugin}
 
-These hooks allow plugins to observe and respond to the complete lifecycle of reactive values.
-
-## Creating a Plugin
-
-Implement hooks with `@hookimpl`, then register with `plugin_manager`:
+Implement the hooks you need with `@hookimpl`, then register the instance.
+This plugin counts new reactive values:
 
 ```python
 from typing import Any
@@ -45,80 +43,25 @@ from typing import Any
 from signified import Signal, Variable
 from signified.plugins import hookimpl, plugin_manager
 
-class MyPlugin:
+class CreationCounter:
     def __init__(self) -> None:
-        self.created_count = 0
+        self.count = 0
 
     @hookimpl
     def created(self, value: Variable[Any]) -> None:
-        self.created_count += 1
-        print(f"created: {value:d}")  # :d = debug format: shows type and id
+        self.count += 1
+        print(f"Created {value:d}")  # :d shows the object's type and ID.
 
-plugin = MyPlugin()
+plugin = CreationCounter()
 plugin_manager.register(plugin)
 
 x = Signal(1)
 y = x + 1
-print(plugin.created_count)  # 2 when hooks are enabled
+print(plugin.count)  # 2 when hooks are enabled
 
 plugin_manager.unregister(plugin)
 ```
 
-## Plugin Management
-
-The global manager lives at `signified.plugins.plugin_manager` (`pm` is kept as a backwards-compatible alias):
-
-```python
-from signified.plugins import plugin_manager
-
-plugin_manager.register(my_plugin)
-plugin_manager.unregister(my_plugin)
-```
-
-## Logging Example
-
-```python
-from __future__ import annotations
-
-import logging
-from typing import Any
-
-from signified import Signal, Variable
-from signified.plugins import hookimpl, plugin_manager
-
-
-class ReactiveLogger:
-    def __init__(self, logger: Any | None = None):
-        if logger is None:
-            _logger = logging.getLogger(__name__)
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter("%(message)s")
-            handler.setFormatter(formatter)
-            _logger.addHandler(handler)
-            _logger.setLevel(logging.INFO)
-        else:
-            _logger = logger
-        self.logger = _logger
-
-    @hookimpl
-    def created(self, value: Variable[Any]) -> None:
-        self.logger.info(f"Created {value:d}")
-
-    @hookimpl
-    def updated(self, value: Variable[Any]) -> None:
-        self.logger.info(f"Updated {value:n} to {value.value}")
-
-    @hookimpl
-    def named(self, value: Variable[Any]) -> None:
-        self.logger.info(f"Named {type(value).__name__}(id={id(value)}) as {value:n}")
-
-logger_plugin = ReactiveLogger()
-plugin_manager.register(logger_plugin)
-
-x = Signal(1).with_name("x")
-y = (x + 1).with_name("y")
-x.value = 5
-print(y.value)  # 6
-
-plugin_manager.unregister(logger_plugin)
-```
+Use `logging` in place of `print` if your application already has logging set
+up. Unregister the plugin when you no longer need it. The older `pm` name is
+an alias for `plugin_manager`.

@@ -134,9 +134,8 @@ nav:
       - Type Checkers: type-checkers.md
   - Reference:
       - API Reference: api.md
-      - Compute Contract: compute-contract.md
-      - Magic Methods: magic-methods.md
-      - Limitations: limitations.md
+      - How Updates Work: compute-contract.md
+      - Operators: magic-methods.md
   - Playground: playground.md
   - Releases:
       - Change Log: changes.md
