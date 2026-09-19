@@ -6,15 +6,12 @@ import weakref
 from typing import TYPE_CHECKING, Iterable, Iterator, Protocol
 
 if TYPE_CHECKING:
-    from ._reactive import Computed, Signal
+    from ._reactive import Binding, Computed, Signal
 
-__all__ = ["NestedValue", "HasValue", "ReactiveValue"]
+__all__ = ["HasValue", "ReactiveValue"]
 
-type ReactiveValue[T] = Computed[T] | Signal[T]
+type ReactiveValue[T] = Computed[T] | Signal[T] | Binding[T]
 """A reactive object that would return a value of type T when calling unref(obj)."""
-
-type NestedValue[T] = T | ReactiveValue[NestedValue[T]]
-"""Recursive type hint for arbitrarily nested reactive values."""
 
 type HasValue[T] = T | ReactiveValue[T]
 """This object would return a value of type T when calling unref(obj)."""

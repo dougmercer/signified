@@ -46,10 +46,10 @@ def test_warns_once_when_computed_returns_a_reactive_value():
 
     with migration.warnings():
         with pytest.warns(migration.SignifiedMigrationWarning, match="Computed produced"):
-            assert result.value == source.value
+            assert result.value is source
         result.invalidate()
         with warnings.catch_warnings(record=True) as seen:
-            assert result.value == source.value
+            assert result.value is source
 
     assert not [warning for warning in seen if warning.category is migration.SignifiedMigrationWarning]
 

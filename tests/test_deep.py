@@ -4,7 +4,7 @@ from collections import deque
 
 import pytest
 
-from signified import Signal, deep_unref, effect
+from signified import Signal, computed, deep_unref, effect
 
 
 def test_deep_unref_resolves_supported_containers():
@@ -21,6 +21,20 @@ def test_deep_unref_resolves_supported_containers():
 
 def test_deep_unref_crosses_multiple_reactive_boundaries():
     assert deep_unref(Signal(Signal(Signal(1)))) == 1
+
+
+def test_deep_unref_leaves_unregistered_iterables_opaque():
+    class Box:
+        def __init__(self, values):
+            self.values = values
+
+        def __iter__(self):
+            return iter(self.values)
+
+    nested = Signal(1)
+    box = Box([nested])
+
+    assert deep_unref(box) is box
 
 
 def test_deep_unref_supports_registered_container_types():
@@ -43,6 +57,29 @@ def test_deep_unref_cycles_reach_recursion_limit():
 
     with pytest.raises(RecursionError):
         deep_unref(cyclic)
+
+
+def test_computed_only_shallowly_resolves_arguments():
+    nested = Signal(1)
+    container = {"nested": nested}
+
+    result = computed(lambda value: value)(container)
+
+    assert result.value is container
+    nested.value = 2
+    assert result.value is container
+
+
+def test_effect_only_shallowly_resolves_arguments():
+    nested = Signal(1)
+    container = {"nested": nested}
+    seen = []
+
+    watcher = effect(seen.append)(container)
+    nested.value = 2
+
+    assert seen == [container]
+    watcher.dispose()
 
 
 def test_deep_effect_resolves_and_tracks_nested_reactive_values():
@@ -98,6 +135,18 @@ def test_reactive_cycle_reaches_recursion_limit():
     source.value = [source]
     with pytest.raises(RecursionError):
         deep_unref(source)
+
+
+def test_unknown_subclasses_and_generators_are_not_consumed():
+    class CustomList(list):
+        def __iter__(self):
+            raise AssertionError("must not iterate")
+
+    opaque = CustomList([Signal(1)])
+    assert deep_unref(opaque) is opaque
+    iterator = iter([Signal(1)])
+    assert deep_unref(iterator) is iterator
+    assert isinstance(next(iterator), Signal)
 
 
 def test_registered_handler_exception_propagates_unchanged():
@@ -191,6 +240,20 @@ def test_custom_handler_cycles_reach_recursion_limit():
 
     with pytest.raises(RecursionError):
         resolve({"box": [Box()]})
+
+
+def test_scalar_signal_subclasses_still_use_their_value_property():
+    class CountingSignal(Signal):
+        reads = 0
+
+        @property
+        def value(self):
+            self.reads += 1
+            return super().value
+
+    source = CountingSignal(1)
+    assert deep_unref([source, source]) == [1, 1]
+    assert source.reads == 2
 
 
 def test_numpy_preserves_shape_dtype_and_resolves_repeated_objects_independently():

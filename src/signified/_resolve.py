@@ -4,8 +4,6 @@ For example, ``deep_unref({"x": Signal(1)})`` returns ``{"x": 1}``. Lists,
 tuples, dictionaries, sets, frozensets, and deques are rebuilt with their
 reactive contents replaced. Supported NumPy arrays are handled too. Other
 objects are returned unchanged unless their exact type has a registered handler.
-Unregistered iterables still use legacy reconstruction with a DeprecationWarning;
-that fallback will be removed in 0.6.0. Register a handler to keep traversing them.
 
 To support an application object, register a function that builds its resolved
 replacement. Call the supplied ``resolve`` function on each field you want to
@@ -63,13 +61,10 @@ normal reactive dependencies.
 from __future__ import annotations
 
 import importlib.util
-import os
 from collections import deque
-from collections.abc import Iterable
 from typing import Any, Callable, Protocol
-from warnings import warn
 
-from ._reactive import _track_read, is_reactive
+from ._reactive import is_reactive
 
 _PLAIN_TYPES = frozenset((int, float, bool, str, bytes, complex, type(None)))
 
@@ -93,56 +88,12 @@ class ResolveContext:
         if type(value) in self._plain_types:
             return value
         if is_reactive(value):
-            # Read the stored boundary while 0.5 still follows nested wrappers.
-            if value._IS_COMPUTED:
-                value._impl.ensure_uptodate()
-            _track_read(value)
-            value = value._value
+            value = value.value
             if type(value) in self._plain_types:
                 return value
             return self(value)
         handler = self._resolvers.get(type(value))
-        if handler is None:
-            if isinstance(value, Iterable) and not isinstance(value, str):
-                return _legacy_iterable(value, self)
-            return value
-        return handler(value, self)
-
-
-class _ChildResolutionError(Exception):
-    """Carry a child TypeError past legacy constructor error handling."""
-
-    def __init__(self, error: TypeError) -> None:
-        self.error = error
-
-
-def _legacy_iterable(value: Any, resolve: ResolveContext) -> Any:
-    """Keep pre-0.6 iterable reconstruction while callers migrate to handlers."""
-    warn(
-        f"Automatic traversal of unregistered iterable type {type(value).__name__} "
-        "is deprecated and will be removed in 0.6.0. Register a handler with "
-        "deep_unref.register(Type) to keep resolving its contents.",
-        DeprecationWarning,
-        stacklevel=2,
-        skip_file_prefixes=(os.path.dirname(__file__),),
-    )
-    if np is not None and isinstance(value, np.ndarray):
-        return _ndarray(value, resolve)
-
-    def children():
-        for child in value:
-            try:
-                yield resolve(child)
-            except TypeError as error:
-                raise _ChildResolutionError(error) from error
-
-    try:
-        return type(value)(children())
-    except _ChildResolutionError as error:
-        raise error.error
-    except TypeError:
-        # Some iterable types do not accept an iterable constructor argument.
-        return value
+        return value if handler is None else handler(value, self)
 
 
 class _Registration[T](Protocol):
@@ -181,10 +132,9 @@ class _DeepUnref:
     def __call__(self, value: Any) -> Any:
         """Return value with reactive contents replaced by their current values.
 
-        Supported containers are rebuilt. Unregistered iterables use legacy
-        reconstruction with a DeprecationWarning until 0.6.0. Other unknown
-        objects pass through unchanged. Repeated references are resolved
-        independently. Cyclic inputs eventually raise RecursionError. Dictionary keys or set members that become duplicates
+        Supported containers are rebuilt; unknown objects pass through unchanged.
+        Repeated references are resolved independently. Cyclic inputs eventually
+        raise RecursionError. Dictionary keys or set members that become duplicates
         after unwrapping raise ValueError; unhashable keys or members raise TypeError.
 
         Reads inside a computation or effect create dependencies.
@@ -242,13 +192,11 @@ def _deque(value: deque[Any], resolve: ResolveContext) -> deque[Any]:
     return deque((resolve(item) for item in value), maxlen=value.maxlen)
 
 
-np = None
 if importlib.util.find_spec("numpy") is not None:
     import numpy as np  # pyright: ignore[reportMissingImports]
 
     @deep_unref.register(np.ndarray)
     def _ndarray(value: Any, resolve: ResolveContext) -> Any:
-        assert np is not None
         if not value.dtype.hasobject:
             return value
         result = np.empty(value.shape, dtype=value.dtype)
