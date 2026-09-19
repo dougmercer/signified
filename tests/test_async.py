@@ -144,3 +144,28 @@ def test_resource_dispose_cancels_inflight_request():
         assert result.value is None
 
     asyncio.run(scenario())
+
+
+def test_resource_batches_explicit_argument_updates():
+    from signified import batch
+
+    async def scenario():
+        source = Signal(0)
+        seen = []
+
+        @resource
+        async def load(value):
+            seen.append(value)
+            return value
+
+        result = load(source)
+        await _drain_loop()
+        with batch():
+            source.value = 1
+            source.value = 2
+        await _drain_loop()
+        assert seen == [0, 2]
+        assert result.value == 2
+        result.dispose()
+
+    asyncio.run(scenario())

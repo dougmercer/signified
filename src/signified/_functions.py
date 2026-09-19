@@ -205,9 +205,11 @@ def async_effect(func: Callable[..., Awaitable[Any]]) -> Callable[..., AsyncEffe
     inputs as explicit arguments. Synchronous batch/untracked scopes must not
     span await.
     """
+
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> AsyncEffect:
         return AsyncEffect(_bind_args(func, args, kwargs))
+
     return wrapper
 
 
@@ -216,8 +218,9 @@ def resource[R](func: Callable[..., Awaitable[R]]) -> Callable[..., Resource[R]]
 
     Only synchronous factory reads are tracked; coroutine-body reads are not.
     """
+
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Resource[R]:
         return Resource(_bind_args(func, args, kwargs))
-    return wrapper
 
+    return wrapper
