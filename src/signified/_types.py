@@ -54,7 +54,7 @@ class _ObserverLinks[T: _SupportsUpdate]:
             return
 
         owner_ref = weakref.ref(self)
-        link = _ObserverLink[T](weakref.ref(observer))
+        link: _ObserverLink[T] = _ObserverLink(weakref.ref(observer))
 
         def _cleanup(_ref: weakref.ReferenceType[T], link: _ObserverLink[T] = link) -> None:
             owner = owner_ref()
