@@ -1600,4 +1600,4 @@ class _ReactiveMixIn[T]:
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
 from ._functions import computed  # noqa: E402
-from ._reactive import Effect, _bump_global_version  # noqa: E402
+from ._reactive import Effect, _bump_global_version, is_reactive  # noqa: E402
