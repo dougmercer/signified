@@ -14,7 +14,7 @@
         <link rel="prev" href="../comparison/">
       
       
-        <link rel="next" href="../migration/">
+        <link rel="next" href="../api/">
       
       
         
@@ -306,6 +306,44 @@
   
   
     <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrating to 0.6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../compute-contract/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Compute Contract
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../playground/" class="md-tabs__link">
         
   
@@ -391,25 +429,6 @@
     
   
   Resolving nested values
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../migration/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Preparing for 0.6
 
       </a>
     </li>
@@ -566,6 +585,60 @@
     
   
     Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating to 0.6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compute-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute Contract
   
 
     
@@ -753,6 +826,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#serialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serialization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#custom-objects" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -778,33 +862,6 @@
   
 </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Preparing for 0.6
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -917,6 +974,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#serialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serialization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#custom-objects" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -973,39 +1041,62 @@
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)]}</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">assert</span> <span class="n">deep_unref</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]}</span>
 </span></code></pre></div>
-<p>Lists, tuples, dictionaries (keys and values), sets, frozensets, and deques
-are rebuilt. Object-bearing NumPy arrays preserve their shape and dtype.
-Unregistered iterables still use the deprecated reconstruction fallback below.
-Other objects pass through unchanged unless you register their exact type.</p>
+<p>Exact lists, tuples, dictionaries (keys and values), sets, frozensets, and
+deques are rebuilt. With NumPy installed, exact arrays containing Python
+objects are rebuilt with their shape and dtype preserved; numeric arrays pass
+through unchanged. Unknown types and subclasses pass through by identity
+without inspection or iteration unless you register their exact type.</p>
 <p>Each occurrence is resolved independently. Repeated references to a container
 produce separate rebuilt containers; shared identity is not preserved. Cyclic
 inputs eventually raise Python's <code>RecursionError</code>.</p>
 <p>Resolved key/member collisions raise <code>ValueError</code>; unhashable keys/members raise
 <code>TypeError</code>. Reads inside a computation or effect create dependencies on the
 reactive values reached. Handler exceptions propagate unchanged.</p>
+<p>Unknown objects may hide unresolved reactive values. Results are not necessarily
+detached from their inputs, and traversal is not a globally atomic snapshot.</p>
+<h2 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h2>
+<p>Resolve reactive values before handing ordinary data to a serializer:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Effect</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]}</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">encoded</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">deep_unref</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">assert</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]}</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Resolve inside the callback to subscribe to the reached leaves.</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">sent</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">watcher</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">sent</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">deep_unref</span><span class="p">(</span><span class="n">payload</span><span class="p">))))</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="k">assert</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">sent</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">]}</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+</span></code></pre></div>
+<p>For application objects, explicitly project the fields you want to serialize.
+The serializer remains responsible for dates, domain objects, and format rules;
+<code>deep_unref</code> does not guarantee that its result is serializable.</p>
 <h2 id="custom-objects">Custom objects<a class="headerlink" href="#custom-objects" title="Permanent link">&para;</a></h2>
 <p>A position can contain reactive coordinates without being iterable. Register a
 handler to tell <code>deep_unref</code> which fields to visit:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nd">@dataclass</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">Position</span><span class="p">:</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Signal</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Signal</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="nd">@deep_unref</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Position</span><span class="p">)</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_position</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">resolve</span><span class="p">):</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">return</span> <span class="n">Position</span><span class="p">(</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="n">x</span><span class="o">=</span><span class="n">resolve</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">x</span><span class="p">),</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="n">y</span><span class="o">=</span><span class="n">resolve</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">y</span><span class="p">),</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="p">)</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">position</span> <span class="o">=</span> <span class="n">Position</span><span class="p">(</span><span class="n">Signal</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">20.0</span><span class="p">))</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">plain</span> <span class="o">=</span> <span class="n">deep_unref</span><span class="p">({</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">})</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="k">assert</span> <span class="n">plain</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">20.0</span><span class="p">)}</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">Signal</span><span class="p">)</span>  <span class="c1"># The input is unchanged.</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResolveContext</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nd">@dataclass</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">Position</span><span class="p">:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Signal</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">Signal</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nd">@deep_unref</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Position</span><span class="p">)</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_position</span><span class="p">(</span><span class="n">position</span><span class="p">:</span> <span class="n">Position</span><span class="p">,</span> <span class="n">resolve</span><span class="p">:</span> <span class="n">ResolveContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Position</span><span class="p">:</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="k">return</span> <span class="n">Position</span><span class="p">(</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="n">x</span><span class="o">=</span><span class="n">resolve</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">x</span><span class="p">),</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>        <span class="n">y</span><span class="o">=</span><span class="n">resolve</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">y</span><span class="p">),</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="p">)</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">position</span> <span class="o">=</span> <span class="n">Position</span><span class="p">(</span><span class="n">Signal</span><span class="p">(</span><span class="mf">10.0</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">20.0</span><span class="p">))</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="n">plain</span> <span class="o">=</span> <span class="n">deep_unref</span><span class="p">({</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">position</span><span class="p">})</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="k">assert</span> <span class="n">plain</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">20.0</span><span class="p">)}</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">position</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">Signal</span><span class="p">)</span>  <span class="c1"># The input is unchanged.</span>
 </span></code></pre></div>
 <p>Decide which fields to resolve, what metadata to copy unchanged, and which
 object to return. Prefer building a new object instead of mutating the input.
@@ -1013,45 +1104,44 @@ Use the supplied <code>resolve</code> on children rather than calling <code>deep
 that uses the same registered handlers throughout the traversal. A handler runs
 for each occurrence of an object, including repeated references.</p>
 <p>Registration applies to one exact type. Register subclasses separately when
-needed. Refer to the built-in handlers in <code>src/signified/_resolve.py</code> for more
+needed. Registrations replace any previous handler for that exact type. A
+handler defines which children are reached; call <code>resolve</code> on each intended
+child. Return types can change, so general <code>deep_unref</code> results are typed as
+<code>Any</code>. Refer to the built-in handlers in <code>src/signified/_resolve.py</code> for more
 examples, including dictionary keys and NumPy arrays.</p>
 <h2 id="migrating-unregistered-iterables">Migrating unregistered iterables<a class="headerlink" href="#migrating-unregistered-iterables" title="Permanent link">&para;</a></h2>
-<p>Automatic traversal of unregistered iterable types is deprecated and will be
-removed in <strong>0.6.0</strong>. It still attempts the old iterable constructor and emits
-a <code>DeprecationWarning</code>. If reconstruction is unsupported, the original object
-is returned; errors while resolving children are not hidden.</p>
-<p>Register a handler to keep resolving a custom container. In 0.6.0, unregistered
-types will be returned unchanged without inspecting or iterating them.</p>
+<p>Automatic traversal of unregistered iterable types was deprecated in 0.5.1
+and is removed in <strong>0.6.0</strong>. Errors raised by registered handlers propagate
+to the caller.</p>
+<p>Register a handler to keep resolving a custom container. Unregistered
+types are returned unchanged without inspecting or iterating them.</p>
 <p>For example, this custom iterable holds reactive readings and a label. Its
 handler resolves every reading and carries the label into the new container:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">Samples</span><span class="p">:</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nd">@deep_unref</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Samples</span><span class="p">)</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_samples</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">resolve</span><span class="p">):</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="n">resolve</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">)</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="k">return</span> <span class="n">Samples</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">samples</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">samples</span> <span class="o">=</span> <span class="n">Samples</span><span class="p">([</span><span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sensor A&quot;</span><span class="p">)</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">plain</span> <span class="o">=</span> <span class="n">deep_unref</span><span class="p">({</span><span class="s2">&quot;readings&quot;</span><span class="p">:</span> <span class="n">samples</span><span class="p">})</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">plain</span><span class="p">[</span><span class="s2">&quot;readings&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]</span>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="k">assert</span> <span class="n">plain</span><span class="p">[</span><span class="s2">&quot;readings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="s2">&quot;sensor A&quot;</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Signal</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">Samples</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="nd">@deep_unref</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">Samples</span><span class="p">)</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">resolve_samples</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">resolve</span><span class="p">):</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="n">resolve</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">)</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="k">return</span> <span class="n">Samples</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">samples</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">samples</span> <span class="o">=</span> <span class="n">Samples</span><span class="p">([</span><span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sensor A&quot;</span><span class="p">)</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">plain</span> <span class="o">=</span> <span class="n">deep_unref</span><span class="p">({</span><span class="s2">&quot;readings&quot;</span><span class="p">:</span> <span class="n">samples</span><span class="p">})</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">plain</span><span class="p">[</span><span class="s2">&quot;readings&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="k">assert</span> <span class="n">plain</span><span class="p">[</span><span class="s2">&quot;readings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="s2">&quot;sensor A&quot;</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Signal</span><span class="p">)</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The old iterable fallback could reconstruct the readings but lose the label,
 because it only passed items to the constructor. Registration explicitly
 preserves both. It also avoids the pre-0.6 deprecation warning and keeps the
 container's contents resolving in 0.6.0.</p>
-<p>This helper does not make every Python object JSON-serializable. Dates and
-other unsupported objects remain unchanged; format conversion belongs to the
-serializer you use afterward.</p>
 
 
 
@@ -1106,13 +1196,13 @@ serializer you use afterward.</p>
         
         
           
-          <a href="../migration/" class="md-footer__link md-footer__link--next" aria-label="Next: Preparing for 0.6">
+          <a href="../api/" class="md-footer__link md-footer__link--next" aria-label="Next: API Reference">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Preparing for 0.6
+                API Reference
               </div>
             </div>
             <div class="md-footer__button md-icon">

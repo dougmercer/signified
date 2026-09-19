@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://dougmercer.github.io/signified/dev/api/">
       
       
-        <link rel="prev" href="../migration/">
+        <link rel="prev" href="../resolution/">
       
       
         <link rel="next" href="../changes/">
@@ -306,6 +306,44 @@
   
   
     <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrating to 0.6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../compute-contract/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Compute Contract
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../playground/" class="md-tabs__link">
         
   
@@ -389,25 +427,6 @@
     
   
   Resolving nested values
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../migration/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Preparing for 0.6
 
       </a>
     </li>
@@ -587,6 +606,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating to 0.6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compute-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute Contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../playground/" class="md-nav__link">
         
   
@@ -719,33 +792,6 @@
       
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Preparing for 0.6
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
     
   
   
@@ -853,6 +899,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#signified.Signal.__setattr__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__setattr__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Signal.__setitem__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__setitem__
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -886,6 +954,78 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;invalidate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.Binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Binding
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" Binding">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.derive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;derive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;at
       
     </span>
   </a>
@@ -985,17 +1125,6 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;tap
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._mixin._ReactiveNamespace.peek" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;peek
       
     </span>
   </a>
@@ -1564,28 +1693,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#signified._mixin._ReactiveMixIn.__setattr__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__setattr__
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._mixin._ReactiveMixIn.__setitem__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__setitem__
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#functions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1608,6 +1715,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#signified.effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified.unref" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1616,22 +1734,71 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" unref">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#signified.deep_unref" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.has_value" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Nested containers
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;has_value
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#signified.is_reactive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;is_reactive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.as_rx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;as_rx
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;batch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.untracked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;untracked
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.deep_unref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit deep resolution
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1697,10 +1864,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#signified.is_reactive" class="md-nav__link">
+  <a href="#migration-diagnostics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;is_reactive
+        Migration diagnostics
       
     </span>
   </a>
@@ -1708,10 +1875,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#signified.has_value" class="md-nav__link">
+  <a href="#signified.migration.enable_warnings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;has_value
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;enable_warnings
       
     </span>
   </a>
@@ -1719,10 +1886,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#signified.as_rx" class="md-nav__link">
+  <a href="#signified.migration.disable_warnings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;as_rx
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;disable_warnings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.migration.warnings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;warnings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.migration.warnings_enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;warnings_enabled
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.migration.SignifiedMigrationWarning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SignifiedMigrationWarning
       
     </span>
   </a>
@@ -1903,6 +2103,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#signified.Signal.__setattr__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__setattr__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Signal.__setitem__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__setitem__
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1936,6 +2158,78 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;invalidate
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.Binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Binding
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" Binding">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.value" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;value
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.derive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;derive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#signified.Binding.at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;at
       
     </span>
   </a>
@@ -2035,17 +2329,6 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;tap
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._mixin._ReactiveNamespace.peek" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;peek
       
     </span>
   </a>
@@ -2614,28 +2897,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#signified._mixin._ReactiveMixIn.__setattr__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__setattr__
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._mixin._ReactiveMixIn.__setitem__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__setitem__
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#functions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2658,6 +2919,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#signified.effect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;effect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified.unref" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2666,22 +2938,71 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" unref">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#signified.deep_unref" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.has_value" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Nested containers
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;has_value
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#signified.is_reactive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;is_reactive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.as_rx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;as_rx
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;batch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.untracked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;untracked
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.deep_unref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Explicit deep resolution
+      
+    </span>
+  </a>
   
 </li>
       
@@ -2747,10 +3068,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#signified.is_reactive" class="md-nav__link">
+  <a href="#migration-diagnostics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;is_reactive
+        Migration diagnostics
       
     </span>
   </a>
@@ -2758,10 +3079,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#signified.has_value" class="md-nav__link">
+  <a href="#signified.migration.enable_warnings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;has_value
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;enable_warnings
       
     </span>
   </a>
@@ -2769,10 +3090,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#signified.as_rx" class="md-nav__link">
+  <a href="#signified.migration.disable_warnings" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;as_rx
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;disable_warnings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.migration.warnings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;warnings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.migration.warnings_enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;warnings_enabled
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.migration.SignifiedMigrationWarning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;SignifiedMigrationWarning
       
     </span>
   </a>
@@ -2875,7 +3229,7 @@
 <p><code>Signal</code> stores a value and notifies observers when that value changes.
 The <code>value</code> property is read/write:</p>
 <ul>
-<li>reading <code>value</code> returns the current plain value</li>
+<li>reading <code>value</code> returns the exact stored value</li>
 <li>assigning <code>value</code> updates the stored value and notifies observers if it changed</li>
 </ul>
 
@@ -2896,7 +3250,7 @@ The <code>value</code> property is read/write:</p>
                 <code>value</code>
             </td>
             <td>
-                  <code><span title="signified._types.HasValue">HasValue</span>[<span title="signified._reactive.Signal[T]">T</span>]</code>
+                  <code><span title="signified._reactive.Signal[T]">T</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2960,9 +3314,8 @@ The <code>value</code> property is read/write:</p>
     <div class="doc doc-contents ">
 
         <p>The current value.</p>
-<p>Getting this property returns the plain Python value, unwrapping any
-nested reactive. Setting it updates the stored value and notifies
-observers if the value changed.</p>
+<p>Getting this property returns the stored Python value. Setting it
+updates the stored value and notifies observers if the value changed.</p>
 
     </div>
 
@@ -3035,6 +3388,228 @@ is raised.</p>
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="signified.Signal.__setattr__" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__setattr__</span>
+
+
+<a href="#signified.Signal.__setattr__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__setattr__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Forward a public attribute write to the wrapped object and notify.</p>
+<p>Private names and <code>Signal</code>'s own attributes (such as <code>value</code>) are
+assigned on the wrapper. Any other name must already exist on the
+wrapped object; the write is applied there and observers are notified,
+exactly like <code>signal[key] = value</code>. Unknown names raise <code>AttributeError</code>
+instead of silently creating an attribute on the wrapper.</p>
+<p>Only <code>Signal</code> forwards writes, because only a <code>Signal</code> owns its value.
+A <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> holds a cache that the next refresh
+replaces, so writing through it would mutate state it does not own.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The attribute name to assign.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>value</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value to assign.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="AttributeError">AttributeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the wrapped object has no attribute <code>name</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="k">class</span><span class="w"> </span><span class="nc">Person</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">...</span>     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">...</span>         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">...</span>     <span class="k">def</span><span class="w"> </span><span class="nf">greet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">...</span>         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Hi, I&#39;m </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">Person</span><span class="p">(</span><span class="s2">&quot;Alice&quot;</span><span class="p">))</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">greet</span><span class="p">()</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s2">&quot;Hi, I&#39;m Alice!&quot;</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Bob&quot;</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s2">&quot;Hi, I&#39;m Bob!&quot;</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="signified.Signal.__setitem__" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__setitem__</span>
+
+
+<a href="#signified.Signal.__setitem__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Set an item on the wrapped <code>list</code> or <code>dict</code> and notify observers.</p>
+<p>Assigning through the <code>Signal</code> rather than through <code>signal.value</code> is
+what notifies dependents: in-place mutation of the wrapped object is not
+observed on its own. Only <code>Signal</code> forwards item assignment, because
+only a <code>Signal</code> owns its value; a <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> holds
+a cache that the next refresh replaces.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>key</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The key to change.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>value</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value to set it to.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="TypeError">TypeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the wrapped value is not a <code>list</code> or <code>dict</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="nb">sum</span><span class="p">)(</span><span class="n">s</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="mi">6</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="mi">8</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -3067,7 +3642,9 @@ reactive values are read during evaluation.</p>
 <p>In most cases <code>Computed</code> instances should be created implicitly by using
 overloaded operators or the <a class="autorefs autorefs-internal" href="#signified.computed">computed</a> decorator rather
 than directly using the <code>Computed</code> class.</p>
-<p>Unlike <a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a>, <code>Computed.value</code> is read-only.</p>
+<p>Unlike <a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a>, <code>Computed.value</code> is read-only.
+Ordinary exceptions are cached like values and re-raised on reads until a
+dependency changes or <code>invalidate()</code> forces another evaluation.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3216,6 +3793,234 @@ standard change-detection path.</p>
 
 
 
+<h2 id="signified.Binding" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">signified.Binding</span>
+
+
+<a href="#signified.Binding" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a>[<span title="signified._reactive.T">T</span>]</code></p>
+
+
+
+        <p>A stable reactive handle whose current source can be replaced.</p>
+<p>Use a <code>Binding</code> when an object must keep the same public reactive identity
+while changing which <code>Signal</code>, <code>Computed</code>, or <code>Binding</code> supplies its value.
+Assigning a reactive object follows it, while assigning a plain value
+selects a private <code>Signal</code>.</p>
+<p>A <code>Binding</code> is an ordinary <code>Computed</code> over a <code>Signal</code> that holds the
+current source: it reads that signal, then reads the source's value.
+Rebinding therefore follows the normal contract. The switch invalidates
+the binding, and dependents recompute only if the resolved value changed
+under the usual equality policy.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>source</code>
+            </td>
+            <td>
+                  <code><span title="signified._reactive.T">T</span> | <span title="signified._types.ReactiveValue">ReactiveValue</span>[<span title="signified._reactive.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A reactive source to follow, or an initial plain value managed
+by a private <code>Signal</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="signified.Binding.source" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">source</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#signified.Binding.source" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">source</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the exact current source without resolving it.</p>
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="signified.Binding.value" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">value</span>
+
+
+<a href="#signified.Binding.value" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">value</span><span class="p">(</span><span class="n">new_source</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Select a plain value or follow a reactive source.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="signified.Binding.set" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set</span>
+
+
+<a href="#signified.Binding.set" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Select a plain value or follow a reactive source.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="signified.Binding.derive" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">derive</span>
+
+
+<a href="#signified.Binding.derive" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">derive</span><span class="p">(</span><span class="n">build</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build and select a source from the exact pre-rebind source.</p>
+<p>Capturing the old source prevents the common cycle created by building
+a new computation from the <code>Binding</code> that will receive that computation.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="signified.Binding.at" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">at</span>
+
+
+<a href="#signified.Binding.at" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">at</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Temporarily follow a private <code>Signal</code> holding <code>value</code>.</p>
+<p>The previous source is restored when the context exits, even if an
+exception is raised.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>value</code>
+            </td>
+            <td>
+                  <code><span title="signified._reactive.T">T</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The temporary plain value.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="signified.Effect" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">signified.Effect</span>
 
@@ -3230,7 +4035,10 @@ standard change-detection path.</p>
         <p>Run a function (for its side effects) and re-run it whenever its reactive dependencies change.</p>
 <p>Any reactive value read inside <code>fn</code> — via <code>.value</code> or <a class="autorefs autorefs-internal" href="#signified.unref">unref</a> — is
 automatically tracked as a dependency. The function runs once immediately on
-construction, then again each time a dependency changes.</p>
+construction (or at batch exit), then again when dependencies change.
+Pending notifications coalesce; cascading writes may cause further runs.
+If computed dependencies refresh to unchanged outcomes, the callback is
+skipped. A new failed evaluation and recovery both count as changes.</p>
 
 
 <details class="warning" open>
@@ -3334,7 +4142,7 @@ effect will silently stop running:</p>
 
     <div class="doc doc-contents ">
 
-        <p>Unsubscribe from all dependencies and stop the effect.</p>
+        <p>Stop this effect, including any pending run. Safe to repeat.</p>
 
 
     </div>
@@ -3367,8 +4175,8 @@ effect will silently stop running:</p>
 
 
         <p>Abstract base class for reactive values.</p>
-<p>Both <a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a> and <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> extend this
-class. <em>You should use them directly.</em></p>
+<p><a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a>, <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a>, and
+<a class="autorefs autorefs-internal" href="#signified.Binding">Binding</a> extend this class. <em>You should use them directly.</em></p>
 <p>Variable is only exposed for type hinting or subclassing purposes.</p>
 
 
@@ -3536,8 +4344,9 @@ return as reactive values (identity checks, containment, ternary, etc.):</p>
     <div class="doc doc-contents ">
 
         <p>Eagerly run <code>fn</code> for side effects whenever the source changes.</p>
-<p><code>fn</code> is called immediately on creation and again on every subsequent
-change — without requiring the caller to read <code>.value</code>.</p>
+<p><code>fn</code> runs synchronously on creation and after updates, without a
+<code>.value</code> read. Inside batch(), initial and subsequent runs are deferred
+and pending notifications coalesce.</p>
 <p>This is a convenience wrapper around <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a>. The source value is
 passed as the single argument to <code>fn</code> on each run. For effects that need
 to read multiple reactive values, use <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a> directly.</p>
@@ -3638,7 +4447,7 @@ instance. Call <a class="autorefs autorefs-internal" href="#signified.Effect.dis
 <p>This returns a cached <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a>: repeated reads
 without invalidation do not repeat the callback, and unread intermediate
 values are skipped. Keep the result alive. Use <code>rx.effect</code> for eager
-side effects.</p>
+side effects, or <code>untracked()</code> to inspect a value without subscribing.</p>
 
 
 <details class="example" open>
@@ -3655,26 +4464,6 @@ side effects.</p>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
 </span></code></pre></div>
 </details>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="signified._mixin._ReactiveNamespace.peek" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">peek</span>
-
-
-<a href="#signified._mixin._ReactiveNamespace.peek" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">peek</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Deprecated alias for tap; removed in 0.6.0.</p>
-
 
     </div>
 
@@ -7924,190 +8713,6 @@ subscript, and attribute-access operations all return reactive
 
 </div>
 
-<div class="doc doc-object doc-function">
-
-
-<h2 id="signified._mixin._ReactiveMixIn.__setattr__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__setattr__</span>
-
-
-<a href="#signified._mixin._ReactiveMixIn.__setattr__" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__setattr__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Assign <code>name</code> on the wrapper or forward it to the wrapped value.</p>
-<p>Private attributes and names owned by the wrapper type are assigned on the
-wrapper itself. Other names are forwarded to the wrapped value when that
-object already defines the attribute, then observers are notified so
-dependents recompute.</p>
-<p>This allows <code>signal.name = "Bob"</code> to update the wrapped object while still
-preserving the wrapper's own API such as <code>.value</code> and <code>.rx</code>.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>name</code>
-            </td>
-            <td>
-                  <code><span title="str">str</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The attribute name to assign.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>value</code>
-            </td>
-            <td>
-                  <code><span title="typing.Any">Any</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The value to assign.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="k">class</span><span class="w"> </span><span class="nc">Person</span><span class="p">:</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">...</span>     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">...</span>         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">...</span>     <span class="k">def</span><span class="w"> </span><span class="nf">greet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">...</span>         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Hi, I&#39;m </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">!&quot;</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">Person</span><span class="p">(</span><span class="s2">&quot;Alice&quot;</span><span class="p">))</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">greet</span><span class="p">()</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s2">&quot;Hi, I&#39;m Alice!&quot;</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Bob&quot;</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s2">&quot;Hi, I&#39;m Bob!&quot;</span>
-</span></code></pre></div>
-</details>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="signified._mixin._ReactiveMixIn.__setitem__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__setitem__</span>
-
-
-<a href="#signified._mixin._ReactiveMixIn.__setitem__" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Set an item on the underlying <code>self.value</code>.</p>
-
-
-<details class="note" open>
-  <summary>Note</summary>
-  <p>It is necessary to set the item via the Signal, rather than the
-underlying <code>signal.value</code>, to properly notify downstream observers
-of changes. Reason being, mutable objects that, for example, fallback
-to id comparison for equality checks will appear as if nothing changed
-even an element of the object is changed.</p>
-</details>
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>key</code>
-            </td>
-            <td>
-                  <code><span title="typing.Any">Any</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The key to change.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>value</code>
-            </td>
-            <td>
-                  <code><span title="typing.Any">Any</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The value to set it to.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <p>```py</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>s = Signal([1, 2, 3])
-result = computed(sum)(s)
-result.value
-6
-s[1] = 4
-result.value
-8</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
-
-    </div>
-
-</div>
-
 
 
   </div>
@@ -8131,9 +8736,10 @@ result.value
     <div class="doc doc-contents first">
 
         <p>Wrap a function so calls produce a reactive <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> result.</p>
-<p>The returned wrapper accepts plain values, reactive values, or nested
-containers. On each recomputation, arguments are resolved with
-<a class="autorefs autorefs-internal" href="#signified.deep_unref">deep_unref</a>, so <code>func</code> always receives plain Python values.</p>
+<p>Direct reactive arguments are shallowly unwrapped on each recomputation.
+Plain values, including containers that contain reactive values, are passed
+through unchanged. Call <a class="autorefs autorefs-internal" href="#signified.deep_unref">deep_unref</a> inside the function for explicit
+recursive resolution.</p>
 <p>Any reactive value read during evaluation becomes a dependency; the
 <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> updates automatically when any dependency changes.</p>
 
@@ -8199,6 +8805,109 @@ containers. On each recomputation, arguments are resolved with
 <div class="doc doc-object doc-function">
 
 
+<h2 id="signified.effect" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.effect</span>
+
+
+<a href="#signified.effect" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">effect</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Wrap a function so calls produce a reactive <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a>.</p>
+<p>Direct reactive arguments are shallowly unwrapped on each re-run. Plain
+values, including containers that contain reactive values, are passed
+through unchanged. Call <a class="autorefs autorefs-internal" href="#signified.deep_unref">deep_unref</a> inside the function for explicit
+recursive resolution.</p>
+<p>The effect runs synchronously (at outermost batch exit when batched), and
+re-runs when reactive dependencies change. Pending notifications coalesce. It is active as long as the caller holds a reference to
+the returned <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>func</code>
+            </td>
+            <td>
+                  <code><span title="typing.Callable">Callable</span>[..., None]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Function run for its side effects.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.Callable">Callable</span>[..., <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A wrapper that returns an <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a> when called.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="nd">@effect</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">...</span> <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">...</span>     <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">e</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">seen</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">seen</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">e</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">seen</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="signified.unref" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.unref</span>
 
@@ -8213,11 +8922,10 @@ containers. On each recomputation, arguments are resolved with
 
     <div class="doc doc-contents first">
 
-        <p>Unwrap a reactive value to its plain Python value.</p>
-<p>Repeatedly follows the <code>.value</code> chain until a non-reactive value is
-reached. When called inside a <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> or <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a> evaluation,
-each unwrapped reactive registers as a dependency — equivalent to
-reading <code>.value</code> directly.</p>
+        <p>Unwrap exactly one reactive boundary.</p>
+<p>When called inside a <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> or <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a>
+evaluation, the reactive registers as a dependency — equivalent to reading
+<code>.value</code> directly.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8240,7 +8948,7 @@ reading <code>.value</code> directly.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Plain value, reactive value, or nested reactive value.</p>
+                <p>Plain value or reactive value.</p>
               </div>
             </td>
             <td>
@@ -8266,7 +8974,7 @@ reading <code>.value</code> directly.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The fully unwrapped value.</p>
+                <p>The value inside one reactive wrapper, or the original plain value.</p>
               </div>
             </td>
           </tr>
@@ -8276,255 +8984,11 @@ reading <code>.value</code> directly.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">nested</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">Signal</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">unref</span><span class="p">(</span><span class="n">nested</span><span class="p">)</span>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">source</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">unref</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="mi">5</span>
 </span></code></pre></div>
 </details>
-
-    </div>
-
-</div><h3 id="signified.deep_unref">Nested containers<a class="headerlink" href="#signified.deep_unref" title="Permanent link">&para;</a></h3>
-
-
-<div class="doc doc-object doc-class">
-
-
-
-<a id="signified._resolve._DeepUnref"></a>
-    <div class="doc doc-contents first">
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="signified._resolve._DeepUnref.__call__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__call__</span>
-
-
-<a href="#signified._resolve._DeepUnref.__call__" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__call__</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Return value with reactive contents replaced by their current values.</p>
-<p>Supported containers are rebuilt. Unregistered iterables use legacy
-reconstruction with a DeprecationWarning until 0.6.0. Other unknown
-objects pass through unchanged. Repeated references are resolved
-independently. Cyclic inputs eventually raise RecursionError. Dictionary keys or set members that become duplicates
-after unwrapping raise ValueError; unhashable keys or members raise TypeError.</p>
-<p>Reads inside a computation or effect create dependencies.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="signified._resolve._DeepUnref.register" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">register</span>
-
-
-<a href="#signified._resolve._DeepUnref.register" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">register</span><span class="p">(</span><span class="n">container_type</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Teach deep_unref how to rebuild one application or container type.</p>
-<p>The decorated function receives <code>(value, resolve)</code> and returns the
-replacement object. Call <code>resolve</code> on each child that should be
-unwrapped. Leave unrelated metadata alone, and avoid changing the input.</p>
-<p>Only this exact type uses the handler; subclasses need registration
-too. Registering the type again replaces its handler. See the module
-example and the built-in handler implementations for working patterns.</p>
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="signified.ResolveContext" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">signified.ResolveContext</span>
-
-
-<a href="#signified.ResolveContext" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-    <div class="doc doc-contents first">
-
-
-
-        <p>Resolve a child within the current traversal.</p>
-<p>Handlers call <code>resolve(child)</code> for each field they want to visit.
-The supplied context recursively resolves values with the current handlers.</p>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="signified.ResolveContext.__call__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__call__</span>
-
-
-<a href="#signified.ResolveContext.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__call__</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div><p>See <a href="../resolution/">Resolving nested values</a> for examples and custom handlers.
-</p>
-
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="signified.is_reactive" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.is_reactive</span>
-
-
-<a href="#signified.is_reactive" class="headerlink" title="Permanent link">&para;</a></h2>
-          <div class="doc-overloads">
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_reactive</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">],</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.TypeGuard">TypeGuard</span></span><span class="p">[</span><span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">]]</span>
-</span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_reactive</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="U">U</span></span><span class="p">],</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.TypeGuard">TypeGuard</span></span><span class="p">[</span><span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="U">U</span></span><span class="p">]]</span>
-</span></code></pre></div>          </div>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_reactive</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents first">
-
-        <p>Return whether an object is a signified reactive wrapper.</p>
-<p>This guard narrows a plain-or-reactive <a class="autorefs autorefs-internal" href="#signified.HasValue">HasValue</a> to
-<a class="autorefs autorefs-internal" href="#signified.ReactiveValue">ReactiveValue</a> in the true branch without reading
-the wrapped value or creating a dependency.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>obj</code>
-            </td>
-            <td>
-                  <code><span title="object">object</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Value to inspect.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>True</code> for a <a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a>, <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a>.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
 
     </div>
 
@@ -8635,6 +9099,101 @@ plain value or a reactive wrapper and you need to narrow the type.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="signified.is_reactive" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.is_reactive</span>
+
+
+<a href="#signified.is_reactive" class="headerlink" title="Permanent link">&para;</a></h2>
+          <div class="doc-overloads">
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_reactive</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.TypeGuard">TypeGuard</span></span><span class="p">[</span><span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">]]</span>
+</span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_reactive</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="signified._types.HasValue">HasValue</span></span><span class="p">[</span><span class="n"><span title="U">U</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.TypeGuard">TypeGuard</span></span><span class="p">[</span><span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="signified._reactive.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="signified._types.ReactiveValue">ReactiveValue</span></span><span class="p">[</span><span class="n"><span title="U">U</span></span><span class="p">]]</span>
+</span></code></pre></div>          </div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_reactive</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Return whether an object is a signified reactive wrapper.</p>
+<p>This guard narrows a plain-or-reactive <a class="autorefs autorefs-internal" href="#signified.HasValue">HasValue</a> to
+<a class="autorefs autorefs-internal" href="#signified.ReactiveValue">ReactiveValue</a> in the true branch without reading
+the wrapped value or creating a dependency.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>obj</code>
+            </td>
+            <td>
+                  <code><span title="object">object</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Value to inspect.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>True</code> for a <a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a>, <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a>,</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>or <a class="autorefs autorefs-internal" href="#signified.Binding">Binding</a>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="signified.as_rx" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.as_rx</span>
 
@@ -8712,13 +9271,338 @@ plain value or a reactive wrapper and you need to narrow the type.</p>
 
     </div>
 
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified.batch" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.batch</span>
+
+
+<a href="#signified.batch" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">batch</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Defer effects until the outermost synchronous batch exits.</p>
+<p>Writes are immediate and computed reads remain current. Newly created
+effects are deferred too. Nested batches combine; cascading writes may run
+an effect more than once. This is not a transaction: errors do not roll back
+writes, and ordinary reads can see intermediate state. Do not span await or
+use the reactive graph from multiple threads.</p>
+<p>One failing effect raises its exception directly; several are raised as an
+ExceptionGroup. A body exception alone is re-raised unchanged; simultaneous
+body and flush failures are grouped together.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified.untracked" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.untracked</span>
+
+
+<a href="#signified.untracked" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">untracked</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Read without subscribing the enclosing computation or effect.</p>
+<p>Nested computations still collect their own dependencies. Reads return
+current values and retain normal hooks and errors. Synchronous, single-
+thread use only; this context must not span await.</p>
+
+
+    </div>
+
+</div><h2 id="signified.deep_unref">Explicit deep resolution<a class="headerlink" href="#signified.deep_unref" title="Permanent link">&para;</a></h2>
+<p>Use <code>deep_unref(value)</code> to replace reactive values inside supported containers.
+For example, <code>deep_unref({"x": Signal(1)})</code> returns <code>{"x": 1}</code>. To support a
+custom object, register a handler with <code>@deep_unref.register(MyType)</code>.</p>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<a id="signified._resolve._DeepUnref"></a>
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified._resolve._DeepUnref.__call__" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__call__</span>
+
+
+<a href="#signified._resolve._DeepUnref.__call__" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__call__</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return value with reactive contents replaced by their current values.</p>
+<p>Supported containers are rebuilt; unknown objects pass through unchanged.
+Repeated references are resolved independently. Cyclic inputs eventually
+raise RecursionError. Dictionary keys or set members that become duplicates
+after unwrapping raise ValueError; unhashable keys or members raise TypeError.</p>
+<p>Reads inside a computation or effect create dependencies. Use untracked()
+around the call if you want to read without subscribing.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified._resolve._DeepUnref.register" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">register</span>
+
+
+<a href="#signified._resolve._DeepUnref.register" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">register</span><span class="p">(</span><span class="n">container_type</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Teach deep_unref how to rebuild one application or container type.</p>
+<p>The decorated function receives <code>(value, resolve)</code> and returns the
+replacement object. Call <code>resolve</code> on each child that should be
+unwrapped. Leave unrelated metadata alone, and avoid changing the input.</p>
+<p>Only this exact type uses the handler; subclasses need registration
+too. Registering the type again replaces its handler. See the module
+example and the built-in handler implementations for working patterns.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="signified.ResolveContext" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">signified.ResolveContext</span>
+
+
+<a href="#signified.ResolveContext" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+
+
+
+        <p>Resolve a child within the current traversal.</p>
+<p>Handlers call <code>resolve(child)</code> for each field they want to visit.
+The supplied context recursively resolves values with the current handlers.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="signified.ResolveContext.__call__" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__call__</span>
+
+
+<a href="#signified.ResolveContext.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__call__</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div><p>See <a href="../resolution/">Resolving nested values</a> for custom-handler examples.</p>
+<h2 id="migration-diagnostics">Migration diagnostics<a class="headerlink" href="#migration-diagnostics" title="Permanent link">&para;</a></h2>
+<p>Import the namespace with <code>from signified import migration</code>.</p>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified.migration.enable_warnings" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.migration.enable_warnings</span>
+
+
+<a href="#signified.migration.enable_warnings" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">enable_warnings</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Enable migration warnings for subsequent reactive operations.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified.migration.disable_warnings" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.migration.disable_warnings</span>
+
+
+<a href="#signified.migration.disable_warnings" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">disable_warnings</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Disable migration warnings.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified.migration.warnings" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.migration.warnings</span>
+
+
+<a href="#signified.migration.warnings" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">warnings</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Temporarily enable migration warnings within a <code>with</code> block.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified.migration.warnings_enabled" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.migration.warnings_enabled</span>
+
+
+<a href="#signified.migration.warnings_enabled" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">warnings_enabled</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Return whether migration warnings are currently enabled.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="signified.migration.SignifiedMigrationWarning" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">signified.migration.SignifiedMigrationWarning</span>
+
+
+<a href="#signified.migration.SignifiedMigrationWarning" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="UserWarning">UserWarning</span></code></p>
+
+
+
+        <p>Warning for code whose reactive meaning changed in signified 0.6.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
 </div><h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
 <h3 id="signified.HasValue">HasValue<a class="headerlink" href="#signified.HasValue" title="Permanent link">&para;</a></h3>
-<p><strong><code>HasValue[T]</code></strong> — <code>T | Computed[T] | Signal[T]</code></p>
+<p><strong><code>HasValue[T]</code></strong> — <code>T | Computed[T] | Signal[T] | Binding[T]</code></p>
 <p>A plain or reactive value that resolves to <code>T</code>. Use as a type hint when a
 parameter accepts either a raw value or a reactive wrapper.</p>
 <h3 id="signified.ReactiveValue">ReactiveValue<a class="headerlink" href="#signified.ReactiveValue" title="Permanent link">&para;</a></h3>
-<p><strong><code>ReactiveValue[T]</code></strong> — <code>Computed[T] | Signal[T]</code></p>
+<p><strong><code>ReactiveValue[T]</code></strong> — <code>Computed[T] | Signal[T] | Binding[T]</code></p>
 <p>A reactive wrapper that resolves to <code>T</code>.</p>
 
 
@@ -8764,7 +9648,7 @@ parameter accepts either a raw value or a reactive wrapper.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../migration/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Preparing for 0.6">
+          <a href="../resolution/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Resolving nested values">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -8774,7 +9658,7 @@ parameter accepts either a raw value or a reactive wrapper.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Preparing for 0.6
+                Resolving nested values
               </div>
             </div>
           </a>

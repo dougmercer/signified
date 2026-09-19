@@ -304,6 +304,44 @@
   
   
     <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrating to 0.6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../compute-contract/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Compute Contract
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../playground/" class="md-tabs__link">
         
   
@@ -387,25 +425,6 @@
     
   
   Resolving nested values
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../migration/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Preparing for 0.6
 
       </a>
     </li>
@@ -585,6 +604,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating to 0.6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compute-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute Contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../playground/" class="md-nav__link">
         
   
@@ -701,33 +774,6 @@
     
   
     Resolving nested values
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Preparing for 0.6
   
 
     
@@ -872,10 +918,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#in-place-mutation-of-mutable-collections" class="md-nav__link">
+  <a href="#in-place-mutation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        In-Place Mutation of Mutable Collections
+        In-place mutation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scheduling-and-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheduling and snapshots
       
     </span>
   </a>
@@ -941,10 +998,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#in-place-mutation-of-mutable-collections" class="md-nav__link">
+  <a href="#in-place-mutation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        In-Place Mutation of Mutable Collections
+        In-place mutation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scheduling-and-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheduling and snapshots
       
     </span>
   </a>
@@ -997,31 +1065,32 @@
 <h1 id="known-limitations">Known Limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h1>
 <h2 id="type-inference">Type Inference<a class="headerlink" href="#type-inference" title="Permanent link">&para;</a></h2>
 <p>This library's type hints do not work with <code>mypy</code>, but they do work well with <code>pyright</code>.</p>
-<h2 id="in-place-mutation-of-mutable-collections">In-Place Mutation of Mutable Collections<a class="headerlink" href="#in-place-mutation-of-mutable-collections" title="Permanent link">&para;</a></h2>
-<p>When working with values like <code>list</code> and <code>dict</code>, mutating via methods on the underlying object does not automatically notify observers.</p>
+<h2 id="in-place-mutation">In-place mutation<a class="headerlink" href="#in-place-mutation" title="Permanent link">&para;</a></h2>
+<p>Raw mutable objects do not become reactive containers. Replace their value or
+explicitly notify after mutation:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">computed</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># This won&#39;t work as expected</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">numbers</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">sum_numbers</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="nb">sum</span><span class="p">)(</span><span class="n">numbers</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">sum_numbers</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 6</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">numbers</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>   <span class="c1"># Mutation doesn&#39;t trigger update</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">sum_numbers</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Still 6, not 10 as expected</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># Instead, do one of these:</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># 1. Assign a new list</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">numbers</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">sum_numbers</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># 2. Create a new list with the existing values</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">numbers</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">numbers</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="nb">print</span><span class="p">(</span><span class="n">sum_numbers</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="c1"># 10</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="c1"># 3. For lists/dicts, use __setitem__ on the signal</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">numbers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">99</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="nb">print</span><span class="p">(</span><span class="n">sum_numbers</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 108  (99 + 2 + 3 + 4)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">numbers</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">total</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="nb">sum</span><span class="p">)(</span><span class="n">numbers</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">assert</span> <span class="n">total</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">6</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">numbers</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">assert</span> <span class="n">total</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">6</span>  <span class="c1"># cached: raw mutation did not notify</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">numbers</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">assert</span> <span class="n">total</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">10</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">numbers</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">numbers</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">assert</span> <span class="n">total</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">15</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">numbers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">99</span>  <span class="c1"># wrapper assignment also notifies</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">assert</span> <span class="n">total</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">113</span>
 </span></code></pre></div>
+<h2 id="scheduling-and-snapshots">Scheduling and snapshots<a class="headerlink" href="#scheduling-and-snapshots" title="Permanent link">&para;</a></h2>
+<p>Reactive operations must run on one thread. <code>batch()</code> and <code>untracked()</code> are
+synchronous scopes and must not span <code>await</code>. Batching defers effects but does
+not isolate reads or roll back applied changes. Cascading writes may run an
+effect more than once per flush.</p>
+<p><code>deep_unref</code> only enters registered exact types. Unknown objects remain shared
+and may hide reactive values; the result is neither a detached snapshot nor
+guaranteed serializable. All encountered cycles raise. Reactive containers,
+transactional updates, and detached snapshots are deferred.</p>
 <h2 id="plugin-hooks-are-opt-in">Plugin Hooks Are Opt-In<a class="headerlink" href="#plugin-hooks-are-opt-in" title="Permanent link">&para;</a></h2>
 <p>Plugin hooks are disabled by default to keep the base install dependency-free and low-overhead. To activate them, install the plugin extra and set the environment variable:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;signified[plugins]&quot;</span>

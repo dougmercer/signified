@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://dougmercer.github.io/signified/dev/migration/">
+        <link rel="canonical" href="https://dougmercer.github.io/signified/dev/compute-contract/">
       
       
-        <link rel="prev" href="../usage/">
+        <link rel="prev" href="../migration/">
       
       
-        <link rel="next" href="../compute-contract/">
+        <link rel="next" href="../playground/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Migrating to 0.6 - Signified</title>
+        <title>Compute Contract - Signified</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#migrating-to-06" class="md-skip">
+        <a href="#compute-contract" class="md-skip">
           Skip to content
         </a>
       
@@ -146,7 +146,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Migrating to 0.6
+              Compute Contract
             
           </span>
         </div>
@@ -304,11 +304,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
         
   
   
@@ -325,9 +323,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../compute-contract/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -601,6 +601,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating to 0.6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -620,7 +647,7 @@
   <span class="md-ellipsis">
     
   
-    Migrating to 0.6
+    Compute Contract
   
 
     
@@ -638,7 +665,7 @@
   <span class="md-ellipsis">
     
   
-    Migrating to 0.6
+    Compute Contract
   
 
     
@@ -664,10 +691,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prepare-on-051-first" class="md-nav__link">
+  <a href="#reads-and-equality" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prepare on 0.5.1 first
+        Reads and equality
       
     </span>
   </a>
@@ -675,10 +702,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#following-versus-storing" class="md-nav__link">
+  <a href="#recursive-resolution-and-serialization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Following versus storing
+        Recursive resolution and serialization
       
     </span>
   </a>
@@ -686,10 +713,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#container-arguments-and-serialization" class="md-nav__link">
+  <a href="#untracked-reads" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Container arguments and serialization
+        Untracked reads
       
     </span>
   </a>
@@ -697,35 +724,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#equality-and-mutation" class="md-nav__link">
+  <a href="#batching-and-effect-lifetime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Equality and mutation
+        Batching and effect lifetime
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Batching and effect lifetime">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#errors-and-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors and recovery
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#batch-writes-and-untracked-reads" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Batch writes and untracked reads
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#optional-migration-diagnostics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Optional migration diagnostics
-      
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -733,33 +755,6 @@
   
 </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../compute-contract/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Compute Contract
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1007,10 +1002,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prepare-on-051-first" class="md-nav__link">
+  <a href="#reads-and-equality" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prepare on 0.5.1 first
+        Reads and equality
       
     </span>
   </a>
@@ -1018,10 +1013,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#following-versus-storing" class="md-nav__link">
+  <a href="#recursive-resolution-and-serialization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Following versus storing
+        Recursive resolution and serialization
       
     </span>
   </a>
@@ -1029,10 +1024,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#container-arguments-and-serialization" class="md-nav__link">
+  <a href="#untracked-reads" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Container arguments and serialization
+        Untracked reads
       
     </span>
   </a>
@@ -1040,35 +1035,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#equality-and-mutation" class="md-nav__link">
+  <a href="#batching-and-effect-lifetime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Equality and mutation
+        Batching and effect lifetime
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Batching and effect lifetime">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#errors-and-recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors and recovery
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#batch-writes-and-untracked-reads" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Batch writes and untracked reads
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#optional-migration-diagnostics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Optional migration diagnostics
-      
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1100,159 +1090,167 @@
   
 
 
-<h1 id="migrating-to-06">Migrating to 0.6<a class="headerlink" href="#migrating-to-06" title="Permanent link">&para;</a></h1>
-<p>Version 0.6 replaces implicit deep behavior with explicit reads. Test both
-returned values and propagation after updating nested values.</p>
-<h2 id="prepare-on-051-first">Prepare on 0.5.1 first<a class="headerlink" href="#prepare-on-051-first" title="Permanent link">&para;</a></h2>
-<p>Version 0.5.1 provides opt-in migration diagnostics, <code>deep_unref.register(Type)</code>,
-and <code>rx.tap()</code> while retaining the previous following, equality, and scheduling
-behavior. You can make these changes before upgrading the runtime:</p>
-<ul>
-<li>Enable migration diagnostics while exercising representative workflows.</li>
-<li>Read <code>source.value</code> explicitly when a computation should return its value.</li>
-<li>Call <code>deep_unref</code> inside callbacks that need resolved nested containers.</li>
-<li>Register custom containers with the one-argument <code>resolve(child)</code> handler API.</li>
-<li>Replace <code>rx.peek(fn)</code> with <code>rx.tap(fn)</code>; 0.5.1 keeps a deprecated alias.</li>
-<li>Route mutation through the Signal that owns the value.</li>
-</ul>
-<p><code>Binding</code>, <code>batch()</code>, and <code>untracked()</code> require 0.6. Change imports and replace
-<code>Signal(source)</code> with <code>Binding(source)</code> when upgrading to that version.
-Test propagation, callback counts, equality assumptions, and error recovery;
-a warning-free run does not establish compatibility.</p>
-<h2 id="following-versus-storing">Following versus storing<a class="headerlink" href="#following-versus-storing" title="Permanent link">&para;</a></h2>
+<h1 id="compute-contract">Compute contract<a class="headerlink" href="#compute-contract" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Dependencies come from reactive reads, not containment.</strong></p>
+</blockquote>
+<p><code>Signal[T]</code> stores a value. <code>Computed[T]</code> lazily evaluates and caches a value or
+an exception. <code>Effect</code> runs a callback when its tracked inputs change.
+<code>Binding[T]</code> follows an explicitly selected source while retaining a stable
+identity. Reactive objects are ordinary Python values: storing or returning one
+is valid and does not implicitly follow it.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Binding</span><span class="p">,</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">unref</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">source</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Use this when the old Signal(source) meant to follow the source:</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">following</span> <span class="o">=</span> <span class="n">Binding</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">assert</span> <span class="n">following</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">1</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Store the wrapper itself when that is the intended data:</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">stored</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">assert</span> <span class="n">stored</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">source</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">assert</span> <span class="n">unref</span><span class="p">(</span><span class="n">stored</span><span class="p">)</span> <span class="ow">is</span> <span class="n">source</span>  <span class="c1"># one boundary only</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># Explicit reads inside a computation create dependencies:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">result</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">source</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">2</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">4</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">inner</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">outer</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">assert</span> <span class="n">outer</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">assert</span> <span class="n">unref</span><span class="p">(</span><span class="n">outer</span><span class="p">)</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">assert</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">assert</span> <span class="n">Binding</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">1</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">assert</span> <span class="n">Binding</span><span class="p">(</span><span class="n">outer</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
 </span></code></pre></div>
-<p><code>Computed(lambda: source)</code> now returns the source object itself. <code>Binding</code>
-follows one boundary too; following a source whose value is another reactive
-object returns that object. Use explicit <code>.value</code> reads to follow additional
-boundaries, or <code>deep_unref</code> for recursive container traversal.</p>
-<p>Binding retains a stable identity while <code>.set(source)</code> or <code>.value = source</code>
-selects another source. Assigning a plain value selects a private Signal.
-Use <code>Signal[T]</code> for stored state, <code>Binding[T]</code> for a replaceable source, and
-<code>ReactiveValue[T]</code> for the union of supported reactive wrappers.</p>
-<h2 id="container-arguments-and-serialization">Container arguments and serialization<a class="headerlink" href="#container-arguments-and-serialization" title="Permanent link">&para;</a></h2>
-<p>Old decorated functions recursively resolved container arguments. In 0.6,
-<code>computed</code> and <code>effect</code> unwrap direct reactive arguments only. Read specific
-leaves or explicitly resolve inside the callback:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Effect</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">total</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">deep_unref</span><span class="p">(</span><span class="n">values</span><span class="p">)))</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">assert</span> <span class="n">total</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">3</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">assert</span> <span class="n">total</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">12</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">encoded</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">watcher</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">encoded</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">deep_unref</span><span class="p">(</span><span class="n">values</span><span class="p">))))</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">20</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="k">assert</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">encoded</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">==</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+<p>Operators and decorated functions follow the same one-boundary rule. Applying
+an operator to a <code>Signal</code> that stores a reactive value produces a computation
+over that reactive value, not over the number inside it:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Binding</span><span class="p">,</span> <span class="n">Signal</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">inner</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">outer</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">nested</span> <span class="o">=</span> <span class="n">outer</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">assert</span> <span class="n">nested</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">3</span>   <span class="c1"># nested.value is a Computed, not 3</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">following</span> <span class="o">=</span> <span class="n">Binding</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">assert</span> <span class="n">following</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">3</span>      <span class="c1"># Binding reads through to the number</span>
 </span></code></pre></div>
-<p>Resolving <em>before</em> constructing the callback produces ordinary data and does
-not subscribe that callback to the original leaves.</p>
-<p>Keep using <code>deep_unref</code>; it is not deprecated. Use the same registered handler
-API introduced in 0.5.1.</p>
-<p>Unknown iterables are no longer reconstructed or consumed. Register an exact
-custom type or project its fields into built-in containers. Numeric NumPy
-arrays pass through; object-containing arrays are rebuilt. Results may still
-share opaque objects with the input and are not guaranteed serializable.
-Repeated references are resolved independently, and cyclic inputs eventually
-raise <code>RecursionError</code>. Colliding keys/members raise instead of silently
-discarding data.</p>
-<h2 id="equality-and-mutation">Equality and mutation<a class="headerlink" href="#equality-and-mutation" title="Permanent link">&para;</a></h2>
-<p>Containers, arrays, and user objects now compare by identity. Equal-but-distinct
-replacements are stored and invalidate dependents. Exact built-in scalar values
-compare by value (float NaNs count as unchanged); different types count as
-changed. Unchanged assignments retain the previous stored object. Signified
-never invokes arbitrary equality methods for change detection.</p>
-<p>Effects now skip their callbacks when computed dependencies refresh to unchanged
-outcomes, including when a Binding switches to an equal-valued source. Read the
-original Signal too if the effect should react to changes that a derived value
-intentionally filters out.</p>
+<p>Before 0.6, <code>Signal(inner) + 1</code> resolved to <code>3</code>. Use <code>Binding(inner)</code> when the
+outer handle should follow the inner value.</p>
+<h2 id="reads-and-equality">Reads and equality<a class="headerlink" href="#reads-and-equality" title="Permanent link">&para;</a></h2>
+<p><code>unref</code> crosses exactly one boundary. <code>computed</code> and <code>effect</code> unwrap only direct
+reactive arguments, once per evaluation. Plain arguments, including containers,
+pass through unchanged.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">computed</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">state</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">])(</span><span class="n">state</span><span class="p">)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">1</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">state</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">state</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">2</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">state</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># raw mutation does not notify</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>        <span class="c1"># explicit notification after in-place mutation</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">3</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">}</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nd">@computed</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">double</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">return</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">result</span> <span class="o">=</span> <span class="n">double</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">4</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">6</span>
 </span></code></pre></div>
-<p>Existing <code>state[key] = value</code> and forwarded attribute writes notify at the
-wrapper level. Attribute writes are forwarded only by <code>Signal</code>; on a <code>Computed</code>
-or <code>Binding</code> they raise <code>AttributeError</code>, as do names the wrapped object lacks.
-They do not make every nested mutation or method call reactive. Reactive
-containers are deferred beyond 0.6.</p>
-<h2 id="batch-writes-and-untracked-reads">Batch writes and untracked reads<a class="headerlink" href="#batch-writes-and-untracked-reads" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Effect</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">untracked</span>
+<p>Only the read of <code>x.value</code> establishes that dependency. Merely returning
+<code>config</code> would not. Computed callbacks should be pure; perform mutations in
+application code or effects. A computed's read-only property does not freeze
+its returned Python object.</p>
+<p>Signal assignments and computed results use the same equality policy:</p>
+<ul>
+<li>Exact built-in <code>int</code>, <code>bool</code>, <code>str</code>, <code>bytes</code>, <code>complex</code>, <code>NoneType</code>, and <code>float</code>
+  compare by value. Two float NaNs count as unchanged.</li>
+<li>Different types count as changed, including <code>1</code> versus <code>True</code>.</li>
+<li>All other values, including containers, arrays, and user objects, compare by
+  identity. Signified does not call their equality methods.</li>
+<li>Unchanged assignments/results retain the previous stored object.</li>
+</ul>
+<p>Computeds and Effects skip their callbacks when computed dependencies refresh
+to unchanged outcomes. Rebinding to an equal-valued source follows the same
+rule. Explicit <code>Signal.update()</code> and <code>Computed.invalidate()</code> calls force a
+change notification from that node.</p>
+<p>A distinct but equal dictionary therefore replaces its predecessor and
+invalidates dependents. Mutating an existing dictionary through <code>.value</code> does
+not notify; use replacement or call <code>Signal.update()</code> after mutation. Item and
+attribute assignment on a <code>Signal</code> (<code>sig[key] = v</code>, <code>sig.attr = v</code>) mutate the
+wrapped object in place and notify, because the <code>Signal</code> owns that object; a
+<code>Computed</code> holds a cache and does not forward writes. This is not general
+mutation observation. Mutations through aliases remain invisible.</p>
+<h2 id="recursive-resolution-and-serialization">Recursive resolution and serialization<a class="headerlink" href="#recursive-resolution-and-serialization" title="Permanent link">&para;</a></h2>
+<p><code>deep_unref</code> explicitly reads reactive values inside supported containers.
+Call it inside a computation or effect to subscribe to the reactive values
+it reaches. Calling it beforehand does not establish those dependencies.
+See <a href="../resolution/">Resolving nested values</a> for supported types, serialization,
+custom handlers, and traversal guarantees.</p>
+<h2 id="untracked-reads">Untracked reads<a class="headerlink" href="#untracked-reads" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Effect</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">deep_unref</span><span class="p">,</span> <span class="n">untracked</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">watcher</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">value</span><span class="p">)))</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="k">with</span> <span class="n">batch</span><span class="p">():</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">y</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">20</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="k">assert</span> <span class="n">seen</span> <span class="o">==</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)]</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="k">with</span> <span class="n">untracked</span><span class="p">():</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">current</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">value</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">trigger</span><span class="p">,</span> <span class="n">other</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">derived</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">observe</span><span class="p">():</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">current</span> <span class="o">=</span> <span class="n">trigger</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="k">with</span> <span class="n">untracked</span><span class="p">():</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>        <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">current</span><span class="p">,</span> <span class="n">derived</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">deep_unref</span><span class="p">([</span><span class="n">other</span><span class="p">])))</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="n">watcher</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="n">observe</span><span class="p">)</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">other</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">seen</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">trigger</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="k">assert</span> <span class="n">seen</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
 </span></code></pre></div>
-<p>Batch writes are immediate, while effects (including their first run) wait for
-the outermost exit. Computed reads inside the block remain current. Cascading
-effect writes can schedule more runs. No rollback, isolation, or async/thread
-safety is provided. One failing effect raises directly; several failures in
-one flush raise an <code>ExceptionGroup</code>, which <code>except*</code> can unpack. See the
-<a href="../compute-contract/">compute contract</a> for combined errors, recovery, and
-lifetime rules.</p>
-<p>Computed exceptions are now cached until a dependency changes or <code>invalidate()</code>
-is called. Repeated reads re-raise without rerunning the callback. A new failed
-evaluation and recovery both count as changed outcomes, so downstream callbacks
-can catch errors and observe recovery even to the previous successful value.
-Control-flow exceptions such as <code>KeyboardInterrupt</code> remain uncached.</p>
-<p><code>rx.peek(fn)</code>, deprecated in 0.5.1, is removed in 0.6; use <code>rx.tap(fn)</code>.
-It is lazy and cached: the callback runs on evaluation, not on every cached
-read. For a current value without subscribing, use <code>untracked()</code>.</p>
-<h2 id="optional-migration-diagnostics">Optional migration diagnostics<a class="headerlink" href="#optional-migration-diagnostics" title="Permanent link">&para;</a></h2>
-<p>Diagnostics are available in both 0.5.1 and 0.6. Enable them before exercising
-representative application workflows:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">migration</span>
+<p><code>untracked()</code> suppresses subscriptions of the enclosing consumer. Nested
+computations still collect their own dependencies and refresh normally. Reads,
+plugin hooks, errors, and writes are not suppressed. Scopes nest and restore
+tracking even on exceptions.</p>
+<p><code>rx.tap(fn)</code> creates a lazy cached computation that invokes a callback and
+passes through the source value. It skips unread intermediate updates and does
+not repeat its callback on cached reads. It is not an untracked getter.</p>
+<h2 id="batching-and-effect-lifetime">Batching and effect lifetime<a class="headerlink" href="#batching-and-effect-lifetime" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Effect</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">batch</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">migration</span><span class="o">.</span><span class="n">enable_warnings</span><span class="p">()</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Or: with migration.warnings(): ...</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">total</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="n">y</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">watcher</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">total</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">with</span> <span class="n">batch</span><span class="p">():</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="k">assert</span> <span class="n">total</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">12</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="n">y</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">20</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="k">assert</span> <span class="n">seen</span> <span class="o">==</span> <span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="k">assert</span> <span class="n">seen</span> <span class="o">==</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">]</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
 </span></code></pre></div>
-<p>Alternatively set <code>SIGNIFIED_MIGRATION_WARNINGS=1</code> before import. To make the
-migration warnings fail tests:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">SIGNIFIED_MIGRATION_WARNINGS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pytest<span class="w"> </span>-W<span class="w"> </span>error::signified.migration.SignifiedMigrationWarning
-</span></code></pre></div>
-<p>Diagnostics detect recognized nested-reactive patterns in Signal values,
-computed results, and ordinary container arguments to decorated functions.
-Binding's internal source holder is excluded; normal Binding construction and
-rebinding do not warn merely because they select a reactive source.
-They do not read reactive values or consume arbitrary iterables. These are
-heuristics: unknown types may hide affected values, and intentional storage of
-reactive objects is valid even when migration mode warns. Disable migration
-mode after reviewing those cases. Ordinary mutable containers do not warn.
-Equality, scheduling, and forwarded writes require separate review.</p>
+<p>Writes and invalidation happen immediately. Effects, including newly created
+ones, wait until the outermost batch exits. Outside batches, effects run
+synchronously after the current notification wave has invalidated the graph.
+Pending notifications combine into the next run. Later writes from another
+effect may cause another run in the same flush; do not assume independent
+callback order or at-most-once execution. Before rerunning an effect, its
+computed dependencies are refreshed; if all tracked inputs are unchanged,
+the callback is skipped.</p>
+<p>Retain each Effect while it should remain active. The queue does not own it.
+<code>dispose()</code> is idempotent and cancels pending work, including when called from
+inside its callback. An effect created in a batch and discarded before exit
+may never execute.</p>
+<p>Batching provides no rollback or isolated reads. Ordinary code can see
+intermediate state, and applied writes are flushed even when the body raises.</p>
+<h3 id="errors-and-recovery">Errors and recovery<a class="headerlink" href="#errors-and-recovery" title="Permanent link">&para;</a></h3>
+<p>A run that raises still subscribes to everything it read before raising, so a
+later change to any of those values retries it. Dependencies from an earlier
+run that the failed run did not reach are dropped, exactly as after a
+successful run.</p>
+<p>A <code>Computed</code> caches an ordinary exception just as it caches a value. Repeated
+reads re-raise that exception without rerunning the callback. A dependency
+change or explicit <code>invalidate()</code> permits another evaluation. Readers subscribe
+even when the read raises, so failure on the first evaluation can recover
+automatically. A new failed evaluation counts as a changed outcome; recovery
+also counts as changed, even if it returns the last successful value.</p>
+<p>Healthy pending effects continue after ordinary callback failures. One failing
+callback raises its exception directly; several failures in one flush are
+raised as an <code>ExceptionGroup</code>. The same rule applies inside and outside
+<code>batch()</code>. A batch body error alone is re-raised unchanged; simultaneous body
+and flush failures are grouped together (using <code>BaseExceptionGroup</code> when
+necessary).</p>
+<p>Control-flow exceptions such as <code>KeyboardInterrupt</code> are not cached: they abort
+flushing and clear pending work. Active subscriptions remain eligible for future
+updates. Feedback that exceeds 100 runs of one effect per flush raises
+<code>RuntimeError</code> through the same error-reporting mechanism and clears remaining
+pending work.</p>
+<p>All reactive operations are single-threaded and synchronous. Neither <code>batch()</code>
+nor <code>untracked()</code> may span <code>await</code>.</p>
 
 
 
@@ -1290,7 +1288,7 @@ Equality, scheduling, and forwarded writes require separate review.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../usage/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Usage">
+          <a href="../migration/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Migrating to 0.6">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1300,20 +1298,20 @@ Equality, scheduling, and forwarded writes require separate review.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Usage
+                Migrating to 0.6
               </div>
             </div>
           </a>
         
         
           
-          <a href="../compute-contract/" class="md-footer__link md-footer__link--next" aria-label="Next: Compute Contract">
+          <a href="../playground/" class="md-footer__link md-footer__link--next" aria-label="Next: Playground">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Compute Contract
+                Playground
               </div>
             </div>
             <div class="md-footer__button md-icon">

@@ -306,6 +306,44 @@
   
   
     <li class="md-tabs__item">
+      <a href="migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrating to 0.6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="compute-contract/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Compute Contract
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="playground/" class="md-tabs__link">
         
   
@@ -389,25 +427,6 @@
     
   
   Resolving nested values
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="migration/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Preparing for 0.6
 
       </a>
     </li>
@@ -676,6 +695,60 @@
   
   
     <li class="md-nav__item">
+      <a href="migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating to 0.6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="compute-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute Contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="playground/" class="md-nav__link">
         
   
@@ -792,33 +865,6 @@
     
   
     Resolving nested values
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="migration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Preparing for 0.6
   
 
     
@@ -1022,17 +1068,13 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>signified
 </span></code></pre></div>
 <h2 id="why-care">Why Care?<a class="headerlink" href="#why-care" title="Permanent link">&para;</a></h2>
-<p><code>signified</code> is built around two core types:</p>
+<p><code>signified</code> is built around three core types:</p>
 <ul>
-<li><code>Signal</code>: mutable reactive state</li>
+<li><code>Signal</code>: mutable state that can store any Python value</li>
 <li><code>Computed</code>: derived reactive state</li>
+<li><code>Binding</code>: a stable reactive handle with a replaceable source</li>
 </ul>
 <p>If you update a <code>Signal</code>, dependent <code>Computed</code> values update automatically.</p>
-<p><code>Signal</code> and <code>Computed</code> follow both the <code>Observer</code> and <code>Observable</code> design patterns:</p>
-<ul>
-<li>reactive values can subscribe to upstream values</li>
-<li>upstream changes notify and propagate through dependent computations</li>
-</ul>
 <p>That allows you to write declarative expressions that stay up-to-date, even as underlying values change:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
@@ -1064,7 +1106,11 @@
 <li>Build derived values with overloaded Python operators or <code>@computed</code>.</li>
 <li>Read reactive outputs from <code>.value</code>.</li>
 <li>Update the <code>.value</code> of <code>Signal</code>s to trigger updates.</li>
+<li>Use <code>Binding</code> only when a stable handle must switch sources.</li>
 </ol>
+<p>Dependencies come from reactive reads, not containment. Normal <code>computed</code> and
+<code>effect</code> calls unwrap direct reactive arguments only; call <code>deep_unref</code> inside the callback for explicit recursive resolution. Use
+<code>batch()</code> to group writes and <code>untracked()</code> for reads without subscribing.</p>
 <h2 id="ready-to-learn-more">Ready to learn more?<a class="headerlink" href="#ready-to-learn-more" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Read this first: <a href="usage/">Usage Guide</a></li>

@@ -306,6 +306,44 @@
   
   
     <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrating to 0.6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../compute-contract/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Compute Contract
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../playground/" class="md-tabs__link">
         
   
@@ -391,25 +429,6 @@
     
   
   Resolving nested values
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../migration/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Preparing for 0.6
 
       </a>
     </li>
@@ -587,6 +606,60 @@
   
   
     <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating to 0.6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compute-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute Contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../playground/" class="md-nav__link">
         
   
@@ -728,10 +801,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#features-at-a-glance" class="md-nav__link">
+  <a href="#api-orientation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Features At a Glance
+        API orientation
       
     </span>
   </a>
@@ -739,66 +812,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#api-comparison" class="md-nav__link">
+  <a href="#what-becomes-a-dependency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API Comparison
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="API Comparison">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#key-usability-differences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key usability differences
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#signified-040-vs-reaktiv-vs-param" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        signified 0.4.0 vs reaktiv vs param
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#choosing-a-library" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Choosing a library
+        What becomes a dependency?
       
     </span>
   </a>
@@ -806,10 +823,76 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#other-libraries-that-are-not-comparable-to-signified" class="md-nav__link">
+  <a href="#when-does-a-derivation-run" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Other libraries that are not comparable to signified
+        When does a derivation run?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-counts-as-a-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What counts as a change?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutation-nesting-and-writable-derivations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutation, nesting, and writable derivations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#effects-batching-and-lifetime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Effects, batching, and lifetime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors-are-part-of-the-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors are part of the contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#async-and-execution-assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async and execution assumptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-signified-fits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where Signified fits
       
     </span>
   </a>
@@ -839,33 +922,6 @@
     
   
     Resolving nested values
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Preparing for 0.6
   
 
     
@@ -988,10 +1044,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#features-at-a-glance" class="md-nav__link">
+  <a href="#api-orientation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Features At a Glance
+        API orientation
       
     </span>
   </a>
@@ -999,66 +1055,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#api-comparison" class="md-nav__link">
+  <a href="#what-becomes-a-dependency" class="md-nav__link">
     <span class="md-ellipsis">
       
-        API Comparison
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="API Comparison">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#key-usability-differences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key usability differences
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#signified-040-vs-reaktiv-vs-param" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        signified 0.4.0 vs reaktiv vs param
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#choosing-a-library" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Choosing a library
+        What becomes a dependency?
       
     </span>
   </a>
@@ -1066,10 +1066,76 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#other-libraries-that-are-not-comparable-to-signified" class="md-nav__link">
+  <a href="#when-does-a-derivation-run" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Other libraries that are not comparable to signified
+        When does a derivation run?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-counts-as-a-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What counts as a change?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutation-nesting-and-writable-derivations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutation, nesting, and writable derivations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#effects-batching-and-lifetime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Effects, batching, and lifetime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors-are-part-of-the-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors are part of the contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#async-and-execution-assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async and execution assumptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-signified-fits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where Signified fits
       
     </span>
   </a>
@@ -1109,195 +1175,903 @@
 
 
 <h1 id="library-comparison">Library Comparison<a class="headerlink" href="#library-comparison" title="Permanent link">&para;</a></h1>
-<p>This page compares <code>signified</code> with two other Python reactive libraries: <a href="https://github.com/buiapp/reaktiv"><code>reaktiv</code></a> and <a href="https://param.holoviz.org/"><code>param</code></a>. All three implement reactive programming, but they differ in API design, feature scope, and performance.</p>
-<h2 id="features-at-a-glance">Features At a Glance<a class="headerlink" href="#features-at-a-glance" title="Permanent link">&para;</a></h2>
+<p>Signified's core model—tracked reads, cached derivations, and effects—has close
+relatives in established reactive libraries. The differences that affect program
+behavior are dependency discovery, evaluation timing, equality, mutation, and
+effect scheduling. A similar API name does not imply the same contract.</p>
+<p>This page compares the Python libraries <strong>signified</strong>, <strong>reaktiv</strong>, and <strong>Param</strong>
+with <strong>Angular signals</strong>, <strong>Vue 3 reactivity</strong>, <strong>Svelte 5 runes</strong>, <strong>Preact Signals
+core</strong>, <strong>Solid</strong>, and <strong>MobX</strong>. The JavaScript libraries provide useful semantic
+reference points; their component runtimes add lifecycle and scheduling rules
+that standalone Python code does not have. Svelte's legacy <code>$:</code> statements and
+store API, and framework adapters around Preact Signals, are outside this scope.
+Sources were checked on September 19, 2026; implementation observations below
+link to specific revisions, including Param 2.4.2.</p>
+<p>Each section defines its cases once, then maps APIs to those cases. <strong>✓</strong> means
+the stated behavior applies, <strong>✗</strong> means it does not, <strong>—</strong> means the question is
+inapplicable, and <strong>?</strong> means the sources used here do not establish the answer.
+An asterisk points to a qualification immediately below the table. Matching
+cells mean matching behavior on that dimension, not identical implementations.
+Unless stated otherwise, comparisons use default options, successful synchronous
+computations, and live owners in client-side framework code.</p>
+<h2 id="api-orientation">API orientation<a class="headerlink" href="#api-orientation" title="Permanent link">&para;</a></h2>
+<p>These are abbreviated idioms, with imports and component setup omitted. In each
+row, <code>x</code> is the source and the final column derives twice its value.</p>
 <table>
 <thead>
 <tr>
-<th></th>
-<th>signified</th>
-<th>reaktiv</th>
-<th>param</th>
+<th>Library</th>
+<th>Create / read</th>
+<th>Write</th>
+<th>Derive</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Read a value</strong></td>
-<td><code>x.value</code></td>
-<td><code>x()</code></td>
-<td><code>x.rx.value</code></td>
-</tr>
-<tr>
-<td><strong>Write a value</strong></td>
+<td><a href="../compute-contract/">signified</a> (Python)</td>
+<td><code>x = Signal(1)</code> / <code>x.value</code></td>
 <td><code>x.value = v</code></td>
+<td><code>x * 2</code> or <code>Computed(lambda: x.value * 2)</code></td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/compute-signal/">reaktiv</a> (Python)</td>
+<td><code>x = signal(1)</code> / <code>x()</code></td>
 <td><code>x.set(v)</code></td>
+<td><code>computed(lambda: x() * 2)</code></td>
+</tr>
+<tr>
+<td><a href="https://param.holoviz.org/en/docs/latest/user_guide/Reactive_Expressions.html">Param</a> (Python)</td>
+<td><code>x = rx(1)</code> / <code>x.rx.value</code></td>
 <td><code>x.rx.value = v</code></td>
+<td><code>x * 2</code></td>
 </tr>
 <tr>
-<td><strong>Derived value (inline)</strong></td>
-<td><code>y = x * 2</code></td>
-<td>—</td>
-<td><code>y = x.rx() * 2</code></td>
+<td><a href="https://angular.dev/guide/signals">Angular</a></td>
+<td><code>const x = signal(1)</code> / <code>x()</code></td>
+<td><code>x.set(v)</code></td>
+<td><code>computed(() =&gt; x() * 2)</code></td>
 </tr>
 <tr>
-<td><strong>Derived value (decorator)</strong></td>
-<td><code>@computed</code></td>
-<td><code>@Computed</code></td>
-<td><code>@param.depends</code></td>
+<td><a href="https://vuejs.org/api/reactivity-core">Vue</a></td>
+<td><code>const x = ref(1)</code> / <code>x.value</code></td>
+<td><code>x.value = v</code></td>
+<td><code>computed(() =&gt; x.value * 2)</code></td>
 </tr>
 <tr>
-<td><strong>React to changes</strong></td>
-<td><code>Effect(fn)</code></td>
-<td><code>Effect(fn)</code></td>
-<td><code>x.rx.watch(fn)</code> / <code>obj.param.watch(fn, ...)</code></td>
+<td><a href="https://svelte.dev/docs/svelte/$derived">Svelte 5</a></td>
+<td><code>let x = $state(1)</code> / <code>x</code></td>
+<td><code>x = v</code></td>
+<td><code>let y = $derived(x * 2)</code></td>
 </tr>
 <tr>
-<td><strong>Operator overloading</strong></td>
-<td>Yes</td>
-<td>No</td>
-<td>Yes (via <code>obj.rx()</code>)</td>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact Signals core</a></td>
+<td><code>const x = signal(1)</code> / <code>x.value</code></td>
+<td><code>x.value = v</code></td>
+<td><code>computed(() =&gt; x.value * 2)</code></td>
 </tr>
 <tr>
-<td><strong>Async support</strong></td>
-<td>No</td>
-<td>Yes</td>
-<td>Yes</td>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-signal">Solid</a></td>
+<td><code>const [x, setX] = createSignal(1)</code> / <code>x()</code></td>
+<td><code>setX(v)</code></td>
+<td><code>createMemo(() =&gt; x() * 2)</code></td>
 </tr>
 <tr>
-<td><strong>Multithreading support</strong></td>
-<td>No</td>
-<td>Yes</td>
-<td>No</td>
+<td><a href="https://mobx.js.org/observable-state.html">MobX</a></td>
+<td><code>const x = observable.box(1)</code> / <code>x.get()</code></td>
+<td><code>runInAction(() =&gt; x.set(v))</code></td>
+<td><code>computed(() =&gt; x.get() * 2)</code></td>
 </tr>
 </tbody>
 </table>
-<h2 id="api-comparison">API Comparison<a class="headerlink" href="#api-comparison" title="Permanent link">&para;</a></h2>
-<p>Here is the same computation expressed in each library:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="api-comparison-signified" name="__tabbed_1" type="radio" /><input id="api-comparison-reaktiv" name="__tabbed_1" type="radio" /><input id="api-comparison-param" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="api-comparison-signified">signified</label><label for="api-comparison-reaktiv">reaktiv</label><label for="api-comparison-param">param</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">Effect</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">price</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">quantity</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">total</span> <span class="o">=</span> <span class="n">price</span> <span class="o">*</span> <span class="n">quantity</span>      <span class="c1"># Computed automatically via operator overload</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">total</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>            <span class="c1"># 30.0</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">printer</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total: </span><span class="si">{</span><span class="n">total</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">price</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mf">15.0</span>            <span class="c1"># prints &quot;Total: 45.0&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">reaktiv</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Effect</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">price</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">quantity</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">total</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">price</span><span class="p">()</span> <span class="o">*</span> <span class="n">quantity</span><span class="p">())</span>   <span class="c1"># Explicit lambda</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">total</span><span class="p">())</span>                <span class="c1"># 30.0</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">printer</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total: </span><span class="si">{</span><span class="n">total</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">price</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="mf">15.0</span><span class="p">)</span>               <span class="c1"># prints &quot;Total: 45.0&quot;</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">param</span><span class="w"> </span><span class="kn">import</span> <span class="n">rx</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">price</span> <span class="o">=</span> <span class="n">rx</span><span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">quantity</span> <span class="o">=</span> <span class="n">rx</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">total</span> <span class="o">=</span> <span class="n">price</span> <span class="o">*</span> <span class="n">quantity</span>      <span class="c1"># Computed automatically via operator overload</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">total</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>         <span class="c1"># 30.0</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">total</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">watch</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total: </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">price</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mf">15.0</span>         <span class="c1"># prints &quot;Total: 45.0&quot;</span>
-</span></code></pre></div>
-</div>
-</div>
-</div>
-<h3 id="key-usability-differences">Key usability differences<a class="headerlink" href="#key-usability-differences" title="Permanent link">&para;</a></h3>
-<p><strong>signified</strong> overloads Python operators so reactive expressions can typically read like normal code (<code>price * quantity</code> returns a reactive <code>Computed</code> object). The <code>.rx</code> namespace handles some additional operations Python cannot easily overload, such as equality/identity testing.</p>
-<p><strong>reaktiv</strong> requires explicit <code>Computed(lambda: ...)</code> wrappers but, like signified, automatically tracks dependencies — every signal read inside the lambda is tracked.</p>
-<p><strong>param</strong> supports two reactive styles. The <code>rx</code> interface (shown above) allows standalone reactive values with operator overloading, similar to signified. The <code>Parameterized</code> class-based style provides rich metadata: type checking, bounds, documentation, and introspection. It integrates deeply with the HoloViz ecosystem (Panel, HoloViews).</p>
-<h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
-<p>Benchmarks were run with <a href="https://github.com/dougmercer/signified-bench"><code>signified-bench</code></a> at commit <code>36e10c9edab4202dd30b5c2950b8cb6f29215eda</code> using <code>pytest-benchmark</code>.
-The versions compared here were <code>signified==0.4.0</code>, <code>reaktiv==0.21.3</code>, and <code>param==2.3.3</code>, run on a MacBook M1 Max.
-These numbers are meant to give a broad sense of performance rather than serve as a fully rigorous benchmark suite.
-Results show median wall-clock time per scenario (lower is better).</p>
-<h3 id="signified-040-vs-reaktiv-vs-param">signified 0.4.0 vs reaktiv vs param<a class="headerlink" href="#signified-040-vs-reaktiv-vs-param" title="Permanent link">&para;</a></h3>
-<p>With 0.4.0, <strong>signified and reaktiv are closely matched</strong> in terms of single threaded performance. The amount of overhead either library would introduce is small compared to whatever work would typically be done within non-toy <code>computed</code> functions.</p>
-<p><strong><code>param</code> is significantly slower</strong>.</p>
+<p>Signified and Param both overload Python operators, but build dependencies
+differently. Reaktiv's current documentation prefers lowercase factories;
+uppercase <code>Signal</code>, <code>Computed</code>, and <code>Effect</code> remain supported.</p>
+<h2 id="what-becomes-a-dependency">What becomes a dependency?<a class="headerlink" href="#what-becomes-a-dependency" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Scenario</th>
-<th>signified 0.4.0</th>
-<th>reaktiv</th>
-<th>param</th>
+<th>Rule</th>
+<th>How dependencies are established</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>signal_read_write</code></td>
-<td>8 ms</td>
-<td>7 ms</td>
-<td>204 ms</td>
+<td><strong>Reads</strong></td>
+<td>Track reactive accessors/properties read during execution, including synchronous helper calls. Each run replaces the previous dependency set with the reads it reached.</td>
 </tr>
 <tr>
-<td><code>multi_input_computed</code></td>
-<td>26 ms</td>
-<td>36 ms</td>
-<td>421 ms</td>
-</tr>
-<tr>
-<td><code>shared_dependency_branches</code></td>
-<td>26ms</td>
-<td>28 ms</td>
-<td>613 ms</td>
-</tr>
-<tr>
-<td><code>shared_clock_reads</code></td>
-<td>47 ms</td>
-<td>49 ms</td>
-<td>1240 ms</td>
-</tr>
-<tr>
-<td><code>deep_chain_updates</code></td>
-<td>120 ms</td>
-<td>134 ms</td>
-<td>1576 ms</td>
-</tr>
-<tr>
-<td><code>fanout_updates</code></td>
-<td>206 ms</td>
-<td>236 ms</td>
-<td>3593 ms</td>
-</tr>
-<tr>
-<td><code>diamond_updates</code></td>
-<td>224 ms</td>
-<td>257 ms</td>
-<td>3933 ms</td>
-</tr>
-<tr>
-<td><code>effect_fanout_updates</code></td>
-<td>494 ms</td>
-<td>1501 ms</td>
-<td>3156 ms</td>
+<td><strong>References</strong></td>
+<td>Record expression operands or explicitly bound/declared dependencies. Arbitrary reactive reads inside a called function do not automatically add dependencies.</td>
 </tr>
 </tbody>
 </table>
-<p>signified 0.4.0 is a substantial performance release. Across all scenarios it runs roughly <strong>2.5–3× faster</strong> than 0.3.2.</p>
-<h2 id="choosing-a-library">Choosing a library<a class="headerlink" href="#choosing-a-library" title="Permanent link">&para;</a></h2>
-<p><strong>Choose signified if</strong> you want Pythonic syntax, operator overloading, and competitive performance. However, <code>signified</code> does not support async and is not threadsafe.</p>
-<p><strong>Choose reaktiv if</strong> you prefer an explicit, Angular-inspired API where every dependency is a function call, or if you need built-in async resource loading.</p>
-<p><strong>Choose param if</strong> you are building UI components in the HoloViz ecosystem (Panel, HoloViews).</p>
-<h2 id="other-libraries-that-are-not-comparable-to-signified">Other libraries that are not comparable to <code>signified</code><a class="headerlink" href="#other-libraries-that-are-not-comparable-to-signified" title="Permanent link">&para;</a></h2>
-<p><code>ReactiveX</code> (<code>rxpy</code>) works with processing asynchronous streams of data with operators. It is an inherently different computation model at its core, even if it looks similar at first glance.</p>
+<table>
+<thead>
+<tr>
+<th>Library / derivation</th>
+<th>Dependency rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified <code>Computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/compute-signal/">reaktiv <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://param.holoviz.org/en/docs/latest/user_guide/Reactive_Expressions.html">Param <code>rx</code></a></td>
+<td>References</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/guide/signals">Angular <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/guide/essentials/computed">Vue <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/$derived">Svelte <code>$derived</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-memo">Solid <code>createMemo</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/understanding-reactivity.html">MobX <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+</tbody>
+</table>
+<p>Under <strong>Reads</strong>, <code>left.value if choose_left.value else right.value</code> in Signified
+subscribes to the selector and the chosen input. Changing branches replaces the
+input dependency. Capturing or returning a signal without reading it adds no
+value dependency. Svelte's compiler syntax implements this same runtime rule
+for synchronous <code>$derived</code> expressions.</p>
+<p>Under <strong>References</strong>, Param's <code>rx</code> records a pipeline of operations.
+<code>param.bind</code> returns a bound callable, while <code>@param.depends</code> supplies dependency
+metadata. Neither alone supplies a cached, dynamically tracked <code>Computed</code>.
+<a href="https://param.holoviz.org/en/docs/latest/user_guide/Dependencies_and_Watchers.html">Param dependencies</a>.</p>
+<p>Observers can deliberately use different rules for choosing triggers:</p>
+<table>
+<thead>
+<tr>
+<th>Trigger selection</th>
+<th>Observer APIs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Track reads in the side-effect callback</td>
+<td>Signified <code>Effect</code>; reaktiv <code>effect</code>; Angular <code>effect</code>; Vue <code>watchEffect</code>; Svelte <code>$effect</code>; Preact <code>effect</code>; Solid <code>createEffect</code>; MobX <code>autorun</code></td>
+</tr>
+<tr>
+<td>Track a separate getter/data function; exclude side-effect callback reads</td>
+<td>Vue <code>watch</code>; MobX <code>reaction</code></td>
+</tr>
+<tr>
+<td>Subscribe to specified parameters/references</td>
+<td>Param watchers</td>
+</tr>
+</tbody>
+</table>
+<p>See the linked APIs in <a href="#effects-batching-and-lifetime">Effects, batching, and lifetime</a>
+for scheduling and ownership; trigger selection does not determine either.</p>
+<h2 id="when-does-a-derivation-run">When does a derivation run?<a class="headerlink" href="#when-does-a-derivation-run" title="Permanent link">&para;</a></h2>
+<p>These are three independent cases. A <strong>read</strong> includes demand from a downstream
+computation, observer refresh, or renderer. <strong>Unobserved</strong> means no downstream
+consumer is subscribed; ordinary application code can still hold and read the
+derived value.</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Meaning of ✓</th>
+<th>Meaning of ✗</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Lazy start</strong></td>
+<td>Creating the derivation does not run its callback; its first read does.</td>
+<td>Creating the derivation runs its callback.</td>
+</tr>
+<tr>
+<td><strong>Lazy refresh</strong></td>
+<td>A source write alone does not run the callback; evaluation waits for demand.</td>
+<td>Changed dependencies cause evaluation during update propagation, even without a downstream read.</td>
+</tr>
+<tr>
+<td><strong>Unobserved cache</strong></td>
+<td>Repeated unobserved reads with no changes reuse the result.</td>
+<td>Repeated unobserved reads recompute.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Library / primitive</th>
+<th style="text-align: center;">Lazy start</th>
+<th style="text-align: center;">Lazy refresh</th>
+<th style="text-align: center;">Unobserved cache</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified <code>Computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/compute-signal/">reaktiv <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/holoviz/param/blob/v2.4.2/param/reactive.py">Param <code>rx</code></a></td>
+<td style="text-align: center;">Varies*</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/guide/signals">Angular <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/guide/essentials/computed">Vue <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/$derived">Svelte <code>$derived</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-memo">Solid <code>createMemo</code></a></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/computeds.html">MobX <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗*</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Param:</strong> constructing or inspecting an <code>rx</code> pipeline can evaluate steps
+  before an explicit <code>.rx.value</code> read. The cache columns describe <code>rx</code> expression
+  resolution, not a plain <code>param.bind</code> callable.</li>
+<li><strong>MobX:</strong> the default cache is maintained while observed and suspended when
+  unobserved. <code>keepAlive</code> changes the unobserved-cache cell to ✓.</li>
+</ul>
+<p>Lazy refresh does not mean “wait until application code explicitly reads.” An
+active effect can demand the value during the same source update. Batching can
+defer that observer work; in Solid it can also defer memo recomputation.
+<a href="https://preactjs.com/guide/v10/signals/">Preact</a>, <a href="https://docs.solidjs.com/reference/reactive-utilities/batch">Solid batching</a>.</p>
+<p>Keep derivations pure: their job is to calculate a value. Lazy evaluation means
+unread intermediate states may never execute; suspension or changed dependencies
+can introduce executions that application code did not explicitly request.
+Use an effect for a required side effect, rather than relying on getter calls.
+Vue, Solid, and MobX explicitly recommend pure derivations. Svelte additionally
+disallows state changes inside derived expressions, and reaktiv rejects signal
+writes during a computation. Signified documents purity as a caller obligation.
+<a href="https://vuejs.org/guide/essentials/computed">Vue</a>, <a href="https://docs.solidjs.com/reference/basic-reactivity/create-memo">Solid</a>, <a href="https://mobx.js.org/computeds.html">MobX</a>,
+<a href="https://svelte.dev/docs/svelte/$derived">Svelte</a>, <a href="https://reaktiv.readthedocs.io/en/latest/api/signal/">reaktiv</a>.</p>
+<h2 id="what-counts-as-a-change">What counts as a change?<a class="headerlink" href="#what-counts-as-a-change" title="Permanent link">&para;</a></h2>
+<p>There are two separate decisions: whether a source write changes its value, and
+whether a recomputed result changes what downstream consumers observe. For
+example, changing <code>x</code> from <code>1</code> to <code>3</code> changes the source, but leaves <code>x % 2</code>
+unchanged. Consumers that read only the parity can therefore skip work.</p>
+<p>The named rules below compare values at a reactive node. Proxy conversion and
+property-level observation are separate dimensions, covered in the next section.</p>
+<table>
+<thead>
+<tr>
+<th>Equality rule</th>
+<th>Values considered unchanged</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Scalar/identity</strong></td>
+<td>Signified: same-type exact built-in <code>int</code>, <code>bool</code>, <code>str</code>, <code>bytes</code>, <code>complex</code>, <code>NoneType</code>, and <code>float</code> compare by value; float NaNs also match. Everything else compares by identity, without user <code>__eq__</code>.</td>
+</tr>
+<tr>
+<td><strong><code>is</code></strong></td>
+<td>Python object identity, including for scalar objects. Equal separately allocated numbers need not match.</td>
+</tr>
+<tr>
+<td><strong><code>Object.is</code></strong></td>
+<td>JavaScript primitive values or object identity; NaNs match, signed zeros differ.</td>
+</tr>
+<tr>
+<td><strong><code>===</code></strong></td>
+<td>JavaScript primitive values or object identity; NaNs differ, signed zeros match.</td>
+</tr>
+<tr>
+<td><strong>Comparator</strong></td>
+<td>Param parameter-event comparison; registered rules can compare supported containers by contents.</td>
+</tr>
+<tr>
+<td><strong>None</strong></td>
+<td>No final derived-result equality filter in the API being compared.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Custom derived equality</strong> means an explicit comparator option on the derived
+primitive. <strong>Suppress equal output</strong> means an observer that reads only the
+derivation can skip its callback when the derived result is unchanged.</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Source rule</th>
+<th>Derived rule</th>
+<th style="text-align: center;">Custom derived equality</th>
+<th style="text-align: center;">Suppress equal output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified</a></td>
+<td>Scalar/identity</td>
+<td>Scalar/identity</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/signal/">reaktiv</a> / <a href="https://reaktiv.readthedocs.io/en/latest/api/compute-signal/">computed</a></td>
+<td><code>is</code></td>
+<td><code>is</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/holoviz/param/blob/v2.4.2/param/parameterized.py">Param</a> / <a href="https://github.com/holoviz/param/blob/v2.4.2/param/reactive.py"><code>rx</code></a></td>
+<td>Comparator</td>
+<td>None*</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✗*</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/guide/signals">Angular</a></td>
+<td><code>Object.is</code></td>
+<td><code>Object.is</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vuejs/core/blob/4ab865a848a1da3d10fb674f857e5fff13094644/packages/shared/src/general.ts">Vue</a> / <a href="https://vuejs.org/guide/best-practices/performance#computed-stability">computed stability</a></td>
+<td><code>Object.is</code></td>
+<td><code>Object.is</code></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/sveltejs/svelte/blob/636eaaaa6f064b55072e7d192bb76dc9d8c4516e/packages/svelte/src/internal/client/reactivity/sources.js">Svelte</a> / <a href="https://github.com/sveltejs/svelte/blob/636eaaaa6f064b55072e7d192bb76dc9d8c4516e/packages/svelte/src/internal/client/reactivity/deriveds.js">derived</a></td>
+<td><code>===</code></td>
+<td><code>===</code></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/preactjs/signals/blob/b0df09ae3bbc66eefa8027bbd862563203e4c7f4/packages/core/src/index.ts">Preact Signals core</a></td>
+<td><code>===</code></td>
+<td><code>===</code></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-signal">Solid</a> / <a href="https://docs.solidjs.com/reference/basic-reactivity/create-memo">memo</a></td>
+<td><code>===</code></td>
+<td><code>===</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/observable-state.html">MobX</a> / <a href="https://mobx.js.org/computeds.html">computed</a></td>
+<td><code>Object.is</code></td>
+<td><code>Object.is</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Param:</strong> in 2.4.2, <code>rx.watch</code> delegates to a bound watcher without adding a
+final-result comparator. Parameter-event filtering is a separate stage.
+<strong>Vue:</strong> the computed-output suppression entry assumes Vue 3.4 or later.
+<strong>Solid:</strong> <code>equals: false</code> disables suppression. Angular, reaktiv, and Solid also
+allow custom source equality; MobX offers structural and shallow comparers.</p>
+<p>In Signified, unchanged computed outcomes suppress both downstream computations
+and effects:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Effect</span><span class="p">,</span> <span class="n">Signal</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">parity</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">watcher</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parity</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">assert</span> <span class="n">seen</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">4</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">assert</span> <span class="n">seen</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+</span></code></pre></div>
+<p>An effect that also reads <code>x.value</code> has another reason to run. Signified's
+explicit <code>Signal.update()</code> and <code>Computed.invalidate()</code> force notification from
+that node. <a href="../compute-contract/">Signified contract</a>.</p>
+<h2 id="mutation-nesting-and-writable-derivations">Mutation, nesting, and writable derivations<a class="headerlink" href="#mutation-nesting-and-writable-derivations" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Observation rule</th>
+<th>Which writes are observed?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Value</strong></td>
+<td>Assigning through the source API. Merely storing a container does not make mutations through its raw aliases observable.</td>
+</tr>
+<tr>
+<td><strong>Deep</strong></td>
+<td>Assigning through the source API and mutating supported nested objects through reactive proxies/properties. Conversion rules determine which objects are supported.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Library / source</th>
+<th>Default observation</th>
+<th>Alternative discussed here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified <code>Signal</code></a></td>
+<td>Value*</td>
+<td>Explicit mutation notification</td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/signal/">reaktiv <code>signal</code></a></td>
+<td>Value</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="https://param.holoviz.org/en/docs/latest/user_guide/Reactive_Expressions.html">Param <code>rx</code></a></td>
+<td>Value</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/guide/signals">Angular <code>signal</code></a></td>
+<td>Value</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/api/reactivity-core">Vue <code>ref</code> / <code>reactive</code></a></td>
+<td>Deep</td>
+<td>Value: <a href="https://vuejs.org/api/reactivity-advanced#shallowref"><code>shallowRef</code></a></td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/$state">Svelte <code>$state</code></a></td>
+<td>Deep</td>
+<td>Value: <code>$state.raw</code></td>
+</tr>
+<tr>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact <code>signal</code></a></td>
+<td>Value</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-signal">Solid <code>createSignal</code></a></td>
+<td>Value</td>
+<td>Deep: <a href="https://docs.solidjs.com/reference/store-utilities/create-store"><code>createStore</code></a></td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/observable-state.html">MobX <code>observable</code></a></td>
+<td>Deep</td>
+<td>Value: <code>observable.ref</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Signified:</strong> item/attribute assignment through a <code>Signal</code> forwards the mutation
+and notifies. Mutating through <code>.value</code> requires replacement or <code>update()</code> to
+notify. This explicit forwarding does not observe raw aliases. Deep observation
+also has boundaries: Svelte, for example, proxies arrays and simple objects,
+rather than every possible class instance.</p>
+<p>Signified stores exactly the object supplied. Nested reactive values remain
+ordinary values until explicitly read:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Binding</span><span class="p">,</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">inner</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">outer</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">assert</span> <span class="n">outer</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">assert</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">assert</span> <span class="n">Binding</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">1</span>
+</span></code></pre></div>
+<p>Signified's <code>unref</code> crosses one boundary; <a href="../resolution/"><code>deep_unref</code></a> explicitly
+traverses supported containers and tracks the values it reads. Vue instead has
+context-dependent ref unwrapping, including different behavior for object
+properties versus array and collection elements. These are distinct rules from
+dependency discovery. <a href="../compute-contract/">Signified contract</a>,
+<a href="https://vuejs.org/api/reactivity-core">Vue ref unwrapping</a>.</p>
+<p>Read-only access does not freeze the returned object. Signified's <code>Computed</code>,
+for example, does not forward writes but can return a mutable dictionary.
+Writable derivations need a separate classification; the following are distinct
+cases, with example APIs rather than an exhaustive feature inventory.</p>
+<table>
+<thead>
+<tr>
+<th>Write behavior</th>
+<th>Meaning</th>
+<th>Example APIs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Setter</strong></td>
+<td>Run a user-supplied setter that writes underlying state.</td>
+<td><a href="https://vuejs.org/guide/essentials/computed">Vue writable computed</a>; <a href="https://mobx.js.org/computeds.html">MobX computed setter</a></td>
+</tr>
+<tr>
+<td><strong>Override</strong></td>
+<td>Replace the result temporarily; dependency changes restore the derivation.</td>
+<td><a href="https://svelte.dev/docs/svelte/$derived">Svelte non-<code>const</code> <code>$derived</code></a>, since 5.25</td>
+</tr>
+<tr>
+<td><strong>Derived default</strong></td>
+<td>Maintain writable state with a default that follows source changes.</td>
+<td><a href="https://angular.dev/guide/signals/linked-signal">Angular <code>linkedSignal</code></a></td>
+</tr>
+<tr>
+<td><strong>Select source</strong></td>
+<td>Replace which source a stable handle follows; do not write to the old source.</td>
+<td><a href="../compute-contract/">Signified <code>Binding</code></a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="effects-batching-and-lifetime">Effects, batching, and lifetime<a class="headerlink" href="#effects-batching-and-lifetime" title="Permanent link">&para;</a></h2>
+<p>Scheduling labels describe <strong>when the side-effect callback runs</strong>. Dependency
+collection can happen earlier, including when registering a lazy watcher.</p>
+<table>
+<thead>
+<tr>
+<th>Timing</th>
+<th>Execution point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sync</strong></td>
+<td>During the triggering call, before it returns. For updates inside an explicit batch/action, this means the outermost flush.</td>
+</tr>
+<tr>
+<td><strong>On change</strong></td>
+<td>No initial side-effect callback; wait for a triggering change.</td>
+</tr>
+<tr>
+<td><strong>Angular sync</strong></td>
+<td>During Angular's synchronization/change-detection process.</td>
+</tr>
+<tr>
+<td><strong>Microtask</strong></td>
+<td>In the microtask queue, after the current synchronous work.</td>
+</tr>
+<tr>
+<td><strong>Before DOM</strong></td>
+<td>In Vue's watcher queue, after parent updates and before the owner's DOM update.</td>
+</tr>
+<tr>
+<td><strong>After DOM</strong></td>
+<td>In Svelte's microtask flush, after mounting or applying DOM updates.</td>
+</tr>
+<tr>
+<td><strong>After render</strong></td>
+<td>After Solid's current rendering phase.</td>
+</tr>
+</tbody>
+</table>
+<p>The first-callback column assumes creation outside an explicit batch/action.
+Distinct APIs get separate rows when their timing differs.</p>
+<table>
+<thead>
+<tr>
+<th>Library / observer</th>
+<th>First callback</th>
+<th>Later callbacks</th>
+<th>Update grouping</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified <code>Effect</code></a></td>
+<td>Sync</td>
+<td>Sync</td>
+<td><code>batch()</code></td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/effect/">reaktiv <code>effect</code></a></td>
+<td>Sync</td>
+<td>Sync</td>
+<td><code>batch()</code></td>
+</tr>
+<tr>
+<td><a href="https://param.holoviz.org/en/docs/latest/user_guide/Dependencies_and_Watchers.html">Param watchers</a></td>
+<td>On change</td>
+<td>Sync</td>
+<td><code>batch_call_watchers</code></td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/api/core/effect">Angular component <code>effect</code></a></td>
+<td>Angular sync</td>
+<td>Angular sync</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/api/core/effect">Angular root <code>effect</code></a></td>
+<td>Microtask</td>
+<td>Microtask</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/guide/essentials/watchers">Vue <code>watchEffect</code></a></td>
+<td>Sync</td>
+<td>Before DOM</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/guide/essentials/watchers">Vue <code>watch</code></a></td>
+<td>On change</td>
+<td>Before DOM</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/$effect">Svelte <code>$effect</code></a></td>
+<td>After DOM</td>
+<td>After DOM</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact core <code>effect</code></a></td>
+<td>Sync</td>
+<td>Sync</td>
+<td><code>batch()</code></td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-effect">Solid <code>createEffect</code></a></td>
+<td>After render</td>
+<td>Sync</td>
+<td><code>batch()</code></td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/reactions.html">MobX <code>autorun</code></a></td>
+<td>Sync</td>
+<td>Sync</td>
+<td>Action/transaction</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/reactions.html">MobX <code>reaction</code></a></td>
+<td>On change</td>
+<td>Sync</td>
+<td>Action/transaction</td>
+</tr>
+</tbody>
+</table>
+<p>Options can change these defaults: Vue offers <code>immediate</code>, <code>post</code>, and unbatched
+<code>sync</code> modes; Svelte has <code>$effect.pre</code>; MobX offers <code>fireImmediately</code> and custom
+schedulers. Signified's <code>batch()</code> also defers the initial callback of an effect
+created inside it. Preact's core effect still starts immediately inside a batch.
+Param's <code>batch_call_watchers</code> groups parameter events on one object; <code>queued</code>
+controls how callbacks process nested events.</p>
+<p>Ownership is independent of scheduling:</p>
+<table>
+<thead>
+<tr>
+<th>Lifetime rule</th>
+<th>What application code must do</th>
+<th>APIs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Retain handle</strong></td>
+<td>Hold a strong reference while active; call <code>dispose()</code> to stop.</td>
+<td>Signified <code>Effect</code>; reaktiv <code>effect</code></td>
+</tr>
+<tr>
+<td><strong>Owner scope</strong></td>
+<td>Create in the intended scope; scope destruction stops the observer. Explicit stopping is also available.</td>
+<td>Angular effects; Vue watchers created synchronously in setup; Svelte effects; Solid effects</td>
+</tr>
+<tr>
+<td><strong>Explicit stop</strong></td>
+<td>Invoke the disposer or unregister the watcher when its work is no longer needed.</td>
+<td>Preact core effects; MobX reactions; Param parameter watchers (<code>unwatch</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Angular's default owner is its injection context. Vue watchers created later
+asynchronously need manual stopping; Svelte's <code>$effect.root</code> also requires manual
+cleanup. Cleanup hooks for reruns are separate from stopping the observer.
+<a href="https://angular.dev/guide/signals/effect">Angular lifecycle</a>, <a href="https://vuejs.org/guide/essentials/watchers">Vue</a>, <a href="https://svelte.dev/docs/svelte/$effect">Svelte</a>.</p>
+<p>Batching generally groups observer work; it should not be assumed to provide
+database-style isolation or rollback. Signified, Preact Signals, and Solid allow
+reads of updated derived state inside a batch. In Signified, a batch body that
+raises still leaves writes applied and flushes pending effects. Independent
+effect order is unspecified, and cascading writes can run an effect again in
+the same flush. MobX actions are also transactions for reaction scheduling, not
+an instruction to execute each reaction after every intermediate assignment.
+<a href="../compute-contract/">Signified</a>, <a href="https://preactjs.com/guide/v10/signals/">Preact</a>,
+<a href="https://docs.solidjs.com/reference/reactive-utilities/batch">Solid batching</a>, <a href="https://mobx.js.org/actions.html">MobX actions</a>.</p>
+<h2 id="errors-are-part-of-the-contract">Errors are part of the contract<a class="headerlink" href="#errors-are-part-of-the-contract" title="Permanent link">&para;</a></h2>
+<p>Two questions need separate answers: <strong>what does a failed derived read cache?</strong>
+and <strong>who receives an observer's exception?</strong> Equivalent successful values do
+not imply equivalent failure behavior.</p>
+<p><strong>Cache failed read</strong> means the node stores the error and rethrows it on later
+reads until refresh is required. The reporting rules describe failures of
+already-active observers, not failure while constructing one.</p>
+<table>
+<thead>
+<tr>
+<th>Reporting rule</th>
+<th>What happens after an observer fails?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Collect</strong></td>
+<td>Continue healthy pending callbacks, then raise one failure directly or aggregate multiple failures.</td>
+</tr>
+<tr>
+<td><strong>First</strong></td>
+<td>Continue healthy pending callbacks, then raise the first failure.</td>
+</tr>
+<tr>
+<td><strong>Log</strong></td>
+<td>Report ordinary callback errors without propagating them to the original writer by default.</td>
+</tr>
+<tr>
+<td><strong>App handler</strong></td>
+<td>Framework-managed errors can be delivered to an application error handler.</td>
+</tr>
+<tr>
+<td><strong>Owner handler</strong></td>
+<td>An installed boundary/handler handles errors in its reactive or rendering subtree.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th style="text-align: center;">Cache failed read</th>
+<th>Observer reporting rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/#errors-and-recovery">signified</a></td>
+<td style="text-align: center;">✓*</td>
+<td>Collect</td>
+</tr>
+<tr>
+<td><a href="https://github.com/buiapp/reaktiv/blob/95bd929a5102b7690c83a4bdda8463c6a2b06ff0/src/reaktiv/signal.py">reaktiv</a> / <a href="https://github.com/buiapp/reaktiv/blob/95bd929a5102b7690c83a4bdda8463c6a2b06ff0/src/reaktiv/effect.py">effects</a></td>
+<td style="text-align: center;">✓*</td>
+<td>Log</td>
+</tr>
+<tr>
+<td><a href="https://github.com/holoviz/param/blob/v2.4.2/param/reactive.py">Param <code>rx</code></a></td>
+<td style="text-align: center;">✓</td>
+<td>?</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/blob/7569a02d2961155cc32b9491918bde8ae4c47616/packages/core/primitives/signals/src/computed.ts">Angular</a></td>
+<td style="text-align: center;">✓</td>
+<td>?</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/api/application#app-config-errorhandler">Vue</a></td>
+<td style="text-align: center;">?</td>
+<td>App handler</td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/svelte-boundary">Svelte</a></td>
+<td style="text-align: center;">?</td>
+<td>Owner handler</td>
+</tr>
+<tr>
+<td><a href="https://github.com/preactjs/signals/blob/b0df09ae3bbc66eefa8027bbd862563203e4c7f4/packages/core/src/index.ts">Preact Signals core</a></td>
+<td style="text-align: center;">✓</td>
+<td>First</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/reactive-utilities/catch-error">Solid</a></td>
+<td style="text-align: center;">?</td>
+<td>Owner handler</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/reactions.html">MobX</a></td>
+<td style="text-align: center;">?</td>
+<td>Log</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Signified:</strong> caches ordinary <code>Exception</code>, not control-flow exceptions such
+  as <code>KeyboardInterrupt</code>. A failed run retains the dependencies it reached;
+  changed dependencies or <code>invalidate()</code> permit retry. A new failure and recovery
+  each count as a changed outcome. Multiple flush failures form an <code>ExceptionGroup</code>.</li>
+<li><strong>Reaktiv:</strong> the inspected implementation caches <code>BaseException</code>, including
+  control-flow exceptions. Its synchronous effect runner prints tracebacks.</li>
+<li><strong>Third-party cache entries:</strong> ✓ records the linked implementation's behavior,
+  including Param 2.4.2 expression resolution. <strong>? is not ✗</strong>: it makes no claim
+  about caching or retry behavior for that API.</li>
+<li><strong>Handlers:</strong> Vue exposes <code>app.config.errorHandler</code>; Svelte has
+  <code>&lt;svelte:boundary&gt;</code>; Solid has <code>catchError</code>; MobX reactions accept <code>onError</code>.
+  A handler's scope matters: Svelte and Solid's scoped handlers do not cover
+  arbitrary later async callbacks. Error reporting alone does not establish a
+  failed getter's cache policy.</li>
+</ul>
+<h2 id="async-and-execution-assumptions">Async and execution assumptions<a class="headerlink" href="#async-and-execution-assumptions" title="Permanent link">&para;</a></h2>
+<p>Automatic dependency tracking usually covers the synchronous execution of a
+tracked callback. Reads in a later task, timer, or continuation are not implied
+dependencies. Vue explicitly limits <code>watchEffect</code> tracking to reads before the
+first <code>await</code>; Angular likewise documents a synchronous tracking context.
+Svelte provides a specific compiler-supported exception: visible <code>await</code> in
+<code>$derived</code> can preserve tracking across suspension, whereas an <code>await</code> hidden
+inside a called async function does not receive the same transformation.
+<a href="https://vuejs.org/guide/essentials/watchers">Vue</a>, <a href="https://angular.dev/guide/signals">Angular</a>,
+<a href="https://svelte.dev/docs/svelte/$derived">Svelte derived tracking</a>, <a href="https://svelte.dev/docs/svelte/await-expressions">Svelte async expressions</a>.</p>
+<p>Async I/O support and concurrent graph access are separate capabilities.
+Signified's graph is synchronous and single-threaded, and neither <code>batch()</code> nor
+<code>untracked()</code> may span <code>await</code>. Reaktiv offers async facilities and opt-in
+thread-safety configuration; those have their own rules. Param supports async
+watcher execution through an async executor. Neither feature should be reduced
+to a blanket “all computations are async/thread-safe” checkmark.
+<a href="../compute-contract/">Signified</a>, <a href="https://reaktiv.readthedocs.io/en/latest/advanced-features/">reaktiv advanced features</a>,
+<a href="https://param.holoviz.org/en/docs/latest/user_guide/Dependencies_and_Watchers.html">Param async watchers</a>.</p>
+<h2 id="where-signified-fits">Where Signified fits<a class="headerlink" href="#where-signified-fits" title="Permanent link">&para;</a></h2>
+<p>Signified follows a recognizable signals contract: runtime read tracking,
+dynamic dependencies, lazy cached derivations, equality-based suppression, and
+separate effects. Angular, reaktiv, and Preact Signals provide particularly close
+comparisons for that combination. Vue and Svelte add deep state tracking and UI
+scheduling; Solid differs on initial memo evaluation; MobX makes observation
+part of cache lifetime. Param offers a different Python model based on recorded
+expressions, declared references, and parameter metadata.</p>
+<p>Signified's particular choices are its fixed scalar/identity equality policy,
+explicit handling of nested reactive values, replaceable-source <code>Binding</code>, and
+synchronous effect/error contract. Those rules matter more when porting code
+than whether two libraries both expose a function called <code>computed</code>.</p>
+<p>For event sequences, <a href="https://rxpy.readthedocs.io/en/latest/get_started.html">ReactiveX for Python</a> is another useful comparison:
+an Observable delivers notifications to subscribers and composes them with
+stream operators. A cached current value can intentionally skip intermediate
+states; preserving and processing individual events calls for a different
+contract. Streams and signals can serve complementary roles in one application.</p>
 
 
 
