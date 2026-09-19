@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 import operator
 from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
-from warnings import warn
 
 from ._types import HasValue
 
@@ -135,15 +134,6 @@ class _ReactiveNamespace[T]:
             return value
 
         return _tap(self._source)
-
-    def peek(self, fn: Callable[[T], Any]) -> Computed[T]:
-        """Deprecated alias for tap; removed in 0.6.0."""
-        warn(
-            "rx.peek() is deprecated and will be removed in 0.6.0; use rx.tap() instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.tap(fn)
 
     def len(self) -> Computed[int]:
         """Return a reactive value for ``len(source.value)``.
