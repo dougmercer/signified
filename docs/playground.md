@@ -37,7 +37,7 @@ print("double:", double.value)
     <select id="signified-playground-example" data-playground-example>
       <option value="basic">Basic Signal</option>
       <option value="decorator">Computed Decorator</option>
-      <option value="rx-peek">rx.peek() (lazy)</option>
+      <option value="rx-tap">rx.tap() (lazy)</option>
       <option value="rx-effect">rx.effect() (eager)</option>
       <option value="collections">Collections and Mutation</option>
       <option value="where">Conditional where()</option>
