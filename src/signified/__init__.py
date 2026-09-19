@@ -27,7 +27,8 @@ Attributes:
 
 # Import _mixin first to initialize _ReactiveMixIn before runtime classes.
 from . import _mixin, migration
-from ._functions import as_rx, computed, effect, has_value, unref
+from ._async import AsyncEffect, Resource
+from ._functions import as_rx, async_effect, computed, effect, has_value, resource, unref
 from ._reactive import Binding, Computed, Effect, Signal, Variable, is_reactive, untracked
 from ._resolve import ResolveContext, deep_unref
 from ._scheduler import batch
@@ -36,6 +37,10 @@ from ._types import HasValue, ReactiveValue
 del _mixin
 
 __all__ = [
+    "AsyncEffect",
+    "Resource",
+    "async_effect",
+    "resource",
     "Variable",
     "Signal",
     "Computed",
