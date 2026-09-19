@@ -16,6 +16,8 @@ Functions:
     has_value: Type guard to check if an object has a value of a specific type.
     is_reactive: Type guard to check if an object is a reactive wrapper.
     deep_unref: Explicit recursive resolution through registered types.
+    batch: Defer effects across multiple writes.
+    untracked: Read without subscribing the enclosing consumer.
     migration: Opt-in diagnostics for behavior changed in 0.6.
 
 Attributes:
@@ -26,8 +28,9 @@ Attributes:
 # Import _mixin first to initialize _ReactiveMixIn before runtime classes.
 from . import _mixin, migration
 from ._functions import as_rx, computed, effect, has_value, unref
-from ._reactive import Binding, Computed, Effect, Signal, Variable, is_reactive
+from ._reactive import Binding, Computed, Effect, Signal, Variable, is_reactive, untracked
 from ._resolve import ResolveContext, deep_unref
+from ._scheduler import batch
 from ._types import HasValue, ReactiveValue
 
 del _mixin
@@ -48,5 +51,7 @@ __all__ = [
     "is_reactive",
     "deep_unref",
     "ResolveContext",
+    "batch",
+    "untracked",
     "migration",
 ]

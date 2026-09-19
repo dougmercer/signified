@@ -6,7 +6,7 @@ from functools import wraps
 from typing import Any, Callable, TypeGuard, overload
 
 from . import migration as _migration
-from ._reactive import Computed, Effect, Signal, _track_read, is_reactive
+from ._reactive import Computed, Effect, Signal, is_reactive
 from ._types import HasValue, ReactiveValue
 
 
@@ -70,8 +70,8 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
     through unchanged. Call [deep_unref][signified.deep_unref] inside the function for explicit
     recursive resolution.
 
-    The effect runs immediately when called and re-runs whenever any reactive
-    dependency changes. It is active as long as the caller holds a reference to
+    The effect runs synchronously (at outermost batch exit when batched), and
+    re-runs when reactive dependencies change. Pending notifications coalesce. It is active as long as the caller holds a reference to
     the returned [Effect][signified.Effect].
 
     Args:
@@ -143,10 +143,7 @@ def unref(value: Any) -> Any:
     """
     if not is_reactive(value):
         return value
-    if value._IS_COMPUTED:
-        value._impl.ensure_uptodate()
-    _track_read(value)
-    return value._value
+    return value.value
 
 
 def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:

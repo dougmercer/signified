@@ -704,3 +704,22 @@ def test_complex_expression():
     result = (a + b) * c
     assert_type(result, Computed[Numeric])
     assert_type(unref(result), Numeric)
+
+
+def test_resolution_registration_and_contexts():
+    from typing import Any
+
+    from signified import ResolveContext, batch, deep_unref, untracked
+
+    class Box:
+        def __init__(self, child: object) -> None:
+            self.child = child
+
+    @deep_unref.register(Box)
+    def resolve_box(box: Box, resolve: ResolveContext) -> Box:
+        return Box(resolve(box.child))
+
+    with batch(), untracked():
+        assert_type(deep_unref(Box(Signal(1))), Any)
+        assert_type(unref(Signal(Signal(1))), Signal[int])
+        assert_type(resolve_box(Box(1), ResolveContext({})), Box)

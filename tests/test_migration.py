@@ -4,7 +4,7 @@ import warnings
 
 import pytest
 
-from signified import Computed, Signal, computed, effect, migration
+from signified import Binding, Computed, Effect, Signal, computed, effect, migration
 
 
 def test_migration_warnings_are_disabled_by_default():
@@ -21,6 +21,48 @@ def test_warns_when_signal_receives_a_reactive_value():
             outer = Signal(Signal(1))
         with pytest.warns(migration.SignifiedMigrationWarning, match="Signal received"):
             outer.value = Signal(2)
+
+
+@pytest.mark.parametrize("plain", [False, True])
+def test_binding_internal_holder_does_not_emit_migration_warnings(plain):
+    with migration.warnings(), warnings.catch_warnings():
+        warnings.simplefilter("error", migration.SignifiedMigrationWarning)
+        binding = Binding(1 if plain else Signal(1))
+        assert binding.value == 1
+        binding.set(Signal(2))
+        assert binding.value == 2
+        binding.set(3)
+        assert binding.value == 3
+        binding.derive(lambda previous: previous * 2)
+        assert binding.value == 6
+        with binding.at(4):
+            assert binding.value == 4
+        assert binding.value == 6
+
+
+def test_binding_rebind_preserves_migration_warnings_in_effects():
+    binding = Binding(0)
+
+    def observe():
+        if binding.value:
+            Signal(Signal(1))
+
+    watcher = Effect(observe)
+    try:
+        with migration.warnings(), warnings.catch_warnings():
+            warnings.simplefilter("error", migration.SignifiedMigrationWarning)
+            with pytest.raises(migration.SignifiedMigrationWarning, match="Signal received"):
+                binding.set(Signal(1))
+            # The warning came from the effect after the rebind was applied.
+            assert binding.value == 1
+    finally:
+        watcher.dispose()
+
+
+def test_binding_still_warns_for_user_supplied_nested_contents():
+    with migration.warnings():
+        with pytest.warns(migration.SignifiedMigrationWarning, match="container"):
+            Binding([Signal(1)])
 
 
 @pytest.mark.parametrize("decorator", [computed, effect])
@@ -74,9 +116,8 @@ def test_diagnostics_do_not_read_reactives_or_consume_unknown_iterables():
     child = Computed(lambda: pytest.fail("must not read"))
     with migration.warnings():
         with pytest.warns(migration.SignifiedMigrationWarning):
-            migration._warn_signal_value([child])
-        # Exercise diagnostics alone: the legacy Signal itself scans iterables.
-        migration._warn_signal_value(Opaque())
+            Signal([child])
+        Signal(Opaque())
 
 
 def test_warning_as_error_restores_computation_tracking():

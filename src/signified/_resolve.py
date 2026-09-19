@@ -137,7 +137,8 @@ class _DeepUnref:
         raise RecursionError. Dictionary keys or set members that become duplicates
         after unwrapping raise ValueError; unhashable keys or members raise TypeError.
 
-        Reads inside a computation or effect create dependencies.
+        Reads inside a computation or effect create dependencies. Use untracked()
+        around the call if you want to read without subscribing.
         """
         return self._resolve(value)
 
