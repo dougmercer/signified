@@ -1,0 +1,2194 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://dougmercer.github.io/signified/0.6.0/comparison/">
+      
+      
+        <link rel="prev" href="../plugins/">
+      
+      
+        <link rel="next" href="../resolution/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Comparison - Signified</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+    
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#library-comparison" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+        <aside class="md-banner">
+          <div class="md-banner__inner md-grid md-typeset">
+            
+              <button class="md-banner__button md-icon" aria-label="Don't show this again">
+                
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+              </button>
+            
+            
+<div class="announce-wrapper">
+  <div id="announce-left">
+    <div class="item">
+      <iframe style="display: inline-block; vertical-align: middle; border: none; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116" style="border: 0;"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
+    </div>
+  </div>
+  </div>
+</div>
+
+          </div>
+          
+            <script>var el=document.querySelector("[data-md-component=announce]");if(el){var content=el.querySelector(".md-typeset");__md_hash(content.innerHTML)===__md_get("__announce")&&(el.hidden=!0)}</script>
+          
+        </aside>
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Signified" class="md-header__button md-logo" aria-label="Signified" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Signified
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Comparison
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 2C5.13 2 2 5.13 2 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7M6 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H6zm13-8h-2l-3.2 9h1.9l.7-2h3.2l.7 2h1.9zm-2.15 5.65L18 15l1.15 3.65z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/dougmercer/signified" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../usage/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Usage
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../migration/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrating to 0.6
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../compute-contract/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Compute Contract
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../playground/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Playground
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../magic-methods/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Magic Methods
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../plugins/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Plugins
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Comparison
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../resolution/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Resolving nested values
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changes/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Change Log
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../limitations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Limitations
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Signified" class="md-nav__button md-logo" aria-label="Signified" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Signified
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/dougmercer/signified" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating to 0.6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compute-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compute Contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../playground/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Playground
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magic-methods/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magic Methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#api-orientation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API orientation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-becomes-a-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What becomes a dependency?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-does-a-derivation-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When does a derivation run?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-counts-as-a-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What counts as a change?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutation-nesting-and-writable-derivations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutation, nesting, and writable derivations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#effects-batching-and-lifetime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Effects, batching, and lifetime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors-are-part-of-the-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors are part of the contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#async-and-execution-assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async and execution assumptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-signified-fits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where Signified fits
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Resolving nested values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Change Log
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../limitations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#api-orientation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API orientation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-becomes-a-dependency" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What becomes a dependency?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-does-a-derivation-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When does a derivation run?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-counts-as-a-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What counts as a change?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mutation-nesting-and-writable-derivations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutation, nesting, and writable derivations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#effects-batching-and-lifetime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Effects, batching, and lifetime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors-are-part-of-the-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors are part of the contract
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#async-and-execution-assumptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async and execution assumptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-signified-fits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where Signified fits
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+  
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+  
+
+
+
+  
+  
+
+
+<h1 id="library-comparison">Library Comparison<a class="headerlink" href="#library-comparison" title="Permanent link">&para;</a></h1>
+<p>Signified's core model—tracked reads, cached derivations, and effects—has close
+relatives in established reactive libraries. The differences that affect program
+behavior are dependency discovery, evaluation timing, equality, mutation, and
+effect scheduling. A similar API name does not imply the same contract.</p>
+<p>This page compares the Python libraries <strong>signified</strong>, <strong>reaktiv</strong>, and <strong>Param</strong>
+with <strong>Angular signals</strong>, <strong>Vue 3 reactivity</strong>, <strong>Svelte 5 runes</strong>, <strong>Preact Signals
+core</strong>, <strong>Solid</strong>, and <strong>MobX</strong>. The JavaScript libraries provide useful semantic
+reference points; their component runtimes add lifecycle and scheduling rules
+that standalone Python code does not have. Svelte's legacy <code>$:</code> statements and
+store API, and framework adapters around Preact Signals, are outside this scope.
+Sources were checked on September 19, 2026; implementation observations below
+link to specific revisions, including Param 2.4.2.</p>
+<p>Each section defines its cases once, then maps APIs to those cases. <strong>✓</strong> means
+the stated behavior applies, <strong>✗</strong> means it does not, <strong>—</strong> means the question is
+inapplicable, and <strong>?</strong> means the sources used here do not establish the answer.
+An asterisk points to a qualification immediately below the table. Matching
+cells mean matching behavior on that dimension, not identical implementations.
+Unless stated otherwise, comparisons use default options, successful synchronous
+computations, and live owners in client-side framework code.</p>
+<h2 id="api-orientation">API orientation<a class="headerlink" href="#api-orientation" title="Permanent link">&para;</a></h2>
+<p>These are abbreviated idioms, with imports and component setup omitted. In each
+row, <code>x</code> is the source and the final column derives twice its value.</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Create / read</th>
+<th>Write</th>
+<th>Derive</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified</a> (Python)</td>
+<td><code>x = Signal(1)</code> / <code>x.value</code></td>
+<td><code>x.value = v</code></td>
+<td><code>x * 2</code> or <code>Computed(lambda: x.value * 2)</code></td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/compute-signal/">reaktiv</a> (Python)</td>
+<td><code>x = signal(1)</code> / <code>x()</code></td>
+<td><code>x.set(v)</code></td>
+<td><code>computed(lambda: x() * 2)</code></td>
+</tr>
+<tr>
+<td><a href="https://param.holoviz.org/en/docs/latest/user_guide/Reactive_Expressions.html">Param</a> (Python)</td>
+<td><code>x = rx(1)</code> / <code>x.rx.value</code></td>
+<td><code>x.rx.value = v</code></td>
+<td><code>x * 2</code></td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/guide/signals">Angular</a></td>
+<td><code>const x = signal(1)</code> / <code>x()</code></td>
+<td><code>x.set(v)</code></td>
+<td><code>computed(() =&gt; x() * 2)</code></td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/api/reactivity-core">Vue</a></td>
+<td><code>const x = ref(1)</code> / <code>x.value</code></td>
+<td><code>x.value = v</code></td>
+<td><code>computed(() =&gt; x.value * 2)</code></td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/$derived">Svelte 5</a></td>
+<td><code>let x = $state(1)</code> / <code>x</code></td>
+<td><code>x = v</code></td>
+<td><code>let y = $derived(x * 2)</code></td>
+</tr>
+<tr>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact Signals core</a></td>
+<td><code>const x = signal(1)</code> / <code>x.value</code></td>
+<td><code>x.value = v</code></td>
+<td><code>computed(() =&gt; x.value * 2)</code></td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-signal">Solid</a></td>
+<td><code>const [x, setX] = createSignal(1)</code> / <code>x()</code></td>
+<td><code>setX(v)</code></td>
+<td><code>createMemo(() =&gt; x() * 2)</code></td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/observable-state.html">MobX</a></td>
+<td><code>const x = observable.box(1)</code> / <code>x.get()</code></td>
+<td><code>runInAction(() =&gt; x.set(v))</code></td>
+<td><code>computed(() =&gt; x.get() * 2)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Signified and Param both overload Python operators, but build dependencies
+differently. Reaktiv's current documentation prefers lowercase factories;
+uppercase <code>Signal</code>, <code>Computed</code>, and <code>Effect</code> remain supported.</p>
+<h2 id="what-becomes-a-dependency">What becomes a dependency?<a class="headerlink" href="#what-becomes-a-dependency" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>How dependencies are established</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Reads</strong></td>
+<td>Track reactive accessors/properties read during execution, including synchronous helper calls. Each run replaces the previous dependency set with the reads it reached.</td>
+</tr>
+<tr>
+<td><strong>References</strong></td>
+<td>Record expression operands or explicitly bound/declared dependencies. Arbitrary reactive reads inside a called function do not automatically add dependencies.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Library / derivation</th>
+<th>Dependency rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified <code>Computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/compute-signal/">reaktiv <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://param.holoviz.org/en/docs/latest/user_guide/Reactive_Expressions.html">Param <code>rx</code></a></td>
+<td>References</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/guide/signals">Angular <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/guide/essentials/computed">Vue <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/$derived">Svelte <code>$derived</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-memo">Solid <code>createMemo</code></a></td>
+<td>Reads</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/understanding-reactivity.html">MobX <code>computed</code></a></td>
+<td>Reads</td>
+</tr>
+</tbody>
+</table>
+<p>Under <strong>Reads</strong>, <code>left.value if choose_left.value else right.value</code> in Signified
+subscribes to the selector and the chosen input. Changing branches replaces the
+input dependency. Capturing or returning a signal without reading it adds no
+value dependency. Svelte's compiler syntax implements this same runtime rule
+for synchronous <code>$derived</code> expressions.</p>
+<p>Under <strong>References</strong>, Param's <code>rx</code> records a pipeline of operations.
+<code>param.bind</code> returns a bound callable, while <code>@param.depends</code> supplies dependency
+metadata. Neither alone supplies a cached, dynamically tracked <code>Computed</code>.
+<a href="https://param.holoviz.org/en/docs/latest/user_guide/Dependencies_and_Watchers.html">Param dependencies</a>.</p>
+<p>Observers can deliberately use different rules for choosing triggers:</p>
+<table>
+<thead>
+<tr>
+<th>Trigger selection</th>
+<th>Observer APIs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Track reads in the side-effect callback</td>
+<td>Signified <code>Effect</code>; reaktiv <code>effect</code>; Angular <code>effect</code>; Vue <code>watchEffect</code>; Svelte <code>$effect</code>; Preact <code>effect</code>; Solid <code>createEffect</code>; MobX <code>autorun</code></td>
+</tr>
+<tr>
+<td>Track a separate getter/data function; exclude side-effect callback reads</td>
+<td>Vue <code>watch</code>; MobX <code>reaction</code></td>
+</tr>
+<tr>
+<td>Subscribe to specified parameters/references</td>
+<td>Param watchers</td>
+</tr>
+</tbody>
+</table>
+<p>See the linked APIs in <a href="#effects-batching-and-lifetime">Effects, batching, and lifetime</a>
+for scheduling and ownership; trigger selection does not determine either.</p>
+<h2 id="when-does-a-derivation-run">When does a derivation run?<a class="headerlink" href="#when-does-a-derivation-run" title="Permanent link">&para;</a></h2>
+<p>These are three independent cases. A <strong>read</strong> includes demand from a downstream
+computation, observer refresh, or renderer. <strong>Unobserved</strong> means no downstream
+consumer is subscribed; ordinary application code can still hold and read the
+derived value.</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Meaning of ✓</th>
+<th>Meaning of ✗</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Lazy start</strong></td>
+<td>Creating the derivation does not run its callback; its first read does.</td>
+<td>Creating the derivation runs its callback.</td>
+</tr>
+<tr>
+<td><strong>Lazy refresh</strong></td>
+<td>A source write alone does not run the callback; evaluation waits for demand.</td>
+<td>Changed dependencies cause evaluation during update propagation, even without a downstream read.</td>
+</tr>
+<tr>
+<td><strong>Unobserved cache</strong></td>
+<td>Repeated unobserved reads with no changes reuse the result.</td>
+<td>Repeated unobserved reads recompute.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Library / primitive</th>
+<th style="text-align: center;">Lazy start</th>
+<th style="text-align: center;">Lazy refresh</th>
+<th style="text-align: center;">Unobserved cache</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified <code>Computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/compute-signal/">reaktiv <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/holoviz/param/blob/v2.4.2/param/reactive.py">Param <code>rx</code></a></td>
+<td style="text-align: center;">Varies*</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/guide/signals">Angular <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/guide/essentials/computed">Vue <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/$derived">Svelte <code>$derived</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-memo">Solid <code>createMemo</code></a></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/computeds.html">MobX <code>computed</code></a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✗*</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Param:</strong> constructing or inspecting an <code>rx</code> pipeline can evaluate steps
+  before an explicit <code>.rx.value</code> read. The cache columns describe <code>rx</code> expression
+  resolution, not a plain <code>param.bind</code> callable.</li>
+<li><strong>MobX:</strong> the default cache is maintained while observed and suspended when
+  unobserved. <code>keepAlive</code> changes the unobserved-cache cell to ✓.</li>
+</ul>
+<p>Lazy refresh does not mean “wait until application code explicitly reads.” An
+active effect can demand the value during the same source update. Batching can
+defer that observer work; in Solid it can also defer memo recomputation.
+<a href="https://preactjs.com/guide/v10/signals/">Preact</a>, <a href="https://docs.solidjs.com/reference/reactive-utilities/batch">Solid batching</a>.</p>
+<p>Keep derivations pure: their job is to calculate a value. Lazy evaluation means
+unread intermediate states may never execute; suspension or changed dependencies
+can introduce executions that application code did not explicitly request.
+Use an effect for a required side effect, rather than relying on getter calls.
+Vue, Solid, and MobX explicitly recommend pure derivations. Svelte additionally
+disallows state changes inside derived expressions, and reaktiv rejects signal
+writes during a computation. Signified documents purity as a caller obligation.
+<a href="https://vuejs.org/guide/essentials/computed">Vue</a>, <a href="https://docs.solidjs.com/reference/basic-reactivity/create-memo">Solid</a>, <a href="https://mobx.js.org/computeds.html">MobX</a>,
+<a href="https://svelte.dev/docs/svelte/$derived">Svelte</a>, <a href="https://reaktiv.readthedocs.io/en/latest/api/signal/">reaktiv</a>.</p>
+<h2 id="what-counts-as-a-change">What counts as a change?<a class="headerlink" href="#what-counts-as-a-change" title="Permanent link">&para;</a></h2>
+<p>There are two separate decisions: whether a source write changes its value, and
+whether a recomputed result changes what downstream consumers observe. For
+example, changing <code>x</code> from <code>1</code> to <code>3</code> changes the source, but leaves <code>x % 2</code>
+unchanged. Consumers that read only the parity can therefore skip work.</p>
+<p>The named rules below compare values at a reactive node. Proxy conversion and
+property-level observation are separate dimensions, covered in the next section.</p>
+<table>
+<thead>
+<tr>
+<th>Equality rule</th>
+<th>Values considered unchanged</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Scalar/identity</strong></td>
+<td>Signified: same-type exact built-in <code>int</code>, <code>bool</code>, <code>str</code>, <code>bytes</code>, <code>complex</code>, <code>NoneType</code>, and <code>float</code> compare by value; float NaNs also match. Everything else compares by identity, without user <code>__eq__</code>.</td>
+</tr>
+<tr>
+<td><strong><code>is</code></strong></td>
+<td>Python object identity, including for scalar objects. Equal separately allocated numbers need not match.</td>
+</tr>
+<tr>
+<td><strong><code>Object.is</code></strong></td>
+<td>JavaScript primitive values or object identity; NaNs match, signed zeros differ.</td>
+</tr>
+<tr>
+<td><strong><code>===</code></strong></td>
+<td>JavaScript primitive values or object identity; NaNs differ, signed zeros match.</td>
+</tr>
+<tr>
+<td><strong>Comparator</strong></td>
+<td>Param parameter-event comparison; registered rules can compare supported containers by contents.</td>
+</tr>
+<tr>
+<td><strong>None</strong></td>
+<td>No final derived-result equality filter in the API being compared.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Custom derived equality</strong> means an explicit comparator option on the derived
+primitive. <strong>Suppress equal output</strong> means an observer that reads only the
+derivation can skip its callback when the derived result is unchanged.</p>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th>Source rule</th>
+<th>Derived rule</th>
+<th style="text-align: center;">Custom derived equality</th>
+<th style="text-align: center;">Suppress equal output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified</a></td>
+<td>Scalar/identity</td>
+<td>Scalar/identity</td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/signal/">reaktiv</a> / <a href="https://reaktiv.readthedocs.io/en/latest/api/compute-signal/">computed</a></td>
+<td><code>is</code></td>
+<td><code>is</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/holoviz/param/blob/v2.4.2/param/parameterized.py">Param</a> / <a href="https://github.com/holoviz/param/blob/v2.4.2/param/reactive.py"><code>rx</code></a></td>
+<td>Comparator</td>
+<td>None*</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✗*</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/guide/signals">Angular</a></td>
+<td><code>Object.is</code></td>
+<td><code>Object.is</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vuejs/core/blob/4ab865a848a1da3d10fb674f857e5fff13094644/packages/shared/src/general.ts">Vue</a> / <a href="https://vuejs.org/guide/best-practices/performance#computed-stability">computed stability</a></td>
+<td><code>Object.is</code></td>
+<td><code>Object.is</code></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/sveltejs/svelte/blob/636eaaaa6f064b55072e7d192bb76dc9d8c4516e/packages/svelte/src/internal/client/reactivity/sources.js">Svelte</a> / <a href="https://github.com/sveltejs/svelte/blob/636eaaaa6f064b55072e7d192bb76dc9d8c4516e/packages/svelte/src/internal/client/reactivity/deriveds.js">derived</a></td>
+<td><code>===</code></td>
+<td><code>===</code></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://github.com/preactjs/signals/blob/b0df09ae3bbc66eefa8027bbd862563203e4c7f4/packages/core/src/index.ts">Preact Signals core</a></td>
+<td><code>===</code></td>
+<td><code>===</code></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-signal">Solid</a> / <a href="https://docs.solidjs.com/reference/basic-reactivity/create-memo">memo</a></td>
+<td><code>===</code></td>
+<td><code>===</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/observable-state.html">MobX</a> / <a href="https://mobx.js.org/computeds.html">computed</a></td>
+<td><code>Object.is</code></td>
+<td><code>Object.is</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Param:</strong> in 2.4.2, <code>rx.watch</code> delegates to a bound watcher without adding a
+final-result comparator. Parameter-event filtering is a separate stage.
+<strong>Vue:</strong> the computed-output suppression entry assumes Vue 3.4 or later.
+<strong>Solid:</strong> <code>equals: false</code> disables suppression. Angular, reaktiv, and Solid also
+allow custom source equality; MobX offers structural and shallow comparers.</p>
+<p>In Signified, unchanged computed outcomes suppress both downstream computations
+and effects:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Effect</span><span class="p">,</span> <span class="n">Signal</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">parity</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">seen</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">watcher</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">seen</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parity</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">assert</span> <span class="n">seen</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">4</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">assert</span> <span class="n">seen</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+</span></code></pre></div>
+<p>An effect that also reads <code>x.value</code> has another reason to run. Signified's
+explicit <code>Signal.update()</code> and <code>Computed.invalidate()</code> force notification from
+that node. <a href="../compute-contract/">Signified contract</a>.</p>
+<h2 id="mutation-nesting-and-writable-derivations">Mutation, nesting, and writable derivations<a class="headerlink" href="#mutation-nesting-and-writable-derivations" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Observation rule</th>
+<th>Which writes are observed?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Value</strong></td>
+<td>Assigning through the source API. Merely storing a container does not make mutations through its raw aliases observable.</td>
+</tr>
+<tr>
+<td><strong>Deep</strong></td>
+<td>Assigning through the source API and mutating supported nested objects through reactive proxies/properties. Conversion rules determine which objects are supported.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Library / source</th>
+<th>Default observation</th>
+<th>Alternative discussed here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified <code>Signal</code></a></td>
+<td>Value*</td>
+<td>Explicit mutation notification</td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/signal/">reaktiv <code>signal</code></a></td>
+<td>Value</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="https://param.holoviz.org/en/docs/latest/user_guide/Reactive_Expressions.html">Param <code>rx</code></a></td>
+<td>Value</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/guide/signals">Angular <code>signal</code></a></td>
+<td>Value</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/api/reactivity-core">Vue <code>ref</code> / <code>reactive</code></a></td>
+<td>Deep</td>
+<td>Value: <a href="https://vuejs.org/api/reactivity-advanced#shallowref"><code>shallowRef</code></a></td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/$state">Svelte <code>$state</code></a></td>
+<td>Deep</td>
+<td>Value: <code>$state.raw</code></td>
+</tr>
+<tr>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact <code>signal</code></a></td>
+<td>Value</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-signal">Solid <code>createSignal</code></a></td>
+<td>Value</td>
+<td>Deep: <a href="https://docs.solidjs.com/reference/store-utilities/create-store"><code>createStore</code></a></td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/observable-state.html">MobX <code>observable</code></a></td>
+<td>Deep</td>
+<td>Value: <code>observable.ref</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Signified:</strong> item/attribute assignment through a <code>Signal</code> forwards the mutation
+and notifies. Mutating through <code>.value</code> requires replacement or <code>update()</code> to
+notify. This explicit forwarding does not observe raw aliases. Deep observation
+also has boundaries: Svelte, for example, proxies arrays and simple objects,
+rather than every possible class instance.</p>
+<p>Signified stores exactly the object supplied. Nested reactive values remain
+ordinary values until explicitly read:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Binding</span><span class="p">,</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">inner</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">outer</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">assert</span> <span class="n">outer</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">assert</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">assert</span> <span class="n">Binding</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">1</span>
+</span></code></pre></div>
+<p>Signified's <code>unref</code> crosses one boundary; <a href="../resolution/"><code>deep_unref</code></a> explicitly
+traverses supported containers and tracks the values it reads. Vue instead has
+context-dependent ref unwrapping, including different behavior for object
+properties versus array and collection elements. These are distinct rules from
+dependency discovery. <a href="../compute-contract/">Signified contract</a>,
+<a href="https://vuejs.org/api/reactivity-core">Vue ref unwrapping</a>.</p>
+<p>Read-only access does not freeze the returned object. Signified's <code>Computed</code>,
+for example, does not forward writes but can return a mutable dictionary.
+Writable derivations need a separate classification; the following are distinct
+cases, with example APIs rather than an exhaustive feature inventory.</p>
+<table>
+<thead>
+<tr>
+<th>Write behavior</th>
+<th>Meaning</th>
+<th>Example APIs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Setter</strong></td>
+<td>Run a user-supplied setter that writes underlying state.</td>
+<td><a href="https://vuejs.org/guide/essentials/computed">Vue writable computed</a>; <a href="https://mobx.js.org/computeds.html">MobX computed setter</a></td>
+</tr>
+<tr>
+<td><strong>Override</strong></td>
+<td>Replace the result temporarily; dependency changes restore the derivation.</td>
+<td><a href="https://svelte.dev/docs/svelte/$derived">Svelte non-<code>const</code> <code>$derived</code></a>, since 5.25</td>
+</tr>
+<tr>
+<td><strong>Derived default</strong></td>
+<td>Maintain writable state with a default that follows source changes.</td>
+<td><a href="https://angular.dev/guide/signals/linked-signal">Angular <code>linkedSignal</code></a></td>
+</tr>
+<tr>
+<td><strong>Select source</strong></td>
+<td>Replace which source a stable handle follows; do not write to the old source.</td>
+<td><a href="../compute-contract/">Signified <code>Binding</code></a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="effects-batching-and-lifetime">Effects, batching, and lifetime<a class="headerlink" href="#effects-batching-and-lifetime" title="Permanent link">&para;</a></h2>
+<p>Scheduling labels describe <strong>when the side-effect callback runs</strong>. Dependency
+collection can happen earlier, including when registering a lazy watcher.</p>
+<table>
+<thead>
+<tr>
+<th>Timing</th>
+<th>Execution point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sync</strong></td>
+<td>During the triggering call, before it returns. For updates inside an explicit batch/action, this means the outermost flush.</td>
+</tr>
+<tr>
+<td><strong>On change</strong></td>
+<td>No initial side-effect callback; wait for a triggering change.</td>
+</tr>
+<tr>
+<td><strong>Angular sync</strong></td>
+<td>During Angular's synchronization/change-detection process.</td>
+</tr>
+<tr>
+<td><strong>Microtask</strong></td>
+<td>In the microtask queue, after the current synchronous work.</td>
+</tr>
+<tr>
+<td><strong>Before DOM</strong></td>
+<td>In Vue's watcher queue, after parent updates and before the owner's DOM update.</td>
+</tr>
+<tr>
+<td><strong>After DOM</strong></td>
+<td>In Svelte's microtask flush, after mounting or applying DOM updates.</td>
+</tr>
+<tr>
+<td><strong>After render</strong></td>
+<td>After Solid's current rendering phase.</td>
+</tr>
+</tbody>
+</table>
+<p>The first-callback column assumes creation outside an explicit batch/action.
+Distinct APIs get separate rows when their timing differs.</p>
+<table>
+<thead>
+<tr>
+<th>Library / observer</th>
+<th>First callback</th>
+<th>Later callbacks</th>
+<th>Update grouping</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/">signified <code>Effect</code></a></td>
+<td>Sync</td>
+<td>Sync</td>
+<td><code>batch()</code></td>
+</tr>
+<tr>
+<td><a href="https://reaktiv.readthedocs.io/en/latest/api/effect/">reaktiv <code>effect</code></a></td>
+<td>Sync</td>
+<td>Sync</td>
+<td><code>batch()</code></td>
+</tr>
+<tr>
+<td><a href="https://param.holoviz.org/en/docs/latest/user_guide/Dependencies_and_Watchers.html">Param watchers</a></td>
+<td>On change</td>
+<td>Sync</td>
+<td><code>batch_call_watchers</code></td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/api/core/effect">Angular component <code>effect</code></a></td>
+<td>Angular sync</td>
+<td>Angular sync</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://angular.dev/api/core/effect">Angular root <code>effect</code></a></td>
+<td>Microtask</td>
+<td>Microtask</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/guide/essentials/watchers">Vue <code>watchEffect</code></a></td>
+<td>Sync</td>
+<td>Before DOM</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/guide/essentials/watchers">Vue <code>watch</code></a></td>
+<td>On change</td>
+<td>Before DOM</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/$effect">Svelte <code>$effect</code></a></td>
+<td>After DOM</td>
+<td>After DOM</td>
+<td>Framework</td>
+</tr>
+<tr>
+<td><a href="https://preactjs.com/guide/v10/signals/">Preact core <code>effect</code></a></td>
+<td>Sync</td>
+<td>Sync</td>
+<td><code>batch()</code></td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/basic-reactivity/create-effect">Solid <code>createEffect</code></a></td>
+<td>After render</td>
+<td>Sync</td>
+<td><code>batch()</code></td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/reactions.html">MobX <code>autorun</code></a></td>
+<td>Sync</td>
+<td>Sync</td>
+<td>Action/transaction</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/reactions.html">MobX <code>reaction</code></a></td>
+<td>On change</td>
+<td>Sync</td>
+<td>Action/transaction</td>
+</tr>
+</tbody>
+</table>
+<p>Options can change these defaults: Vue offers <code>immediate</code>, <code>post</code>, and unbatched
+<code>sync</code> modes; Svelte has <code>$effect.pre</code>; MobX offers <code>fireImmediately</code> and custom
+schedulers. Signified's <code>batch()</code> also defers the initial callback of an effect
+created inside it. Preact's core effect still starts immediately inside a batch.
+Param's <code>batch_call_watchers</code> groups parameter events on one object; <code>queued</code>
+controls how callbacks process nested events.</p>
+<p>Ownership is independent of scheduling:</p>
+<table>
+<thead>
+<tr>
+<th>Lifetime rule</th>
+<th>What application code must do</th>
+<th>APIs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Retain handle</strong></td>
+<td>Hold a strong reference while active; call <code>dispose()</code> to stop.</td>
+<td>Signified <code>Effect</code>; reaktiv <code>effect</code></td>
+</tr>
+<tr>
+<td><strong>Owner scope</strong></td>
+<td>Create in the intended scope; scope destruction stops the observer. Explicit stopping is also available.</td>
+<td>Angular effects; Vue watchers created synchronously in setup; Svelte effects; Solid effects</td>
+</tr>
+<tr>
+<td><strong>Explicit stop</strong></td>
+<td>Invoke the disposer or unregister the watcher when its work is no longer needed.</td>
+<td>Preact core effects; MobX reactions; Param parameter watchers (<code>unwatch</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Angular's default owner is its injection context. Vue watchers created later
+asynchronously need manual stopping; Svelte's <code>$effect.root</code> also requires manual
+cleanup. Cleanup hooks for reruns are separate from stopping the observer.
+<a href="https://angular.dev/guide/signals/effect">Angular lifecycle</a>, <a href="https://vuejs.org/guide/essentials/watchers">Vue</a>, <a href="https://svelte.dev/docs/svelte/$effect">Svelte</a>.</p>
+<p>Batching generally groups observer work; it should not be assumed to provide
+database-style isolation or rollback. Signified, Preact Signals, and Solid allow
+reads of updated derived state inside a batch. In Signified, a batch body that
+raises still leaves writes applied and flushes pending effects. Independent
+effect order is unspecified, and cascading writes can run an effect again in
+the same flush. MobX actions are also transactions for reaction scheduling, not
+an instruction to execute each reaction after every intermediate assignment.
+<a href="../compute-contract/">Signified</a>, <a href="https://preactjs.com/guide/v10/signals/">Preact</a>,
+<a href="https://docs.solidjs.com/reference/reactive-utilities/batch">Solid batching</a>, <a href="https://mobx.js.org/actions.html">MobX actions</a>.</p>
+<h2 id="errors-are-part-of-the-contract">Errors are part of the contract<a class="headerlink" href="#errors-are-part-of-the-contract" title="Permanent link">&para;</a></h2>
+<p>Two questions need separate answers: <strong>what does a failed derived read cache?</strong>
+and <strong>who receives an observer's exception?</strong> Equivalent successful values do
+not imply equivalent failure behavior.</p>
+<p><strong>Cache failed read</strong> means the node stores the error and rethrows it on later
+reads until refresh is required. The reporting rules describe failures of
+already-active observers, not failure while constructing one.</p>
+<table>
+<thead>
+<tr>
+<th>Reporting rule</th>
+<th>What happens after an observer fails?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Collect</strong></td>
+<td>Continue healthy pending callbacks, then raise one failure directly or aggregate multiple failures.</td>
+</tr>
+<tr>
+<td><strong>First</strong></td>
+<td>Continue healthy pending callbacks, then raise the first failure.</td>
+</tr>
+<tr>
+<td><strong>Log</strong></td>
+<td>Report ordinary callback errors without propagating them to the original writer by default.</td>
+</tr>
+<tr>
+<td><strong>App handler</strong></td>
+<td>Framework-managed errors can be delivered to an application error handler.</td>
+</tr>
+<tr>
+<td><strong>Owner handler</strong></td>
+<td>An installed boundary/handler handles errors in its reactive or rendering subtree.</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Library</th>
+<th style="text-align: center;">Cache failed read</th>
+<th>Observer reporting rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../compute-contract/#errors-and-recovery">signified</a></td>
+<td style="text-align: center;">✓*</td>
+<td>Collect</td>
+</tr>
+<tr>
+<td><a href="https://github.com/buiapp/reaktiv/blob/95bd929a5102b7690c83a4bdda8463c6a2b06ff0/src/reaktiv/signal.py">reaktiv</a> / <a href="https://github.com/buiapp/reaktiv/blob/95bd929a5102b7690c83a4bdda8463c6a2b06ff0/src/reaktiv/effect.py">effects</a></td>
+<td style="text-align: center;">✓*</td>
+<td>Log</td>
+</tr>
+<tr>
+<td><a href="https://github.com/holoviz/param/blob/v2.4.2/param/reactive.py">Param <code>rx</code></a></td>
+<td style="text-align: center;">✓</td>
+<td>?</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/blob/7569a02d2961155cc32b9491918bde8ae4c47616/packages/core/primitives/signals/src/computed.ts">Angular</a></td>
+<td style="text-align: center;">✓</td>
+<td>?</td>
+</tr>
+<tr>
+<td><a href="https://vuejs.org/api/application#app-config-errorhandler">Vue</a></td>
+<td style="text-align: center;">?</td>
+<td>App handler</td>
+</tr>
+<tr>
+<td><a href="https://svelte.dev/docs/svelte/svelte-boundary">Svelte</a></td>
+<td style="text-align: center;">?</td>
+<td>Owner handler</td>
+</tr>
+<tr>
+<td><a href="https://github.com/preactjs/signals/blob/b0df09ae3bbc66eefa8027bbd862563203e4c7f4/packages/core/src/index.ts">Preact Signals core</a></td>
+<td style="text-align: center;">✓</td>
+<td>First</td>
+</tr>
+<tr>
+<td><a href="https://docs.solidjs.com/reference/reactive-utilities/catch-error">Solid</a></td>
+<td style="text-align: center;">?</td>
+<td>Owner handler</td>
+</tr>
+<tr>
+<td><a href="https://mobx.js.org/reactions.html">MobX</a></td>
+<td style="text-align: center;">?</td>
+<td>Log</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Signified:</strong> caches ordinary <code>Exception</code>, not control-flow exceptions such
+  as <code>KeyboardInterrupt</code>. A failed run retains the dependencies it reached;
+  changed dependencies or <code>invalidate()</code> permit retry. A new failure and recovery
+  each count as a changed outcome. Multiple flush failures form an <code>ExceptionGroup</code>.</li>
+<li><strong>Reaktiv:</strong> the inspected implementation caches <code>BaseException</code>, including
+  control-flow exceptions. Its synchronous effect runner prints tracebacks.</li>
+<li><strong>Third-party cache entries:</strong> ✓ records the linked implementation's behavior,
+  including Param 2.4.2 expression resolution. <strong>? is not ✗</strong>: it makes no claim
+  about caching or retry behavior for that API.</li>
+<li><strong>Handlers:</strong> Vue exposes <code>app.config.errorHandler</code>; Svelte has
+  <code>&lt;svelte:boundary&gt;</code>; Solid has <code>catchError</code>; MobX reactions accept <code>onError</code>.
+  A handler's scope matters: Svelte and Solid's scoped handlers do not cover
+  arbitrary later async callbacks. Error reporting alone does not establish a
+  failed getter's cache policy.</li>
+</ul>
+<h2 id="async-and-execution-assumptions">Async and execution assumptions<a class="headerlink" href="#async-and-execution-assumptions" title="Permanent link">&para;</a></h2>
+<p>Automatic dependency tracking usually covers the synchronous execution of a
+tracked callback. Reads in a later task, timer, or continuation are not implied
+dependencies. Vue explicitly limits <code>watchEffect</code> tracking to reads before the
+first <code>await</code>; Angular likewise documents a synchronous tracking context.
+Svelte provides a specific compiler-supported exception: visible <code>await</code> in
+<code>$derived</code> can preserve tracking across suspension, whereas an <code>await</code> hidden
+inside a called async function does not receive the same transformation.
+<a href="https://vuejs.org/guide/essentials/watchers">Vue</a>, <a href="https://angular.dev/guide/signals">Angular</a>,
+<a href="https://svelte.dev/docs/svelte/$derived">Svelte derived tracking</a>, <a href="https://svelte.dev/docs/svelte/await-expressions">Svelte async expressions</a>.</p>
+<p>Async I/O support and concurrent graph access are separate capabilities.
+Signified's graph is synchronous and single-threaded, and neither <code>batch()</code> nor
+<code>untracked()</code> may span <code>await</code>. Reaktiv offers async facilities and opt-in
+thread-safety configuration; those have their own rules. Param supports async
+watcher execution through an async executor. Neither feature should be reduced
+to a blanket “all computations are async/thread-safe” checkmark.
+<a href="../compute-contract/">Signified</a>, <a href="https://reaktiv.readthedocs.io/en/latest/advanced-features/">reaktiv advanced features</a>,
+<a href="https://param.holoviz.org/en/docs/latest/user_guide/Dependencies_and_Watchers.html">Param async watchers</a>.</p>
+<h2 id="where-signified-fits">Where Signified fits<a class="headerlink" href="#where-signified-fits" title="Permanent link">&para;</a></h2>
+<p>Signified follows a recognizable signals contract: runtime read tracking,
+dynamic dependencies, lazy cached derivations, equality-based suppression, and
+separate effects. Angular, reaktiv, and Preact Signals provide particularly close
+comparisons for that combination. Vue and Svelte add deep state tracking and UI
+scheduling; Solid differs on initial memo evaluation; MobX makes observation
+part of cache lifetime. Param offers a different Python model based on recorded
+expressions, declared references, and parameter metadata.</p>
+<p>Signified's particular choices are its fixed scalar/identity equality policy,
+explicit handling of nested reactive values, replaceable-source <code>Binding</code>, and
+synchronous effect/error contract. Those rules matter more when porting code
+than whether two libraries both expose a function called <code>computed</code>.</p>
+<p>For event sequences, <a href="https://rxpy.readthedocs.io/en/latest/get_started.html">ReactiveX for Python</a> is another useful comparison:
+an Observable delivers notifications to subscribers and composes them with
+stream operators. A cached current value can intentionally skip intermediate
+states; preserving and processing individual events calls for a different
+contract. Streams and signals can serve complementary roles in one application.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+  
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+        
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../plugins/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Plugins">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Plugins
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../resolution/" class="md-footer__link md-footer__link--next" aria-label="Next: Resolving nested values">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Resolving nested values
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
+      
+        <script src="../assets/playground.js"></script>
+      
+    
+  </body>
+</html>
