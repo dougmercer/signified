@@ -26,9 +26,10 @@ def _bind_args[R](func: Callable[..., R], args: tuple[Any, ...], kwargs: dict[st
         if len(args) == 2:
             left, right = args
             return lambda: func(unref(left), unref(right))
+        return lambda: func(*[unref(arg) for arg in args])
 
     def call() -> R:
-        resolved_args = tuple(unref(arg) for arg in args)
+        resolved_args = (unref(arg) for arg in args)
         resolved_kwargs = {key: unref(value) for key, value in kwargs.items()}
         return func(*resolved_args, **resolved_kwargs)
 
