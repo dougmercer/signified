@@ -11,6 +11,12 @@ This page summarizes notable changes across releases.
 Add `is_reactive` to inspect wrappers without reading their values. Improve
 union inference for `unref` and `as_rx`; runtime resolution is unchanged.
 
+Add `deep_unref.register(Type)` for custom containers and retain NumPy shape/dtype.
+Repeated references are resolved independently; cycles raise `RecursionError`.
+Resolved key/member collisions raise `ValueError` instead of silently discarding
+entries, and unhashable keys/members raise `TypeError`.
+Legacy traversal of unregistered iterables warns that it will be removed in 0.6.0.
+
 ## 0.5.0
 
 ### Removals
