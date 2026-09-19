@@ -208,21 +208,24 @@ temperature_c.value = 25
 print(temperature_f.value)  # 77.0
 ```
 
-### `peek` vs `effect`
+### `tap` vs `effect`
 
-Use `peek` when you want a side-effect to fire only when you explicitly read `.value` — useful for debugging or logging on demand. Use `effect` when you want a side-effect to fire automatically on every change.
+Use `tap` for debugging or logging when a derived value is evaluated. Use
+`effect` for side effects that run automatically when tracked inputs change.
 
-`peek` is lazy like other `Computed` values: it only runs when `.value` is read.
+`tap` is lazy and cached: the callback runs on evaluation, not on every cached
+read. Unread intermediate values are skipped. `peek(fn)` is a deprecated alias
+that will be removed in 0.6.0. Neither method is an untracked getter.
 
 `effect` is eager: it runs immediately and again on every source update.
 
-=== "peek"
+=== "tap"
 
     ```python
     from signified import Signal
 
     price = Signal(10)
-    total = price.rx.map(lambda p: p * 1.2).rx.peek(lambda v: print("total:", v))
+    total = price.rx.map(lambda p: p * 1.2).rx.tap(lambda v: print("total:", v))
 
     price.value = 10  # Nothing happens
     price.value = 20  # Nothing happens

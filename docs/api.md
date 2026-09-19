@@ -44,6 +44,7 @@ return as reactive values (identity checks, containment, ternary, etc.):
       members:
         - map
         - effect
+        - tap
         - peek
         - len
         - is_
@@ -112,7 +113,21 @@ subscript, and attribute-access operations all return reactive
 
 ::: signified.computed
 ::: signified.unref
-::: signified.deep_unref
+### Nested containers {#signified.deep_unref}
+
+::: signified._resolve._DeepUnref
+    options:
+      show_root_heading: false
+      members:
+        - __call__
+        - register
+
+::: signified.ResolveContext
+    options:
+      members:
+        - __call__
+
+See [Resolving nested values](resolution.md) for examples and custom handlers.
 ::: signified.is_reactive
 ::: signified.has_value
 ::: signified.as_rx

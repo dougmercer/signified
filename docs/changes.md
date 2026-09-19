@@ -11,6 +11,24 @@ This page summarizes notable changes across releases.
 Add `is_reactive` to inspect wrappers without reading their values. Improve
 union inference for `unref` and `as_rx`; runtime resolution is unchanged.
 
+Add `deep_unref.register(Type)` for custom containers and retain NumPy shape/dtype.
+Repeated references are resolved independently; cycles raise `RecursionError`.
+Resolved key/member collisions raise `ValueError` instead of silently discarding
+entries, and unhashable keys/members raise `TypeError`.
+Legacy traversal of unregistered iterables warns that it will be removed in 0.6.0.
+
+Add opt-in migration diagnostics with `migration.enable_warnings()` or
+`SIGNIFIED_MIGRATION_WARNINGS=1`, including nested containers and safe cleanup
+when warnings are treated as errors. Existing resolution and propagation stay
+in place while applications identify affected patterns.
+
+Add `rx.tap(fn)` for the lazy cached callback helper. `rx.peek(fn)` remains a
+deprecated alias until its removal in 0.6.0. Repeated cached reads do not rerun
+the callback; unread intermediate updates are skipped.
+
+See [Preparing for 0.6](migration.md) for changes you can make on 0.5.1 and
+changes that require upgrading the runtime.
+
 ## 0.5.0
 
 ### Removals

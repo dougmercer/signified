@@ -1,5 +1,7 @@
 import math
 
+import pytest
+
 from signified import Signal
 
 
@@ -206,11 +208,11 @@ def test_signal_rx_map_is_lazy():
     assert runs == 1
 
 
-def test_signal_rx_peek():
-    """Test side effects via signal.rx.peek."""
+def test_signal_rx_tap():
+    """Test side effects via signal.rx.tap."""
     seen: list[int] = []
     s = Signal(1)
-    passthrough = s.rx.peek(lambda x: seen.append(x))
+    passthrough = s.rx.tap(lambda x: seen.append(x))
 
     assert passthrough.value == 1
     s.value = 3
@@ -218,11 +220,11 @@ def test_signal_rx_peek():
     assert seen == [1, 3]
 
 
-def test_signal_rx_peek_is_lazy_and_skips_intermediate_updates():
-    """Test lazy read semantics for signal.rx.peek."""
+def test_signal_rx_tap_is_lazy_and_skips_intermediate_updates():
+    """Test lazy read semantics for signal.rx.tap."""
     seen: list[int] = []
     s = Signal(1)
-    passthrough = s.rx.peek(seen.append)
+    passthrough = s.rx.tap(seen.append)
 
     assert seen == []
     s.value = 2
@@ -367,3 +369,17 @@ def test_signal_rx_in():
     assert result.value == False  # noqa: E712
     haystack.value = [4, 5]
     assert result.value == True  # noqa: E712
+
+
+def test_signal_rx_peek_warns_and_keeps_cached_behavior():
+    seen = []
+    source = Signal(1)
+    with pytest.deprecated_call(match=r"rx.peek.*0\.6\.0.*rx.tap"):
+        result = source.rx.peek(seen.append)
+    source.value = 2
+    assert seen == []
+    assert result.value == result.value == 2
+    assert seen == [2]
+    source.value = 3
+    assert result.value == 3
+    assert seen == [2, 3]
