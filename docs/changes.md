@@ -4,6 +4,9 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- `trunc` infers the wrapped type's declared `__trunc__` result, including
+  `Computed[int]` for decimals, and rejects operands without `__trunc__`.
+
 - Unary `-`, `+`, and `~` infer the wrapped type's declared operator result and
   reject statically known operands that do not support the operation.
 

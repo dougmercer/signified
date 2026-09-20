@@ -29,6 +29,7 @@ from ._protocols import (
     _SupportsRshift,
     _SupportsSub,
     _SupportsTruediv,
+    _SupportsTrunc,
     _Truthy,
 )
 from ._types import HasValue
@@ -676,19 +677,7 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.pos, self)
 
-    @overload
-    def __trunc__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
-
-    @overload
-    def __trunc__(self: "_ReactiveMixIn[int]") -> Computed[int]: ...
-
-    @overload
-    def __trunc__(self: "_ReactiveMixIn[float]") -> Computed[int]: ...
-
-    @overload
-    def __trunc__(self) -> Computed[T]: ...
-
-    def __trunc__(self) -> Computed[T] | Computed[int]:
+    def __trunc__[R](self: _ReactiveOf[_SupportsTrunc[R]]) -> Computed[R]:
         """Return a reactive value for the truncated value of `self`.
 
         Returns:

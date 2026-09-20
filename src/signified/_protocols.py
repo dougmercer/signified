@@ -69,6 +69,10 @@ class _SupportsInvert[ResultT](Protocol):
     def __invert__(self) -> ResultT: ...
 
 
+class _SupportsTrunc[ResultT](Protocol):
+    def __trunc__(self) -> ResultT: ...
+
+
 class _SupportsAdd[OtherT, ResultT](Protocol):
     def __add__(self, other: OtherT, /) -> ResultT: ...
 

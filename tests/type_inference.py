@@ -341,6 +341,31 @@ def test_trunc():
     assert_type(unref(float_result), int)
 
 
+def test_trunc_preserves_decimal_and_custom_result_types():
+    decimal = Signal(Decimal("1.5"))
+    assert_type(trunc(decimal), Computed[int])
+    assert_type(trunc(Computed(lambda: decimal.value)), Computed[int])
+    assert_type(trunc(Binding(decimal)), Computed[int])
+
+    class IntegralResult(int):
+        pass
+
+    class Truncatable:
+        def __trunc__(self) -> IntegralResult:
+            return IntegralResult(1)
+
+    source = Signal(Truncatable())
+    assert_type(trunc(source), Computed[IntegralResult])
+    assert_type(trunc(Computed(lambda: source.value)), Computed[IntegralResult])
+    assert_type(trunc(Binding(source)), Computed[IntegralResult])
+
+
+def test_trunc_rejects_unsupported_values():
+    trunc(Signal("text"))  # pyright: ignore[reportArgumentType]
+    trunc(Computed(lambda: 1j))  # pyright: ignore[reportArgumentType]
+    trunc(Binding(Signal(object())))  # pyright: ignore[reportArgumentType]
+
+
 def test_add():
     int_sum = Signal(1) + Signal(2)
     assert_type(int_sum, Computed[int])
