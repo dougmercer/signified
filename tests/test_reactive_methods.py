@@ -51,7 +51,7 @@ def test_signal_comparison_operations():
     assert (s1 < s2).value == False  # noqa: E712
     assert (s1 <= s2).value == False  # noqa: E712
     assert s1.rx.eq(s2).value == False  # noqa: E712
-    assert (s1 != s2).value == True  # noqa: E712
+    assert s1.rx.ne(s2).value == True  # noqa: E712
 
 
 def test_signal_boolean_operations():
@@ -354,6 +354,40 @@ def test_signal_rx_eq():
     assert result.value == True  # noqa: E712
     s.value = 25
     assert result.value == False  # noqa: E712
+
+
+def test_signal_rx_ne():
+    """Test reactive inequality via signal.rx.ne."""
+    s = Signal(10)
+    result = s.rx.ne(10)
+
+    assert result.value == False  # noqa: E712
+    s.value = 25
+    assert result.value == True  # noqa: E712
+
+
+def test_ne_operator_uses_identity_and_agrees_with_eq():
+    """`!=` compares identity, and never disagrees with `==`."""
+    a = Signal(5)
+    b = Signal(5)
+
+    assert (a == b) is False
+    assert (a != b) is True
+    assert (a == b) == (not (a != b))
+    assert (a == a) is True
+    assert (a != a) is False
+
+
+def test_reactive_values_stay_hashable_and_usable_in_containers():
+    """The reason `__eq__` stays identity-based: hashability and container protocols."""
+    a = Signal(5)
+    b = Signal(5)
+
+    assert hash(a) == hash(a)
+    assert {a, b} == {a, b}
+    assert {a: "a"}[a] == "a"
+    assert a not in [b]
+    assert a in [a]
 
 
 def test_signal_rx_in():

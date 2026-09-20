@@ -41,19 +41,25 @@ Plain values can also appear on the left: `3 + x`, `50 / x`, `2 ** x`,
 
 ## Comparisons, predicates, and truthiness
 
-`<`, `<=`, `>`, `>=`, and `!=` produce reactive results. Use `.rx` for the
-following operations:
+`<`, `<=`, `>`, and `>=` produce reactive results.
+
+`==` and `!=` do not. Comparisons between reactive objects use identity,
+so they remain usable as distinct keys in sets and dictionaries. To compare
+wrapped values reactively, use `x.rx.eq(y)` or `x.rx.ne(y)`.
+
+Use `.rx` for the following operations:
 
 | To calculate… | Use |
 | --- | --- |
 | Value equality | `x.rx.eq(y)` |
+| Value inequality | `x.rx.ne(y)` |
 | Object identity | `x.rx.is_(y)`, `x.rx.is_not(y)` |
 | Membership | `x.rx.in_(items)`, `items.rx.contains(x)` |
 | Truthiness | `x.rx.as_bool()` |
 | Length | `items.rx.len()` |
 | A conditional result | `condition.rx.where(when_true, when_false)` |
 
-`==`, `is`, `in`, `bool(x)`, and `len(x)` do not create these reactive
+`==`, `!=`, `is`, `in`, `bool(x)`, and `len(x)` do not create these reactive
 calculations. Python's `if`, `and`, and `or` also do not build reactive
 expressions. Use `.rx.where(...)` to choose between values, or put ordinary
 Python branching inside a `Computed` function that reads `.value`.

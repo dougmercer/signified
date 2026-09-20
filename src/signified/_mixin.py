@@ -281,6 +281,33 @@ class _ReactiveNamespace[T]:
         """
         return _computed_call(operator.eq, self._source, other)
 
+    def ne(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for whether ``source.value != other``.
+
+        Comparisons between reactive objects use identity. Use this method to
+        compare their wrapped values without changing how reactive objects behave
+        in sets and dictionaries.
+
+        Args:
+            other: Value to compare against.
+
+        Returns:
+            A reactive value for ``source.value != other``.
+
+        Example:
+            ```py
+            >>> s = Signal(10)
+            >>> result = s.rx.ne(10)
+            >>> result.value
+            False
+            >>> s.value = 25
+            >>> result.value
+            True
+
+            ```
+        """
+        return _computed_call(operator.ne, self._source, other)
+
     @overload
     def where[A, B, C: _Truthy](self: _ReactiveNamespace[C], a: HasValue[A], b: HasValue[B]) -> Computed[A]: ...
 
@@ -1087,29 +1114,6 @@ class _ReactiveMixIn[T]:
             ```
         """
         return _computed_call(operator.mul, self, other)
-
-    def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
-        """Return a reactive value for whether `self` is not equal to `other`.
-
-        Args:
-            other: The value to compare against.
-
-        Returns:
-            A reactive value for `self.value != other`.
-
-        Example:
-            ```py
-            >>> s = Signal(5)
-            >>> result = s != 5
-            >>> result.value
-            False
-            >>> s.value = 6
-            >>> result.value
-            True
-
-            ```
-        """
-        return _computed_call(operator.ne, self, other)
 
     @overload
     def __or__[N: (bool, int)](self: "_ReactiveMixIn[bool]", other: HasValue[N]) -> Computed[N]: ...

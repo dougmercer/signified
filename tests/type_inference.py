@@ -433,10 +433,12 @@ def test_mul():
     assert_type(unref(numeric_product), float)
 
 
-def test_ne():
-    result = Signal(5) != Signal(6)
+def test_rx_ne():
+    result = Signal(5).rx.ne(Signal(6))
     assert_type(result, Computed[bool])
     assert_type(unref(result), bool)
+    # Comparing reactive objects with `!=` returns an ordinary bool.
+    assert_type(Signal(5) != Signal(6), bool)
 
 
 def test_or():

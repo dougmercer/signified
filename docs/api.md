@@ -61,6 +61,7 @@ return as reactive values (identity checks, containment, ternary, etc.):
         - in_
         - contains
         - eq
+        - ne
         - where
         - as_bool
 
@@ -116,7 +117,6 @@ subscript, and attribute-access operations all return reactive
         - __le__
         - __ge__
         - __gt__
-        - __ne__
         - __getitem__
 
 ## Functions

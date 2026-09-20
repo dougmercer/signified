@@ -50,6 +50,10 @@ This page summarizes notable changes across releases.
   reflected arithmetic/bitwise operators and ordering comparisons. Passing a
   reactive value straight to a ufunc (`np.sin(reactive)`) now raises `TypeError`;
   use `reactive.rx.map(np.sin)`.
+- **Breaking:** Reactive objects no longer overload `!=`. Comparisons between
+  reactive objects use identity and return a plain `bool`, matching `==`.
+  Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
+  the existing `x.rx.eq(y)`.
 
 ## 0.6.0
 

@@ -83,7 +83,7 @@ def test_reactive_on_the_left_is_unaffected():
     np.testing.assert_array_equal(unref(signal * 2), np.array([20, 40]))
 
 
-@pytest.mark.parametrize("op", [lambda a, b: a < b, lambda a, b: a >= b, lambda a, b: a != b])
+@pytest.mark.parametrize("op", [lambda a, b: a < b, lambda a, b: a >= b, lambda a, b: a > b])
 def test_comparisons_with_array_on_the_left_are_reactive(op):
     result = op(np.array([1, 2]), Signal(np.array([10, 20])))
 
