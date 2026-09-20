@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import operator
+from collections.abc import Sized
 from typing import TYPE_CHECKING, Any, Callable, Literal, SupportsAbs, Union, overload
 
 from ._protocols import (
@@ -143,7 +144,7 @@ class _ReactiveNamespace[T]:
 
         return _computed_call(_tap, self._source)
 
-    def len(self) -> Computed[int]:
+    def len[S: Sized](self: _ReactiveNamespace[S]) -> Computed[int]:
         """Return a reactive value for ``len(source.value)``.
 
         Returns:
