@@ -1303,10 +1303,13 @@ the operation, just as in ordinary Python.</p>
 </table>
 <h2 id="reverse-arithmetic-and-bitwise-methods">Reverse arithmetic and bitwise methods<a class="headerlink" href="#reverse-arithmetic-and-bitwise-methods" title="Permanent link">&para;</a></h2>
 <p>Plain values can also appear on the left: <code>3 + x</code>, <code>50 / x</code>, <code>2 ** x</code>,
-<code>divmod(50, x)</code>, <code>3 &amp; x</code>, <code>3 | x</code>, and <code>3 ^ x</code>.</p>
+<code>divmod(50, x)</code>, <code>3 &amp; x</code>, <code>3 | x</code>, <code>3 ^ x</code>, <code>1 &lt;&lt; x</code>, <code>32 &gt;&gt; x</code>, and <code>matrix @ x</code>.</p>
 <h2 id="comparisons-predicates-and-truthiness">Comparisons, predicates, and truthiness<a class="headerlink" href="#comparisons-predicates-and-truthiness" title="Permanent link">&para;</a></h2>
-<p><code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, and <code>!=</code> produce reactive results. Use <code>.rx</code> for the
-following operations:</p>
+<p><code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, and <code>&gt;=</code> produce reactive results.</p>
+<p><code>==</code> and <code>!=</code> do not. Comparisons between reactive objects use identity,
+so they remain usable as distinct keys in sets and dictionaries. To compare
+wrapped values reactively, use <code>x.rx.eq(y)</code> or <code>x.rx.ne(y)</code>.</p>
+<p>Use <code>.rx</code> for the following operations:</p>
 <table>
 <thead>
 <tr>
@@ -1318,6 +1321,10 @@ following operations:</p>
 <tr>
 <td>Value equality</td>
 <td><code>x.rx.eq(y)</code></td>
+</tr>
+<tr>
+<td>Value inequality</td>
+<td><code>x.rx.ne(y)</code></td>
 </tr>
 <tr>
 <td>Object identity</td>
@@ -1341,7 +1348,7 @@ following operations:</p>
 </tr>
 </tbody>
 </table>
-<p><code>==</code>, <code>is</code>, <code>in</code>, <code>bool(x)</code>, and <code>len(x)</code> do not create these reactive
+<p><code>==</code>, <code>!=</code>, <code>is</code>, <code>in</code>, <code>bool(x)</code>, and <code>len(x)</code> do not create these reactive
 calculations. Python's <code>if</code>, <code>and</code>, and <code>or</code> also do not build reactive
 expressions. Use <code>.rx.where(...)</code> to choose between values, or put ordinary
 Python branching inside a <code>Computed</code> function that reads <code>.value</code>.</p>

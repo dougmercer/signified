@@ -1007,6 +1007,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#060" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1481,6 +1492,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unreleased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#060" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1912,6 +1934,59 @@
 
 <h1 id="change-log">Change Log<a class="headerlink" href="#change-log" title="Permanent link">&para;</a></h1>
 <p>This page summarizes notable changes across releases.</p>
+<h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>rx.where</code> narrows its result type when the condition is a literal boolean,
+  <code>None</code>, or has <code>__bool__</code> annotated to return a literal boolean. Ordinary boolean
+  signals retain the union of both branch types.</li>
+<li><code>rx.as_bool</code> preserves literal boolean result types for conditions with statically
+  known truthiness, including <code>None</code>, so subsequent <code>rx.where</code> calls can still narrow.</li>
+<li><code>as_rx</code> preserves the concrete <code>Signal</code>, <code>Computed</code>, or <code>Binding</code> type when
+  passed an existing reactive value.</li>
+<li>Indexing lists, tuples, and strings with reactive slices preserves the sliced
+  container's result type.</li>
+<li>Floor division infers <code>float</code> when either operand is a float and <code>int</code> for
+  integer/boolean operands, including reflected operations.</li>
+<li>Modulo infers the promoted numeric result instead of a union of operand types,
+  including reflected operations and boolean operands.</li>
+<li>Multiplication infers promoted <code>int</code>, <code>float</code>, or <code>complex</code> results, including
+  reflected operations and boolean operands.</li>
+<li>Subtraction infers promoted numeric results and declared operator return types;
+  date and datetime differences return <code>Computed[timedelta]</code>, while subtracting
+  a duration preserves the date or datetime type.</li>
+<li>Bitwise AND, OR, and XOR infer <code>int</code> for mixed boolean/integer operands while
+  preserving <code>bool</code> for boolean-only operations, in both operand directions.</li>
+<li>Addition keeps integer results for plain integer operands and infers promoted
+  numeric results for boolean and complex operands, including reflected operations.</li>
+<li>True division infers <code>float</code> for real operands and <code>complex</code> when either operand
+  is complex, including reflected operations and boolean operands.</li>
+<li>Exponentiation infers promoted numeric results for integer, boolean, float, and
+  complex operands, including reflected operations.</li>
+<li>Left and right shifts infer <code>int</code> for mixed boolean/integer operands instead of a
+  union of operand types.</li>
+<li><code>divmod</code> infers the promoted numeric result and honours a declared <code>__divmod__</code>
+  return type; it no longer claims <code>tuple[float, float]</code> for operands it cannot
+  otherwise resolve, and now accepts float operands in the reflected direction.</li>
+<li>Adding a duration to a reactive date or datetime preserves the date or datetime
+  type in the reflected direction, matching subtraction.</li>
+<li>Multiplication, matrix multiplication, true and floor division, modulo,
+  exponentiation, and shifts now report a user type's declared operator return
+  type instead of a union of the operand types, in both operand directions.</li>
+<li>Added the missing reflected operators <code>__rmatmul__</code>, <code>__rlshift__</code>, and
+  <code>__rrshift__</code>, so <code>other @ reactive</code>, <code>other &lt;&lt; reactive</code>, and
+  <code>other &gt;&gt; reactive</code> produce reactive values instead of raising <code>TypeError</code>.</li>
+<li>Reactive values opt out of NumPy's ufunc dispatch (<code>__array_ufunc__ = None</code>).
+  Previously <code>array + reactive</code> returned an object-dtype <code>ndarray</code> of <code>Computed</code>
+  values instead of a single reactive result, because <code>ndarray</code> handled the
+  operation rather than deferring; it now returns a <code>Computed</code>, as do other
+  reflected arithmetic/bitwise operators and ordering comparisons. Passing a
+  reactive value straight to a ufunc (<code>np.sin(reactive)</code>) now raises <code>TypeError</code>;
+  use <code>reactive.rx.map(np.sin)</code>.</li>
+<li><strong>Breaking:</strong> Reactive objects no longer overload <code>!=</code>. Comparisons between
+  reactive objects use identity and return a plain <code>bool</code>, matching <code>==</code>.
+  Replace <code>(x != y)</code> with <code>x.rx.ne(y)</code> for reactive value comparisons, alongside
+  the existing <code>x.rx.eq(y)</code>.</li>
+</ul>
 <h2 id="060">0.6.0<a class="headerlink" href="#060" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Added <code>Binding</code> for switching the source followed by existing calculations.</li>
