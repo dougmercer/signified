@@ -2,6 +2,18 @@
 
 This page summarizes notable changes across releases.
 
+## Unreleased
+
+- `rx.where` narrows its result type when the condition is a literal boolean,
+  `None`, or has `__bool__` annotated to return a literal boolean. Ordinary boolean
+  signals retain the union of both branch types.
+- `rx.as_bool` preserves literal boolean result types for conditions with statically
+  known truthiness, including `None`, so subsequent `rx.where` calls can still narrow.
+- `as_rx` preserves the concrete `Signal`, `Computed`, or `Binding` type when
+  passed an existing reactive value.
+- Indexing lists, tuples, and strings with reactive slices preserves the sliced
+  container's result type.
+
 ## 0.6.0
 
 - Added `Binding` for switching the source followed by existing calculations.

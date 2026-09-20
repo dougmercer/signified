@@ -1,7 +1,8 @@
 from math import ceil, floor, trunc
-from typing import Any, TypeVar, Union, assert_type
+from typing import Any, Literal, TypeVar, Union, assert_type
 
 from signified import Binding, Computed, Effect, HasValue, ReactiveValue, Signal, as_rx, computed, is_reactive, unref
+from signified._mixin import _AlwaysFalse, _AlwaysTrue
 
 T = TypeVar("T")
 Numeric = Union[int, float]
@@ -19,6 +20,14 @@ def test_unref_distributes_over_has_value_union(value: HasValue[int] | HasValue[
 def test_is_reactive_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
     if is_reactive(value):
         assert_type(value, ReactiveValue[int] | ReactiveValue[str])
+
+
+def test_as_rx_preserves_wrapper_types():
+    assert_type(as_rx(Signal(1)), Signal[int])
+    assert_type(as_rx(Computed(lambda: 1)), Computed[int])
+    assert_type(as_rx(Binding(Signal(1))), Binding[int])
+    assert_type(as_rx(Signal(Signal(1))), Signal[Signal[int]])
+    assert_type(as_rx(Computed(lambda: Signal(1))), Computed[Signal[int]])
 
 
 def test_as_rx_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
@@ -113,6 +122,22 @@ def test_as_bool():
     result = Signal(1).rx.as_bool()
     assert_type(result, Computed[bool])
     assert_type(unref(result), bool)
+
+
+def test_as_bool_preserves_known_truthiness(truthy: _AlwaysTrue, falsy: _AlwaysFalse, condition: bool, a: int, b: str):
+    always_true = Signal[Literal[True]](True).rx.as_bool()
+    always_false = Signal[Literal[False]](False).rx.as_bool()
+    assert_type(always_true, Computed[Literal[True]])
+    assert_type(always_false, Computed[Literal[False]])
+    assert_type(Signal(truthy).rx.as_bool(), Computed[Literal[True]])
+    assert_type(Signal(falsy).rx.as_bool(), Computed[Literal[False]])
+    assert_type(Signal(None).rx.as_bool(), Computed[Literal[False]])
+    assert_type(Binding(Signal[Literal[True]](True)).rx.as_bool(), Computed[Literal[True]])
+    assert_type(always_true.rx.as_bool(), Computed[Literal[True]])
+    assert_type(Signal(condition).rx.as_bool(), Computed[bool])
+    assert_type(Signal(True).rx.as_bool(), Computed[bool])
+    assert_type(always_true.rx.where(a, b), Computed[int])
+    assert_type(always_false.rx.where(a, b), Computed[str])
 
 
 def test_rx_map():
@@ -656,6 +681,20 @@ def test_getitem():
     assert_type(bag["x"], Computed[int])
 
 
+def test_getitem_reactive_slices():
+    key = Signal(slice(1, None))
+    numbers = Signal([1, 2, 3])
+    tuple_values = Signal[tuple[int, ...]]((1, 2, 3))
+    chars = Signal("abc")
+
+    assert_type(numbers[key], Computed[list[int]])
+    assert_type(tuple_values[key], Computed[tuple[int, ...]])
+    assert_type(chars[key], Computed[str])
+    assert_type(numbers[Computed(lambda: key.value)], Computed[list[int]])
+    assert_type(tuple_values[Binding(key)], Computed[tuple[int, ...]])
+    assert_type(chars[Binding(key)], Computed[str])
+
+
 def test_setattr():
     class Person:
         def __init__(self, name: str):
@@ -684,6 +723,58 @@ def test_where():
     result = condition.rx.where(a, b)
     assert_type(result, Computed[Numeric])
     assert_type(unref(result), Numeric)
+
+
+def test_where_protocol_annotations(a: int, b: str, truthy: _AlwaysTrue, falsy: _AlwaysFalse):
+    assert_type(Signal(truthy).rx.where(a, b), Computed[int])
+    assert_type(Signal(falsy).rx.where(a, b), Computed[str])
+
+
+def test_where_literal_conditions(a: int, b: str):
+    truthy = Signal[Literal[True]](True)
+    falsy = Signal[Literal[False]](False)
+    assert_type(truthy.rx.where(a, b), Computed[int])
+    assert_type(falsy.rx.where(a, b), Computed[str])
+    assert_type(Signal(None).rx.where(a, b), Computed[str])
+
+    assert_type(truthy.rx.where(Signal(a), Signal(b)), Computed[int])
+    assert_type(falsy.rx.where(Signal(a), Signal(b)), Computed[str])
+    assert_type(Binding(truthy).rx.where(a, b), Computed[int])
+    assert_type(Binding(falsy).rx.where(a, b), Computed[str])
+    assert_type(Computed[Literal[True]](lambda: truthy.value).rx.where(a, b), Computed[int])
+    assert_type(Computed[Literal[False]](lambda: falsy.value).rx.where(a, b), Computed[str])
+
+
+def test_where_structural_truthiness(a: int, b: str):
+    class AlwaysTruthy:
+        def __bool__(self) -> Literal[True]:
+            return True
+
+    class AlwaysFalsy:
+        def __bool__(self) -> Literal[False]:
+            return False
+
+    assert_type(Signal(AlwaysTruthy()).rx.where(a, b), Computed[int])
+    assert_type(Signal(AlwaysFalsy()).rx.where(a, b), Computed[str])
+
+
+def test_where_uncertain_truthiness_retains_union(
+    a: int, b: str, condition: bool, either: _AlwaysTrue | _AlwaysFalse, unknown: object
+):
+    assert_type(Signal(condition).rx.where(a, b), Computed[int | str])
+    assert_type(Signal(either).rx.where(a, b), Computed[int | str])
+    assert_type(Signal(unknown).rx.where(a, b), Computed[int | str])
+    # Inference widens the initial True to bool because the signal is mutable.
+    mutable = Signal(True)
+    mutable.value = False
+    assert_type(mutable.rx.where(a, b), Computed[int | str])
+
+
+def test_where_union_with_same_truthiness(
+    a: int, b: str, truthy: _AlwaysTrue | Literal[True], falsy: _AlwaysFalse | None
+):
+    assert_type(Signal[_AlwaysTrue | Literal[True]](truthy).rx.where(a, b), Computed[int])
+    assert_type(Signal(falsy).rx.where(a, b), Computed[str])
 
 
 def test_unref():

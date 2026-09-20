@@ -14,8 +14,26 @@ if TYPE_CHECKING:
 __all__ = ["_ReactiveMixIn"]
 
 
-def _ternary[A, B](a: A, b: B, condition: Any) -> A | B:
+def _ternary[A, B](a: A, b: B, condition: object) -> A | B:
     return a if condition else b
+
+
+class _AlwaysTrue(Protocol):
+    def __bool__(self) -> Literal[True]: ...
+
+
+class _AlwaysFalse(Protocol):
+    def __bool__(self) -> Literal[False]: ...
+
+
+type _Truthy = Literal[True] | _AlwaysTrue
+"""A value whose truthiness is statically known to be `True`."""
+
+type _Falsy = Literal[False] | _AlwaysFalse | None
+"""A value whose truthiness is statically known to be `False`."""
+
+
+type _IndexLike = HasValue[SupportsIndex] | HasValue[int]
 
 
 class _SupportsAdd[OtherT, ResultT](Protocol):
@@ -276,8 +294,21 @@ class _ReactiveNamespace[T]:
         """
         return _computed_call(operator.eq, self._source, other)
 
-    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
+    @overload
+    def where[A, B, C: _Truthy](self: _ReactiveNamespace[C], a: HasValue[A], b: HasValue[B]) -> Computed[A]: ...
+
+    @overload
+    def where[A, B, C: _Falsy](self: _ReactiveNamespace[C], a: HasValue[A], b: HasValue[B]) -> Computed[B]: ...
+
+    @overload
+    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]: ...
+
+    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[Any]:
         """Return a reactive value for ``a`` if ``source`` is truthy, else ``b``.
+
+        When the source type guarantees truthiness or falsiness (a literal bool,
+        `None`, or a literal-returning `__bool__`), the result type narrows to the
+        selected branch. An ordinary `Signal[bool]` retains both branch types.
 
         Args:
             a: The value to return if source is truthy.
@@ -298,10 +329,18 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-
         return _computed_call(_ternary, a, b, self._source)
 
-    def as_bool(self) -> Computed[bool]:
+    @overload
+    def as_bool[C: _Truthy](self: _ReactiveNamespace[C]) -> Computed[Literal[True]]: ...
+
+    @overload
+    def as_bool[C: _Falsy](self: _ReactiveNamespace[C]) -> Computed[Literal[False]]: ...
+
+    @overload
+    def as_bool(self) -> Computed[bool]: ...
+
+    def as_bool(self) -> Computed[Any]:
         """Return a reactive value for the boolean value of ``self._source``.
 
         Note:
@@ -1499,26 +1538,22 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.xor, other, self)
 
     @overload
-    def __getitem__[V](self: "_ReactiveMixIn[list[V]]", key: slice) -> Computed[list[V]]: ...
+    def __getitem__[V](self: "_ReactiveMixIn[list[V]]", key: HasValue[slice]) -> Computed[list[V]]: ...
 
     @overload
-    def __getitem__[V](self: "_ReactiveMixIn[tuple[V, ...]]", key: slice) -> Computed[tuple[V, ...]]: ...
+    def __getitem__[V](self: "_ReactiveMixIn[tuple[V, ...]]", key: HasValue[slice]) -> Computed[tuple[V, ...]]: ...
 
     @overload
-    def __getitem__(self: "_ReactiveMixIn[str]", key: slice) -> Computed[str]: ...
+    def __getitem__(self: "_ReactiveMixIn[str]", key: HasValue[slice]) -> Computed[str]: ...
 
     @overload
-    def __getitem__[V](
-        self: "_ReactiveMixIn[list[V]]", key: HasValue[SupportsIndex] | HasValue[int]
-    ) -> Computed[V]: ...
+    def __getitem__[V](self: "_ReactiveMixIn[list[V]]", key: _IndexLike) -> Computed[V]: ...
 
     @overload
-    def __getitem__[V](
-        self: "_ReactiveMixIn[tuple[V, ...]]", key: HasValue[SupportsIndex] | HasValue[int]
-    ) -> Computed[V]: ...
+    def __getitem__[V](self: "_ReactiveMixIn[tuple[V, ...]]", key: _IndexLike) -> Computed[V]: ...
 
     @overload
-    def __getitem__(self: "_ReactiveMixIn[str]", key: HasValue[SupportsIndex] | HasValue[int]) -> Computed[str]: ...
+    def __getitem__(self: "_ReactiveMixIn[str]", key: _IndexLike) -> Computed[str]: ...
 
     @overload
     def __getitem__[K, V](self: "_ReactiveMixIn[dict[K, V]]", key: HasValue[K]) -> Computed[V]: ...
