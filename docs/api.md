@@ -13,6 +13,7 @@
         - update
         - __setattr__
         - __setitem__
+        - __delitem__
 
 ::: signified.Computed
     options:

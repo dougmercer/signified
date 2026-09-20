@@ -54,6 +54,8 @@ This page summarizes notable changes across releases.
   reactive objects use identity and return a plain `bool`, matching `==`.
   Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
   the existing `x.rx.eq(y)`.
+- `Signal` forwards item deletion (`del signal[key]`) to the wrapped `list` or
+  `dict` and notifies observers, mirroring `signal[key] = value`.
 
 ## 0.6.0
 
