@@ -35,17 +35,6 @@ def _bind_args[R](func: Callable[..., R], args: tuple[Any, ...], kwargs: dict[st
     return call
 
 
-def _computed_call[R](func: Callable[..., R], *args: Any, **kwargs: Any) -> Computed[R]:
-    """Return `computed(func)(*args, **kwargs)` without building the wrapper.
-
-    Equivalent to calling [computed][signified.computed], but skips the
-    `functools.wraps`-decorated wrapper that would be created and discarded on
-    every call. Used by the operator overloads, which take this path for every
-    reactive expression a user writes.
-    """
-    return Computed(_bind_args(func, args, kwargs))
-
-
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
     """Wrap a function so calls produce a reactive [Computed][signified.Computed] result.
 

@@ -4,6 +4,9 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- Operators and `rx` helpers construct `Computed` callbacks directly, avoiding
+  the intermediate operator-call helper while preserving shallow argument reads.
+
 - **Breaking:** Removed the `signified.migration` warning API and
   `SIGNIFIED_MIGRATION_WARNINGS` handling. Run migration diagnostics before
   upgrading, using a release that still provides them (such as 0.5.1).

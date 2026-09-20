@@ -406,3 +406,25 @@ def test_signal_rx_in():
 def test_signal_rx_has_no_peek():
     """The alias deprecated in 0.5.1 is removed in 0.6."""
     assert not hasattr(Signal(1).rx, "peek")
+
+
+def test_direct_callable_tracks_replacement_and_shallow_keyword_arguments():
+    child = Signal(2)
+    scale = Signal(3)
+    fn = Signal(lambda items, *, factor: items[0].value * factor)
+    result = fn([child], factor=scale)
+    assert result.value == 6
+    child.value = 4
+    assert result.value == 12
+    scale.value = 5
+    assert result.value == 20
+    fn.value = lambda items, *, factor: items[0].value + factor
+    assert result.value == 9
+
+
+def test_direct_reverse_operator_preserves_operand_order_and_updates():
+    source = Signal(2)
+    result = 10 - source
+    assert result.value == 8
+    source.value = 7
+    assert result.value == 3
