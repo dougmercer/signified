@@ -120,6 +120,17 @@ def test_abs():
     assert_type(unref(abs_complex), float)
 
 
+def test_abs_preserves_custom_result_type():
+    class Distance:
+        def __abs__(self) -> float:
+            return 1.0
+
+    source = Signal(Distance())
+    assert_type(abs(source), Computed[float])
+    assert_type(abs(Computed(lambda: source.value)), Computed[float])
+    assert_type(abs(Binding(source)), Computed[float])
+
+
 def test_as_bool():
     result = Signal(1).rx.as_bool()
     assert_type(result, Computed[bool])

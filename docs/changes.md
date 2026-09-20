@@ -4,6 +4,9 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- Absolute value infers a custom type's declared `__abs__` return type, including
+  through `Signal`, `Computed`, and `Binding`.
+
 - `rx.where` narrows its result type when the condition is a literal boolean,
   `None`, or has `__bool__` annotated to return a literal boolean. Ordinary boolean
   signals retain the union of both branch types.

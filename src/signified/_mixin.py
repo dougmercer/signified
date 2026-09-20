@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Literal, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, SupportsAbs, Union, overload
 
 from ._protocols import (
     _ComplexLike,
@@ -490,16 +490,7 @@ class _ReactiveMixIn[T]:
 
         return _computed_call(f, *args, **kwargs)
 
-    @overload
-    def __abs__(self: "_ReactiveMixIn[complex]") -> Computed[float]: ...
-
-    @overload
-    def __abs__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
-
-    @overload
-    def __abs__(self) -> Computed[T]: ...
-
-    def __abs__(self) -> Computed[T] | Computed[float] | Computed[int]:
+    def __abs__[R](self: _ReactiveOf[SupportsAbs[R]]) -> Computed[R]:
         """Return a reactive value for the absolute value of `self`.
 
         Returns:
