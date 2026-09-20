@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["_ReactiveMixIn"]
 
 
+def _ternary[A, B](a: A, b: B, condition: Any) -> A | B:
+    return a if condition else b
+
+
 class _SupportsAdd[OtherT, ResultT](Protocol):
     def __add__(self, other: OtherT, /) -> ResultT: ...
 
@@ -61,7 +65,7 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-        return computed(fn)(self._source)
+        return _computed_call(fn, self._source)
 
     def effect(self, fn: Callable[[T], None]) -> "Effect":
         """Eagerly run `fn` for side effects whenever the source changes.
@@ -128,12 +132,11 @@ class _ReactiveNamespace[T]:
             ```
         """
 
-        @computed
         def _tap(value: T) -> T:
             fn(value)
             return value
 
-        return _tap(self._source)
+        return _computed_call(_tap, self._source)
 
     def len(self) -> Computed[int]:
         """Return a reactive value for ``len(source.value)``.
@@ -153,7 +156,7 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-        return computed(len)(self._source)
+        return _computed_call(len, self._source)
 
     def is_(self, other: Any) -> Computed[bool]:
         """Return a reactive value for identity check ``source.value is other``.
@@ -177,7 +180,7 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-        return computed(operator.is_)(self._source, other)
+        return _computed_call(operator.is_, self._source, other)
 
     def is_not(self, other: Any) -> Computed[bool]:
         """Return a reactive value for identity check ``source.value is not other``.
@@ -201,7 +204,7 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-        return computed(operator.is_not)(self._source, other)
+        return _computed_call(operator.is_not, self._source, other)
 
     def in_(self, container: Any) -> Computed[bool]:
         """Return a reactive value for containment check ``source.value in container``.
@@ -225,7 +228,7 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-        return computed(operator.contains)(container, self._source)
+        return _computed_call(operator.contains, container, self._source)
 
     def contains(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `other` is in `self._source`.
@@ -248,7 +251,7 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-        return computed(operator.contains)(self._source, other)
+        return _computed_call(operator.contains, self._source, other)
 
     def eq(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether ``source.value == other``.
@@ -271,7 +274,7 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-        return computed(operator.eq)(self._source, other)
+        return _computed_call(operator.eq, self._source, other)
 
     def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
         """Return a reactive value for ``a`` if ``source`` is truthy, else ``b``.
@@ -296,11 +299,7 @@ class _ReactiveNamespace[T]:
             ```
         """
 
-        @computed
-        def ternary(a: A, b: B, condition: Any) -> A | B:
-            return a if condition else b
-
-        return ternary(a, b, self._source)
+        return _computed_call(_ternary, a, b, self._source)
 
     def as_bool(self) -> Computed[bool]:
         """Return a reactive value for the boolean value of ``self._source``.
@@ -323,7 +322,7 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-        return computed(bool)(self._source)
+        return _computed_call(bool, self._source)
 
 
 class _ReactiveMixIn[T]:
@@ -386,7 +385,7 @@ class _ReactiveMixIn[T]:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
         if hasattr(self.value, name):
-            return computed(getattr)(self, name)
+            return _computed_call(getattr, self, name)
 
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
@@ -426,7 +425,7 @@ class _ReactiveMixIn[T]:
         def f(*args: Any, **kwargs: Any):
             return self.value(*args, **kwargs)
 
-        return computed(f)(*args, **kwargs)
+        return _computed_call(f, *args, **kwargs)
 
     @overload
     def __abs__(self: "_ReactiveMixIn[complex]") -> Computed[float]: ...
@@ -455,7 +454,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(abs)(self)
+        return _computed_call(abs, self)
 
     @property
     def rx(self) -> _ReactiveNamespace[T]:
@@ -515,7 +514,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(round)(self, ndigits=ndigits)
+        return _computed_call(round, self, ndigits=ndigits)
 
     def __ceil__(self) -> Computed[int]:
         """Return a reactive value for the ceiling of `self`.
@@ -536,7 +535,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(math.ceil)(self)
+        return _computed_call(math.ceil, self)
 
     def __floor__(self) -> Computed[int]:
         """Return a reactive value for the floor of `self`.
@@ -557,7 +556,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(math.floor)(self)
+        return _computed_call(math.floor, self)
 
     @overload
     def __invert__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
@@ -583,7 +582,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.inv)(self)
+        return _computed_call(operator.inv, self)
 
     @overload
     def __neg__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
@@ -609,7 +608,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.neg)(self)
+        return _computed_call(operator.neg, self)
 
     @overload
     def __pos__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
@@ -635,7 +634,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.pos)(self)
+        return _computed_call(operator.pos, self)
 
     @overload
     def __trunc__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
@@ -668,7 +667,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(math.trunc)(self)
+        return _computed_call(math.trunc, self)
 
     @overload
     def __add__(self: "_ReactiveMixIn[float]", other: HasValue[int] | HasValue[float]) -> Computed[float]: ...
@@ -703,7 +702,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.add)(self, other)
+        return _computed_call(operator.add, self, other)
 
     def __and__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise AND of self and other.
@@ -726,7 +725,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.and_)(self, other)
+        return _computed_call(operator.and_, self, other)
 
     @overload
     def __divmod__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
@@ -760,7 +759,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(divmod)(self, other)
+        return _computed_call(divmod, self, other)
 
     @overload
     def __floordiv__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -789,7 +788,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.floordiv)(self, other)
+        return _computed_call(operator.floordiv, self, other)
 
     def __ge__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is greater than or equal to other.
@@ -812,7 +811,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.ge)(self, other)
+        return _computed_call(operator.ge, self, other)
 
     def __gt__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is greater than other.
@@ -835,7 +834,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.gt)(self, other)
+        return _computed_call(operator.gt, self, other)
 
     def __le__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is less than or equal to `other`.
@@ -858,7 +857,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.le)(self, other)
+        return _computed_call(operator.le, self, other)
 
     def __lt__(self, other: Any) -> Computed[bool]:
         """Return a reactive value for whether `self` is less than `other`.
@@ -881,7 +880,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.lt)(self, other)
+        return _computed_call(operator.lt, self, other)
 
     def __lshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` left-shifted by `other`.
@@ -904,7 +903,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.lshift)(self, other)
+        return _computed_call(operator.lshift, self, other)
 
     def __matmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the matrix multiplication of `self` and `other`.
@@ -928,7 +927,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.matmul)(self, other)
+        return _computed_call(operator.matmul, self, other)
 
     @overload
     def __mod__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -957,7 +956,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mod)(self, other)
+        return _computed_call(operator.mod, self, other)
 
     @overload
     def __mul__(self: "_ReactiveMixIn[str]", other: HasValue[int]) -> Computed[str]: ...
@@ -989,7 +988,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mul)(self, other)
+        return _computed_call(operator.mul, self, other)
 
     def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
         """Return a reactive value for whether `self` is not equal to `other`.
@@ -1012,7 +1011,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.ne)(self, other)
+        return _computed_call(operator.ne, self, other)
 
     def __or__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
@@ -1035,7 +1034,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.or_)(self, other)
+        return _computed_call(operator.or_, self, other)
 
     def __rshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for `self` right-shifted by `other`.
@@ -1058,7 +1057,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.rshift)(self, other)
+        return _computed_call(operator.rshift, self, other)
 
     @overload
     def __pow__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1087,7 +1086,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.pow)(self, other)
+        return _computed_call(operator.pow, self, other)
 
     def __sub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the difference of `self` and `other`.
@@ -1110,7 +1109,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.sub)(self, other)
+        return _computed_call(operator.sub, self, other)
 
     @overload
     def __truediv__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[float]: ...
@@ -1153,7 +1152,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.truediv)(self, other)
+        return _computed_call(operator.truediv, self, other)
 
     def __xor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
@@ -1176,7 +1175,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.xor)(self, other)
+        return _computed_call(operator.xor, self, other)
 
     @overload
     def __radd__(self: "_ReactiveMixIn[float]", other: HasValue[int] | HasValue[float]) -> Computed[float]: ...
@@ -1208,7 +1207,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.add)(other, self)
+        return _computed_call(operator.add, other, self)
 
     def __rand__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise AND of `self` and `other`.
@@ -1231,7 +1230,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.and_)(other, self)
+        return _computed_call(operator.and_, other, self)
 
     @overload
     def __rdivmod__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
@@ -1266,7 +1265,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(divmod)(other, self)
+        return _computed_call(divmod, other, self)
 
     @overload
     def __rfloordiv__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1295,7 +1294,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.floordiv)(other, self)
+        return _computed_call(operator.floordiv, other, self)
 
     @overload
     def __rmod__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1324,7 +1323,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mod)(other, self)
+        return _computed_call(operator.mod, other, self)
 
     @overload
     def __rmul__(self: "_ReactiveMixIn[str]", other: HasValue[int]) -> Computed[str]: ...
@@ -1356,7 +1355,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.mul)(other, self)
+        return _computed_call(operator.mul, other, self)
 
     def __ror__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
@@ -1379,7 +1378,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.or_)(other, self)
+        return _computed_call(operator.or_, other, self)
 
     @overload
     def __rpow__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
@@ -1408,7 +1407,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.pow)(other, self)
+        return _computed_call(operator.pow, other, self)
 
     def __rsub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the difference of `self` and `other`.
@@ -1431,7 +1430,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.sub)(other, self)
+        return _computed_call(operator.sub, other, self)
 
     @overload
     def __rtruediv__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[float]: ...
@@ -1474,7 +1473,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.truediv)(other, self)
+        return _computed_call(operator.truediv, other, self)
 
     def __rxor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
@@ -1497,7 +1496,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.xor)(other, self)
+        return _computed_call(operator.xor, other, self)
 
     @overload
     def __getitem__[V](self: "_ReactiveMixIn[list[V]]", key: slice) -> Computed[list[V]]: ...
@@ -1551,7 +1550,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        return computed(operator.getitem)(self, key)
+        return _computed_call(operator.getitem, self, key)
 
     def _bump_version(self) -> int:
         """Increment the local version counter and the shared global version clock."""
@@ -1560,5 +1559,5 @@ class _ReactiveMixIn[T]:
 
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
-from ._functions import computed  # noqa: E402
+from ._functions import _computed_call  # noqa: E402
 from ._reactive import Effect, _bump_global_version  # noqa: E402
