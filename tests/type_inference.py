@@ -1098,3 +1098,21 @@ def test_reflected_operators_preserve_declared_return_types():
     assert_type(Scale() // n, Computed[str])
     assert_type(Scale() % n, Computed[str])
     assert_type(Scale() ** n, Computed[str])
+
+
+def test_reflected_shift_and_matmul():
+    class Row:
+        def __matmul__(self, other: "Row") -> float: ...
+
+    class Bits:
+        def __lshift__(self, other: int) -> bytes: ...
+        def __rshift__(self, other: int) -> bytes: ...
+
+    assert_type(1 << Signal(2), Computed[int])
+    assert_type(32 >> Signal(2), Computed[int])
+    assert_type(True << Signal(2), Computed[int])
+    assert_type(Signal(1) << Signal(2), Computed[int])
+    assert_type(Bits() << Signal(2), Computed[bytes])
+    assert_type(Bits() >> Signal(2), Computed[bytes])
+    assert_type(Row() @ Signal(Row()), Computed[float])
+    assert_type(1 << Binding(Signal(2)), Computed[int])

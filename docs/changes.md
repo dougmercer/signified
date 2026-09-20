@@ -40,6 +40,16 @@ This page summarizes notable changes across releases.
 - Multiplication, matrix multiplication, true and floor division, modulo,
   exponentiation, and shifts now report a user type's declared operator return
   type instead of a union of the operand types, in both operand directions.
+- Added the missing reflected operators `__rmatmul__`, `__rlshift__`, and
+  `__rrshift__`, so `other @ reactive`, `other << reactive`, and
+  `other >> reactive` produce reactive values instead of raising `TypeError`.
+- Reactive values opt out of NumPy's ufunc dispatch (`__array_ufunc__ = None`).
+  Previously `array + reactive` returned an object-dtype `ndarray` of `Computed`
+  values instead of a single reactive result, because `ndarray` handled the
+  operation rather than deferring; it now returns a `Computed`, as do other
+  reflected arithmetic/bitwise operators and ordering comparisons. Passing a
+  reactive value straight to a ufunc (`np.sin(reactive)`) now raises `TypeError`;
+  use `reactive.rx.map(np.sin)`.
 
 ## 0.6.0
 

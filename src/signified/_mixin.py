@@ -360,6 +360,15 @@ class _ReactiveMixIn[T]:
     __slots__ = ()
     _IS_REACTIVE = True
 
+    # Opt out of NumPy's ufunc machinery. Without this, `array + reactive` coerces the
+    # reactive object into a 0-d object array and returns an object-dtype ndarray of
+    # Computed values -- silently non-reactive -- because ndarray handles the operation
+    # itself instead of returning NotImplemented. Setting this to None makes ndarray
+    # defer, so Python falls back to the reflected operator here and builds a Computed.
+    # The cost is that passing a reactive value straight to a ufunc (np.sin(reactive))
+    # now raises TypeError instead of failing less clearly; use `reactive.rx.map(np.sin)`.
+    __array_ufunc__ = None
+
     @property
     def value(self) -> T:
         """The current value of the reactive object."""
@@ -1471,6 +1480,78 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.floordiv, other, self)
 
     @overload
+    def __rlshift__(self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __rlshift__[R](self, other: HasValue[_SupportsLshift[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __rlshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rlshift__(self, other: Any) -> Computed[Any]:
+        """Return a reactive value for `other` left-shifted by `self`.
+
+        Args:
+            other: The value to shift.
+
+        Returns:
+            A reactive value for `other.value << self.value`.
+
+        Example:
+            ```py
+            >>> s = Signal(2)
+            >>> result = 1 << s
+            >>> result.value
+            4
+            >>> s.value = 5
+            >>> result.value
+            32
+
+            ```
+        """
+        return _computed_call(operator.lshift, other, self)
+
+    @overload
+    def __rmatmul__[R](self, other: HasValue[_SupportsMatmul[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __rmatmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rmatmul__(self, other: Any) -> Computed[Any]:
+        """Return a reactive value for the matrix multiplication of `other` and `self`.
+
+        Note:
+            NumPy arrays on the left defer to this method because reactive values
+            opt out of NumPy's ufunc dispatch. The result is a single `Computed`.
+
+        Args:
+            other: The value to multiply with.
+
+        Returns:
+            A reactive value for `other.value @ self.value`.
+
+        Example:
+            ```py
+            >>> class Row:
+            ...     def __init__(self, values):
+            ...         self.values = values
+            ...     def __matmul__(self, other):
+            ...         if not isinstance(other, Row):
+            ...             return NotImplemented
+            ...         return sum(a * b for a, b in zip(self.values, other.values))
+            >>> s = Signal(Row([3, 4]))
+            >>> result = Row([1, 2]) @ s
+            >>> result.value
+            11
+            >>> s.value = Row([1, 1])
+            >>> result.value
+            3
+
+            ```
+        """
+        return _computed_call(operator.matmul, other, self)
+
+    @overload
     def __rmod__[N: (int, float)](
         self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
     ) -> Computed[N]: ...
@@ -1624,6 +1705,38 @@ class _ReactiveMixIn[T]:
             ```
         """
         return _computed_call(operator.pow, other, self)
+
+    @overload
+    def __rrshift__(self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __rrshift__[R](self, other: HasValue[_SupportsRshift[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __rrshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rrshift__(self, other: Any) -> Computed[Any]:
+        """Return a reactive value for `other` right-shifted by `self`.
+
+        Args:
+            other: The value to shift.
+
+        Returns:
+            A reactive value for `other.value >> self.value`.
+
+        Example:
+            ```py
+            >>> s = Signal(2)
+            >>> result = 32 >> s
+            >>> result.value
+            8
+            >>> s.value = 4
+            >>> result.value
+            2
+
+            ```
+        """
+        return _computed_call(operator.rshift, other, self)
 
     @overload
     def __rsub__[N: (int, float, complex)](

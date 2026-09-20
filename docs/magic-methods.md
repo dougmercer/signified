@@ -37,7 +37,7 @@ the operation, just as in ordinary Python.
 ## Reverse arithmetic and bitwise methods
 
 Plain values can also appear on the left: `3 + x`, `50 / x`, `2 ** x`,
-`divmod(50, x)`, `3 & x`, `3 | x`, and `3 ^ x`.
+`divmod(50, x)`, `3 & x`, `3 | x`, `3 ^ x`, `1 << x`, `32 >> x`, and `matrix @ x`.
 
 ## Comparisons, predicates, and truthiness
 
