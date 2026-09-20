@@ -411,6 +411,37 @@ class Signal[T](Variable[T]):
         wrapped[key] = value
         self.update()
 
+    def __delitem__(self, key: Any) -> None:
+        """Delete an item from the wrapped `list` or `dict` and notify observers.
+
+        The mirror of [__setitem__][signified.Signal.__setitem__], and subject to
+        the same rule: deleting through the `Signal` is what notifies dependents,
+        and only a `Signal` forwards item deletion.
+
+        Args:
+            key: The key to delete.
+
+        Raises:
+            TypeError: If the wrapped value is not a `list` or `dict`.
+
+        Example:
+            ```py
+            >>> s = Signal([1, 2, 3])
+            >>> result = computed(sum)(s)
+            >>> result.value
+            6
+            >>> del s[1]
+            >>> result.value
+            4
+
+            ```
+        """
+        wrapped = self._value
+        if not isinstance(wrapped, (list, dict)):
+            raise TypeError(f"'{type(wrapped).__name__}' object does not support item deletion")
+        del wrapped[key]
+        self.update()
+
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
         """Temporarily set the signal to a given value within a context.

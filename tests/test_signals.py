@@ -309,3 +309,58 @@ def test_computed_and_binding_do_not_forward_item_assignment():
     with pytest.raises(TypeError):
         binding[0] = 9  # type: ignore[index]
     assert numbers.value == [1, 2, 3]
+
+
+def test_signal_forwards_item_deletion_and_notifies():
+    numbers = Signal([1, 2, 3])
+    total = Computed(lambda: sum(numbers.value))
+    assert total.value == 6
+
+    del numbers[1]
+
+    assert numbers.value == [1, 3]
+    assert total.value == 4
+
+
+def test_signal_forwards_key_deletion_for_dicts():
+    mapping = Signal({"a": 1, "b": 2})
+    keys = Computed(lambda: sorted(mapping.value))
+    assert keys.value == ["a", "b"]
+
+    del mapping["a"]
+
+    assert mapping.value == {"b": 2}
+    assert keys.value == ["b"]
+
+
+def test_item_deletion_rejects_unsupported_containers():
+    text = Signal("abc")
+
+    with pytest.raises(TypeError, match="does not support item deletion"):
+        del text[0]  # type: ignore[attr-defined]
+
+    assert text.value == "abc"
+
+
+def test_computed_and_binding_do_not_forward_item_deletion():
+    numbers = Signal([1, 2, 3])
+    passthrough = Computed(lambda: numbers.value)
+    binding = Binding(numbers)
+
+    with pytest.raises(TypeError):
+        del passthrough[0]  # type: ignore[attr-defined]
+    with pytest.raises(TypeError):
+        del binding[0]  # type: ignore[attr-defined]
+    assert numbers.value == [1, 2, 3]
+
+
+def test_item_deletion_notifies_once():
+    """`__delitem__` mutates in place, so notification is unconditional."""
+    numbers = Signal([1, 2, 3])
+    seen: list[list[int]] = []
+    effect = numbers.rx.effect(lambda value: seen.append(list(value)))
+
+    del numbers[2]
+
+    assert seen == [[1, 2, 3], [1, 2]]
+    effect.dispose()

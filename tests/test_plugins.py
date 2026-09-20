@@ -77,3 +77,14 @@ def test_updated_hook_runs_for_forwarded_attribute_assignment(monkeypatch) -> No
     signal.count = 1
 
     assert hook.updated_values == [signal]
+
+
+def test_updated_hook_runs_for_item_deletion(monkeypatch) -> None:
+    hook = enable_recording_hooks(monkeypatch)
+    signal = Signal([1, 2, 3])
+    hook.updated_values.clear()
+
+    del signal[1]
+
+    assert signal.value == [1, 3]
+    assert hook.updated_values == [signal]

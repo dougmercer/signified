@@ -69,8 +69,9 @@ Python branching inside a `Computed` function that reads `.value`.
 `x.name`, `x[key]`, and `x(...)` create calculated values. Methods can be
 chained, for example `text.strip().lower()`.
 
-Only `Signal` forwards writes such as `x.name = value` and `x[key] = value`
-to its stored object and sends updates. Attribute names must already exist.
+Only `Signal` forwards writes such as `x.name = value`, `x[key] = value`, and
+`del x[key]` to its stored object and sends updates. Attribute names must already
+exist. Item assignment and deletion support wrapped lists and dictionaries.
 Changes through the raw `.value` need an explicit `.update()` call; see
 [Lists and dictionaries](usage.md#collections-and-item-assignment).
 
