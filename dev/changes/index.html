@@ -1986,6 +1986,8 @@
   reactive objects use identity and return a plain <code>bool</code>, matching <code>==</code>.
   Replace <code>(x != y)</code> with <code>x.rx.ne(y)</code> for reactive value comparisons, alongside
   the existing <code>x.rx.eq(y)</code>.</li>
+<li><code>Signal</code> forwards item deletion (<code>del signal[key]</code>) to the wrapped <code>list</code> or
+  <code>dict</code> and notifies observers, mirroring <code>signal[key] = value</code>.</li>
 </ul>
 <h2 id="060">0.6.0<a class="headerlink" href="#060" title="Permanent link">&para;</a></h2>
 <ul>

@@ -1355,8 +1355,9 @@ Python branching inside a <code>Computed</code> function that reads <code>.value
 <h2 id="object-and-container-access">Object and container access<a class="headerlink" href="#object-and-container-access" title="Permanent link">&para;</a></h2>
 <p><code>x.name</code>, <code>x[key]</code>, and <code>x(...)</code> create calculated values. Methods can be
 chained, for example <code>text.strip().lower()</code>.</p>
-<p>Only <code>Signal</code> forwards writes such as <code>x.name = value</code> and <code>x[key] = value</code>
-to its stored object and sends updates. Attribute names must already exist.
+<p>Only <code>Signal</code> forwards writes such as <code>x.name = value</code>, <code>x[key] = value</code>, and
+<code>del x[key]</code> to its stored object and sends updates. Attribute names must already
+exist. Item assignment and deletion support wrapped lists and dictionaries.
 Changes through the raw <code>.value</code> need an explicit <code>.update()</code> call; see
 <a href="../usage/#collections-and-item-assignment">Lists and dictionaries</a>.</p>
 <h2 id="complete-api-reference">Complete API reference<a class="headerlink" href="#complete-api-reference" title="Permanent link">&para;</a></h2>
