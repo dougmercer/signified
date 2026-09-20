@@ -1,7 +1,10 @@
+from datetime import date, datetime, timedelta
+from decimal import Decimal
 from math import ceil, floor, trunc
-from typing import Any, TypeVar, Union, assert_type
+from typing import Any, Literal, TypeVar, Union, assert_type
 
 from signified import Binding, Computed, Effect, HasValue, ReactiveValue, Signal, as_rx, computed, is_reactive, unref
+from signified._protocols import _AlwaysFalse, _AlwaysTrue
 
 T = TypeVar("T")
 Numeric = Union[int, float]
@@ -19,6 +22,14 @@ def test_unref_distributes_over_has_value_union(value: HasValue[int] | HasValue[
 def test_is_reactive_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
     if is_reactive(value):
         assert_type(value, ReactiveValue[int] | ReactiveValue[str])
+
+
+def test_as_rx_preserves_wrapper_types():
+    assert_type(as_rx(Signal(1)), Signal[int])
+    assert_type(as_rx(Computed(lambda: 1)), Computed[int])
+    assert_type(as_rx(Binding(Signal(1))), Binding[int])
+    assert_type(as_rx(Signal(Signal(1))), Signal[Signal[int]])
+    assert_type(as_rx(Computed(lambda: Signal(1))), Computed[Signal[int]])
 
 
 def test_as_rx_distributes_over_has_value_union(value: HasValue[int] | HasValue[str]):
@@ -113,6 +124,22 @@ def test_as_bool():
     result = Signal(1).rx.as_bool()
     assert_type(result, Computed[bool])
     assert_type(unref(result), bool)
+
+
+def test_as_bool_preserves_known_truthiness(truthy: _AlwaysTrue, falsy: _AlwaysFalse, condition: bool, a: int, b: str):
+    always_true = Signal[Literal[True]](True).rx.as_bool()
+    always_false = Signal[Literal[False]](False).rx.as_bool()
+    assert_type(always_true, Computed[Literal[True]])
+    assert_type(always_false, Computed[Literal[False]])
+    assert_type(Signal(truthy).rx.as_bool(), Computed[Literal[True]])
+    assert_type(Signal(falsy).rx.as_bool(), Computed[Literal[False]])
+    assert_type(Signal(None).rx.as_bool(), Computed[Literal[False]])
+    assert_type(Binding(Signal[Literal[True]](True)).rx.as_bool(), Computed[Literal[True]])
+    assert_type(always_true.rx.as_bool(), Computed[Literal[True]])
+    assert_type(Signal(condition).rx.as_bool(), Computed[bool])
+    assert_type(Signal(True).rx.as_bool(), Computed[bool])
+    assert_type(always_true.rx.where(a, b), Computed[int])
+    assert_type(always_false.rx.where(a, b), Computed[str])
 
 
 def test_rx_map():
@@ -327,12 +354,12 @@ def test_floordiv():
     assert_type(unref(bool_div), int)
 
     numeric_div = Signal(10) // Signal(2.0)
-    assert_type(numeric_div, Computed[Numeric])
-    assert_type(unref(numeric_div), Numeric)
+    assert_type(numeric_div, Computed[float])
+    assert_type(unref(numeric_div), float)
 
     float_div = Signal(10.0) // Signal(2)
-    assert_type(float_div, Computed[Numeric])
-    assert_type(unref(float_div), Numeric)
+    assert_type(float_div, Computed[float])
+    assert_type(unref(float_div), float)
 
 
 def test_ge():
@@ -371,7 +398,7 @@ def test_matmul():
             return other + 1
 
     result = Signal(Matrix()) @ 2
-    assert_type(result, Computed[Matrix | int])
+    assert_type(result, Computed[int])
 
 
 def test_mod():
@@ -384,8 +411,8 @@ def test_mod():
     assert_type(unref(bool_modded), int)
 
     float_modded = Signal(17.0) % Signal(5)
-    assert_type(float_modded, Computed[Numeric])
-    assert_type(unref(float_modded), Numeric)
+    assert_type(float_modded, Computed[float])
+    assert_type(unref(float_modded), float)
 
 
 def test_mul():
@@ -402,14 +429,16 @@ def test_mul():
     assert_type(unref(list_repeat), list[int])
 
     numeric_product = Signal(4) * Signal(2.5)
-    assert_type(numeric_product, Computed[Numeric])
-    assert_type(unref(numeric_product), Numeric)
+    assert_type(numeric_product, Computed[float])
+    assert_type(unref(numeric_product), float)
 
 
-def test_ne():
-    result = Signal(5) != Signal(6)
+def test_rx_ne():
+    result = Signal(5).rx.ne(Signal(6))
     assert_type(result, Computed[bool])
     assert_type(unref(result), bool)
+    # Comparing reactive objects with `!=` returns an ordinary bool.
+    assert_type(Signal(5) != Signal(6), bool)
 
 
 def test_or():
@@ -438,8 +467,8 @@ def test_pow():
     assert_type(unref(bool_powered), int)
 
     float_powered = Signal(2.0) ** Signal(3)
-    assert_type(float_powered, Computed[Numeric])
-    assert_type(unref(float_powered), Numeric)
+    assert_type(float_powered, Computed[float])
+    assert_type(unref(float_powered), float)
 
 
 def test_sub():
@@ -448,8 +477,8 @@ def test_sub():
     assert_type(unref(int_difference), int)
 
     numeric_difference = Signal(10) - Signal(2.0)
-    assert_type(numeric_difference, Computed[Numeric])
-    assert_type(unref(numeric_difference), Numeric)
+    assert_type(numeric_difference, Computed[float])
+    assert_type(unref(numeric_difference), float)
 
 
 def test_truediv():
@@ -532,8 +561,8 @@ def test_rfloordiv():
     assert_type(unref(bool_div), int)
 
     numeric_div = 10 // Signal(2.0)
-    assert_type(numeric_div, Computed[Numeric])
-    assert_type(unref(numeric_div), Numeric)
+    assert_type(numeric_div, Computed[float])
+    assert_type(unref(numeric_div), float)
 
 
 def test_rmod():
@@ -560,8 +589,8 @@ def test_rmul():
     assert_type(unref(list_repeat), list[int])
 
     numeric_product = 3 * Signal(2.5)
-    assert_type(numeric_product, Computed[Numeric])
-    assert_type(unref(numeric_product), Numeric)
+    assert_type(numeric_product, Computed[float])
+    assert_type(unref(numeric_product), float)
 
 
 def test_ror():
@@ -584,8 +613,8 @@ def test_rpow():
     assert_type(unref(bool_powered), int)
 
     float_powered = 3.0 ** Signal(2)
-    assert_type(float_powered, Computed[Numeric])
-    assert_type(unref(float_powered), Numeric)
+    assert_type(float_powered, Computed[float])
+    assert_type(unref(float_powered), float)
 
 
 def test_rsub():
@@ -594,8 +623,8 @@ def test_rsub():
     assert_type(unref(int_difference), int)
 
     numeric_difference = 15 - Signal(2.0)
-    assert_type(numeric_difference, Computed[Numeric])
-    assert_type(unref(numeric_difference), Numeric)
+    assert_type(numeric_difference, Computed[float])
+    assert_type(unref(numeric_difference), float)
 
 
 def test_rtruediv():
@@ -656,6 +685,20 @@ def test_getitem():
     assert_type(bag["x"], Computed[int])
 
 
+def test_getitem_reactive_slices():
+    key = Signal(slice(1, None))
+    numbers = Signal([1, 2, 3])
+    tuple_values = Signal[tuple[int, ...]]((1, 2, 3))
+    chars = Signal("abc")
+
+    assert_type(numbers[key], Computed[list[int]])
+    assert_type(tuple_values[key], Computed[tuple[int, ...]])
+    assert_type(chars[key], Computed[str])
+    assert_type(numbers[Computed(lambda: key.value)], Computed[list[int]])
+    assert_type(tuple_values[Binding(key)], Computed[tuple[int, ...]])
+    assert_type(chars[Binding(key)], Computed[str])
+
+
 def test_setattr():
     class Person:
         def __init__(self, name: str):
@@ -686,6 +729,58 @@ def test_where():
     assert_type(unref(result), Numeric)
 
 
+def test_where_protocol_annotations(a: int, b: str, truthy: _AlwaysTrue, falsy: _AlwaysFalse):
+    assert_type(Signal(truthy).rx.where(a, b), Computed[int])
+    assert_type(Signal(falsy).rx.where(a, b), Computed[str])
+
+
+def test_where_literal_conditions(a: int, b: str):
+    truthy = Signal[Literal[True]](True)
+    falsy = Signal[Literal[False]](False)
+    assert_type(truthy.rx.where(a, b), Computed[int])
+    assert_type(falsy.rx.where(a, b), Computed[str])
+    assert_type(Signal(None).rx.where(a, b), Computed[str])
+
+    assert_type(truthy.rx.where(Signal(a), Signal(b)), Computed[int])
+    assert_type(falsy.rx.where(Signal(a), Signal(b)), Computed[str])
+    assert_type(Binding(truthy).rx.where(a, b), Computed[int])
+    assert_type(Binding(falsy).rx.where(a, b), Computed[str])
+    assert_type(Computed[Literal[True]](lambda: truthy.value).rx.where(a, b), Computed[int])
+    assert_type(Computed[Literal[False]](lambda: falsy.value).rx.where(a, b), Computed[str])
+
+
+def test_where_structural_truthiness(a: int, b: str):
+    class AlwaysTruthy:
+        def __bool__(self) -> Literal[True]:
+            return True
+
+    class AlwaysFalsy:
+        def __bool__(self) -> Literal[False]:
+            return False
+
+    assert_type(Signal(AlwaysTruthy()).rx.where(a, b), Computed[int])
+    assert_type(Signal(AlwaysFalsy()).rx.where(a, b), Computed[str])
+
+
+def test_where_uncertain_truthiness_retains_union(
+    a: int, b: str, condition: bool, either: _AlwaysTrue | _AlwaysFalse, unknown: object
+):
+    assert_type(Signal(condition).rx.where(a, b), Computed[int | str])
+    assert_type(Signal(either).rx.where(a, b), Computed[int | str])
+    assert_type(Signal(unknown).rx.where(a, b), Computed[int | str])
+    # Inference widens the initial True to bool because the signal is mutable.
+    mutable = Signal(True)
+    mutable.value = False
+    assert_type(mutable.rx.where(a, b), Computed[int | str])
+
+
+def test_where_union_with_same_truthiness(
+    a: int, b: str, truthy: _AlwaysTrue | Literal[True], falsy: _AlwaysFalse | None
+):
+    assert_type(Signal[_AlwaysTrue | Literal[True]](truthy).rx.where(a, b), Computed[int])
+    assert_type(Signal(falsy).rx.where(a, b), Computed[str])
+
+
 def test_unref():
     a = Signal(1)
     b = Binding(Signal(2.0))
@@ -702,8 +797,8 @@ def test_complex_expression():
     c = Computed(lambda: 3)
 
     result = (a + b) * c
-    assert_type(result, Computed[Numeric])
-    assert_type(unref(result), Numeric)
+    assert_type(result, Computed[float])
+    assert_type(unref(result), float)
 
 
 def test_resolution_registration_and_contexts():
@@ -723,3 +818,303 @@ def test_resolution_registration_and_contexts():
         assert_type(deep_unref(Box(Signal(1))), Any)
         assert_type(unref(Signal(Signal(1))), Signal[int])
         assert_type(resolve_box(Box(1), ResolveContext({})), Box)
+
+
+def test_floor_division_numeric_promotion():
+    assert_type(Signal(10) // 2, Computed[int])
+    assert_type(Signal(10.0) // Signal(2.0), Computed[float])
+    assert_type(Signal(10.0) // 2, Computed[float])
+    assert_type(Signal(10) // 2.0, Computed[float])
+    assert_type(10.0 // Signal(2), Computed[float])
+    assert_type(10 // Signal(2.0), Computed[float])
+    assert_type(Signal(True) // Signal(True), Computed[int])
+    assert_type(Signal(2) // Signal(True), Computed[int])
+    assert_type(True // Signal(2), Computed[int])
+    assert_type(Signal(True) // Signal(2.0), Computed[float])
+    assert_type(Signal(2.0) // Signal(True), Computed[float])
+    assert_type(2.0 // Signal(True), Computed[float])
+    assert_type(True // Signal(2.0), Computed[float])
+    assert_type(Binding(Signal(10)) // Computed(lambda: 2.0), Computed[float])
+
+
+def test_modulo_numeric_promotion():
+    assert_type(Signal(10) % 3, Computed[int])
+    assert_type(Signal(10.0) % Signal(3.0), Computed[float])
+    assert_type(Signal(10) % Signal(3.0), Computed[float])
+    assert_type(Signal(10.0) % 3, Computed[float])
+    assert_type(Signal(10) % 3.0, Computed[float])
+    assert_type(10.0 % Signal(3), Computed[float])
+    assert_type(10 % Signal(3.0), Computed[float])
+    assert_type(Signal(True) % Signal(True), Computed[int])
+    assert_type(Signal(2) % Signal(True), Computed[int])
+    assert_type(True % Signal(2), Computed[int])
+    assert_type(Signal(True) % Signal(2.0), Computed[float])
+    assert_type(Signal(2.0) % Signal(True), Computed[float])
+    assert_type(2.0 % Signal(True), Computed[float])
+    assert_type(True % Signal(2.0), Computed[float])
+    assert_type(Binding(Signal(10)) % Computed(lambda: 3.0), Computed[float])
+
+
+def test_multiplication_numeric_promotion():
+    assert_type(Signal(2) * 3, Computed[int])
+    assert_type(Signal(2.0) * Signal(3), Computed[float])
+    assert_type(Signal(2) * 3.0, Computed[float])
+    assert_type(2.0 * Signal(3), Computed[float])
+    assert_type(Signal(True) * Signal(True), Computed[int])
+    assert_type(Signal(2) * Signal(True), Computed[int])
+    assert_type(True * Signal(2), Computed[int])
+    assert_type(Signal(True) * Signal(2.0), Computed[float])
+    assert_type(Signal(2.0) * Signal(True), Computed[float])
+    assert_type(2.0 * Signal(True), Computed[float])
+    assert_type(True * Signal(2.0), Computed[float])
+    assert_type(Signal(2j) * Signal(3), Computed[complex])
+    assert_type(Signal(2) * Signal(3j), Computed[complex])
+    assert_type(Signal(2.0) * Signal(3j), Computed[complex])
+    assert_type(Signal(2j) * Signal(True), Computed[complex])
+    assert_type(2j * Signal(3), Computed[complex])
+    assert_type(2 * Signal(3j), Computed[complex])
+    assert_type(2j * Signal(3.0), Computed[complex])
+    assert_type(True * Signal(3j), Computed[complex])
+    assert_type(Binding(Signal(2)) * Computed(lambda: 3.0), Computed[float])
+
+
+def test_subtraction_result_types():
+    start = datetime(2026, 1, 1)
+    end = datetime(2026, 1, 2)
+    day = timedelta(days=1)
+    assert_type(Signal(end) - Signal(start), Computed[timedelta])
+    assert_type(Signal(end) - start, Computed[timedelta])
+    assert_type(end - Signal(start), Computed[timedelta])
+    assert_type(Signal(end) - Signal(day), Computed[datetime])
+    assert_type(Signal(end) - day, Computed[datetime])
+    assert_type(end - Signal(day), Computed[datetime])
+    assert_type(Signal(date(2026, 1, 2)) - date(2026, 1, 1), Computed[timedelta])
+    assert_type(Signal(date(2026, 1, 2)) - Signal(day), Computed[date])
+    assert_type(date(2026, 1, 2) - Signal(date(2026, 1, 1)), Computed[timedelta])
+    assert_type(date(2026, 1, 2) - Signal(day), Computed[date])
+    assert_type(Signal(day) - Signal(day), Computed[timedelta])
+    assert_type(Signal({1, 2}) - Signal({2}), Computed[set[int]])
+    assert_type({1, 2} - Signal({2}), Computed[set[int]])
+
+    class Distance:
+        def __sub__(self, other: int) -> str:
+            if not isinstance(other, int):
+                return NotImplemented
+            return str(other)
+
+    assert_type(Signal(Distance()) - Signal(1), Computed[str])
+    assert_type(Signal(Distance()) - 1, Computed[str])
+    assert_type(Distance() - Signal(1), Computed[str])
+
+
+def test_subtraction_numeric_promotion():
+    assert_type(Signal(2) - 3, Computed[int])
+    assert_type(Signal(2.0) - Signal(3), Computed[float])
+    assert_type(Signal(2) - 3.0, Computed[float])
+    assert_type(2.0 - Signal(3), Computed[float])
+    assert_type(Signal(True) - Signal(True), Computed[int])
+    assert_type(Signal(2) - Signal(True), Computed[int])
+    assert_type(True - Signal(2), Computed[int])
+    assert_type(Signal(True) - Signal(2.0), Computed[float])
+    assert_type(Signal(2.0) - Signal(True), Computed[float])
+    assert_type(2.0 - Signal(True), Computed[float])
+    assert_type(True - Signal(2.0), Computed[float])
+    assert_type(Signal(2j) - Signal(3), Computed[complex])
+    assert_type(Signal(2) - Signal(3j), Computed[complex])
+    assert_type(Signal(2.0) - Signal(3j), Computed[complex])
+    assert_type(Signal(2j) - Signal(True), Computed[complex])
+    assert_type(2j - Signal(3), Computed[complex])
+    assert_type(2 - Signal(3j), Computed[complex])
+    assert_type(2j - Signal(3.0), Computed[complex])
+    assert_type(True - Signal(3j), Computed[complex])
+    assert_type(Binding(Signal(2)) - Computed(lambda: 3.0), Computed[float])
+
+
+def test_bitwise_bool_int_promotion():
+    assert_type(Signal(True) & Signal(1), Computed[int])
+    assert_type(Signal(1) & Signal(True), Computed[int])
+    assert_type(Signal(True) & 1, Computed[int])
+    assert_type(Signal(1) & True, Computed[int])
+    assert_type(True & Signal(1), Computed[int])
+    assert_type(1 & Signal(True), Computed[int])
+    assert_type(Signal(True) & False, Computed[bool])
+    assert_type(Signal(True) & Signal(False), Computed[bool])
+    assert_type(True & Signal(False), Computed[bool])
+    assert_type(Binding(Signal(True)) & Computed(lambda: 1), Computed[int])
+    assert_type(Signal({1}) & Signal({2}), Computed[set[int]])
+    assert_type(Signal(True) | Signal(1), Computed[int])
+    assert_type(Signal(1) | Signal(True), Computed[int])
+    assert_type(Signal(True) | 1, Computed[int])
+    assert_type(Signal(1) | True, Computed[int])
+    assert_type(True | Signal(1), Computed[int])
+    assert_type(1 | Signal(True), Computed[int])
+    assert_type(Signal(True) | False, Computed[bool])
+    assert_type(Signal(True) | Signal(False), Computed[bool])
+    assert_type(True | Signal(False), Computed[bool])
+    assert_type(Binding(Signal(True)) | Computed(lambda: 1), Computed[int])
+    assert_type(Signal({1}) | Signal({2}), Computed[set[int]])
+    assert_type(Signal(True) ^ Signal(1), Computed[int])
+    assert_type(Signal(1) ^ Signal(True), Computed[int])
+    assert_type(Signal(True) ^ 1, Computed[int])
+    assert_type(Signal(1) ^ True, Computed[int])
+    assert_type(True ^ Signal(1), Computed[int])
+    assert_type(1 ^ Signal(True), Computed[int])
+    assert_type(Signal(True) ^ False, Computed[bool])
+    assert_type(Signal(True) ^ Signal(False), Computed[bool])
+    assert_type(True ^ Signal(False), Computed[bool])
+    assert_type(Binding(Signal(True)) ^ Computed(lambda: 1), Computed[int])
+    assert_type(Signal({1}) ^ Signal({2}), Computed[set[int]])
+
+
+def test_addition_numeric_promotion():
+    assert_type(Signal(2) + 3, Computed[int])
+    assert_type(Signal(2.0) + Signal(3), Computed[float])
+    assert_type(Signal(2) + 3.0, Computed[float])
+    assert_type(2.0 + Signal(3), Computed[float])
+    assert_type(Signal(True) + Signal(True), Computed[int])
+    assert_type(Signal(2) + Signal(True), Computed[int])
+    assert_type(True + Signal(2), Computed[int])
+    assert_type(Signal(True) + Signal(2.0), Computed[float])
+    assert_type(Signal(2.0) + Signal(True), Computed[float])
+    assert_type(2.0 + Signal(True), Computed[float])
+    assert_type(True + Signal(2.0), Computed[float])
+    assert_type(Signal(2j) + Signal(3), Computed[complex])
+    assert_type(Signal(2) + Signal(3j), Computed[complex])
+    assert_type(Signal(2.0) + Signal(3j), Computed[complex])
+    assert_type(Signal(2j) + Signal(True), Computed[complex])
+    assert_type(2j + Signal(3), Computed[complex])
+    assert_type(2 + Signal(3j), Computed[complex])
+    assert_type(2j + Signal(3.0), Computed[complex])
+    assert_type(True + Signal(3j), Computed[complex])
+    assert_type(Binding(Signal(2)) + Computed(lambda: 3.0), Computed[float])
+
+
+def test_truediv_numeric_promotion():
+    assert_type(Signal(7) / Signal(2), Computed[float])
+    assert_type(Signal(7) / 2.0, Computed[float])
+    assert_type(Signal(7.0) / True, Computed[float])
+    assert_type(Signal(True) / Signal(True), Computed[float])
+    assert_type(2.0 / Signal(3), Computed[float])
+    assert_type(True / Signal(2.0), Computed[float])
+    assert_type(Signal(2) / Signal(3j), Computed[complex])
+    assert_type(Signal(2.0) / Signal(3j), Computed[complex])
+    assert_type(Signal(True) / Signal(3j), Computed[complex])
+    assert_type(Signal(2j) / Signal(3), Computed[complex])
+    assert_type(Signal(2j) / Signal(3.0), Computed[complex])
+    assert_type(Signal(2j) / Signal(3j), Computed[complex])
+    assert_type(2j / Signal(3), Computed[complex])
+    assert_type(2 / Signal(3j), Computed[complex])
+    assert_type(2j / Signal(3.0), Computed[complex])
+    assert_type(True / Signal(3j), Computed[complex])
+    assert_type(Binding(Signal(2)) / Computed(lambda: 3.0), Computed[float])
+
+
+def test_pow_numeric_promotion():
+    # Value-dependent powers have known typing gaps; see type_inference_todo.py.
+    assert_type(Signal(2.0) ** Signal(3), Computed[float])
+    assert_type(Signal(2.0) ** True, Computed[float])
+    assert_type(2.0 ** Signal(3), Computed[float])
+    assert_type(Signal(2) ** Signal(3j), Computed[complex])
+    assert_type(Signal(2.0) ** Signal(3j), Computed[complex])
+    assert_type(Signal(True) ** Signal(3j), Computed[complex])
+    assert_type(Signal(2j) ** Signal(3), Computed[complex])
+    assert_type(Signal(2j) ** Signal(3.0), Computed[complex])
+    assert_type(Signal(2j) ** Signal(3j), Computed[complex])
+    assert_type(2j ** Signal(3), Computed[complex])
+    assert_type(2 ** Signal(3j), Computed[complex])
+    assert_type(2j ** Signal(3.0), Computed[complex])
+
+
+def test_shift_bool_int_promotion():
+    assert_type(Signal(8) << 2, Computed[int])
+    assert_type(Signal(True) << 1, Computed[int])
+    assert_type(Signal(True) << Signal(True), Computed[int])
+    assert_type(Signal(1) << Signal(True), Computed[int])
+    assert_type(Signal(8) >> 2, Computed[int])
+    assert_type(Signal(True) >> Signal(1), Computed[int])
+    assert_type(Signal(1) >> Signal(True), Computed[int])
+    assert_type(Binding(Signal(True)) << Computed(lambda: 1), Computed[int])
+
+
+def test_divmod_result_types():
+    assert_type(divmod(Signal(10), 3), Computed[tuple[int, int]])
+    assert_type(divmod(Signal(True), Signal(True)), Computed[tuple[int, int]])
+    assert_type(divmod(Signal(10), Signal(True)), Computed[tuple[int, int]])
+    assert_type(divmod(Signal(10.0), 3), Computed[tuple[float, float]])
+    assert_type(divmod(Signal(10), 3.0), Computed[tuple[float, float]])
+    assert_type(divmod(Signal(True), 3.0), Computed[tuple[float, float]])
+    assert_type(divmod(3.0, Signal(10)), Computed[tuple[float, float]])
+    assert_type(divmod(3, Signal(10.0)), Computed[tuple[float, float]])
+    assert_type(divmod(Signal(Decimal(10)), Decimal(3)), Computed[tuple[Decimal, Decimal]])
+    assert_type(divmod(Decimal(10), Signal(Decimal(3))), Computed[tuple[Decimal, Decimal]])
+
+
+def test_addition_result_types():
+    day = timedelta(days=1)
+    assert_type(Signal(date(2026, 1, 1)) + day, Computed[date])
+    assert_type(Signal(date(2026, 1, 1)) + Signal(day), Computed[date])
+    assert_type(Signal(datetime(2026, 1, 1)) + Signal(day), Computed[datetime])
+    assert_type(day + Signal(date(2026, 1, 1)), Computed[date])
+    assert_type(Signal(day) + Signal(day), Computed[timedelta])
+
+
+def test_operators_preserve_declared_return_types():
+    """A user type's own operator return type survives the reactive wrapper."""
+
+    class Vec:
+        def __mul__(self, other: int) -> "Vec": ...
+        def __matmul__(self, other: "Vec") -> float: ...
+        def __truediv__(self, other: int) -> "Vec": ...
+        def __floordiv__(self, other: int) -> "Vec": ...
+        def __mod__(self, other: int) -> str: ...
+        def __pow__(self, other: int) -> "Vec": ...
+        def __lshift__(self, other: int) -> bytes: ...
+        def __rshift__(self, other: int) -> bytes: ...
+
+    v = Signal(Vec())
+    assert_type(v * 2, Computed[Vec])
+    assert_type(v @ Vec(), Computed[float])
+    assert_type(v / 2, Computed[Vec])
+    assert_type(v // 2, Computed[Vec])
+    assert_type(v % 2, Computed[str])
+    assert_type(v**2, Computed[Vec])
+    assert_type(v << 2, Computed[bytes])
+    assert_type(v >> 2, Computed[bytes])
+    assert_type(v * Signal(2), Computed[Vec])
+    assert_type(Binding(Signal(Vec())) @ Computed(lambda: Vec()), Computed[float])
+
+
+def test_reflected_operators_preserve_declared_return_types():
+    """The same holds when the reactive value is on the right-hand side."""
+
+    class Scale:
+        def __mul__(self, other: int) -> str: ...
+        def __truediv__(self, other: int) -> str: ...
+        def __floordiv__(self, other: int) -> str: ...
+        def __mod__(self, other: int) -> str: ...
+        def __pow__(self, other: int) -> str: ...
+
+    n = Signal(2)
+    assert_type(Scale() * n, Computed[str])
+    assert_type(Scale() / n, Computed[str])
+    assert_type(Scale() // n, Computed[str])
+    assert_type(Scale() % n, Computed[str])
+    assert_type(Scale() ** n, Computed[str])
+
+
+def test_reflected_shift_and_matmul():
+    class Row:
+        def __matmul__(self, other: "Row") -> float: ...
+
+    class Bits:
+        def __lshift__(self, other: int) -> bytes: ...
+        def __rshift__(self, other: int) -> bytes: ...
+
+    assert_type(1 << Signal(2), Computed[int])
+    assert_type(32 >> Signal(2), Computed[int])
+    assert_type(True << Signal(2), Computed[int])
+    assert_type(Signal(1) << Signal(2), Computed[int])
+    assert_type(Bits() << Signal(2), Computed[bytes])
+    assert_type(Bits() >> Signal(2), Computed[bytes])
+    assert_type(Row() @ Signal(Row()), Computed[float])
+    assert_type(1 << Binding(Signal(2)), Computed[int])

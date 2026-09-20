@@ -28,20 +28,6 @@ from signified import (
 USE_CURRENT_INFERENCE: Literal[True] = True
 
 
-def test_todo_mixed_bool_int_bitwise():
-    # Why this fails:
-    # Bitwise ops are typed as Computed[T | Y], so bool/int mixes remain a
-    # union rather than being normalized to int.
-    if USE_CURRENT_INFERENCE:
-        assert_type(Signal(True) & Signal(1), Computed[bool | int])
-        assert_type(Signal(True) | Signal(1), Computed[bool | int])
-        assert_type(Signal(True) ^ Signal(1), Computed[bool | int])
-    else:
-        assert_type(Signal(True) & Signal(1), Computed[int])
-        assert_type(Signal(True) | Signal(1), Computed[int])
-        assert_type(Signal(True) ^ Signal(1), Computed[int])
-
-
 def test_todo_getattr_data_attributes():
     # Why this fails:
     # __getattr__ is intentionally typed as Computed[Any] for arbitrary
@@ -202,15 +188,28 @@ def test_todo_deep_unref_result_type():
         assert_type(result, float)
 
 
-def test_todo_mixed_numeric_floor_division():
+def test_todo_pow_negative_exponent():
     # Why this fails:
-    # Python always returns float for floor division when either operand is a
-    # float, but the generic operator overload retains the input union.
-    left_float = Signal(10.0) // Signal(2)
-    right_float = Signal(10) // Signal(2.0)
+    # `__pow__` infers the promoted operand type, but the real result depends on
+    # the exponent's *value*, not its type: 2 ** -1 is 0.5 and True ** -1 is 1.0.
+    # Typeshed covers the literal case with _NegativeInteger overloads and falls
+    # back to Any for an int of unknown sign. signified keeps the promoted type
+    # instead, because Any would erase the result of every well-behaved `**`.
     if USE_CURRENT_INFERENCE:
-        assert_type(left_float, Computed[int | float])
-        assert_type(right_float, Computed[int | float])
+        assert_type(Signal(2) ** -1, Computed[int])
+        assert_type(Signal(True) ** -1, Computed[int])
     else:
-        assert_type(left_float, Computed[float])
-        assert_type(right_float, Computed[float])
+        assert_type(Signal(2) ** -1, Computed[float])
+        assert_type(Signal(True) ** -1, Computed[float])
+
+
+def test_todo_pow_fractional_exponent_of_negative_base():
+    # Why this fails:
+    # A fractional exponent over a negative base produces a complex number
+    # ((-8) ** 0.5), but the sign of the base is a value, not a type. Even a
+    # literal -8 cannot help: Signal widens int literals to int on construction,
+    # so no overload can distinguish a negative base from a positive one.
+    if USE_CURRENT_INFERENCE:
+        assert_type(Signal(-8) ** 0.5, Computed[float])
+    else:
+        assert_type(Signal(-8) ** 0.5, Computed[complex])

@@ -61,6 +61,7 @@ return as reactive values (identity checks, containment, ternary, etc.):
         - in_
         - contains
         - eq
+        - ne
         - where
         - as_bool
 
@@ -99,6 +100,7 @@ subscript, and attribute-access operations all return reactive
         - __pow__
         - __rpow__
         - __matmul__
+        - __rmatmul__
         - __and__
         - __rand__
         - __or__
@@ -106,14 +108,15 @@ subscript, and attribute-access operations all return reactive
         - __xor__
         - __rxor__
         - __lshift__
+        - __rlshift__
         - __rshift__
+        - __rrshift__
         - __divmod__
         - __rdivmod__
         - __lt__
         - __le__
         - __ge__
         - __gt__
-        - __ne__
         - __getitem__
 
 ## Functions

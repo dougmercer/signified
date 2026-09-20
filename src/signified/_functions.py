@@ -6,7 +6,7 @@ from functools import wraps
 from typing import Any, Callable, TypeGuard, overload
 
 from . import migration as _migration
-from ._reactive import Computed, Effect, Signal, is_reactive
+from ._reactive import Binding, Computed, Effect, Signal, is_reactive
 from ._types import HasValue, ReactiveValue
 
 
@@ -184,6 +184,20 @@ def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:
         ```
     """
     return isinstance(unref(obj), type_)
+
+
+# `Binding` subclasses `Computed`, so it has to be matched first or a binding would
+# widen to `Computed[T]` on the way through.
+@overload
+def as_rx[T](val: Binding[T]) -> Binding[T]: ...
+
+
+@overload
+def as_rx[T](val: Computed[T]) -> Computed[T]: ...
+
+
+@overload
+def as_rx[T](val: Signal[T]) -> Signal[T]: ...
 
 
 @overload

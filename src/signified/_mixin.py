@@ -4,36 +4,41 @@ from __future__ import annotations
 
 import math
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol, SupportsIndex, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, Union, overload
 
+from ._protocols import (
+    _ComplexLike,
+    _Falsy,
+    _FloatLike,
+    _IndexLike,
+    _IntLike,
+    _ReactiveOf,
+    _SupportsAdd,
+    _SupportsDivmod,
+    _SupportsFloordiv,
+    _SupportsGetItem,
+    _SupportsLshift,
+    _SupportsMatmul,
+    _SupportsMod,
+    _SupportsMul,
+    _SupportsPow,
+    _SupportsRshift,
+    _SupportsSub,
+    _SupportsTruediv,
+    _Truthy,
+)
 from ._types import HasValue
 
 if TYPE_CHECKING:
+    from datetime import date, timedelta
+
     from ._reactive import Computed
 
 __all__ = ["_ReactiveMixIn"]
 
 
-def _ternary[A, B](a: A, b: B, condition: Any) -> A | B:
+def _ternary[A, B](a: A, b: B, condition: object) -> A | B:
     return a if condition else b
-
-
-class _SupportsAdd[OtherT, ResultT](Protocol):
-    def __add__(self, other: OtherT, /) -> ResultT: ...
-
-
-class _SupportsGetItem[KeyT, ValueT](Protocol):
-    def __getitem__(self, key: KeyT, /) -> ValueT: ...
-
-
-class _ReactiveSupportsAdd[OtherT, ResultT](Protocol):
-    @property
-    def value(self) -> _SupportsAdd[OtherT, ResultT]: ...
-
-
-class _ReactiveSupportsGetItem[KeyT, ValueT](Protocol):
-    @property
-    def value(self) -> _SupportsGetItem[KeyT, ValueT]: ...
 
 
 class _ReactiveNamespace[T]:
@@ -276,8 +281,48 @@ class _ReactiveNamespace[T]:
         """
         return _computed_call(operator.eq, self._source, other)
 
-    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]:
+    def ne(self, other: Any) -> Computed[bool]:
+        """Return a reactive value for whether ``source.value != other``.
+
+        Comparisons between reactive objects use identity. Use this method to
+        compare their wrapped values without changing how reactive objects behave
+        in sets and dictionaries.
+
+        Args:
+            other: Value to compare against.
+
+        Returns:
+            A reactive value for ``source.value != other``.
+
+        Example:
+            ```py
+            >>> s = Signal(10)
+            >>> result = s.rx.ne(10)
+            >>> result.value
+            False
+            >>> s.value = 25
+            >>> result.value
+            True
+
+            ```
+        """
+        return _computed_call(operator.ne, self._source, other)
+
+    @overload
+    def where[A, B, C: _Truthy](self: _ReactiveNamespace[C], a: HasValue[A], b: HasValue[B]) -> Computed[A]: ...
+
+    @overload
+    def where[A, B, C: _Falsy](self: _ReactiveNamespace[C], a: HasValue[A], b: HasValue[B]) -> Computed[B]: ...
+
+    @overload
+    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]: ...
+
+    def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[Any]:
         """Return a reactive value for ``a`` if ``source`` is truthy, else ``b``.
+
+        When the source type guarantees truthiness or falsiness (a literal bool,
+        `None`, or a literal-returning `__bool__`), the result type narrows to the
+        selected branch. An ordinary `Signal[bool]` retains both branch types.
 
         Args:
             a: The value to return if source is truthy.
@@ -301,7 +346,16 @@ class _ReactiveNamespace[T]:
 
         return _computed_call(_ternary, a, b, self._source)
 
-    def as_bool(self) -> Computed[bool]:
+    @overload
+    def as_bool[C: _Truthy](self: _ReactiveNamespace[C]) -> Computed[Literal[True]]: ...
+
+    @overload
+    def as_bool[C: _Falsy](self: _ReactiveNamespace[C]) -> Computed[Literal[False]]: ...
+
+    @overload
+    def as_bool(self) -> Computed[bool]: ...
+
+    def as_bool(self) -> Computed[Any]:
         """Return a reactive value for the boolean value of ``self._source``.
 
         Note:
@@ -332,6 +386,15 @@ class _ReactiveMixIn[T]:
     # AttributeError instead of silently shadowing the reactive proxy.
     __slots__ = ()
     _IS_REACTIVE = True
+
+    # Opt out of NumPy's ufunc machinery. Without this, `array + reactive` coerces the
+    # reactive object into a 0-d object array and returns an object-dtype ndarray of
+    # Computed values -- silently non-reactive -- because ndarray handles the operation
+    # itself instead of returning NotImplemented. Setting this to None makes ndarray
+    # defer, so Python falls back to the reflected operator here and builds a Computed.
+    # The cost is that passing a reactive value straight to a ufunc (np.sin(reactive))
+    # now raises TypeError instead of failing less clearly; use `reactive.rx.map(np.sin)`.
+    __array_ufunc__ = None
 
     @property
     def value(self) -> T:
@@ -670,13 +733,18 @@ class _ReactiveMixIn[T]:
         return _computed_call(math.trunc, self)
 
     @overload
-    def __add__(self: "_ReactiveMixIn[float]", other: HasValue[int] | HasValue[float]) -> Computed[float]: ...
+    def __add__[N: (int, float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
 
     @overload
-    def __add__(self: "_ReactiveMixIn[int]", other: HasValue[float]) -> Computed[float]: ...
+    def __add__[N: (float, complex)](self: "_ReactiveMixIn[float]", other: HasValue[N]) -> Computed[N]: ...
 
     @overload
-    def __add__[Y, R](self: "_ReactiveSupportsAdd[Y, R]", other: HasValue[Y]) -> Computed[R]: ...
+    def __add__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
+
+    @overload
+    def __add__[Y, R](self: "_ReactiveOf[_SupportsAdd[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
 
     @overload
     def __add__(self, other: Any) -> Computed[Any]: ...
@@ -704,7 +772,16 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.add, self, other)
 
-    def __and__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __and__[N: (bool, int)](self: "_ReactiveMixIn[bool]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __and__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __and__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __and__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise AND of self and other.
 
         Args:
@@ -728,17 +805,20 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.and_, self, other)
 
     @overload
-    def __divmod__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
+    def __divmod__[N: (int, float)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[tuple[N, N]]: ...
 
     @overload
-    def __divmod__(
-        self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]
-    ) -> Computed[tuple[int, int]]: ...
+    def __divmod__(self: "_ReactiveMixIn[float]", other: _FloatLike) -> Computed[tuple[float, float]]: ...
 
     @overload
-    def __divmod__(self, other: Any) -> Computed[tuple[float, float]]: ...
+    def __divmod__[Y, R](self: "_ReactiveOf[_SupportsDivmod[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
 
-    def __divmod__(self, other: Any) -> Computed[tuple[int, int]] | Computed[tuple[float, float]]:
+    @overload
+    def __divmod__(self, other: Any) -> Computed[Any]: ...
+
+    def __divmod__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the divmod of `self` and other.
 
         Args:
@@ -762,7 +842,15 @@ class _ReactiveMixIn[T]:
         return _computed_call(divmod, self, other)
 
     @overload
-    def __floordiv__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
+    def __floordiv__[N: (int, float)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __floordiv__(self: "_ReactiveMixIn[float]", other: _FloatLike) -> Computed[float]: ...
+
+    @overload
+    def __floordiv__[Y, R](self: "_ReactiveOf[_SupportsFloordiv[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
 
     @overload
     def __floordiv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -882,7 +970,16 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.lt, self, other)
 
-    def __lshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __lshift__(self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __lshift__[Y, R](self: "_ReactiveOf[_SupportsLshift[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
+
+    @overload
+    def __lshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __lshift__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for `self` left-shifted by `other`.
 
         Args:
@@ -905,7 +1002,13 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.lshift, self, other)
 
-    def __matmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __matmul__[Y, R](self: "_ReactiveOf[_SupportsMatmul[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
+
+    @overload
+    def __matmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __matmul__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the matrix multiplication of `self` and `other`.
 
         Args:
@@ -930,7 +1033,15 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.matmul, self, other)
 
     @overload
-    def __mod__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
+    def __mod__[N: (int, float)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __mod__(self: "_ReactiveMixIn[float]", other: _FloatLike) -> Computed[float]: ...
+
+    @overload
+    def __mod__[Y, R](self: "_ReactiveOf[_SupportsMod[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
 
     @overload
     def __mod__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -959,10 +1070,24 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.mod, self, other)
 
     @overload
+    def __mul__[N: (int, float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __mul__[N: (float, complex)](self: "_ReactiveMixIn[float]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __mul__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
+
+    @overload
     def __mul__(self: "_ReactiveMixIn[str]", other: HasValue[int]) -> Computed[str]: ...
 
     @overload
     def __mul__[V](self: "_ReactiveMixIn[list[V]]", other: HasValue[int]) -> Computed[list[V]]: ...
+
+    @overload
+    def __mul__[Y, R](self: "_ReactiveOf[_SupportsMul[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
 
     @overload
     def __mul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -990,30 +1115,16 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.mul, self, other)
 
-    def __ne__(self, other: Any) -> Computed[bool]:  # type: ignore[override]
-        """Return a reactive value for whether `self` is not equal to `other`.
+    @overload
+    def __or__[N: (bool, int)](self: "_ReactiveMixIn[bool]", other: HasValue[N]) -> Computed[N]: ...
 
-        Args:
-            other: The value to compare against.
+    @overload
+    def __or__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
 
-        Returns:
-            A reactive value for `self.value != other`.
+    @overload
+    def __or__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
 
-        Example:
-            ```py
-            >>> s = Signal(5)
-            >>> result = s != 5
-            >>> result.value
-            False
-            >>> s.value = 6
-            >>> result.value
-            True
-
-            ```
-        """
-        return _computed_call(operator.ne, self, other)
-
-    def __or__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    def __or__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
 
         Args:
@@ -1036,7 +1147,16 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.or_, self, other)
 
-    def __rshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __rshift__(self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __rshift__[Y, R](self: "_ReactiveOf[_SupportsRshift[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
+
+    @overload
+    def __rshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rshift__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for `self` right-shifted by `other`.
 
         Args:
@@ -1060,7 +1180,18 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.rshift, self, other)
 
     @overload
-    def __pow__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
+    def __pow__[N: (int, float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __pow__[N: (float, complex)](self: "_ReactiveMixIn[float]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __pow__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
+
+    @overload
+    def __pow__[Y, R](self: "_ReactiveOf[_SupportsPow[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
 
     @overload
     def __pow__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -1088,7 +1219,30 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.pow, self, other)
 
-    def __sub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __sub__[N: (int, float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __sub__[N: (float, complex)](self: "_ReactiveMixIn[float]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __sub__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
+
+    @overload
+    def __sub__[D: date](self: "_ReactiveMixIn[D]", other: HasValue[timedelta]) -> Computed[D]: ...
+
+    @overload
+    def __sub__[D: date](self: "_ReactiveMixIn[D]", other: HasValue[D]) -> Computed[timedelta]: ...
+
+    @overload
+    def __sub__[Y, R](self: "_ReactiveOf[_SupportsSub[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
+
+    @overload
+    def __sub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __sub__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the difference of `self` and `other`.
 
         Args:
@@ -1112,21 +1266,15 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.sub, self, other)
 
     @overload
-    def __truediv__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[float]: ...
+    def __truediv__[N: (float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool] | _ReactiveMixIn[float]", other: HasValue[N]
+    ) -> Computed[N]: ...
 
     @overload
-    def __truediv__(self: "_ReactiveMixIn[int]", other: HasValue[float]) -> Computed[float]: ...
+    def __truediv__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
 
     @overload
-    def __truediv__(self: "_ReactiveMixIn[float]", other: HasValue[int]) -> Computed[float]: ...
-
-    @overload
-    def __truediv__(self: "_ReactiveMixIn[float]", other: HasValue[float]) -> Computed[float]: ...
-
-    @overload
-    def __truediv__(
-        self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int] | HasValue[float]
-    ) -> Computed[float]: ...
+    def __truediv__[Y, R](self: "_ReactiveOf[_SupportsTruediv[Y, R]]", other: HasValue[Y]) -> Computed[R]: ...
 
     @overload
     def __truediv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -1154,7 +1302,16 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.truediv, self, other)
 
-    def __xor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __xor__[N: (bool, int)](self: "_ReactiveMixIn[bool]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __xor__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __xor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __xor__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
 
         Args:
@@ -1178,10 +1335,21 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.xor, self, other)
 
     @overload
-    def __radd__(self: "_ReactiveMixIn[float]", other: HasValue[int] | HasValue[float]) -> Computed[float]: ...
+    def __radd__[N: (int, float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
 
     @overload
-    def __radd__[R](self: "_ReactiveMixIn[T]", other: HasValue[_SupportsAdd[T, R]]) -> Computed[R]: ...
+    def __radd__[N: (float, complex)](self: "_ReactiveMixIn[float]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __radd__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
+
+    @overload
+    def __radd__[D: date](self: "_ReactiveMixIn[D]", other: HasValue[timedelta]) -> Computed[D]: ...
+
+    @overload
+    def __radd__[R](self, other: HasValue[_SupportsAdd[T, R]]) -> Computed[R]: ...
 
     @overload
     def __radd__(self, other: Any) -> Computed[Any]: ...
@@ -1209,7 +1377,16 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.add, other, self)
 
-    def __rand__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __rand__[N: (bool, int)](self: "_ReactiveMixIn[bool]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __rand__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __rand__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rand__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise AND of `self` and `other`.
 
         Args:
@@ -1233,18 +1410,20 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.and_, other, self)
 
     @overload
-    def __rdivmod__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
+    def __rdivmod__[N: (int, float)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[tuple[N, N]]: ...
 
     @overload
-    def __rdivmod__(self: "_ReactiveMixIn[bool]", other: HasValue[int]) -> Computed[tuple[int, int]]: ...
+    def __rdivmod__(self: "_ReactiveMixIn[float]", other: _FloatLike) -> Computed[tuple[float, float]]: ...
 
     @overload
-    def __rdivmod__(self: "_ReactiveMixIn[bool]", other: HasValue[bool]) -> Computed[tuple[int, int]]: ...
+    def __rdivmod__[R](self, other: HasValue[_SupportsDivmod[T, R]]) -> Computed[R]: ...
 
     @overload
-    def __rdivmod__(self, other: Any) -> Computed[tuple[float, float]]: ...
+    def __rdivmod__(self, other: Any) -> Computed[Any]: ...
 
-    def __rdivmod__(self, other: Any) -> Computed[tuple[int, int]] | Computed[tuple[float, float]]:
+    def __rdivmod__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the divmod of `self` and `other`.
 
         Args:
@@ -1268,7 +1447,15 @@ class _ReactiveMixIn[T]:
         return _computed_call(divmod, other, self)
 
     @overload
-    def __rfloordiv__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
+    def __rfloordiv__[N: (int, float)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __rfloordiv__(self: "_ReactiveMixIn[float]", other: _FloatLike) -> Computed[float]: ...
+
+    @overload
+    def __rfloordiv__[R](self, other: HasValue[_SupportsFloordiv[T, R]]) -> Computed[R]: ...
 
     @overload
     def __rfloordiv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -1297,7 +1484,87 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.floordiv, other, self)
 
     @overload
-    def __rmod__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
+    def __rlshift__(self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __rlshift__[R](self, other: HasValue[_SupportsLshift[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __rlshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rlshift__(self, other: Any) -> Computed[Any]:
+        """Return a reactive value for `other` left-shifted by `self`.
+
+        Args:
+            other: The value to shift.
+
+        Returns:
+            A reactive value for `other.value << self.value`.
+
+        Example:
+            ```py
+            >>> s = Signal(2)
+            >>> result = 1 << s
+            >>> result.value
+            4
+            >>> s.value = 5
+            >>> result.value
+            32
+
+            ```
+        """
+        return _computed_call(operator.lshift, other, self)
+
+    @overload
+    def __rmatmul__[R](self, other: HasValue[_SupportsMatmul[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __rmatmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rmatmul__(self, other: Any) -> Computed[Any]:
+        """Return a reactive value for the matrix multiplication of `other` and `self`.
+
+        Note:
+            NumPy arrays on the left defer to this method because reactive values
+            opt out of NumPy's ufunc dispatch. The result is a single `Computed`.
+
+        Args:
+            other: The value to multiply with.
+
+        Returns:
+            A reactive value for `other.value @ self.value`.
+
+        Example:
+            ```py
+            >>> class Row:
+            ...     def __init__(self, values):
+            ...         self.values = values
+            ...     def __matmul__(self, other):
+            ...         if not isinstance(other, Row):
+            ...             return NotImplemented
+            ...         return sum(a * b for a, b in zip(self.values, other.values))
+            >>> s = Signal(Row([3, 4]))
+            >>> result = Row([1, 2]) @ s
+            >>> result.value
+            11
+            >>> s.value = Row([1, 1])
+            >>> result.value
+            3
+
+            ```
+        """
+        return _computed_call(operator.matmul, other, self)
+
+    @overload
+    def __rmod__[N: (int, float)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __rmod__(self: "_ReactiveMixIn[float]", other: _FloatLike) -> Computed[float]: ...
+
+    @overload
+    def __rmod__[R](self, other: HasValue[_SupportsMod[T, R]]) -> Computed[R]: ...
 
     @overload
     def __rmod__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -1326,10 +1593,24 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.mod, other, self)
 
     @overload
+    def __rmul__[N: (int, float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __rmul__[N: (float, complex)](self: "_ReactiveMixIn[float]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __rmul__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
+
+    @overload
     def __rmul__(self: "_ReactiveMixIn[str]", other: HasValue[int]) -> Computed[str]: ...
 
     @overload
     def __rmul__[V](self: "_ReactiveMixIn[list[V]]", other: HasValue[int]) -> Computed[list[V]]: ...
+
+    @overload
+    def __rmul__[R](self, other: HasValue[_SupportsMul[T, R]]) -> Computed[R]: ...
 
     @overload
     def __rmul__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -1357,7 +1638,16 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.mul, other, self)
 
-    def __ror__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __ror__[N: (bool, int)](self: "_ReactiveMixIn[bool]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __ror__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __ror__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __ror__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
 
         Args:
@@ -1381,7 +1671,18 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.or_, other, self)
 
     @overload
-    def __rpow__(self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int]) -> Computed[int]: ...
+    def __rpow__[N: (int, float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __rpow__[N: (float, complex)](self: "_ReactiveMixIn[float]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __rpow__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
+
+    @overload
+    def __rpow__[R](self, other: HasValue[_SupportsPow[T, R]]) -> Computed[R]: ...
 
     @overload
     def __rpow__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -1409,7 +1710,56 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.pow, other, self)
 
-    def __rsub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __rrshift__(self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __rrshift__[R](self, other: HasValue[_SupportsRshift[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __rrshift__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rrshift__(self, other: Any) -> Computed[Any]:
+        """Return a reactive value for `other` right-shifted by `self`.
+
+        Args:
+            other: The value to shift.
+
+        Returns:
+            A reactive value for `other.value >> self.value`.
+
+        Example:
+            ```py
+            >>> s = Signal(2)
+            >>> result = 32 >> s
+            >>> result.value
+            8
+            >>> s.value = 4
+            >>> result.value
+            2
+
+            ```
+        """
+        return _computed_call(operator.rshift, other, self)
+
+    @overload
+    def __rsub__[N: (int, float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool]", other: HasValue[N]
+    ) -> Computed[N]: ...
+
+    @overload
+    def __rsub__[N: (float, complex)](self: "_ReactiveMixIn[float]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __rsub__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
+
+    @overload
+    def __rsub__[R](self, other: HasValue[_SupportsSub[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __rsub__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rsub__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the difference of `self` and `other`.
 
         Args:
@@ -1433,21 +1783,15 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.sub, other, self)
 
     @overload
-    def __rtruediv__(self: "_ReactiveMixIn[int]", other: HasValue[int]) -> Computed[float]: ...
+    def __rtruediv__[N: (float, complex)](
+        self: "_ReactiveMixIn[int] | _ReactiveMixIn[bool] | _ReactiveMixIn[float]", other: HasValue[N]
+    ) -> Computed[N]: ...
 
     @overload
-    def __rtruediv__(self: "_ReactiveMixIn[int]", other: HasValue[float]) -> Computed[float]: ...
+    def __rtruediv__(self: "_ReactiveMixIn[complex]", other: _ComplexLike) -> Computed[complex]: ...
 
     @overload
-    def __rtruediv__(self: "_ReactiveMixIn[float]", other: HasValue[int]) -> Computed[float]: ...
-
-    @overload
-    def __rtruediv__(self: "_ReactiveMixIn[float]", other: HasValue[float]) -> Computed[float]: ...
-
-    @overload
-    def __rtruediv__(
-        self: "_ReactiveMixIn[bool]", other: HasValue[bool] | HasValue[int] | HasValue[float]
-    ) -> Computed[float]: ...
+    def __rtruediv__[R](self, other: HasValue[_SupportsTruediv[T, R]]) -> Computed[R]: ...
 
     @overload
     def __rtruediv__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
@@ -1475,7 +1819,16 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.truediv, other, self)
 
-    def __rxor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]:
+    @overload
+    def __rxor__[N: (bool, int)](self: "_ReactiveMixIn[bool]", other: HasValue[N]) -> Computed[N]: ...
+
+    @overload
+    def __rxor__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
+
+    @overload
+    def __rxor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+
+    def __rxor__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
 
         Args:
@@ -1499,32 +1852,28 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.xor, other, self)
 
     @overload
-    def __getitem__[V](self: "_ReactiveMixIn[list[V]]", key: slice) -> Computed[list[V]]: ...
+    def __getitem__[V](self: "_ReactiveMixIn[list[V]]", key: HasValue[slice]) -> Computed[list[V]]: ...
 
     @overload
-    def __getitem__[V](self: "_ReactiveMixIn[tuple[V, ...]]", key: slice) -> Computed[tuple[V, ...]]: ...
+    def __getitem__[V](self: "_ReactiveMixIn[tuple[V, ...]]", key: HasValue[slice]) -> Computed[tuple[V, ...]]: ...
 
     @overload
-    def __getitem__(self: "_ReactiveMixIn[str]", key: slice) -> Computed[str]: ...
+    def __getitem__(self: "_ReactiveMixIn[str]", key: HasValue[slice]) -> Computed[str]: ...
 
     @overload
-    def __getitem__[V](
-        self: "_ReactiveMixIn[list[V]]", key: HasValue[SupportsIndex] | HasValue[int]
-    ) -> Computed[V]: ...
+    def __getitem__[V](self: "_ReactiveMixIn[list[V]]", key: _IndexLike) -> Computed[V]: ...
 
     @overload
-    def __getitem__[V](
-        self: "_ReactiveMixIn[tuple[V, ...]]", key: HasValue[SupportsIndex] | HasValue[int]
-    ) -> Computed[V]: ...
+    def __getitem__[V](self: "_ReactiveMixIn[tuple[V, ...]]", key: _IndexLike) -> Computed[V]: ...
 
     @overload
-    def __getitem__(self: "_ReactiveMixIn[str]", key: HasValue[SupportsIndex] | HasValue[int]) -> Computed[str]: ...
+    def __getitem__(self: "_ReactiveMixIn[str]", key: _IndexLike) -> Computed[str]: ...
 
     @overload
     def __getitem__[K, V](self: "_ReactiveMixIn[dict[K, V]]", key: HasValue[K]) -> Computed[V]: ...
 
     @overload
-    def __getitem__[K, V](self: "_ReactiveSupportsGetItem[K, V]", key: HasValue[K]) -> Computed[V]: ...
+    def __getitem__[K, V](self: "_ReactiveOf[_SupportsGetItem[K, V]]", key: HasValue[K]) -> Computed[V]: ...
 
     @overload
     def __getitem__(self, key: Any) -> Computed[Any]: ...

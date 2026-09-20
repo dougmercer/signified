@@ -2,6 +2,59 @@
 
 This page summarizes notable changes across releases.
 
+## Unreleased
+
+- `rx.where` narrows its result type when the condition is a literal boolean,
+  `None`, or has `__bool__` annotated to return a literal boolean. Ordinary boolean
+  signals retain the union of both branch types.
+- `rx.as_bool` preserves literal boolean result types for conditions with statically
+  known truthiness, including `None`, so subsequent `rx.where` calls can still narrow.
+- `as_rx` preserves the concrete `Signal`, `Computed`, or `Binding` type when
+  passed an existing reactive value.
+- Indexing lists, tuples, and strings with reactive slices preserves the sliced
+  container's result type.
+- Floor division infers `float` when either operand is a float and `int` for
+  integer/boolean operands, including reflected operations.
+- Modulo infers the promoted numeric result instead of a union of operand types,
+  including reflected operations and boolean operands.
+- Multiplication infers promoted `int`, `float`, or `complex` results, including
+  reflected operations and boolean operands.
+- Subtraction infers promoted numeric results and declared operator return types;
+  date and datetime differences return `Computed[timedelta]`, while subtracting
+  a duration preserves the date or datetime type.
+- Bitwise AND, OR, and XOR infer `int` for mixed boolean/integer operands while
+  preserving `bool` for boolean-only operations, in both operand directions.
+- Addition keeps integer results for plain integer operands and infers promoted
+  numeric results for boolean and complex operands, including reflected operations.
+- True division infers `float` for real operands and `complex` when either operand
+  is complex, including reflected operations and boolean operands.
+- Exponentiation infers promoted numeric results for integer, boolean, float, and
+  complex operands, including reflected operations.
+- Left and right shifts infer `int` for mixed boolean/integer operands instead of a
+  union of operand types.
+- `divmod` infers the promoted numeric result and honours a declared `__divmod__`
+  return type; it no longer claims `tuple[float, float]` for operands it cannot
+  otherwise resolve, and now accepts float operands in the reflected direction.
+- Adding a duration to a reactive date or datetime preserves the date or datetime
+  type in the reflected direction, matching subtraction.
+- Multiplication, matrix multiplication, true and floor division, modulo,
+  exponentiation, and shifts now report a user type's declared operator return
+  type instead of a union of the operand types, in both operand directions.
+- Added the missing reflected operators `__rmatmul__`, `__rlshift__`, and
+  `__rrshift__`, so `other @ reactive`, `other << reactive`, and
+  `other >> reactive` produce reactive values instead of raising `TypeError`.
+- Reactive values opt out of NumPy's ufunc dispatch (`__array_ufunc__ = None`).
+  Previously `array + reactive` returned an object-dtype `ndarray` of `Computed`
+  values instead of a single reactive result, because `ndarray` handled the
+  operation rather than deferring; it now returns a `Computed`, as do other
+  reflected arithmetic/bitwise operators and ordering comparisons. Passing a
+  reactive value straight to a ufunc (`np.sin(reactive)`) now raises `TypeError`;
+  use `reactive.rx.map(np.sin)`.
+- **Breaking:** Reactive objects no longer overload `!=`. Comparisons between
+  reactive objects use identity and return a plain `bool`, matching `==`.
+  Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
+  the existing `x.rx.eq(y)`.
+
 ## 0.6.0
 
 - Added `Binding` for switching the source followed by existing calculations.
