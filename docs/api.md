@@ -151,16 +151,6 @@ custom object, register a handler with `@deep_unref.register(MyType)`.
 
 See [Resolving nested values](resolution.md) for custom-handler examples.
 
-## Migration diagnostics
-
-Import the namespace with `from signified import migration`.
-
-::: signified.migration.enable_warnings
-::: signified.migration.disable_warnings
-::: signified.migration.warnings
-::: signified.migration.warnings_enabled
-::: signified.migration.SignifiedMigrationWarning
-
 ## Types
 
 ### HasValue {#signified.HasValue}

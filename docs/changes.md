@@ -4,6 +4,10 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- **Breaking:** Removed the `signified.migration` warning API and
+  `SIGNIFIED_MIGRATION_WARNINGS` handling. Run migration diagnostics before
+  upgrading, using a release that still provides them (such as 0.5.1).
+
 - Absolute value infers a custom type's declared `__abs__` return type, including
   through `Signal`, `Computed`, and `Binding`.
 

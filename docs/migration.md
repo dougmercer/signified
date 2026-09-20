@@ -7,8 +7,8 @@ results and what happens after inputs change when upgrading.
 
 You can make these changes before upgrading:
 
-- Enable [migration warnings](#optional-migration-diagnostics) while exercising
-  representative workflows.
+- On 0.5.1, enable [migration warnings](#optional-migration-diagnostics) while
+  exercising representative workflows.
 - Read `.value` when a function should return a reactive object's current value.
 - Call `deep_unref` inside callbacks that need values from nested containers.
 - Register custom containers with `deep_unref.register(Type)`.
@@ -108,7 +108,10 @@ and skips unread intermediate values; it is not an automatic effect.
 
 ## Optional migration diagnostics
 
-Warnings are available in both 0.5.1 and 0.6:
+The migration warning API has been removed in the upcoming release. Run the
+following diagnostics on a release that still provides them, such as 0.5.1,
+before upgrading. The `migration` module and `SIGNIFIED_MIGRATION_WARNINGS`
+setting are no longer available afterward:
 
 ```python
 from signified import migration

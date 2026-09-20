@@ -5,7 +5,6 @@ from __future__ import annotations
 from functools import wraps
 from typing import Any, Callable, TypeGuard, overload
 
-from . import migration as _migration
 from ._reactive import Binding, Computed, Effect, Signal, is_reactive
 from ._types import HasValue, ReactiveValue
 
@@ -44,8 +43,6 @@ def _computed_call[R](func: Callable[..., R], *args: Any, **kwargs: Any) -> Comp
     every call. Used by the operator overloads, which take this path for every
     reactive expression a user writes.
     """
-    if _migration.WARNINGS_ENABLED:
-        _migration._warn_nested_reactive_arguments("computed", args, kwargs)
     return Computed(_bind_args(func, args, kwargs))
 
 
@@ -69,8 +66,6 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Computed[R]:
-        if _migration.WARNINGS_ENABLED:
-            _migration._warn_nested_reactive_arguments("computed", args, kwargs)
         return Computed(_bind_args(func, args, kwargs))
 
     return wrapper
@@ -119,8 +114,6 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Effect:
-        if _migration.WARNINGS_ENABLED:
-            _migration._warn_nested_reactive_arguments("effect", args, kwargs)
         return Effect(_bind_args(func, args, kwargs))
 
     return wrapper

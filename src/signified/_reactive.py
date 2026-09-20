@@ -12,7 +12,6 @@ from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, over
 from weakref import ref
 
 from . import _scheduler
-from . import migration as _migration
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
 from .plugins import HOOKS_ENABLED, plugin_manager
@@ -295,12 +294,9 @@ class Signal[T](Variable[T]):
     """
 
     __slots__ = ["_value"]
-    _WARN_ON_VALUE = True
 
     def __init__(self, value: T) -> None:
         super().__init__()
-        if _migration.WARNINGS_ENABLED and self._WARN_ON_VALUE:
-            _migration._warn_signal_value(value)
         _setattr(self, "_value", value)
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
@@ -319,8 +315,6 @@ class Signal[T](Variable[T]):
 
     @value.setter
     def value(self, new_value: T) -> None:
-        if _migration.WARNINGS_ENABLED and self._WARN_ON_VALUE:
-            _migration._warn_signal_value(new_value)
         old_value = self._value
         if _has_changed(old_value, new_value):
             _setattr(self, "_value", new_value)
@@ -487,13 +481,6 @@ class Signal[T](Variable[T]):
         if HOOKS_ENABLED:
             plugin_manager.hook.updated(value=self)
         self.notify()
-
-
-class _BindingSource[T](Signal[ReactiveValue[T]]):
-    """Internal source selection; storing reactive objects here is intentional."""
-
-    __slots__ = ()
-    _WARN_ON_VALUE = False
 
 
 class _State(IntEnum):
@@ -712,8 +699,6 @@ class _ComputedImpl:
         _COMPUTE_STACK.append(self)
         try:
             next_value = owner._compute_fn()
-            if _migration.WARNINGS_ENABLED:
-                _migration._warn_reactive_computed_result(owner, next_value)
         except Exception as error:
             next_value = None
             next_error = error
@@ -948,7 +933,7 @@ class Binding(Computed[T]):
             self._owned = None
         else:
             source = self._owned = Signal(cast(T, source))
-        self._holder: Signal[ReactiveValue[T]] = _BindingSource(cast(ReactiveValue[T], source))
+        self._holder: Signal[ReactiveValue[T]] = Signal(cast(ReactiveValue[T], source))
         super().__init__(self._read_source)
 
     def _read_source(self) -> T:
