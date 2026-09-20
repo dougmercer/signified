@@ -1,3 +1,6 @@
+# Expected-error cases must fail checking if their ignores become unnecessary.
+# pyright: reportUnnecessaryTypeIgnoreComment=true
+
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from math import ceil, floor, trunc
@@ -175,6 +178,25 @@ def test_rx_len():
     result = Signal([1, 2, 3]).rx.len()
     assert_type(result, Computed[int])
     assert_type(unref(result), int)
+
+
+def test_rx_len_accepts_custom_sized_values():
+    class SizedValue:
+        def __len__(self) -> int:
+            return 3
+
+    source = Signal(SizedValue())
+    assert_type(source.rx.len(), Computed[int])
+    assert_type(Computed(lambda: source.value).rx.len(), Computed[int])
+    assert_type(Binding(source).rx.len(), Computed[int])
+
+
+def test_rx_len_rejects_unsized_values():
+    Signal(1).rx.len()  # pyright: ignore[reportAttributeAccessIssue]
+    Computed(lambda: 1).rx.len()  # pyright: ignore[reportAttributeAccessIssue]
+    Binding(Signal(1)).rx.len()  # pyright: ignore[reportAttributeAccessIssue]
+    # Being iterable does not imply having a length.
+    Signal(iter([1, 2, 3])).rx.len()  # pyright: ignore[reportAttributeAccessIssue]
 
 
 def test_rx_is():
