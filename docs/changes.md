@@ -13,6 +13,33 @@ This page summarizes notable changes across releases.
   passed an existing reactive value.
 - Indexing lists, tuples, and strings with reactive slices preserves the sliced
   container's result type.
+- Floor division infers `float` when either operand is a float and `int` for
+  integer/boolean operands, including reflected operations.
+- Modulo infers the promoted numeric result instead of a union of operand types,
+  including reflected operations and boolean operands.
+- Multiplication infers promoted `int`, `float`, or `complex` results, including
+  reflected operations and boolean operands.
+- Subtraction infers promoted numeric results and declared operator return types;
+  date and datetime differences return `Computed[timedelta]`, while subtracting
+  a duration preserves the date or datetime type.
+- Bitwise AND, OR, and XOR infer `int` for mixed boolean/integer operands while
+  preserving `bool` for boolean-only operations, in both operand directions.
+- Addition keeps integer results for plain integer operands and infers promoted
+  numeric results for boolean and complex operands, including reflected operations.
+- True division infers `float` for real operands and `complex` when either operand
+  is complex, including reflected operations and boolean operands.
+- Exponentiation infers promoted numeric results for integer, boolean, float, and
+  complex operands, including reflected operations.
+- Left and right shifts infer `int` for mixed boolean/integer operands instead of a
+  union of operand types.
+- `divmod` infers the promoted numeric result and honours a declared `__divmod__`
+  return type; it no longer claims `tuple[float, float]` for operands it cannot
+  otherwise resolve, and now accepts float operands in the reflected direction.
+- Adding a duration to a reactive date or datetime preserves the date or datetime
+  type in the reflected direction, matching subtraction.
+- Multiplication, matrix multiplication, true and floor division, modulo,
+  exponentiation, and shifts now report a user type's declared operator return
+  type instead of a union of the operand types, in both operand directions.
 
 ## 0.6.0
 
