@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import operator
 from collections.abc import Sized
-from typing import TYPE_CHECKING, Any, Callable, Literal, SupportsAbs, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, SupportsAbs, SupportsRound, Union, overload
 
 from ._protocols import (
     _ComplexLike,
@@ -532,27 +532,12 @@ class _ReactiveMixIn[T]:
         return str(self.value)
 
     @overload
-    def __round__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
-    @overload
-    def __round__(self: "_ReactiveMixIn[bool]", ndigits: None) -> Computed[int]: ...
-    @overload
-    def __round__(self: "_ReactiveMixIn[bool]", ndigits: int) -> Computed[int]: ...
-    @overload
-    def __round__(self: "_ReactiveMixIn[int]") -> Computed[int]: ...
-    @overload
-    def __round__(self: "_ReactiveMixIn[int]", ndigits: None) -> Computed[int]: ...
-    @overload
-    def __round__(self: "_ReactiveMixIn[int]", ndigits: int) -> Computed[int]: ...
-    @overload
-    def __round__(self: "_ReactiveMixIn[float]") -> Computed[int]: ...
-    @overload
-    def __round__(self: "_ReactiveMixIn[float]", ndigits: None) -> Computed[int]: ...
-    @overload
-    def __round__(self: "_ReactiveMixIn[float]", ndigits: int) -> Computed[float]: ...
-    @overload
-    def __round__(self, ndigits: int | None = None) -> Computed[int] | Computed[float]: ...
+    def __round__[R](self: _ReactiveOf[SupportsRound[R]], ndigits: None = None) -> Computed[int]: ...
 
-    def __round__(self, ndigits: int | None = None) -> Computed[int] | Computed[float]:
+    @overload
+    def __round__[R](self: _ReactiveOf[SupportsRound[R]], ndigits: int) -> Computed[R]: ...
+
+    def __round__[R](self: _ReactiveOf[SupportsRound[R]], ndigits: int | None = None) -> Computed[int] | Computed[R]:
         """Return a reactive value for the rounded value of self.
 
         Args:

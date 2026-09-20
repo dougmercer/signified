@@ -4,6 +4,10 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- `round` uses `SupportsRound` to infer `Computed[int]` when digits are omitted
+  or `None`, and the declared result type when digits are provided, including
+  `Computed[Decimal]` for decimals. Unsupported operands are rejected statically.
+
 - `trunc` infers the wrapped type's declared `__trunc__` result, including
   `Computed[int]` for decimals, and rejects operands without `__trunc__`.
 

@@ -4,7 +4,7 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from math import ceil, floor, trunc
-from typing import Any, Literal, TypeVar, Union, assert_type
+from typing import Any, Literal, TypeVar, Union, assert_type, overload
 
 from signified import Binding, Computed, Effect, HasValue, ReactiveValue, Signal, as_rx, computed, is_reactive, unref
 from signified._protocols import _AlwaysFalse, _AlwaysTrue
@@ -252,6 +252,52 @@ def test_round():
     rounded_float_default = round(Signal(3.14159))
     assert_type(rounded_float_default, Computed[int])
     assert_type(unref(rounded_float_default), int)
+
+
+def test_round_preserves_decimal_results(ndigits: int | None):
+    source = Signal(Decimal("1.25"))
+    derived = Computed(lambda: source.value)
+    binding = Binding(source)
+    assert_type(round(source), Computed[int])
+    assert_type(round(derived), Computed[int])
+    assert_type(round(binding), Computed[int])
+    assert_type(round(source, None), Computed[int])
+    assert_type(round(derived, None), Computed[int])
+    assert_type(round(binding, None), Computed[int])
+    assert_type(round(source, 1), Computed[Decimal])
+    assert_type(round(derived, 1), Computed[Decimal])
+    assert_type(round(binding, 1), Computed[Decimal])
+    assert_type(round(source, ndigits), Computed[int] | Computed[Decimal])
+    assert_type(source.__round__(ndigits), Computed[int] | Computed[Decimal])
+
+
+def test_round_preserves_custom_result_types():
+    class Roundable:
+        @overload
+        def __round__(self, ndigits: None = None) -> int: ...
+
+        @overload
+        def __round__(self, ndigits: int) -> str: ...
+
+        def __round__(self, ndigits: int | None = None) -> int | str:
+            return 1 if ndigits is None else f"rounded to {ndigits} digits"
+
+    source = Signal(Roundable())
+    derived = Computed(lambda: source.value)
+    binding = Binding(source)
+    assert_type(round(source), Computed[int])
+    assert_type(round(derived), Computed[int])
+    assert_type(round(binding), Computed[int])
+    assert_type(round(source, 1), Computed[str])
+    assert_type(round(derived, 1), Computed[str])
+    assert_type(round(binding, 1), Computed[str])
+
+
+def test_round_rejects_unsupported_values():
+    round(Signal("text"))  # pyright: ignore[reportArgumentType]
+    round(Computed(lambda: 1j))  # pyright: ignore[reportArgumentType]
+    round(Binding(Signal(object())))  # pyright: ignore[reportArgumentType]
+    round(Signal("text"), 1)  # pyright: ignore[reportCallIssue, reportArgumentType]
 
 
 def test_ceil():
