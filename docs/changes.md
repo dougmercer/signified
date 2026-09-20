@@ -4,6 +4,9 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- Unary `-`, `+`, and `~` infer the wrapped type's declared operator result and
+  reject statically known operands that do not support the operation.
+
 - Absolute value infers a custom type's declared `__abs__` return type, including
   through `Signal`, `Computed`, and `Binding`.
 

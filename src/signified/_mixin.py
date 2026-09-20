@@ -18,10 +18,13 @@ from ._protocols import (
     _SupportsDivmod,
     _SupportsFloordiv,
     _SupportsGetItem,
+    _SupportsInvert,
     _SupportsLshift,
     _SupportsMatmul,
     _SupportsMod,
     _SupportsMul,
+    _SupportsNeg,
+    _SupportsPos,
     _SupportsPow,
     _SupportsRshift,
     _SupportsSub,
@@ -613,13 +616,7 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(math.floor, self)
 
-    @overload
-    def __invert__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
-
-    @overload
-    def __invert__(self) -> Computed[T]: ...
-
-    def __invert__(self) -> Computed[T] | Computed[int]:
+    def __invert__[R](self: _ReactiveOf[_SupportsInvert[R]]) -> Computed[R]:
         """Return a reactive value for the bitwise inversion of `self`.
 
         Returns:
@@ -639,13 +636,7 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.inv, self)
 
-    @overload
-    def __neg__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
-
-    @overload
-    def __neg__(self) -> Computed[T]: ...
-
-    def __neg__(self) -> Computed[T] | Computed[int]:
+    def __neg__[R](self: _ReactiveOf[_SupportsNeg[R]]) -> Computed[R]:
         """Return a reactive value for the negation of `self`.
 
         Returns:
@@ -665,13 +656,7 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.neg, self)
 
-    @overload
-    def __pos__(self: "_ReactiveMixIn[bool]") -> Computed[int]: ...
-
-    @overload
-    def __pos__(self) -> Computed[T]: ...
-
-    def __pos__(self) -> Computed[T] | Computed[int]:
+    def __pos__[R](self: _ReactiveOf[_SupportsPos[R]]) -> Computed[R]:
         """Return a reactive value for the positive of self.
 
         Returns:

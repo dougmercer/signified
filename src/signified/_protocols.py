@@ -57,6 +57,18 @@ class _ReactiveOf[V](Protocol):
     def value(self) -> V: ...
 
 
+class _SupportsNeg[ResultT](Protocol):
+    def __neg__(self) -> ResultT: ...
+
+
+class _SupportsPos[ResultT](Protocol):
+    def __pos__(self) -> ResultT: ...
+
+
+class _SupportsInvert[ResultT](Protocol):
+    def __invert__(self) -> ResultT: ...
+
+
 class _SupportsAdd[OtherT, ResultT](Protocol):
     def __add__(self, other: OtherT, /) -> ResultT: ...
 

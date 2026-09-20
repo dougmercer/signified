@@ -296,6 +296,37 @@ def test_pos():
     assert_type(unref(bool_result), int)
 
 
+def test_unary_operators_preserve_custom_result_types():
+    class UnaryValue:
+        def __neg__(self) -> str:
+            return "negative"
+
+        def __pos__(self) -> bytes:
+            return b"positive"
+
+        def __invert__(self) -> int:
+            return 1
+
+    source = Signal(UnaryValue())
+    derived = Computed(lambda: source.value)
+    binding = Binding(source)
+    assert_type(-source, Computed[str])
+    assert_type(-derived, Computed[str])
+    assert_type(-binding, Computed[str])
+    assert_type(+source, Computed[bytes])
+    assert_type(+derived, Computed[bytes])
+    assert_type(+binding, Computed[bytes])
+    assert_type(~source, Computed[int])
+    assert_type(~derived, Computed[int])
+    assert_type(~binding, Computed[int])
+
+
+def test_unary_operators_reject_unsupported_values():
+    _ = -Signal("text")  # pyright: ignore[reportOperatorIssue]
+    _ = +Computed(lambda: "text")  # pyright: ignore[reportOperatorIssue]
+    _ = ~Binding(Signal(1.5))  # pyright: ignore[reportOperatorIssue]
+
+
 def test_trunc():
     result = trunc(Signal(3))
     assert_type(result, Computed[int])
