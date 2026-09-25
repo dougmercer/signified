@@ -247,6 +247,29 @@ def _track_read(variable: Variable[Any]) -> None:
     impl._dep_state.register_dependency(variable)
 
 
+_OVERRIDE_STACK: list[dict[Signal[Any], Any]] = []
+_EVALUATE_STACK: list[Computed[Any]] = []
+
+
+def _lookup_override(signal: Signal[Any]) -> tuple[bool, Any]:
+    """Return the active override for ``signal`` if one exists."""
+    for overrides in reversed(_OVERRIDE_STACK):
+        if signal in overrides:
+            return True, overrides[signal]
+    return False, None
+
+
+@contextmanager
+def _push_overrides(overrides: dict[Signal[Any], Any]) -> Generator[None, None, None]:
+    """Temporarily apply signal overrides for ``Computed.evaluate_at(...)``."""
+    _OVERRIDE_STACK.append(overrides)
+    try:
+        yield
+    finally:
+        popped = _OVERRIDE_STACK.pop()
+        assert popped is overrides
+
+
 _VALUE_TYPES = frozenset((int, bool, str, bytes, complex, type(None)))
 
 
@@ -314,6 +337,9 @@ class Signal[T](Variable[T]):
         """
         if HOOKS_ENABLED:
             plugin_manager.hook.read(value=self)
+        has_override, override = _lookup_override(self)
+        if has_override:
+            return override
         _track_read(self)
         return self._value
 
@@ -905,11 +931,33 @@ class Computed(Variable[T]):
         _bump_global_version()
         self.notify()
 
+    def evaluate_at(self, overrides: dict[Signal[Any], Any]) -> T:
+        """Evaluate with temporary signal overrides and no cache mutation.
+
+        Any overridden :class:`Signal` is resolved from ``overrides`` without
+        mutating the source signal, bumping versions, or changing subscriptions.
+        Nested :class:`Computed` reads also use this override-aware path.
+        """
+        if self in _EVALUATE_STACK:
+            raise RuntimeError("Cycle detected while evaluating Computed")
+
+        _EVALUATE_STACK.append(self)
+        try:
+            if _OVERRIDE_STACK and _OVERRIDE_STACK[-1] is overrides:
+                return self._compute_fn()
+            with _push_overrides(overrides):
+                return self._compute_fn()
+        finally:
+            popped = _EVALUATE_STACK.pop()
+            assert popped is self
+
     @property
     def value(self) -> T:
         """Get the current value, recomputing lazily when stale."""
         if HOOKS_ENABLED:
             plugin_manager.hook.read(value=self)
+        if _OVERRIDE_STACK:
+            return self.evaluate_at(_OVERRIDE_STACK[-1])
         try:
             self._impl.ensure_uptodate()
         finally:
