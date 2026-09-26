@@ -218,20 +218,17 @@ def test_todo_pow_fractional_exponent_of_negative_base():
         assert_type(Signal(-8) ** 0.5, Computed[complex])
 
 
-def test_todo_divmod_reflected_only_result():
+def test_todo_divmod_plain_reflected_operand():
     # Unlike operator syntax, builtin divmod matches a generic two-argument
-    # protocol. Its overload inference still loses reflected-only result types;
-    # combining reactive operands can even introduce a spurious nested Computed.
+    # protocol. Its overload inference rejects a plain reflected-only right
+    # operand with a reactive left operand, although both wrappers together work.
     class RightOnly:
         def __rdivmod__(self, other: int) -> tuple[str, str]: ...
 
-    source = Signal(RightOnly())
     if USE_CURRENT_INFERENCE:
-        assert_type(divmod(1, source), Computed[Any])
-        assert_type(divmod(Signal(1), source), Computed[Computed[Any]])
+        assert_type(divmod(Signal(1), Signal(RightOnly())), Computed[tuple[str, str]])
     else:
-        assert_type(divmod(1, source), Computed[tuple[str, str]])
-        assert_type(divmod(Signal(1), source), Computed[tuple[str, str]])
+        assert_type(divmod(Signal(1), RightOnly()), Computed[tuple[str, str]])
 
 
 def test_todo_equality_reflected_result():

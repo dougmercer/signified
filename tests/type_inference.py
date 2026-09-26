@@ -1615,3 +1615,36 @@ def test_equality_preserves_literal_results():
     assert_type(source.rx.ne(1), Computed[Literal[False]])
     assert_type(source.rx.eq(1).rx.where(1, "no"), Computed[int])
     assert_type(source.rx.ne(1).rx.where(1, "no"), Computed[str])
+
+
+def test_divmod_preserves_reflected_results():
+    class RightOnly:
+        def __rdivmod__(self, other: int) -> tuple[str, str]: ...
+
+    source = Signal(RightOnly())
+    assert_type(divmod(1, source), Computed[tuple[str, str]])
+    assert_type(divmod(Signal(1), source), Computed[tuple[str, str]])
+    assert_type(divmod(Computed(lambda: 1), Binding(source)), Computed[tuple[str, str]])
+    assert_type(divmod(1, Computed(lambda: source.value)), Computed[tuple[str, str]])
+    assert_type(source.__rdivmod__(Signal(1)), Computed[tuple[str, str]])
+    assert_type(Signal(1).__divmod__(RightOnly()), Computed[tuple[str, str]])
+
+
+def test_divmod_accepts_reactive_subtypes():
+    class Key:
+        pass
+
+    class SpecialKey(Key):
+        pass
+
+    class Left:
+        def __divmod__(self, other: Key) -> tuple[str, str]: ...
+
+    assert_type(divmod(Signal(Left()), Signal(SpecialKey())), Computed[tuple[str, str]])
+    assert_type(divmod(Left(), Signal(SpecialKey())), Computed[tuple[str, str]])
+
+
+def test_divmod_rejects_unsupported_operands():
+    divmod(Signal(1), "text")  # pyright: ignore[reportCallIssue, reportArgumentType]
+    divmod("text", Signal(1))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    divmod(Signal("text"), Signal(1))  # pyright: ignore[reportCallIssue, reportArgumentType]

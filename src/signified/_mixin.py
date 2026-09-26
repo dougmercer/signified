@@ -806,13 +806,17 @@ class _ReactiveMixIn[T]:
     @overload
     def __divmod__(self: "_ReactiveMixIn[float]", other: protocols._FloatLike) -> Computed[tuple[float, float]]: ...
 
+    # Keep plain/reactive inputs together here: builtin divmod matches a single
+    # two-argument protocol, rather than resolving calls like operator syntax.
     @overload
     def __divmod__[Y, R](
-        self: "protocols._ReactiveOf[protocols._SupportsDivmod[Y, R]]", other: HasValue[Y]
+        self: protocols._ReactiveOf[protocols._SupportsDivmod[Y, R]], other: protocols._ReactiveOf[Y] | Y
     ) -> Computed[R]: ...
 
     @overload
-    def __divmod__(self, other: Any) -> Computed[Any]: ...
+    def __divmod__[R](
+        self, other: protocols._ReactiveOf[protocols._SupportsRdivmod[T, R]] | protocols._SupportsRdivmod[T, R]
+    ) -> Computed[R]: ...
 
     def __divmod__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the divmod of `self` and other.
@@ -1583,10 +1587,18 @@ class _ReactiveMixIn[T]:
     def __rdivmod__(self: "_ReactiveMixIn[float]", other: protocols._FloatLike) -> Computed[tuple[float, float]]: ...
 
     @overload
-    def __rdivmod__[R](self, other: HasValue[protocols._SupportsDivmod[T, R]]) -> Computed[R]: ...
+    def __rdivmod__[R](self, other: protocols._ReactiveOf[protocols._SupportsDivmod[T, R]]) -> Computed[R]: ...
 
     @overload
-    def __rdivmod__(self, other: Any) -> Computed[Any]: ...
+    def __rdivmod__[Y, R](
+        self: protocols._ReactiveOf[protocols._SupportsRdivmod[Y, R]], other: protocols._ReactiveOf[Y]
+    ) -> Computed[R]: ...
+
+    @overload
+    def __rdivmod__[R](self, other: protocols._SupportsDivmod[T, R]) -> Computed[R]: ...
+
+    @overload
+    def __rdivmod__[Y, R](self: protocols._ReactiveOf[protocols._SupportsRdivmod[Y, R]], other: Y) -> Computed[R]: ...
 
     def __rdivmod__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the divmod of `self` and `other`.

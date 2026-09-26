@@ -4,6 +4,10 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- `divmod` preserves reflected-only return types, including with two reactive
+  operands, and rejects unsupported operand combinations. A remaining checker
+  limitation affects reactive-left/plain-right reflected-only calls; wrapping
+  the right operand in `Signal` preserves inference.
 - `rx.eq` and `rx.ne` preserve the source type's declared comparison result,
   including custom masks and literal booleans that can narrow `rx.where`.
   Wrapper `==` and `!=` retain their existing identity semantics.
@@ -21,7 +25,7 @@ This page summarizes notable changes across releases.
   from right-hand reflected methods as well as left-hand methods, including when
   both operands are reactive. These operators and ordering comparisons now reject
   statically unsupported operand combinations instead of accepting them through
-  catch-all annotations. `divmod` retains its existing typing limitations.
+  catch-all annotations.
 
 - `round` uses `SupportsRound` to infer `Computed[int]` when digits are omitted
   or `None`, and the declared result type when digits are provided, including

@@ -142,6 +142,10 @@ class _SupportsDivmod[OtherT, ResultT](Protocol):
     def __divmod__(self, other: OtherT, /) -> ResultT: ...
 
 
+class _SupportsRdivmod[OtherT, ResultT](Protocol):
+    def __rdivmod__(self, other: OtherT, /) -> ResultT: ...
+
+
 class _SupportsLshift[OtherT, ResultT](Protocol):
     def __lshift__(self, other: OtherT, /) -> ResultT: ...
 
