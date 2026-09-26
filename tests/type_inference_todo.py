@@ -165,6 +165,9 @@ def test_todo_binding_accepts_distributed_union_sources(
     # Binding only reads a selected reactive source, but ReactiveValue is a
     # union of invariant classes. A narrow Signal[int] therefore cannot be used
     # as a source for Binding[int | str] without a cast.
+    # Accepting a covariant input alone is unsafe: .source and .derive also expose
+    # the selected wrapper, so they need a read-only interface to avoid allowing
+    # callers to write str through a widened view of the original Signal[int].
     if USE_CURRENT_INFERENCE:
         widened = cast(HasValue[int | str], value)
         created = Binding(widened)
@@ -213,3 +216,32 @@ def test_todo_pow_fractional_exponent_of_negative_base():
         assert_type(Signal(-8) ** 0.5, Computed[float])
     else:
         assert_type(Signal(-8) ** 0.5, Computed[complex])
+
+
+def test_todo_divmod_plain_reflected_operand():
+    # Unlike operator syntax, builtin divmod matches a generic two-argument
+    # protocol. Its overload inference rejects a plain reflected-only right
+    # operand with a reactive left operand, although both wrappers together work.
+    class RightOnly:
+        def __rdivmod__(self, other: int) -> tuple[str, str]: ...
+
+    if USE_CURRENT_INFERENCE:
+        assert_type(divmod(Signal(1), Signal(RightOnly())), Computed[tuple[str, str]])
+    else:
+        assert_type(divmod(Signal(1), RightOnly()), Computed[tuple[str, str]])
+
+
+def test_todo_equality_reflected_result():
+    # Equality stubs accept object, so matching the left method cannot establish
+    # when it returns NotImplemented and delegates to the right operand. The
+    # declared int.__eq__ result is bool, even if the right operand returns a mask.
+    class Mask:
+        pass
+
+    class Right:
+        def __eq__(self, other: object) -> Mask: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+
+    if USE_CURRENT_INFERENCE:
+        assert_type(Signal(1).rx.eq(Right()), Computed[bool])
+    else:
+        assert_type(Signal(1).rx.eq(Right()), Computed[Mask])
