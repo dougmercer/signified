@@ -1015,6 +1015,117 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Unreleased">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#runtime-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime improvements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type inference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#operator-protocols-and-reflected-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator protocols and reflected methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numeric-and-datetime-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numeric and date/time results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rounding-and-unary-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rounding and unary operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparisons-and-conditional-narrowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparisons and conditional narrowing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#indexing-and-membership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indexing and membership
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reactive-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive conversion
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1500,6 +1611,117 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Unreleased">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#runtime-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Runtime improvements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#type-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type inference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#operator-protocols-and-reflected-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator protocols and reflected methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numeric-and-datetime-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numeric and date/time results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rounding-and-unary-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rounding and unary operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparisons-and-conditional-narrowing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparisons and conditional narrowing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#indexing-and-membership" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Indexing and membership
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reactive-conversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive conversion
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1935,43 +2157,15 @@
 <h1 id="change-log">Change Log<a class="headerlink" href="#change-log" title="Permanent link">&para;</a></h1>
 <p>This page summarizes notable changes across releases.</p>
 <h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>rx.where</code> narrows its result type when the condition is a literal boolean,
-  <code>None</code>, or has <code>__bool__</code> annotated to return a literal boolean. Ordinary boolean
-  signals retain the union of both branch types.</li>
-<li><code>rx.as_bool</code> preserves literal boolean result types for conditions with statically
-  known truthiness, including <code>None</code>, so subsequent <code>rx.where</code> calls can still narrow.</li>
-<li><code>as_rx</code> preserves the concrete <code>Signal</code>, <code>Computed</code>, or <code>Binding</code> type when
-  passed an existing reactive value.</li>
-<li>Indexing lists, tuples, and strings with reactive slices preserves the sliced
-  container's result type.</li>
-<li>Floor division infers <code>float</code> when either operand is a float and <code>int</code> for
-  integer/boolean operands, including reflected operations.</li>
-<li>Modulo infers the promoted numeric result instead of a union of operand types,
-  including reflected operations and boolean operands.</li>
-<li>Multiplication infers promoted <code>int</code>, <code>float</code>, or <code>complex</code> results, including
-  reflected operations and boolean operands.</li>
-<li>Subtraction infers promoted numeric results and declared operator return types;
-  date and datetime differences return <code>Computed[timedelta]</code>, while subtracting
-  a duration preserves the date or datetime type.</li>
-<li>Bitwise AND, OR, and XOR infer <code>int</code> for mixed boolean/integer operands while
-  preserving <code>bool</code> for boolean-only operations, in both operand directions.</li>
-<li>Addition keeps integer results for plain integer operands and infers promoted
-  numeric results for boolean and complex operands, including reflected operations.</li>
-<li>True division infers <code>float</code> for real operands and <code>complex</code> when either operand
-  is complex, including reflected operations and boolean operands.</li>
-<li>Exponentiation infers promoted numeric results for integer, boolean, float, and
-  complex operands, including reflected operations.</li>
-<li>Left and right shifts infer <code>int</code> for mixed boolean/integer operands instead of a
-  union of operand types.</li>
-<li><code>divmod</code> infers the promoted numeric result and honours a declared <code>__divmod__</code>
-  return type; it no longer claims <code>tuple[float, float]</code> for operands it cannot
-  otherwise resolve, and now accepts float operands in the reflected direction.</li>
-<li>Adding a duration to a reactive date or datetime preserves the date or datetime
-  type in the reflected direction, matching subtraction.</li>
-<li>Multiplication, matrix multiplication, true and floor division, modulo,
-  exponentiation, and shifts now report a user type's declared operator return
-  type instead of a union of the operand types, in both operand directions.</li>
+<li><strong>Breaking:</strong> Reactive objects no longer overload <code>!=</code>. Comparisons between
+  reactive objects use identity and return a plain <code>bool</code>, matching <code>==</code>.
+  Replace <code>(x != y)</code> with <code>x.rx.ne(y)</code> for reactive value comparisons, alongside
+  the existing <code>x.rx.eq(y)</code>.</li>
+</ul>
+<h3 id="runtime-improvements">Runtime improvements<a class="headerlink" href="#runtime-improvements" title="Permanent link">&para;</a></h3>
+<ul>
 <li>Added the missing reflected operators <code>__rmatmul__</code>, <code>__rlshift__</code>, and
   <code>__rrshift__</code>, so <code>other @ reactive</code>, <code>other &lt;&lt; reactive</code>, and
   <code>other &gt;&gt; reactive</code> produce reactive values instead of raising <code>TypeError</code>.</li>
@@ -1982,12 +2176,94 @@
   reflected arithmetic/bitwise operators and ordering comparisons. Passing a
   reactive value straight to a ufunc (<code>np.sin(reactive)</code>) now raises <code>TypeError</code>;
   use <code>reactive.rx.map(np.sin)</code>.</li>
-<li><strong>Breaking:</strong> Reactive objects no longer overload <code>!=</code>. Comparisons between
-  reactive objects use identity and return a plain <code>bool</code>, matching <code>==</code>.
-  Replace <code>(x != y)</code> with <code>x.rx.ne(y)</code> for reactive value comparisons, alongside
-  the existing <code>x.rx.eq(y)</code>.</li>
 <li><code>Signal</code> forwards item deletion (<code>del signal[key]</code>) to the wrapped <code>list</code> or
   <code>dict</code> and notifies observers, mirroring <code>signal[key] = value</code>.</li>
+</ul>
+<h3 id="type-inference">Type inference<a class="headerlink" href="#type-inference" title="Permanent link">&para;</a></h3>
+<h4 id="operator-protocols-and-reflected-methods">Operator protocols and reflected methods<a class="headerlink" href="#operator-protocols-and-reflected-methods" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Arithmetic, matrix multiplication, shifts, and bitwise operators infer results
+  from right-hand reflected methods as well as left-hand methods, including when
+  both operands are reactive. These operators and ordering comparisons now reject
+  statically unsupported operand combinations instead of accepting them through
+  catch-all annotations.</li>
+<li>Multiplication, matrix multiplication, true and floor division, modulo,
+  exponentiation, and shifts now report a user type's declared operator return
+  type instead of a union of the operand types, in both operand directions.</li>
+<li>Bitwise AND, OR, XOR, and ordering comparisons preserve custom operator return
+  types, including non-boolean comparison results.</li>
+<li><code>divmod</code> infers the promoted numeric result and honours a declared <code>__divmod__</code>
+  return type; it no longer claims <code>tuple[float, float]</code> for operands it cannot
+  otherwise resolve, and now accepts float operands in the reflected direction.</li>
+<li><code>divmod</code> preserves reflected-only return types, including with two reactive
+  operands, and rejects unsupported operand combinations. A remaining checker
+  limitation affects reactive-left/plain-right reflected-only calls; wrapping
+  the right operand in <code>Signal</code> preserves inference.</li>
+</ul>
+<h4 id="numeric-and-datetime-results">Numeric and date/time results<a class="headerlink" href="#numeric-and-datetime-results" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Addition keeps integer results for plain integer operands and infers promoted
+  numeric results for boolean and complex operands, including reflected operations.</li>
+<li>Subtraction infers promoted numeric results and declared operator return types;
+  date and datetime differences return <code>Computed[timedelta]</code>, while subtracting
+  a duration preserves the date or datetime type.</li>
+<li>Adding a duration to a reactive date or datetime preserves the date or datetime
+  type in the reflected direction, matching subtraction.</li>
+<li>Multiplication infers promoted <code>int</code>, <code>float</code>, or <code>complex</code> results, including
+  reflected operations and boolean operands.</li>
+<li>True division infers <code>float</code> for real operands and <code>complex</code> when either operand
+  is complex, including reflected operations and boolean operands.</li>
+<li>Floor division infers <code>float</code> when either operand is a float and <code>int</code> for
+  integer/boolean operands, including reflected operations.</li>
+<li>Modulo infers the promoted numeric result instead of a union of operand types,
+  including reflected operations and boolean operands.</li>
+<li>Exponentiation infers promoted numeric results for integer, boolean, float, and
+  complex operands, including reflected operations.</li>
+<li>Bitwise AND, OR, and XOR infer <code>int</code> for mixed boolean/integer operands while
+  preserving <code>bool</code> for boolean-only operations, in both operand directions.</li>
+<li>Left and right shifts infer <code>int</code> for mixed boolean/integer operands instead of a
+  union of operand types.</li>
+</ul>
+<h4 id="rounding-and-unary-operators">Rounding and unary operators<a class="headerlink" href="#rounding-and-unary-operators" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>ceil</code> and <code>floor</code> infer the declared rounding result, preserve custom integral
+  subclasses, and reject unsupported operands. Values with only <code>__float__</code> or
+  <code>__index__</code> retain the numeric conversion fallback and infer <code>Computed[int]</code>.</li>
+<li><code>round</code> uses <code>SupportsRound</code> to infer <code>Computed[int]</code> when digits are omitted
+  or <code>None</code>, and the declared result type when digits are provided, including
+  <code>Computed[Decimal]</code> for decimals. Unsupported operands are rejected statically.</li>
+<li><code>trunc</code> infers the wrapped type's declared <code>__trunc__</code> result, including
+  <code>Computed[int]</code> for decimals, and rejects operands without <code>__trunc__</code>.</li>
+<li>Unary <code>-</code>, <code>+</code>, and <code>~</code> infer the wrapped type's declared operator result and
+  reject statically known operands that do not support the operation.</li>
+<li>Absolute value infers a custom type's declared <code>__abs__</code> return type, including
+  through <code>Signal</code>, <code>Computed</code>, and <code>Binding</code>.</li>
+</ul>
+<h4 id="comparisons-and-conditional-narrowing">Comparisons and conditional narrowing<a class="headerlink" href="#comparisons-and-conditional-narrowing" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>rx.eq</code> and <code>rx.ne</code> preserve the source type's declared comparison result,
+  including custom masks and literal booleans that can narrow <code>rx.where</code>.
+  Wrapper <code>==</code> and <code>!=</code> retain their existing identity semantics.</li>
+<li><code>rx.where</code> narrows its result type when the condition is a literal boolean,
+  <code>None</code>, or has <code>__bool__</code> annotated to return a literal boolean. Ordinary boolean
+  signals retain the union of both branch types.</li>
+<li><code>rx.as_bool</code> preserves literal boolean result types for conditions with statically
+  known truthiness, including <code>None</code>, so subsequent <code>rx.where</code> calls can still narrow.</li>
+</ul>
+<h4 id="indexing-and-membership">Indexing and membership<a class="headerlink" href="#indexing-and-membership" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Indexing accepts reactive custom <code>__index__</code> values and keys that satisfy a
+  custom lookup's declared key type, preserving the result through all wrappers.
+  Statically unsupported containers and key types are rejected.</li>
+<li>Indexing lists, tuples, and strings with reactive slices preserves the sliced
+  container's result type.</li>
+<li><code>rx.contains</code> and <code>rx.in_</code> reject statically unsupported containers while
+  accepting <code>__contains__</code>, iteration, and legacy integer-indexing protocols.</li>
+</ul>
+<h4 id="reactive-conversion">Reactive conversion<a class="headerlink" href="#reactive-conversion" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>as_rx</code> preserves the concrete <code>Signal</code>, <code>Computed</code>, or <code>Binding</code> type when
+  passed an existing reactive value.</li>
 </ul>
 <h2 id="060">0.6.0<a class="headerlink" href="#060" title="Permanent link">&para;</a></h2>
 <ul>
