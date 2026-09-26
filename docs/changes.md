@@ -4,6 +4,8 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- `rx.contains` and `rx.in_` reject statically unsupported containers while
+  accepting `__contains__`, iteration, and legacy integer-indexing protocols.
 - Indexing accepts reactive custom `__index__` values and keys that satisfy a
   custom lookup's declared key type, preserving the result through all wrappers.
   Statically unsupported containers and key types are rejected.

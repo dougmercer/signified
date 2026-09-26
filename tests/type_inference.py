@@ -1539,3 +1539,44 @@ def test_indexing_rejects_unsupported_values_and_keys():
         value: int = 0
 
     _ = Signal([1])[IndexBox()]  # pyright: ignore[reportCallIssue, reportArgumentType]
+
+
+def test_membership_accepts_all_supported_protocols():
+    from collections.abc import Iterator
+
+    class Container:
+        def __contains__(self, item: object) -> int:
+            return 1
+
+    class IterableOnly:
+        def __iter__(self) -> Iterator[int]:
+            yield 1
+
+    class IndexedOnly:
+        def __getitem__(self, index: int) -> int:
+            if index == 0:
+                return 1
+            raise IndexError(index)
+
+    assert_type(Signal(Container()).rx.contains(1), Computed[bool])
+    assert_type(Computed(IterableOnly).rx.contains(Signal(1)), Computed[bool])
+    assert_type(Binding(Signal(IndexedOnly())).rx.contains(1), Computed[bool])
+    assert_type(Signal(1).rx.in_(Container()), Computed[bool])
+    assert_type(Signal(1).rx.in_(Signal(IterableOnly())), Computed[bool])
+    assert_type(Signal(1).rx.in_(Computed(IndexedOnly)), Computed[bool])
+    assert_type(Signal(1).rx.in_(Binding(Signal([1, 2]))), Computed[bool])
+    assert_type(Signal(1).rx.in_(iter([1, 2])), Computed[bool])
+
+
+def test_membership_rejects_unsupported_containers():
+    Signal(1).rx.contains(1)  # pyright: ignore[reportAttributeAccessIssue]
+    Computed(lambda: None).rx.contains(1)  # pyright: ignore[reportAttributeAccessIssue]
+    Binding(Signal(object())).rx.contains(1)  # pyright: ignore[reportAttributeAccessIssue]
+    Signal(1).rx.in_(1)  # pyright: ignore[reportArgumentType]
+    Signal(1).rx.in_(Signal(1))  # pyright: ignore[reportArgumentType]
+    Signal(1).rx.in_(Computed(lambda: None))  # pyright: ignore[reportArgumentType]
+
+    class ValueBox:
+        value: list[int] = []
+
+    Signal(1).rx.in_(ValueBox())  # pyright: ignore[reportArgumentType]

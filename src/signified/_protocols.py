@@ -23,7 +23,8 @@ reactive cases in one union can infer a spurious nested `Computed` result.
 
 from __future__ import annotations
 
-from typing import ClassVar, Literal, Protocol, SupportsIndex
+from collections.abc import Iterable
+from typing import Any, ClassVar, Literal, Protocol, SupportsIndex
 
 from ._types import HasValue
 
@@ -135,6 +136,15 @@ class _SupportsRshift[OtherT, ResultT](Protocol):
 
 class _SupportsGetItem[KeyT, ValueT](Protocol):
     def __getitem__(self, key: KeyT, /) -> ValueT: ...
+
+
+class _SupportsContains(Protocol):
+    # Membership coerces this result to bool; __contains__ need not return bool.
+    def __contains__(self, other: Any, /) -> object: ...
+
+
+type _MembershipContainer = _SupportsContains | Iterable[Any] | _SupportsGetItem[int, Any]
+"""Membership supports __contains__, iteration, and legacy integer indexing."""
 
 
 class _SupportsRadd[OtherT, ResultT](Protocol):

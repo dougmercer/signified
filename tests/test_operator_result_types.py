@@ -144,3 +144,31 @@ def test_custom_reactive_index_tracks_source_and_key(view):
     assert result.value == 30
     source.value = [40, 50, 60]
     assert result.value == 60
+
+
+def test_membership_protocol_fallbacks():
+    class Container:
+        def __contains__(self, item: object) -> int:
+            return 2
+
+    class IterableOnly:
+        def __iter__(self):
+            yield 1
+
+    class IndexedOnly:
+        def __getitem__(self, index: int) -> int:
+            if index == 0:
+                return 1
+            raise IndexError(index)
+
+    for value in (Container(), IterableOnly(), IndexedOnly()):
+        source = Signal(value)
+        needle = Signal(1)
+        contains = Binding(source).rx.contains(needle)
+        inside = needle.rx.in_(Computed(lambda: source.value))
+        assert contains.value is True
+        assert inside.value is True
+        needle.value = 2
+        expected = isinstance(value, Container)
+        assert contains.value is expected
+        assert inside.value is expected

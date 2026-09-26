@@ -204,7 +204,9 @@ class _ReactiveNamespace[T]:
         """
         return _computed_call(operator.is_not, self._source, other)
 
-    def in_(self, container: Any) -> Computed[bool]:
+    def in_(
+        self, container: protocols._MembershipContainer | protocols._ReactiveOf[protocols._MembershipContainer]
+    ) -> Computed[bool]:
         """Return a reactive value for containment check ``source.value in container``.
 
         Args:
@@ -228,7 +230,7 @@ class _ReactiveNamespace[T]:
         """
         return _computed_call(operator.contains, container, self._source)
 
-    def contains(self, other: Any) -> Computed[bool]:
+    def contains[C: protocols._MembershipContainer](self: _ReactiveNamespace[C], other: Any) -> Computed[bool]:
         """Return a reactive value for whether `other` is in `self._source`.
 
         Args:
