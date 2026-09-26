@@ -4,73 +4,15 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
-- `divmod` preserves reflected-only return types, including with two reactive
-  operands, and rejects unsupported operand combinations. A remaining checker
-  limitation affects reactive-left/plain-right reflected-only calls; wrapping
-  the right operand in `Signal` preserves inference.
-- `rx.eq` and `rx.ne` preserve the source type's declared comparison result,
-  including custom masks and literal booleans that can narrow `rx.where`.
-  Wrapper `==` and `!=` retain their existing identity semantics.
-- `rx.contains` and `rx.in_` reject statically unsupported containers while
-  accepting `__contains__`, iteration, and legacy integer-indexing protocols.
-- Indexing accepts reactive custom `__index__` values and keys that satisfy a
-  custom lookup's declared key type, preserving the result through all wrappers.
-  Statically unsupported containers and key types are rejected.
-- `ceil` and `floor` infer the declared rounding result, preserve custom integral
-  subclasses, and reject unsupported operands. Values with only `__float__` or
-  `__index__` retain the numeric conversion fallback and infer `Computed[int]`.
-- Bitwise AND, OR, XOR, and ordering comparisons preserve custom operator return
-  types, including non-boolean comparison results.
-- Arithmetic, matrix multiplication, shifts, and bitwise operators infer results
-  from right-hand reflected methods as well as left-hand methods, including when
-  both operands are reactive. These operators and ordering comparisons now reject
-  statically unsupported operand combinations instead of accepting them through
-  catch-all annotations.
-- `round` uses `SupportsRound` to infer `Computed[int]` when digits are omitted
-  or `None`, and the declared result type when digits are provided, including
-  `Computed[Decimal]` for decimals. Unsupported operands are rejected statically.
-- `trunc` infers the wrapped type's declared `__trunc__` result, including
-  `Computed[int]` for decimals, and rejects operands without `__trunc__`.
-- Unary `-`, `+`, and `~` infer the wrapped type's declared operator result and
-  reject statically known operands that do not support the operation.
-- Absolute value infers a custom type's declared `__abs__` return type, including
-  through `Signal`, `Computed`, and `Binding`.
-- `rx.where` narrows its result type when the condition is a literal boolean,
-  `None`, or has `__bool__` annotated to return a literal boolean. Ordinary boolean
-  signals retain the union of both branch types.
-- `rx.as_bool` preserves literal boolean result types for conditions with statically
-  known truthiness, including `None`, so subsequent `rx.where` calls can still narrow.
-- `as_rx` preserves the concrete `Signal`, `Computed`, or `Binding` type when
-  passed an existing reactive value.
-- Indexing lists, tuples, and strings with reactive slices preserves the sliced
-  container's result type.
-- Floor division infers `float` when either operand is a float and `int` for
-  integer/boolean operands, including reflected operations.
-- Modulo infers the promoted numeric result instead of a union of operand types,
-  including reflected operations and boolean operands.
-- Multiplication infers promoted `int`, `float`, or `complex` results, including
-  reflected operations and boolean operands.
-- Subtraction infers promoted numeric results and declared operator return types;
-  date and datetime differences return `Computed[timedelta]`, while subtracting
-  a duration preserves the date or datetime type.
-- Bitwise AND, OR, and XOR infer `int` for mixed boolean/integer operands while
-  preserving `bool` for boolean-only operations, in both operand directions.
-- Addition keeps integer results for plain integer operands and infers promoted
-  numeric results for boolean and complex operands, including reflected operations.
-- True division infers `float` for real operands and `complex` when either operand
-  is complex, including reflected operations and boolean operands.
-- Exponentiation infers promoted numeric results for integer, boolean, float, and
-  complex operands, including reflected operations.
-- Left and right shifts infer `int` for mixed boolean/integer operands instead of a
-  union of operand types.
-- `divmod` infers the promoted numeric result and honours a declared `__divmod__`
-  return type; it no longer claims `tuple[float, float]` for operands it cannot
-  otherwise resolve, and now accepts float operands in the reflected direction.
-- Adding a duration to a reactive date or datetime preserves the date or datetime
-  type in the reflected direction, matching subtraction.
-- Multiplication, matrix multiplication, true and floor division, modulo,
-  exponentiation, and shifts now report a user type's declared operator return
-  type instead of a union of the operand types, in both operand directions.
+### Breaking changes
+
+- **Breaking:** Reactive objects no longer overload `!=`. Comparisons between
+  reactive objects use identity and return a plain `bool`, matching `==`.
+  Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
+  the existing `x.rx.eq(y)`.
+
+### Runtime improvements
+
 - Added the missing reflected operators `__rmatmul__`, `__rlshift__`, and
   `__rrshift__`, so `other @ reactive`, `other << reactive`, and
   `other >> reactive` produce reactive values instead of raising `TypeError`.
@@ -81,12 +23,95 @@ This page summarizes notable changes across releases.
   reflected arithmetic/bitwise operators and ordering comparisons. Passing a
   reactive value straight to a ufunc (`np.sin(reactive)`) now raises `TypeError`;
   use `reactive.rx.map(np.sin)`.
-- **Breaking:** Reactive objects no longer overload `!=`. Comparisons between
-  reactive objects use identity and return a plain `bool`, matching `==`.
-  Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
-  the existing `x.rx.eq(y)`.
 - `Signal` forwards item deletion (`del signal[key]`) to the wrapped `list` or
   `dict` and notifies observers, mirroring `signal[key] = value`.
+
+### Type inference
+
+#### Operator protocols and reflected methods
+
+- Arithmetic, matrix multiplication, shifts, and bitwise operators infer results
+  from right-hand reflected methods as well as left-hand methods, including when
+  both operands are reactive. These operators and ordering comparisons now reject
+  statically unsupported operand combinations instead of accepting them through
+  catch-all annotations.
+- Multiplication, matrix multiplication, true and floor division, modulo,
+  exponentiation, and shifts now report a user type's declared operator return
+  type instead of a union of the operand types, in both operand directions.
+- Bitwise AND, OR, XOR, and ordering comparisons preserve custom operator return
+  types, including non-boolean comparison results.
+- `divmod` infers the promoted numeric result and honours a declared `__divmod__`
+  return type; it no longer claims `tuple[float, float]` for operands it cannot
+  otherwise resolve, and now accepts float operands in the reflected direction.
+- `divmod` preserves reflected-only return types, including with two reactive
+  operands, and rejects unsupported operand combinations. A remaining checker
+  limitation affects reactive-left/plain-right reflected-only calls; wrapping
+  the right operand in `Signal` preserves inference.
+
+#### Numeric and date/time results
+
+- Addition keeps integer results for plain integer operands and infers promoted
+  numeric results for boolean and complex operands, including reflected operations.
+- Subtraction infers promoted numeric results and declared operator return types;
+  date and datetime differences return `Computed[timedelta]`, while subtracting
+  a duration preserves the date or datetime type.
+- Adding a duration to a reactive date or datetime preserves the date or datetime
+  type in the reflected direction, matching subtraction.
+- Multiplication infers promoted `int`, `float`, or `complex` results, including
+  reflected operations and boolean operands.
+- True division infers `float` for real operands and `complex` when either operand
+  is complex, including reflected operations and boolean operands.
+- Floor division infers `float` when either operand is a float and `int` for
+  integer/boolean operands, including reflected operations.
+- Modulo infers the promoted numeric result instead of a union of operand types,
+  including reflected operations and boolean operands.
+- Exponentiation infers promoted numeric results for integer, boolean, float, and
+  complex operands, including reflected operations.
+- Bitwise AND, OR, and XOR infer `int` for mixed boolean/integer operands while
+  preserving `bool` for boolean-only operations, in both operand directions.
+- Left and right shifts infer `int` for mixed boolean/integer operands instead of a
+  union of operand types.
+
+#### Rounding and unary operators
+
+- `ceil` and `floor` infer the declared rounding result, preserve custom integral
+  subclasses, and reject unsupported operands. Values with only `__float__` or
+  `__index__` retain the numeric conversion fallback and infer `Computed[int]`.
+- `round` uses `SupportsRound` to infer `Computed[int]` when digits are omitted
+  or `None`, and the declared result type when digits are provided, including
+  `Computed[Decimal]` for decimals. Unsupported operands are rejected statically.
+- `trunc` infers the wrapped type's declared `__trunc__` result, including
+  `Computed[int]` for decimals, and rejects operands without `__trunc__`.
+- Unary `-`, `+`, and `~` infer the wrapped type's declared operator result and
+  reject statically known operands that do not support the operation.
+- Absolute value infers a custom type's declared `__abs__` return type, including
+  through `Signal`, `Computed`, and `Binding`.
+
+#### Comparisons and conditional narrowing
+
+- `rx.eq` and `rx.ne` preserve the source type's declared comparison result,
+  including custom masks and literal booleans that can narrow `rx.where`.
+  Wrapper `==` and `!=` retain their existing identity semantics.
+- `rx.where` narrows its result type when the condition is a literal boolean,
+  `None`, or has `__bool__` annotated to return a literal boolean. Ordinary boolean
+  signals retain the union of both branch types.
+- `rx.as_bool` preserves literal boolean result types for conditions with statically
+  known truthiness, including `None`, so subsequent `rx.where` calls can still narrow.
+
+#### Indexing and membership
+
+- Indexing accepts reactive custom `__index__` values and keys that satisfy a
+  custom lookup's declared key type, preserving the result through all wrappers.
+  Statically unsupported containers and key types are rejected.
+- Indexing lists, tuples, and strings with reactive slices preserves the sliced
+  container's result type.
+- `rx.contains` and `rx.in_` reject statically unsupported containers while
+  accepting `__contains__`, iteration, and legacy integer-indexing protocols.
+
+#### Reactive conversion
+
+- `as_rx` preserves the concrete `Signal`, `Computed`, or `Binding` type when
+  passed an existing reactive value.
 
 ## 0.6.0
 
