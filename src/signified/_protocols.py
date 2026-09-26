@@ -119,3 +119,11 @@ class _SupportsRshift[OtherT, ResultT](Protocol):
 
 class _SupportsGetItem[KeyT, ValueT](Protocol):
     def __getitem__(self, key: KeyT, /) -> ValueT: ...
+
+
+class _SupportsCeil[ResultT](Protocol):
+    def __ceil__(self) -> ResultT: ...
+
+
+class _SupportsFloor[ResultT](Protocol):
+    def __floor__(self) -> ResultT: ...

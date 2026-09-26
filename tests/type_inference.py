@@ -1253,3 +1253,51 @@ def test_reflected_shift_and_matmul():
     assert_type(Bits() >> Signal(2), Computed[bytes])
     assert_type(Row() @ Signal(Row()), Computed[float])
     assert_type(1 << Binding(Signal(2)), Computed[int])
+
+
+def test_ceil_and_floor_preserve_custom_results_and_numeric_fallbacks():
+    class IntegralResult(int):
+        pass
+
+    class Roundable:
+        def __ceil__(self) -> IntegralResult:
+            return IntegralResult(2)
+
+        def __floor__(self) -> IntegralResult:
+            return IntegralResult(1)
+
+        def __float__(self) -> float:
+            return 1.5
+
+    # The explicit rounding method takes precedence over numeric conversion.
+    source = Signal(Roundable())
+    assert_type(ceil(source), Computed[IntegralResult])
+    assert_type(floor(source), Computed[IntegralResult])
+    assert_type(ceil(Computed(lambda: source.value)), Computed[IntegralResult])
+    assert_type(floor(Computed(lambda: source.value)), Computed[IntegralResult])
+    assert_type(ceil(Binding(source)), Computed[IntegralResult])
+    assert_type(floor(Binding(source)), Computed[IntegralResult])
+    assert_type(ceil(Signal(Decimal("1.5"))), Computed[int])
+    assert_type(floor(Signal(Decimal("1.5"))), Computed[int])
+
+    class Floatable:
+        def __float__(self) -> float:
+            return 1.5
+
+    class Indexable:
+        def __index__(self) -> int:
+            return 2
+
+    assert_type(ceil(Signal(Floatable())), Computed[int])
+    assert_type(floor(Binding(Signal(Floatable()))), Computed[int])
+    assert_type(ceil(Computed(Indexable)), Computed[int])
+    assert_type(floor(Signal(Indexable())), Computed[int])
+
+
+def test_ceil_and_floor_reject_unsupported_values():
+    ceil(Signal("text"))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    floor(Signal("text"))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    ceil(Computed(lambda: 1j))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    floor(Computed(lambda: 1j))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    ceil(Binding(Signal(object())))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    floor(Binding(Signal(object())))  # pyright: ignore[reportCallIssue, reportArgumentType]

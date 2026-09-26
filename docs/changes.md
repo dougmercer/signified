@@ -4,6 +4,10 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- `ceil` and `floor` infer the declared rounding result, preserve custom integral
+  subclasses, and reject unsupported operands. Values with only `__float__` or
+  `__index__` retain the numeric conversion fallback and infer `Computed[int]`.
+
 - `round` uses `SupportsRound` to infer `Computed[int]` when digits are omitted
   or `None`, and the declared result type when digits are provided, including
   `Computed[Decimal]` for decimals. Unsupported operands are rejected statically.

@@ -5,7 +5,18 @@ from __future__ import annotations
 import math
 import operator
 from collections.abc import Sized
-from typing import TYPE_CHECKING, Any, Callable, Literal, SupportsAbs, SupportsRound, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Literal,
+    SupportsAbs,
+    SupportsFloat,
+    SupportsIndex,
+    SupportsRound,
+    Union,
+    overload,
+)
 
 from ._protocols import (
     _ComplexLike,
@@ -15,7 +26,9 @@ from ._protocols import (
     _IntLike,
     _ReactiveOf,
     _SupportsAdd,
+    _SupportsCeil,
     _SupportsDivmod,
+    _SupportsFloor,
     _SupportsFloordiv,
     _SupportsGetItem,
     _SupportsInvert,
@@ -560,7 +573,13 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(round, self, ndigits=ndigits)
 
-    def __ceil__(self) -> Computed[int]:
+    @overload
+    def __ceil__[R](self: _ReactiveOf[_SupportsCeil[R]]) -> Computed[R]: ...
+
+    @overload
+    def __ceil__(self: _ReactiveOf[SupportsFloat | SupportsIndex]) -> Computed[int]: ...
+
+    def __ceil__(self) -> Computed[Any]:
         """Return a reactive value for the ceiling of `self`.
 
         Returns:
@@ -581,7 +600,13 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(math.ceil, self)
 
-    def __floor__(self) -> Computed[int]:
+    @overload
+    def __floor__[R](self: _ReactiveOf[_SupportsFloor[R]]) -> Computed[R]: ...
+
+    @overload
+    def __floor__(self: _ReactiveOf[SupportsFloat | SupportsIndex]) -> Computed[int]: ...
+
+    def __floor__(self) -> Computed[Any]:
         """Return a reactive value for the floor of `self`.
 
         Returns:
