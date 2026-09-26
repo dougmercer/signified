@@ -1160,6 +1160,14 @@ def test_pow_numeric_promotion():
     assert_type(2j ** Signal(3.0), Computed[complex])
 
 
+def test_pow_preserves_float_results(base: int, exponent: float):
+    # Protocol-only power inference can fall back to Any or reject the call.
+    assert_type(Signal(2.0) ** exponent, Computed[float])
+    assert_type(Signal(2.0) ** Signal(exponent), Computed[float])
+    assert_type(base ** Signal(exponent), Computed[float])
+    assert_type(exponent ** Binding(Signal(exponent)), Computed[float])
+
+
 def test_shift_bool_int_promotion():
     assert_type(Signal(8) << 2, Computed[int])
     assert_type(Signal(True) << 1, Computed[int])
@@ -1184,6 +1192,39 @@ def test_divmod_result_types():
     assert_type(divmod(Decimal(10), Signal(Decimal(3))), Computed[tuple[Decimal, Decimal]])
 
 
+def test_divmod_preserves_union_operand_results(
+    integer: HasValue[int], real: HasValue[float], mixed: Signal[int | float]
+):
+    # The plain/reactive union must not introduce a nested Computed result.
+    assert_type(divmod(integer, Signal(2)), Computed[tuple[int, int]])
+    assert_type(divmod(real, Signal(2)), Computed[tuple[float, float]])
+    assert_type(divmod(integer, Binding(Signal(2.0))), Computed[tuple[float, float]])
+    assert_type(divmod(mixed, 2.0), Computed[tuple[float, float]])
+
+
+def test_builtin_operator_protocols_preserve_has_value_results(
+    integer: HasValue[int], real: HasValue[float], flag: HasValue[bool]
+):
+    assert_type(Signal(2) + real, Computed[float])
+    assert_type(real - Signal(2), Computed[float])
+    assert_type(Binding(Signal(2)) * real, Computed[float])
+    assert_type(real / Computed(lambda: 2), Computed[float])
+    assert_type(Signal(2.0) // integer, Computed[float])
+    assert_type(integer % Signal(2.0), Computed[float])
+    assert_type(Signal(True) & flag, Computed[bool])
+    assert_type(integer | Signal(True), Computed[int])
+    assert_type(Signal(True) ^ integer, Computed[int])
+    assert_type(integer << Signal(True), Computed[int])
+    assert_type(flag >> Signal(1), Computed[int])
+
+
+def test_sequence_operator_protocols_preserve_has_value_results(count: HasValue[int], key: HasValue[str]):
+    assert_type(Signal("ab") * count, Computed[str])
+    assert_type(count * Binding(Signal([1, 2])), Computed[list[int]])
+    assert_type(Computed(lambda: "ab")[count], Computed[str])
+    assert_type(Binding(Signal({"a": 1}))[key], Computed[int])
+
+
 def test_addition_result_types():
     day = timedelta(days=1)
     assert_type(Signal(date(2026, 1, 1)) + day, Computed[date])
@@ -1191,6 +1232,55 @@ def test_addition_result_types():
     assert_type(Signal(datetime(2026, 1, 1)) + Signal(day), Computed[datetime])
     assert_type(day + Signal(date(2026, 1, 1)), Computed[date])
     assert_type(Signal(day) + Signal(day), Computed[timedelta])
+
+
+def test_reflected_date_addition_preserves_subtypes[D: date](day: timedelta, source: Signal[D]):
+    assert_type(day + source, Computed[D])
+    assert_type(day + Binding(source), Computed[D])
+    assert_type(day + Computed(lambda: source.value), Computed[D])
+
+
+def test_numeric_overloads_preserve_type_parameters[N: (int, float)](value: Signal[N]):
+    # Protocol inference alone widens N to float, losing the caller's type.
+    assert_type(Signal(1) + value, Computed[N])
+    assert_type(Signal(1) - value, Computed[N])
+    assert_type(Signal(1) * value, Computed[N])
+    assert_type(Signal(1) // value, Computed[N])
+    assert_type(Signal(1) % value, Computed[N])
+    assert_type(Signal(1).__radd__(value), Computed[N])
+    assert_type(Signal(1).__rsub__(value), Computed[N])
+    assert_type(Signal(1).__rmul__(value), Computed[N])
+    assert_type(Signal(1).__rfloordiv__(value), Computed[N])
+    assert_type(Signal(1).__rmod__(value), Computed[N])
+
+
+def test_bitwise_overloads_preserve_type_parameters[N: (bool, int)](value: Signal[N]):
+    assert_type(Signal(True) & value, Computed[N])
+    assert_type(Signal(True) | value, Computed[N])
+    assert_type(Signal(True) ^ value, Computed[N])
+    assert_type(Signal(True).__rand__(value), Computed[N])
+    assert_type(Signal(True).__ror__(value), Computed[N])
+    assert_type(Signal(True).__rxor__(value), Computed[N])
+
+
+def test_float_overloads_preserve_type_parameters[N: (float, complex)](value: Signal[N]):
+    assert_type(Signal(1.0) + value, Computed[N])
+    assert_type(Signal(1.0) - value, Computed[N])
+    assert_type(Signal(1.0) * value, Computed[N])
+    assert_type(Signal(1.0) / value, Computed[N])
+    assert_type(Signal(1.0).__radd__(value), Computed[N])
+    assert_type(Signal(1.0).__rsub__(value), Computed[N])
+    assert_type(Signal(1.0).__rmul__(value), Computed[N])
+    assert_type(Signal(1.0).__rtruediv__(value), Computed[N])
+
+
+def test_container_operator_protocols_preserve_type_parameters[K, V](
+    values: Signal[list[V]], mapping: Signal[dict[K, V]], count: HasValue[int], key: HasValue[K]
+):
+    assert_type(values * count, Computed[list[V]])
+    assert_type(count * values, Computed[list[V]])
+    assert_type(values[count], Computed[V])
+    assert_type(mapping[key], Computed[V])
 
 
 def test_operators_preserve_declared_return_types():

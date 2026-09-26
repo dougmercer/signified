@@ -19,12 +19,18 @@ Binary overloads check reactive operands before plain operands, and within each
 case try the left operand's method before the right operand's reflected method.
 A wrapper itself also implements these protocols, so combining the plain and
 reactive cases in one union can infer a spurious nested `Computed` result.
+
+Most concrete built-in operands also match these protocols. Numeric overloads
+with a constrained type parameter still preserve relationships that protocol
+inference loses, such as `Signal[int] + Signal[N] -> Computed[N]` for
+`N: (int, float)`. Special cases for powers, divmod, dates, and slicing handle
+overloaded built-in methods whose result cannot always be inferred this way.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any, ClassVar, Literal, Protocol, SupportsIndex
+from typing import Any, ClassVar, Literal, Protocol
 
 from ._types import HasValue
 
@@ -46,14 +52,12 @@ type _Falsy = Literal[False] | _AlwaysFalse | None
 """A value whose truthiness is statically known to be `False`."""
 
 
-# Operand spellings for the numeric tower and for indexing. `HasValue` is invariant in
+# Operand spellings for divmod's numeric overloads. `HasValue` is invariant in
 # its parameter, so `HasValue[int]` is *not* assignable to `HasValue[float]` and each
 # rung has to be listed explicitly rather than relying on int -> float -> complex
 # promotion.
 type _IntLike = HasValue[bool] | HasValue[int]
 type _FloatLike = _IntLike | HasValue[float]
-type _ComplexLike = _FloatLike | HasValue[complex]
-type _IndexLike = SupportsIndex | _ReactiveOf[SupportsIndex]
 
 
 class _ReactiveOf[V](Protocol):
