@@ -66,6 +66,22 @@ class _ReactiveOf[V](Protocol):
     def value(self) -> V: ...
 
 
+class _ReactiveNamespaceOf[V](Protocol):
+    """Read-only view of the value behind an rx namespace."""
+
+    @property
+    def _source(self) -> _ReactiveOf[V]: ...
+
+
+class _SupportsEq[OtherT, ResultT](Protocol):
+    # Python permits non-bool equality results despite object.__eq__'s stub.
+    def __eq__(self, other: OtherT, /) -> ResultT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+
+
+class _SupportsNe[OtherT, ResultT](Protocol):
+    def __ne__(self, other: OtherT, /) -> ResultT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+
+
 class _SupportsCeil[ResultT](Protocol):
     def __ceil__(self) -> ResultT: ...
 

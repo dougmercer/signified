@@ -1580,3 +1580,38 @@ def test_membership_rejects_unsupported_containers():
         value: list[int] = []
 
     Signal(1).rx.in_(ValueBox())  # pyright: ignore[reportArgumentType]
+
+
+def test_equality_preserves_declared_results():
+    class Mask:
+        pass
+
+    class Comparable:
+        def __eq__(self, other: object) -> Mask: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+        def __ne__(self, other: object) -> Mask: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+
+    source = Signal(Comparable())
+    assert_type(source.rx.eq(1), Computed[Mask])
+    assert_type(source.rx.ne(Signal(1)), Computed[Mask])
+    assert_type(Computed(lambda: source.value).rx.eq(1), Computed[Mask])
+    assert_type(Computed(lambda: source.value).rx.ne(1), Computed[Mask])
+    assert_type(Binding(source).rx.eq(Signal(1)), Computed[Mask])
+    assert_type(Binding(source).rx.ne(1), Computed[Mask])
+    # The wrapper's own identity comparison is still a plain bool.
+    assert_type(source == source, bool)
+    assert_type(source != source, bool)
+
+
+def test_equality_preserves_literal_results():
+    class AlwaysEqual:
+        def __eq__(self, other: object) -> Literal[True]:
+            return True
+
+        def __ne__(self, other: object) -> Literal[False]:
+            return False
+
+    source = Signal(AlwaysEqual())
+    assert_type(source.rx.eq(1), Computed[Literal[True]])
+    assert_type(source.rx.ne(1), Computed[Literal[False]])
+    assert_type(source.rx.eq(1).rx.where(1, "no"), Computed[int])
+    assert_type(source.rx.ne(1).rx.where(1, "no"), Computed[str])

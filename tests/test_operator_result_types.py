@@ -172,3 +172,39 @@ def test_membership_protocol_fallbacks():
         expected = isinstance(value, Container)
         assert contains.value is expected
         assert inside.value is expected
+
+
+@pytest.mark.parametrize("view", [lambda s: s, lambda s: Computed(lambda: s.value), Binding])
+def test_equality_preserves_custom_results_and_updates(view):
+    class Mask:
+        def __init__(self, matched: bool):
+            self.matched = matched
+
+        def __bool__(self) -> bool:
+            return self.matched
+
+    class Comparable:
+        def __init__(self, value: int):
+            self.value = value
+
+        def __eq__(self, other: object) -> Mask:
+            value = other.value if isinstance(other, Comparable) else other
+            return Mask(self.value == value)
+
+        def __ne__(self, other: object) -> Mask:
+            return Mask(not self.__eq__(other))
+
+    source = Signal(Comparable(1))
+    other = Signal(1)
+    equal = view(source).rx.eq(other)
+    unequal = view(source).rx.ne(other)
+    assert isinstance(equal.value, Mask)
+    assert isinstance(unequal.value, Mask)
+    assert equal.value.matched is True
+    assert unequal.value.matched is False
+    source.value = Comparable(2)
+    assert equal.value.matched is False
+    assert unequal.value.matched is True
+    other.value = 2
+    assert equal.value.matched is True
+    assert unequal.value.matched is False

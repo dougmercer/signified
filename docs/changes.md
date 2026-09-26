@@ -4,6 +4,9 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- `rx.eq` and `rx.ne` preserve the source type's declared comparison result,
+  including custom masks and literal booleans that can narrow `rx.where`.
+  Wrapper `==` and `!=` retain their existing identity semantics.
 - `rx.contains` and `rx.in_` reject statically unsupported containers while
   accepting `__contains__`, iteration, and legacy integer-indexing protocols.
 - Indexing accepts reactive custom `__index__` values and keys that satisfy a

@@ -232,3 +232,19 @@ def test_todo_divmod_reflected_only_result():
     else:
         assert_type(divmod(1, source), Computed[tuple[str, str]])
         assert_type(divmod(Signal(1), source), Computed[tuple[str, str]])
+
+
+def test_todo_equality_reflected_result():
+    # Equality stubs accept object, so matching the left method cannot establish
+    # when it returns NotImplemented and delegates to the right operand. The
+    # declared int.__eq__ result is bool, even if the right operand returns a mask.
+    class Mask:
+        pass
+
+    class Right:
+        def __eq__(self, other: object) -> Mask: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+
+    if USE_CURRENT_INFERENCE:
+        assert_type(Signal(1).rx.eq(Right()), Computed[bool])
+    else:
+        assert_type(Signal(1).rx.eq(Right()), Computed[Mask])

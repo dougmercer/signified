@@ -253,7 +253,15 @@ class _ReactiveNamespace[T]:
         """
         return _computed_call(operator.contains, self._source, other)
 
-    def eq(self, other: Any) -> Computed[bool]:
+    @overload
+    def eq[Y, R](
+        self: protocols._ReactiveNamespaceOf[protocols._SupportsEq[Y, R]], other: protocols._ReactiveOf[Y]
+    ) -> Computed[R]: ...
+
+    @overload
+    def eq[Y, R](self: protocols._ReactiveNamespaceOf[protocols._SupportsEq[Y, R]], other: Y) -> Computed[R]: ...
+
+    def eq(self, other: Any) -> Computed[Any]:
         """Return a reactive value for whether ``source.value == other``.
 
         Args:
@@ -276,7 +284,15 @@ class _ReactiveNamespace[T]:
         """
         return _computed_call(operator.eq, self._source, other)
 
-    def ne(self, other: Any) -> Computed[bool]:
+    @overload
+    def ne[Y, R](
+        self: protocols._ReactiveNamespaceOf[protocols._SupportsNe[Y, R]], other: protocols._ReactiveOf[Y]
+    ) -> Computed[R]: ...
+
+    @overload
+    def ne[Y, R](self: protocols._ReactiveNamespaceOf[protocols._SupportsNe[Y, R]], other: Y) -> Computed[R]: ...
+
+    def ne(self, other: Any) -> Computed[Any]:
         """Return a reactive value for whether ``source.value != other``.
 
         Comparisons between reactive objects use identity. Use this method to
