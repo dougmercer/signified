@@ -1498,3 +1498,44 @@ def test_numpy_ordering_preserves_array_results():
     assert_type(Signal(array) < 1.0, Computed[NDArray[np.bool_]])
     assert_type(Signal(1.0) < Signal(array), Computed[NDArray[np.bool_]])
     assert_type(Binding(Signal(array)) >= Computed(lambda: array), Computed[NDArray[np.bool_]])
+
+
+def test_indexing_supports_custom_reactive_indices():
+    class Index:
+        def __index__(self) -> int:
+            return 1
+
+    key = Signal(Index())
+    assert_type(Signal([1, 2])[key], Computed[int])
+    assert_type(Signal[tuple[str, ...]](("a", "b"))[Binding(key)], Computed[str])
+    assert_type(Binding(Signal("ab"))[Computed(lambda: key.value)], Computed[str])
+    assert_type(Signal(b"ab")[key], Computed[int])
+
+    class Key:
+        pass
+
+    class SpecialKey(Key):
+        pass
+
+    class Lookup:
+        def __getitem__(self, key: Key) -> bytes:
+            return b"result"
+
+    # A source of a subtype can satisfy a read-only key protocol.
+    lookup = Signal(Lookup())
+    assert_type(lookup[Signal(SpecialKey())], Computed[bytes])
+    assert_type(Computed(lambda: lookup.value)[Binding(Signal(SpecialKey()))], Computed[bytes])
+    assert_type(Binding(lookup)[SpecialKey()], Computed[bytes])
+
+
+def test_indexing_rejects_unsupported_values_and_keys():
+    _ = Signal(1)[0]  # pyright: ignore[reportIndexIssue]
+    _ = Signal([1, 2])["bad"]  # pyright: ignore[reportCallIssue, reportArgumentType]
+    _ = Signal([1, 2])[Signal(1.5)]  # pyright: ignore[reportCallIssue, reportArgumentType]
+    _ = Signal({"a": 1})[1]  # pyright: ignore[reportCallIssue, reportArgumentType]
+    _ = Computed(lambda: {"a": 1})[Signal(1)]  # pyright: ignore[reportCallIssue, reportArgumentType]
+
+    class IndexBox:
+        value: int = 0
+
+    _ = Signal([1])[IndexBox()]  # pyright: ignore[reportCallIssue, reportArgumentType]

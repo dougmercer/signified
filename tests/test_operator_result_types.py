@@ -125,3 +125,22 @@ def test_custom_operator_results_remain_reactive(operation):
     assert result.value == [False, True]
     other.value = 0
     assert result.value == [False, False]
+
+
+@pytest.mark.parametrize("view", [lambda s: s, lambda s: Computed(lambda: s.value), Binding])
+def test_custom_reactive_index_tracks_source_and_key(view):
+    class Index:
+        def __init__(self, index: int):
+            self.index = index
+
+        def __index__(self) -> int:
+            return self.index
+
+    source = Signal([10, 20, 30])
+    key = Signal(Index(1))
+    result = view(source)[view(key)]
+    assert result.value == 20
+    key.value = Index(2)
+    assert result.value == 30
+    source.value = [40, 50, 60]
+    assert result.value == 60

@@ -4,6 +4,9 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- Indexing accepts reactive custom `__index__` values and keys that satisfy a
+  custom lookup's declared key type, preserving the result through all wrappers.
+  Statically unsupported containers and key types are rejected.
 - `ceil` and `floor` infer the declared rounding result, preserve custom integral
   subclasses, and reject unsupported operands. Values with only `__float__` or
   `__index__` retain the numeric conversion fallback and infer `Computed[int]`.

@@ -2117,11 +2117,11 @@ class _ReactiveMixIn[T]:
 
     @overload
     def __getitem__[K, V](
-        self: "protocols._ReactiveOf[protocols._SupportsGetItem[K, V]]", key: HasValue[K]
+        self: protocols._ReactiveOf[protocols._SupportsGetItem[K, V]], key: protocols._ReactiveOf[K]
     ) -> Computed[V]: ...
 
     @overload
-    def __getitem__(self, key: Any) -> Computed[Any]: ...
+    def __getitem__[K, V](self: protocols._ReactiveOf[protocols._SupportsGetItem[K, V]], key: K) -> Computed[V]: ...
 
     def __getitem__(self, key: Any) -> Computed[Any]:
         """Return a reactive value for the item or slice of `self`.

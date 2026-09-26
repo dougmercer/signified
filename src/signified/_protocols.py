@@ -52,7 +52,7 @@ type _Falsy = Literal[False] | _AlwaysFalse | None
 type _IntLike = HasValue[bool] | HasValue[int]
 type _FloatLike = _IntLike | HasValue[float]
 type _ComplexLike = _FloatLike | HasValue[complex]
-type _IndexLike = HasValue[SupportsIndex] | HasValue[int]
+type _IndexLike = SupportsIndex | _ReactiveOf[SupportsIndex]
 
 
 class _ReactiveOf[V](Protocol):
