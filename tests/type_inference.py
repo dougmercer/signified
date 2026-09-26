@@ -1,7 +1,10 @@
+# Expected-error cases must fail checking if their ignores become unnecessary.
+# pyright: reportUnnecessaryTypeIgnoreComment=true
+
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from math import ceil, floor, trunc
-from typing import Any, Literal, TypeVar, Union, assert_type
+from typing import Any, Literal, TypeVar, Union, assert_type, overload
 
 from signified import Binding, Computed, Effect, HasValue, ReactiveValue, Signal, as_rx, computed, is_reactive, unref
 from signified._protocols import _AlwaysFalse, _AlwaysTrue
@@ -120,6 +123,17 @@ def test_abs():
     assert_type(unref(abs_complex), float)
 
 
+def test_abs_preserves_custom_result_type():
+    class Distance:
+        def __abs__(self) -> float:
+            return 1.0
+
+    source = Signal(Distance())
+    assert_type(abs(source), Computed[float])
+    assert_type(abs(Computed(lambda: source.value)), Computed[float])
+    assert_type(abs(Binding(source)), Computed[float])
+
+
 def test_as_bool():
     result = Signal(1).rx.as_bool()
     assert_type(result, Computed[bool])
@@ -164,6 +178,25 @@ def test_rx_len():
     result = Signal([1, 2, 3]).rx.len()
     assert_type(result, Computed[int])
     assert_type(unref(result), int)
+
+
+def test_rx_len_accepts_custom_sized_values():
+    class SizedValue:
+        def __len__(self) -> int:
+            return 3
+
+    source = Signal(SizedValue())
+    assert_type(source.rx.len(), Computed[int])
+    assert_type(Computed(lambda: source.value).rx.len(), Computed[int])
+    assert_type(Binding(source).rx.len(), Computed[int])
+
+
+def test_rx_len_rejects_unsized_values():
+    Signal(1).rx.len()  # pyright: ignore[reportAttributeAccessIssue]
+    Computed(lambda: 1).rx.len()  # pyright: ignore[reportAttributeAccessIssue]
+    Binding(Signal(1)).rx.len()  # pyright: ignore[reportAttributeAccessIssue]
+    # Being iterable does not imply having a length.
+    Signal(iter([1, 2, 3])).rx.len()  # pyright: ignore[reportAttributeAccessIssue]
 
 
 def test_rx_is():
@@ -221,6 +254,52 @@ def test_round():
     assert_type(unref(rounded_float_default), int)
 
 
+def test_round_preserves_decimal_results(ndigits: int | None):
+    source = Signal(Decimal("1.25"))
+    derived = Computed(lambda: source.value)
+    binding = Binding(source)
+    assert_type(round(source), Computed[int])
+    assert_type(round(derived), Computed[int])
+    assert_type(round(binding), Computed[int])
+    assert_type(round(source, None), Computed[int])
+    assert_type(round(derived, None), Computed[int])
+    assert_type(round(binding, None), Computed[int])
+    assert_type(round(source, 1), Computed[Decimal])
+    assert_type(round(derived, 1), Computed[Decimal])
+    assert_type(round(binding, 1), Computed[Decimal])
+    assert_type(round(source, ndigits), Computed[int] | Computed[Decimal])
+    assert_type(source.__round__(ndigits), Computed[int] | Computed[Decimal])
+
+
+def test_round_preserves_custom_result_types():
+    class Roundable:
+        @overload
+        def __round__(self, ndigits: None = None) -> int: ...
+
+        @overload
+        def __round__(self, ndigits: int) -> str: ...
+
+        def __round__(self, ndigits: int | None = None) -> int | str:
+            return 1 if ndigits is None else f"rounded to {ndigits} digits"
+
+    source = Signal(Roundable())
+    derived = Computed(lambda: source.value)
+    binding = Binding(source)
+    assert_type(round(source), Computed[int])
+    assert_type(round(derived), Computed[int])
+    assert_type(round(binding), Computed[int])
+    assert_type(round(source, 1), Computed[str])
+    assert_type(round(derived, 1), Computed[str])
+    assert_type(round(binding, 1), Computed[str])
+
+
+def test_round_rejects_unsupported_values():
+    round(Signal("text"))  # pyright: ignore[reportArgumentType]
+    round(Computed(lambda: 1j))  # pyright: ignore[reportArgumentType]
+    round(Binding(Signal(object())))  # pyright: ignore[reportArgumentType]
+    round(Signal("text"), 1)  # pyright: ignore[reportCallIssue, reportArgumentType]
+
+
 def test_ceil():
     result = ceil(Signal(3.14))
     assert_type(result, Computed[int])
@@ -263,6 +342,37 @@ def test_pos():
     assert_type(unref(bool_result), int)
 
 
+def test_unary_operators_preserve_custom_result_types():
+    class UnaryValue:
+        def __neg__(self) -> str:
+            return "negative"
+
+        def __pos__(self) -> bytes:
+            return b"positive"
+
+        def __invert__(self) -> int:
+            return 1
+
+    source = Signal(UnaryValue())
+    derived = Computed(lambda: source.value)
+    binding = Binding(source)
+    assert_type(-source, Computed[str])
+    assert_type(-derived, Computed[str])
+    assert_type(-binding, Computed[str])
+    assert_type(+source, Computed[bytes])
+    assert_type(+derived, Computed[bytes])
+    assert_type(+binding, Computed[bytes])
+    assert_type(~source, Computed[int])
+    assert_type(~derived, Computed[int])
+    assert_type(~binding, Computed[int])
+
+
+def test_unary_operators_reject_unsupported_values():
+    _ = -Signal("text")  # pyright: ignore[reportOperatorIssue]
+    _ = +Computed(lambda: "text")  # pyright: ignore[reportOperatorIssue]
+    _ = ~Binding(Signal(1.5))  # pyright: ignore[reportOperatorIssue]
+
+
 def test_trunc():
     result = trunc(Signal(3))
     assert_type(result, Computed[int])
@@ -275,6 +385,31 @@ def test_trunc():
     float_result = trunc(Signal(3.14))
     assert_type(float_result, Computed[int])
     assert_type(unref(float_result), int)
+
+
+def test_trunc_preserves_decimal_and_custom_result_types():
+    decimal = Signal(Decimal("1.5"))
+    assert_type(trunc(decimal), Computed[int])
+    assert_type(trunc(Computed(lambda: decimal.value)), Computed[int])
+    assert_type(trunc(Binding(decimal)), Computed[int])
+
+    class IntegralResult(int):
+        pass
+
+    class Truncatable:
+        def __trunc__(self) -> IntegralResult:
+            return IntegralResult(1)
+
+    source = Signal(Truncatable())
+    assert_type(trunc(source), Computed[IntegralResult])
+    assert_type(trunc(Computed(lambda: source.value)), Computed[IntegralResult])
+    assert_type(trunc(Binding(source)), Computed[IntegralResult])
+
+
+def test_trunc_rejects_unsupported_values():
+    trunc(Signal("text"))  # pyright: ignore[reportArgumentType]
+    trunc(Computed(lambda: 1j))  # pyright: ignore[reportArgumentType]
+    trunc(Binding(Signal(object())))  # pyright: ignore[reportArgumentType]
 
 
 def test_add():
@@ -1118,3 +1253,398 @@ def test_reflected_shift_and_matmul():
     assert_type(Bits() >> Signal(2), Computed[bytes])
     assert_type(Row() @ Signal(Row()), Computed[float])
     assert_type(1 << Binding(Signal(2)), Computed[int])
+
+
+def test_ceil_and_floor_preserve_custom_results_and_numeric_fallbacks():
+    class IntegralResult(int):
+        pass
+
+    class Roundable:
+        def __ceil__(self) -> IntegralResult:
+            return IntegralResult(2)
+
+        def __floor__(self) -> IntegralResult:
+            return IntegralResult(1)
+
+        def __float__(self) -> float:
+            return 1.5
+
+    # The explicit rounding method takes precedence over numeric conversion.
+    source = Signal(Roundable())
+    assert_type(ceil(source), Computed[IntegralResult])
+    assert_type(floor(source), Computed[IntegralResult])
+    assert_type(ceil(Computed(lambda: source.value)), Computed[IntegralResult])
+    assert_type(floor(Computed(lambda: source.value)), Computed[IntegralResult])
+    assert_type(ceil(Binding(source)), Computed[IntegralResult])
+    assert_type(floor(Binding(source)), Computed[IntegralResult])
+    assert_type(ceil(Signal(Decimal("1.5"))), Computed[int])
+    assert_type(floor(Signal(Decimal("1.5"))), Computed[int])
+
+    class Floatable:
+        def __float__(self) -> float:
+            return 1.5
+
+    class Indexable:
+        def __index__(self) -> int:
+            return 2
+
+    assert_type(ceil(Signal(Floatable())), Computed[int])
+    assert_type(floor(Binding(Signal(Floatable()))), Computed[int])
+    assert_type(ceil(Computed(Indexable)), Computed[int])
+    assert_type(floor(Signal(Indexable())), Computed[int])
+
+
+def test_ceil_and_floor_reject_unsupported_values():
+    ceil(Signal("text"))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    floor(Signal("text"))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    ceil(Computed(lambda: 1j))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    floor(Computed(lambda: 1j))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    ceil(Binding(Signal(object())))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    floor(Binding(Signal(object())))  # pyright: ignore[reportCallIssue, reportArgumentType]
+
+
+def test_bitwise_operators_preserve_custom_results():
+    class Bits:
+        def __and__(self, other: int) -> str: ...
+        def __or__(self, other: int) -> bytes: ...
+        def __xor__(self, other: int) -> tuple[int, int]: ...
+
+    source = Signal(Bits())
+    assert_type(source & 1, Computed[str])
+    assert_type(source | 1, Computed[bytes])
+    assert_type(source ^ 1, Computed[tuple[int, int]])
+    assert_type(source & Signal(1), Computed[str])
+    assert_type(Computed(lambda: source.value) | Binding(Signal(1)), Computed[bytes])
+    assert_type(Binding(source) ^ Computed(lambda: 1), Computed[tuple[int, int]])
+    assert_type(Bits() & Signal(1), Computed[str])
+    assert_type(Bits() | Computed(lambda: 1), Computed[bytes])
+    assert_type(Bits() ^ Binding(Signal(1)), Computed[tuple[int, int]])
+
+
+def test_ordering_preserves_custom_and_reflected_results():
+    class Mask:
+        pass
+
+    class Comparable:
+        def __lt__(self, other: int) -> Mask: ...
+        def __le__(self, other: int) -> Mask: ...
+        def __gt__(self, other: int) -> Mask: ...
+        def __ge__(self, other: int) -> Mask: ...
+
+    source = Signal(Comparable())
+    assert_type(source < 1, Computed[Mask])
+    assert_type(source <= Signal(1), Computed[Mask])
+    assert_type(Computed(lambda: source.value) > 1, Computed[Mask])
+    assert_type(Binding(source) >= 1, Computed[Mask])
+    assert_type(1 < source, Computed[Mask])
+    assert_type(1 <= source, Computed[Mask])
+    assert_type(1 > source, Computed[Mask])
+    assert_type(1 >= source, Computed[Mask])
+    assert_type(Signal(1) < source, Computed[Mask])
+    assert_type(Signal(1) <= source, Computed[Mask])
+    assert_type(Signal(1) > source, Computed[Mask])
+    assert_type(Signal(1) >= source, Computed[Mask])
+    assert_type(Comparable() < Signal(1), Computed[Mask])
+    assert_type(Comparable() <= Signal(1), Computed[Mask])
+    assert_type(Comparable() > Signal(1), Computed[Mask])
+    assert_type(Comparable() >= Signal(1), Computed[Mask])
+
+
+def test_ordering_numeric_and_container_results():
+    assert_type(Signal(1) < Signal(1.5), Computed[bool])
+    assert_type(Signal(1.5) <= Signal(1), Computed[bool])
+    assert_type(1.5 > Signal(1), Computed[bool])
+    assert_type(1 >= Signal(1.5), Computed[bool])
+    assert_type(Signal(Decimal("1.5")) < Signal(2), Computed[bool])
+    assert_type(Signal(2) < Signal(Decimal("1.5")), Computed[bool])
+    assert_type(Signal({1}) < Signal({1, 2}), Computed[bool])
+    assert_type(Signal([1]) <= Signal([2]), Computed[bool])
+    assert_type(Signal("a") > Signal("b"), Computed[bool])
+
+
+def test_binary_operators_reject_unsupported_operands():
+    _ = Signal(1) + "text"  # pyright: ignore[reportOperatorIssue]
+    _ = "text" + Signal(1)  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) - "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) * object()  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) / "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) // "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) % "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) ** "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) @ 2  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) << 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) >> 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) & 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) | 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) ^ 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) < "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) <= "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) > "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) >= "text"  # pyright: ignore[reportOperatorIssue]
+
+    # An arbitrary .value property must not make a plain object an operand.
+    class ValueBox:
+        value: int = 1
+
+    _ = Signal(1) + ValueBox()  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) < ValueBox()  # pyright: ignore[reportOperatorIssue]
+
+
+def test_right_hand_operator_methods_preserve_results():
+    class RightOnly:
+        def __radd__(self, other: int) -> str: ...
+        def __rsub__(self, other: int) -> str: ...
+        def __rmul__(self, other: int) -> str: ...
+        def __rmatmul__(self, other: int) -> str: ...
+        def __rtruediv__(self, other: int) -> str: ...
+        def __rfloordiv__(self, other: int) -> str: ...
+        def __rmod__(self, other: int) -> str: ...
+        def __rpow__(self, other: int) -> str: ...
+        def __rlshift__(self, other: int) -> str: ...
+        def __rrshift__(self, other: int) -> str: ...
+        def __rand__(self, other: int) -> str: ...
+        def __ror__(self, other: int) -> str: ...
+        def __rxor__(self, other: int) -> str: ...
+
+    source = Signal(RightOnly())
+    assert_type(1 + source, Computed[str])
+    assert_type(Signal(1) + source, Computed[str])
+    assert_type(Signal(1) + RightOnly(), Computed[str])
+    assert_type(1 - source, Computed[str])
+    assert_type(Signal(1) - source, Computed[str])
+    assert_type(Signal(1) - RightOnly(), Computed[str])
+    assert_type(1 * source, Computed[str])
+    assert_type(Signal(1) * source, Computed[str])
+    assert_type(Signal(1) * RightOnly(), Computed[str])
+    assert_type(1 @ source, Computed[str])
+    assert_type(Signal(1) @ source, Computed[str])
+    assert_type(Signal(1) @ RightOnly(), Computed[str])
+    assert_type(1 / source, Computed[str])
+    assert_type(Signal(1) / source, Computed[str])
+    assert_type(Signal(1) / RightOnly(), Computed[str])
+    assert_type(1 // source, Computed[str])
+    assert_type(Signal(1) // source, Computed[str])
+    assert_type(Signal(1) // RightOnly(), Computed[str])
+    assert_type(1 % source, Computed[str])
+    assert_type(Signal(1) % source, Computed[str])
+    assert_type(Signal(1) % RightOnly(), Computed[str])
+    assert_type(1**source, Computed[str])
+    assert_type(Signal(1) ** source, Computed[str])
+    assert_type(Signal(1) ** RightOnly(), Computed[str])
+    assert_type(1 << source, Computed[str])
+    assert_type(Signal(1) << source, Computed[str])
+    assert_type(Signal(1) << RightOnly(), Computed[str])
+    assert_type(1 >> source, Computed[str])
+    assert_type(Signal(1) >> source, Computed[str])
+    assert_type(Signal(1) >> RightOnly(), Computed[str])
+    assert_type(1 & source, Computed[str])
+    assert_type(Signal(1) & source, Computed[str])
+    assert_type(Signal(1) & RightOnly(), Computed[str])
+    assert_type(1 | source, Computed[str])
+    assert_type(Signal(1) | source, Computed[str])
+    assert_type(Signal(1) | RightOnly(), Computed[str])
+    assert_type(1 ^ source, Computed[str])
+    assert_type(Signal(1) ^ source, Computed[str])
+    assert_type(Signal(1) ^ RightOnly(), Computed[str])
+    assert_type(1 + Computed(lambda: source.value), Computed[str])
+    assert_type(Computed(lambda: 1) + Binding(source), Computed[str])
+    assert_type(source.__radd__(Signal(1)), Computed[str])
+    assert_type(source.__rsub__(Signal(1)), Computed[str])
+    assert_type(source.__rmul__(Signal(1)), Computed[str])
+    assert_type(source.__rmatmul__(Signal(1)), Computed[str])
+    assert_type(source.__rtruediv__(Signal(1)), Computed[str])
+    assert_type(source.__rfloordiv__(Signal(1)), Computed[str])
+    assert_type(source.__rmod__(Signal(1)), Computed[str])
+    assert_type(source.__rpow__(Signal(1)), Computed[str])
+    assert_type(source.__rlshift__(Signal(1)), Computed[str])
+    assert_type(source.__rrshift__(Signal(1)), Computed[str])
+    assert_type(source.__rand__(Signal(1)), Computed[str])
+    assert_type(source.__ror__(Signal(1)), Computed[str])
+    assert_type(source.__rxor__(Signal(1)), Computed[str])
+
+
+def test_set_and_dictionary_operator_results():
+    assert_type(Signal({1}) | Signal({"a"}), Computed[set[int | str]])
+    assert_type(Signal({1}) & Signal({"a"}), Computed[set[int]])
+    assert_type(Signal({1}) ^ Signal({"a"}), Computed[set[int | str]])
+    assert_type(Signal({1: "a"}) | Signal({"b": 2}), Computed[dict[int | str, str | int]])
+
+
+def test_binary_operators_reject_unsupported_reactive_operands():
+    _ = Signal(1) + Signal("text")  # pyright: ignore[reportOperatorIssue]
+    _ = Binding(Signal(1)) & Computed(lambda: 1.5)  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) < Signal("text")  # pyright: ignore[reportOperatorIssue]
+
+
+def test_binary_operators_prefer_left_method():
+    class Left:
+        def __add__(self, other: "Right") -> str: ...
+
+    class Right:
+        def __radd__(self, other: Left) -> bytes: ...
+
+    assert_type(Signal(Left()) + Signal(Right()), Computed[str])
+    assert_type(Signal(Left()) + Right(), Computed[str])
+    assert_type(Left() + Signal(Right()), Computed[str])
+    assert_type(Signal(Right()).__radd__(Signal(Left())), Computed[str])
+
+
+def test_numpy_ordering_preserves_array_results():
+    import numpy as np
+    from numpy.typing import NDArray
+
+    array: NDArray[np.float64] = np.array([1.0, 2.0])
+    assert_type(Signal(array) + Signal(array), Computed[NDArray[np.float64]])
+    assert_type(Signal(array) < 1.0, Computed[NDArray[np.bool_]])
+    assert_type(Signal(1.0) < Signal(array), Computed[NDArray[np.bool_]])
+    assert_type(Binding(Signal(array)) >= Computed(lambda: array), Computed[NDArray[np.bool_]])
+
+
+def test_indexing_supports_custom_reactive_indices():
+    class Index:
+        def __index__(self) -> int:
+            return 1
+
+    key = Signal(Index())
+    assert_type(Signal([1, 2])[key], Computed[int])
+    assert_type(Signal[tuple[str, ...]](("a", "b"))[Binding(key)], Computed[str])
+    assert_type(Binding(Signal("ab"))[Computed(lambda: key.value)], Computed[str])
+    assert_type(Signal(b"ab")[key], Computed[int])
+
+    class Key:
+        pass
+
+    class SpecialKey(Key):
+        pass
+
+    class Lookup:
+        def __getitem__(self, key: Key) -> bytes:
+            return b"result"
+
+    # A source of a subtype can satisfy a read-only key protocol.
+    lookup = Signal(Lookup())
+    assert_type(lookup[Signal(SpecialKey())], Computed[bytes])
+    assert_type(Computed(lambda: lookup.value)[Binding(Signal(SpecialKey()))], Computed[bytes])
+    assert_type(Binding(lookup)[SpecialKey()], Computed[bytes])
+
+
+def test_indexing_rejects_unsupported_values_and_keys():
+    _ = Signal(1)[0]  # pyright: ignore[reportIndexIssue]
+    _ = Signal([1, 2])["bad"]  # pyright: ignore[reportCallIssue, reportArgumentType]
+    _ = Signal([1, 2])[Signal(1.5)]  # pyright: ignore[reportCallIssue, reportArgumentType]
+    _ = Signal({"a": 1})[1]  # pyright: ignore[reportCallIssue, reportArgumentType]
+    _ = Computed(lambda: {"a": 1})[Signal(1)]  # pyright: ignore[reportCallIssue, reportArgumentType]
+
+    class IndexBox:
+        value: int = 0
+
+    _ = Signal([1])[IndexBox()]  # pyright: ignore[reportCallIssue, reportArgumentType]
+
+
+def test_membership_accepts_all_supported_protocols():
+    from collections.abc import Iterator
+
+    class Container:
+        def __contains__(self, item: object) -> int:
+            return 1
+
+    class IterableOnly:
+        def __iter__(self) -> Iterator[int]:
+            yield 1
+
+    class IndexedOnly:
+        def __getitem__(self, index: int) -> int:
+            if index == 0:
+                return 1
+            raise IndexError(index)
+
+    assert_type(Signal(Container()).rx.contains(1), Computed[bool])
+    assert_type(Computed(IterableOnly).rx.contains(Signal(1)), Computed[bool])
+    assert_type(Binding(Signal(IndexedOnly())).rx.contains(1), Computed[bool])
+    assert_type(Signal(1).rx.in_(Container()), Computed[bool])
+    assert_type(Signal(1).rx.in_(Signal(IterableOnly())), Computed[bool])
+    assert_type(Signal(1).rx.in_(Computed(IndexedOnly)), Computed[bool])
+    assert_type(Signal(1).rx.in_(Binding(Signal([1, 2]))), Computed[bool])
+    assert_type(Signal(1).rx.in_(iter([1, 2])), Computed[bool])
+
+
+def test_membership_rejects_unsupported_containers():
+    Signal(1).rx.contains(1)  # pyright: ignore[reportAttributeAccessIssue]
+    Computed(lambda: None).rx.contains(1)  # pyright: ignore[reportAttributeAccessIssue]
+    Binding(Signal(object())).rx.contains(1)  # pyright: ignore[reportAttributeAccessIssue]
+    Signal(1).rx.in_(1)  # pyright: ignore[reportArgumentType]
+    Signal(1).rx.in_(Signal(1))  # pyright: ignore[reportArgumentType]
+    Signal(1).rx.in_(Computed(lambda: None))  # pyright: ignore[reportArgumentType]
+
+    class ValueBox:
+        value: list[int] = []
+
+    Signal(1).rx.in_(ValueBox())  # pyright: ignore[reportArgumentType]
+
+
+def test_equality_preserves_declared_results():
+    class Mask:
+        pass
+
+    class Comparable:
+        def __eq__(self, other: object) -> Mask: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+        def __ne__(self, other: object) -> Mask: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+
+    source = Signal(Comparable())
+    assert_type(source.rx.eq(1), Computed[Mask])
+    assert_type(source.rx.ne(Signal(1)), Computed[Mask])
+    assert_type(Computed(lambda: source.value).rx.eq(1), Computed[Mask])
+    assert_type(Computed(lambda: source.value).rx.ne(1), Computed[Mask])
+    assert_type(Binding(source).rx.eq(Signal(1)), Computed[Mask])
+    assert_type(Binding(source).rx.ne(1), Computed[Mask])
+    # The wrapper's own identity comparison is still a plain bool.
+    assert_type(source == source, bool)
+    assert_type(source != source, bool)
+
+
+def test_equality_preserves_literal_results():
+    class AlwaysEqual:
+        def __eq__(self, other: object) -> Literal[True]:
+            return True
+
+        def __ne__(self, other: object) -> Literal[False]:
+            return False
+
+    source = Signal(AlwaysEqual())
+    assert_type(source.rx.eq(1), Computed[Literal[True]])
+    assert_type(source.rx.ne(1), Computed[Literal[False]])
+    assert_type(source.rx.eq(1).rx.where(1, "no"), Computed[int])
+    assert_type(source.rx.ne(1).rx.where(1, "no"), Computed[str])
+
+
+def test_divmod_preserves_reflected_results():
+    class RightOnly:
+        def __rdivmod__(self, other: int) -> tuple[str, str]: ...
+
+    source = Signal(RightOnly())
+    assert_type(divmod(1, source), Computed[tuple[str, str]])
+    assert_type(divmod(Signal(1), source), Computed[tuple[str, str]])
+    assert_type(divmod(Computed(lambda: 1), Binding(source)), Computed[tuple[str, str]])
+    assert_type(divmod(1, Computed(lambda: source.value)), Computed[tuple[str, str]])
+    assert_type(source.__rdivmod__(Signal(1)), Computed[tuple[str, str]])
+    assert_type(Signal(1).__divmod__(RightOnly()), Computed[tuple[str, str]])
+
+
+def test_divmod_accepts_reactive_subtypes():
+    class Key:
+        pass
+
+    class SpecialKey(Key):
+        pass
+
+    class Left:
+        def __divmod__(self, other: Key) -> tuple[str, str]: ...
+
+    assert_type(divmod(Signal(Left()), Signal(SpecialKey())), Computed[tuple[str, str]])
+    assert_type(divmod(Left(), Signal(SpecialKey())), Computed[tuple[str, str]])
+
+
+def test_divmod_rejects_unsupported_operands():
+    divmod(Signal(1), "text")  # pyright: ignore[reportCallIssue, reportArgumentType]
+    divmod("text", Signal(1))  # pyright: ignore[reportCallIssue, reportArgumentType]
+    divmod(Signal("text"), Signal(1))  # pyright: ignore[reportCallIssue, reportArgumentType]
