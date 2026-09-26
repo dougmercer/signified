@@ -9,6 +9,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    ClassVar,
     Literal,
     SupportsAbs,
     SupportsFloat,
@@ -26,23 +27,33 @@ from ._protocols import (
     _IntLike,
     _ReactiveOf,
     _SupportsAdd,
+    _SupportsAnd,
     _SupportsCeil,
     _SupportsDivmod,
     _SupportsFloor,
     _SupportsFloordiv,
+    _SupportsGe,
     _SupportsGetItem,
+    _SupportsGt,
     _SupportsInvert,
+    _SupportsLe,
     _SupportsLshift,
+    _SupportsLt,
     _SupportsMatmul,
     _SupportsMod,
     _SupportsMul,
     _SupportsNeg,
+    _SupportsOr,
     _SupportsPos,
     _SupportsPow,
+    _SupportsRand,
+    _SupportsRor,
     _SupportsRshift,
+    _SupportsRxor,
     _SupportsSub,
     _SupportsTruediv,
     _SupportsTrunc,
+    _SupportsXor,
     _Truthy,
 )
 from ._types import HasValue
@@ -403,7 +414,7 @@ class _ReactiveMixIn[T]:
     # No instance __dict__: an unknown attribute write on any wrapper raises
     # AttributeError instead of silently shadowing the reactive proxy.
     __slots__ = ()
-    _IS_REACTIVE = True
+    _IS_REACTIVE: ClassVar[Literal[True]] = True
 
     # Opt out of NumPy's ufunc machinery. Without this, `array + reactive` coerces the
     # reactive object into a 0-d object array and returns an object-dtype ndarray of
@@ -755,7 +766,16 @@ class _ReactiveMixIn[T]:
     def __and__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
 
     @overload
-    def __and__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+    def __and__[Y, R](self: _ReactiveOf[_SupportsAnd[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __and__[R](self, other: _ReactiveOf[_SupportsRand[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __and__[Y, R](self: _ReactiveOf[_SupportsAnd[Y, R]], other: Y) -> Computed[R]: ...
+
+    @overload
+    def __and__[R](self, other: _SupportsRand[T, R]) -> Computed[R]: ...
 
     def __and__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise AND of self and other.
@@ -854,7 +874,19 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.floordiv, self, other)
 
-    def __ge__(self, other: Any) -> Computed[bool]:
+    @overload
+    def __ge__[Y, R](self: _ReactiveOf[_SupportsGe[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __ge__[R](self, other: _ReactiveOf[_SupportsLe[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __ge__[Y, R](self: _ReactiveOf[_SupportsGe[Y, R]], other: Y) -> Computed[R]: ...
+
+    @overload
+    def __ge__[R](self, other: _SupportsLe[T, R]) -> Computed[R]: ...
+
+    def __ge__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for whether `self` is greater than or equal to other.
 
         Args:
@@ -877,7 +909,19 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.ge, self, other)
 
-    def __gt__(self, other: Any) -> Computed[bool]:
+    @overload
+    def __gt__[Y, R](self: _ReactiveOf[_SupportsGt[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __gt__[R](self, other: _ReactiveOf[_SupportsLt[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __gt__[Y, R](self: _ReactiveOf[_SupportsGt[Y, R]], other: Y) -> Computed[R]: ...
+
+    @overload
+    def __gt__[R](self, other: _SupportsLt[T, R]) -> Computed[R]: ...
+
+    def __gt__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for whether `self` is greater than other.
 
         Args:
@@ -900,7 +944,19 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.gt, self, other)
 
-    def __le__(self, other: Any) -> Computed[bool]:
+    @overload
+    def __le__[Y, R](self: _ReactiveOf[_SupportsLe[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __le__[R](self, other: _ReactiveOf[_SupportsGe[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __le__[Y, R](self: _ReactiveOf[_SupportsLe[Y, R]], other: Y) -> Computed[R]: ...
+
+    @overload
+    def __le__[R](self, other: _SupportsGe[T, R]) -> Computed[R]: ...
+
+    def __le__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for whether `self` is less than or equal to `other`.
 
         Args:
@@ -923,7 +979,19 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.le, self, other)
 
-    def __lt__(self, other: Any) -> Computed[bool]:
+    @overload
+    def __lt__[Y, R](self: _ReactiveOf[_SupportsLt[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __lt__[R](self, other: _ReactiveOf[_SupportsGt[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __lt__[Y, R](self: _ReactiveOf[_SupportsLt[Y, R]], other: Y) -> Computed[R]: ...
+
+    @overload
+    def __lt__[R](self, other: _SupportsGt[T, R]) -> Computed[R]: ...
+
+    def __lt__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for whether `self` is less than `other`.
 
         Args:
@@ -1098,7 +1166,16 @@ class _ReactiveMixIn[T]:
     def __or__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
 
     @overload
-    def __or__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+    def __or__[Y, R](self: _ReactiveOf[_SupportsOr[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __or__[R](self, other: _ReactiveOf[_SupportsRor[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __or__[Y, R](self: _ReactiveOf[_SupportsOr[Y, R]], other: Y) -> Computed[R]: ...
+
+    @overload
+    def __or__[R](self, other: _SupportsRor[T, R]) -> Computed[R]: ...
 
     def __or__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
@@ -1285,7 +1362,16 @@ class _ReactiveMixIn[T]:
     def __xor__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
 
     @overload
-    def __xor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+    def __xor__[Y, R](self: _ReactiveOf[_SupportsXor[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __xor__[R](self, other: _ReactiveOf[_SupportsRxor[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __xor__[Y, R](self: _ReactiveOf[_SupportsXor[Y, R]], other: Y) -> Computed[R]: ...
+
+    @overload
+    def __xor__[R](self, other: _SupportsRxor[T, R]) -> Computed[R]: ...
 
     def __xor__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.
@@ -1360,7 +1446,16 @@ class _ReactiveMixIn[T]:
     def __rand__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
 
     @overload
-    def __rand__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+    def __rand__[R](self, other: _ReactiveOf[_SupportsAnd[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __rand__[Y, R](self: _ReactiveOf[_SupportsRand[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __rand__[R](self, other: _SupportsAnd[T, R]) -> Computed[R]: ...
+
+    @overload
+    def __rand__[Y, R](self: _ReactiveOf[_SupportsRand[Y, R]], other: Y) -> Computed[R]: ...
 
     def __rand__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise AND of `self` and `other`.
@@ -1621,7 +1716,16 @@ class _ReactiveMixIn[T]:
     def __ror__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
 
     @overload
-    def __ror__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+    def __ror__[R](self, other: _ReactiveOf[_SupportsOr[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __ror__[Y, R](self: _ReactiveOf[_SupportsRor[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __ror__[R](self, other: _SupportsOr[T, R]) -> Computed[R]: ...
+
+    @overload
+    def __ror__[Y, R](self: _ReactiveOf[_SupportsRor[Y, R]], other: Y) -> Computed[R]: ...
 
     def __ror__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise OR of `self` and `other`.
@@ -1802,7 +1906,16 @@ class _ReactiveMixIn[T]:
     def __rxor__(self: "_ReactiveMixIn[int]", other: _IntLike) -> Computed[int]: ...
 
     @overload
-    def __rxor__[Y](self, other: HasValue[Y]) -> Computed[T | Y]: ...
+    def __rxor__[R](self, other: _ReactiveOf[_SupportsXor[T, R]]) -> Computed[R]: ...
+
+    @overload
+    def __rxor__[Y, R](self: _ReactiveOf[_SupportsRxor[Y, R]], other: _ReactiveOf[Y]) -> Computed[R]: ...
+
+    @overload
+    def __rxor__[R](self, other: _SupportsXor[T, R]) -> Computed[R]: ...
+
+    @overload
+    def __rxor__[Y, R](self: _ReactiveOf[_SupportsRxor[Y, R]], other: Y) -> Computed[R]: ...
 
     def __rxor__(self, other: Any) -> Computed[Any]:
         """Return a reactive value for the bitwise XOR of `self` and `other`.

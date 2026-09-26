@@ -18,7 +18,7 @@ match the invariant reactive classes at all: `Signal[Vec]` is not assignable to
 
 from __future__ import annotations
 
-from typing import Literal, Protocol, SupportsIndex
+from typing import ClassVar, Literal, Protocol, SupportsIndex
 
 from ._types import HasValue
 
@@ -52,6 +52,8 @@ type _IndexLike = HasValue[SupportsIndex] | HasValue[int]
 
 class _ReactiveOf[V](Protocol):
     """A reactive object whose current value is a `V`."""
+
+    _IS_REACTIVE: ClassVar[Literal[True]]
 
     @property
     def value(self) -> V: ...
@@ -127,3 +129,43 @@ class _SupportsCeil[ResultT](Protocol):
 
 class _SupportsFloor[ResultT](Protocol):
     def __floor__(self) -> ResultT: ...
+
+
+class _SupportsAnd[OtherT, ResultT](Protocol):
+    def __and__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRand[OtherT, ResultT](Protocol):
+    def __rand__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsOr[OtherT, ResultT](Protocol):
+    def __or__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRor[OtherT, ResultT](Protocol):
+    def __ror__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsXor[OtherT, ResultT](Protocol):
+    def __xor__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRxor[OtherT, ResultT](Protocol):
+    def __rxor__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsLt[OtherT, ResultT](Protocol):
+    def __lt__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsLe[OtherT, ResultT](Protocol):
+    def __le__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsGt[OtherT, ResultT](Protocol):
+    def __gt__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsGe[OtherT, ResultT](Protocol):
+    def __ge__(self, other: OtherT, /) -> ResultT: ...

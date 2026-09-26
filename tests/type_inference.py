@@ -1301,3 +1301,69 @@ def test_ceil_and_floor_reject_unsupported_values():
     floor(Computed(lambda: 1j))  # pyright: ignore[reportCallIssue, reportArgumentType]
     ceil(Binding(Signal(object())))  # pyright: ignore[reportCallIssue, reportArgumentType]
     floor(Binding(Signal(object())))  # pyright: ignore[reportCallIssue, reportArgumentType]
+
+
+def test_bitwise_operators_preserve_custom_results():
+    class Bits:
+        def __and__(self, other: int) -> str: ...
+        def __or__(self, other: int) -> bytes: ...
+        def __xor__(self, other: int) -> tuple[int, int]: ...
+
+    source = Signal(Bits())
+    assert_type(source & 1, Computed[str])
+    assert_type(source | 1, Computed[bytes])
+    assert_type(source ^ 1, Computed[tuple[int, int]])
+    assert_type(source & Signal(1), Computed[str])
+    assert_type(Computed(lambda: source.value) | Binding(Signal(1)), Computed[bytes])
+    assert_type(Binding(source) ^ Computed(lambda: 1), Computed[tuple[int, int]])
+    assert_type(Bits() & Signal(1), Computed[str])
+    assert_type(Bits() | Computed(lambda: 1), Computed[bytes])
+    assert_type(Bits() ^ Binding(Signal(1)), Computed[tuple[int, int]])
+
+
+def test_ordering_preserves_custom_and_reflected_results():
+    class Mask:
+        pass
+
+    class Comparable:
+        def __lt__(self, other: int) -> Mask: ...
+        def __le__(self, other: int) -> Mask: ...
+        def __gt__(self, other: int) -> Mask: ...
+        def __ge__(self, other: int) -> Mask: ...
+
+    source = Signal(Comparable())
+    assert_type(source < 1, Computed[Mask])
+    assert_type(source <= Signal(1), Computed[Mask])
+    assert_type(Computed(lambda: source.value) > 1, Computed[Mask])
+    assert_type(Binding(source) >= 1, Computed[Mask])
+    assert_type(1 < source, Computed[Mask])
+    assert_type(1 <= source, Computed[Mask])
+    assert_type(1 > source, Computed[Mask])
+    assert_type(1 >= source, Computed[Mask])
+    assert_type(Signal(1) < source, Computed[Mask])
+    assert_type(Signal(1) <= source, Computed[Mask])
+    assert_type(Signal(1) > source, Computed[Mask])
+    assert_type(Signal(1) >= source, Computed[Mask])
+    assert_type(Comparable() < Signal(1), Computed[Mask])
+    assert_type(Comparable() <= Signal(1), Computed[Mask])
+    assert_type(Comparable() > Signal(1), Computed[Mask])
+    assert_type(Comparable() >= Signal(1), Computed[Mask])
+
+
+def test_ordering_numeric_and_container_results():
+    assert_type(Signal(1) < Signal(1.5), Computed[bool])
+    assert_type(Signal(1.5) <= Signal(1), Computed[bool])
+    assert_type(1.5 > Signal(1), Computed[bool])
+    assert_type(1 >= Signal(1.5), Computed[bool])
+    assert_type(Signal(Decimal("1.5")) < Signal(2), Computed[bool])
+    assert_type(Signal(2) < Signal(Decimal("1.5")), Computed[bool])
+    assert_type(Signal({1}) < Signal({1, 2}), Computed[bool])
+    assert_type(Signal([1]) <= Signal([2]), Computed[bool])
+    assert_type(Signal("a") > Signal("b"), Computed[bool])
+
+
+def test_set_and_dictionary_operator_results():
+    assert_type(Signal({1}) | Signal({"a"}), Computed[set[int | str]])
+    assert_type(Signal({1}) & Signal({"a"}), Computed[set[int]])
+    assert_type(Signal({1}) ^ Signal({"a"}), Computed[set[int | str]])
+    assert_type(Signal({1: "a"}) | Signal({"b": 2}), Computed[dict[int | str, str | int]])

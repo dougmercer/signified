@@ -7,6 +7,8 @@ This page summarizes notable changes across releases.
 - `ceil` and `floor` infer the declared rounding result, preserve custom integral
   subclasses, and reject unsupported operands. Values with only `__float__` or
   `__index__` retain the numeric conversion fallback and infer `Computed[int]`.
+- Bitwise AND, OR, XOR, and ordering comparisons preserve custom operator return
+  types, including non-boolean comparison results.
 
 - `round` uses `SupportsRound` to infer `Computed[int]` when digits are omitted
   or `None`, and the declared result type when digits are provided, including
