@@ -26,20 +26,15 @@ This page summarizes notable changes across releases.
   both operands are reactive. These operators and ordering comparisons now reject
   statically unsupported operand combinations instead of accepting them through
   catch-all annotations.
-
 - `round` uses `SupportsRound` to infer `Computed[int]` when digits are omitted
   or `None`, and the declared result type when digits are provided, including
   `Computed[Decimal]` for decimals. Unsupported operands are rejected statically.
-
 - `trunc` infers the wrapped type's declared `__trunc__` result, including
   `Computed[int]` for decimals, and rejects operands without `__trunc__`.
-
 - Unary `-`, `+`, and `~` infer the wrapped type's declared operator result and
   reject statically known operands that do not support the operation.
-
 - Absolute value infers a custom type's declared `__abs__` return type, including
   through `Signal`, `Computed`, and `Binding`.
-
 - `rx.where` narrows its result type when the condition is a literal boolean,
   `None`, or has `__bool__` annotated to return a literal boolean. Ordinary boolean
   signals retain the union of both branch types.
