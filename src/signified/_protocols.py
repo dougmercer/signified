@@ -14,6 +14,11 @@ reactive twin for every protocol. It is a read-only view, which is what makes it
 match the invariant reactive classes at all: `Signal[Vec]` is not assignable to
 `_ReactiveMixIn[_SupportsMul[int, Vec]]`, but its `value` does satisfy
 `_SupportsMul[int, Vec]`.
+
+Binary overloads check reactive operands before plain operands, and within each
+case try the left operand's method before the right operand's reflected method.
+A wrapper itself also implements these protocols, so combining the plain and
+reactive cases in one union can infer a spurious nested `Computed` result.
 """
 
 from __future__ import annotations
@@ -53,10 +58,19 @@ type _IndexLike = HasValue[SupportsIndex] | HasValue[int]
 class _ReactiveOf[V](Protocol):
     """A reactive object whose current value is a `V`."""
 
+    # Match unref's class marker: an ordinary object with .value is not unwrapped.
     _IS_REACTIVE: ClassVar[Literal[True]]
 
     @property
     def value(self) -> V: ...
+
+
+class _SupportsCeil[ResultT](Protocol):
+    def __ceil__(self) -> ResultT: ...
+
+
+class _SupportsFloor[ResultT](Protocol):
+    def __floor__(self) -> ResultT: ...
 
 
 class _SupportsNeg[ResultT](Protocol):
@@ -123,12 +137,44 @@ class _SupportsGetItem[KeyT, ValueT](Protocol):
     def __getitem__(self, key: KeyT, /) -> ValueT: ...
 
 
-class _SupportsCeil[ResultT](Protocol):
-    def __ceil__(self) -> ResultT: ...
+class _SupportsRadd[OtherT, ResultT](Protocol):
+    def __radd__(self, other: OtherT, /) -> ResultT: ...
 
 
-class _SupportsFloor[ResultT](Protocol):
-    def __floor__(self) -> ResultT: ...
+class _SupportsRsub[OtherT, ResultT](Protocol):
+    def __rsub__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRmul[OtherT, ResultT](Protocol):
+    def __rmul__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRmatmul[OtherT, ResultT](Protocol):
+    def __rmatmul__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRtruediv[OtherT, ResultT](Protocol):
+    def __rtruediv__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRfloordiv[OtherT, ResultT](Protocol):
+    def __rfloordiv__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRmod[OtherT, ResultT](Protocol):
+    def __rmod__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRpow[OtherT, ResultT](Protocol):
+    def __rpow__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRlshift[OtherT, ResultT](Protocol):
+    def __rlshift__(self, other: OtherT, /) -> ResultT: ...
+
+
+class _SupportsRrshift[OtherT, ResultT](Protocol):
+    def __rrshift__(self, other: OtherT, /) -> ResultT: ...
 
 
 class _SupportsAnd[OtherT, ResultT](Protocol):

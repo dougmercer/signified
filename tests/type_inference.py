@@ -1362,8 +1362,139 @@ def test_ordering_numeric_and_container_results():
     assert_type(Signal("a") > Signal("b"), Computed[bool])
 
 
+def test_binary_operators_reject_unsupported_operands():
+    _ = Signal(1) + "text"  # pyright: ignore[reportOperatorIssue]
+    _ = "text" + Signal(1)  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) - "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) * object()  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) / "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) // "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) % "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) ** "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) @ 2  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) << 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) >> 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) & 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) | 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) ^ 1.5  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) < "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) <= "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) > "text"  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) >= "text"  # pyright: ignore[reportOperatorIssue]
+
+    # An arbitrary .value property must not make a plain object an operand.
+    class ValueBox:
+        value: int = 1
+
+    _ = Signal(1) + ValueBox()  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) < ValueBox()  # pyright: ignore[reportOperatorIssue]
+
+
+def test_right_hand_operator_methods_preserve_results():
+    class RightOnly:
+        def __radd__(self, other: int) -> str: ...
+        def __rsub__(self, other: int) -> str: ...
+        def __rmul__(self, other: int) -> str: ...
+        def __rmatmul__(self, other: int) -> str: ...
+        def __rtruediv__(self, other: int) -> str: ...
+        def __rfloordiv__(self, other: int) -> str: ...
+        def __rmod__(self, other: int) -> str: ...
+        def __rpow__(self, other: int) -> str: ...
+        def __rlshift__(self, other: int) -> str: ...
+        def __rrshift__(self, other: int) -> str: ...
+        def __rand__(self, other: int) -> str: ...
+        def __ror__(self, other: int) -> str: ...
+        def __rxor__(self, other: int) -> str: ...
+
+    source = Signal(RightOnly())
+    assert_type(1 + source, Computed[str])
+    assert_type(Signal(1) + source, Computed[str])
+    assert_type(Signal(1) + RightOnly(), Computed[str])
+    assert_type(1 - source, Computed[str])
+    assert_type(Signal(1) - source, Computed[str])
+    assert_type(Signal(1) - RightOnly(), Computed[str])
+    assert_type(1 * source, Computed[str])
+    assert_type(Signal(1) * source, Computed[str])
+    assert_type(Signal(1) * RightOnly(), Computed[str])
+    assert_type(1 @ source, Computed[str])
+    assert_type(Signal(1) @ source, Computed[str])
+    assert_type(Signal(1) @ RightOnly(), Computed[str])
+    assert_type(1 / source, Computed[str])
+    assert_type(Signal(1) / source, Computed[str])
+    assert_type(Signal(1) / RightOnly(), Computed[str])
+    assert_type(1 // source, Computed[str])
+    assert_type(Signal(1) // source, Computed[str])
+    assert_type(Signal(1) // RightOnly(), Computed[str])
+    assert_type(1 % source, Computed[str])
+    assert_type(Signal(1) % source, Computed[str])
+    assert_type(Signal(1) % RightOnly(), Computed[str])
+    assert_type(1**source, Computed[str])
+    assert_type(Signal(1) ** source, Computed[str])
+    assert_type(Signal(1) ** RightOnly(), Computed[str])
+    assert_type(1 << source, Computed[str])
+    assert_type(Signal(1) << source, Computed[str])
+    assert_type(Signal(1) << RightOnly(), Computed[str])
+    assert_type(1 >> source, Computed[str])
+    assert_type(Signal(1) >> source, Computed[str])
+    assert_type(Signal(1) >> RightOnly(), Computed[str])
+    assert_type(1 & source, Computed[str])
+    assert_type(Signal(1) & source, Computed[str])
+    assert_type(Signal(1) & RightOnly(), Computed[str])
+    assert_type(1 | source, Computed[str])
+    assert_type(Signal(1) | source, Computed[str])
+    assert_type(Signal(1) | RightOnly(), Computed[str])
+    assert_type(1 ^ source, Computed[str])
+    assert_type(Signal(1) ^ source, Computed[str])
+    assert_type(Signal(1) ^ RightOnly(), Computed[str])
+    assert_type(1 + Computed(lambda: source.value), Computed[str])
+    assert_type(Computed(lambda: 1) + Binding(source), Computed[str])
+    assert_type(source.__radd__(Signal(1)), Computed[str])
+    assert_type(source.__rsub__(Signal(1)), Computed[str])
+    assert_type(source.__rmul__(Signal(1)), Computed[str])
+    assert_type(source.__rmatmul__(Signal(1)), Computed[str])
+    assert_type(source.__rtruediv__(Signal(1)), Computed[str])
+    assert_type(source.__rfloordiv__(Signal(1)), Computed[str])
+    assert_type(source.__rmod__(Signal(1)), Computed[str])
+    assert_type(source.__rpow__(Signal(1)), Computed[str])
+    assert_type(source.__rlshift__(Signal(1)), Computed[str])
+    assert_type(source.__rrshift__(Signal(1)), Computed[str])
+    assert_type(source.__rand__(Signal(1)), Computed[str])
+    assert_type(source.__ror__(Signal(1)), Computed[str])
+    assert_type(source.__rxor__(Signal(1)), Computed[str])
+
+
 def test_set_and_dictionary_operator_results():
     assert_type(Signal({1}) | Signal({"a"}), Computed[set[int | str]])
     assert_type(Signal({1}) & Signal({"a"}), Computed[set[int]])
     assert_type(Signal({1}) ^ Signal({"a"}), Computed[set[int | str]])
     assert_type(Signal({1: "a"}) | Signal({"b": 2}), Computed[dict[int | str, str | int]])
+
+
+def test_binary_operators_reject_unsupported_reactive_operands():
+    _ = Signal(1) + Signal("text")  # pyright: ignore[reportOperatorIssue]
+    _ = Binding(Signal(1)) & Computed(lambda: 1.5)  # pyright: ignore[reportOperatorIssue]
+    _ = Signal(1) < Signal("text")  # pyright: ignore[reportOperatorIssue]
+
+
+def test_binary_operators_prefer_left_method():
+    class Left:
+        def __add__(self, other: "Right") -> str: ...
+
+    class Right:
+        def __radd__(self, other: Left) -> bytes: ...
+
+    assert_type(Signal(Left()) + Signal(Right()), Computed[str])
+    assert_type(Signal(Left()) + Right(), Computed[str])
+    assert_type(Left() + Signal(Right()), Computed[str])
+    assert_type(Signal(Right()).__radd__(Signal(Left())), Computed[str])
+
+
+def test_numpy_ordering_preserves_array_results():
+    import numpy as np
+    from numpy.typing import NDArray
+
+    array: NDArray[np.float64] = np.array([1.0, 2.0])
+    assert_type(Signal(array) + Signal(array), Computed[NDArray[np.float64]])
+    assert_type(Signal(array) < 1.0, Computed[NDArray[np.bool_]])
+    assert_type(Signal(1.0) < Signal(array), Computed[NDArray[np.bool_]])
+    assert_type(Binding(Signal(array)) >= Computed(lambda: array), Computed[NDArray[np.bool_]])

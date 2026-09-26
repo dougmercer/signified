@@ -165,6 +165,9 @@ def test_todo_binding_accepts_distributed_union_sources(
     # Binding only reads a selected reactive source, but ReactiveValue is a
     # union of invariant classes. A narrow Signal[int] therefore cannot be used
     # as a source for Binding[int | str] without a cast.
+    # Accepting a covariant input alone is unsafe: .source and .derive also expose
+    # the selected wrapper, so they need a read-only interface to avoid allowing
+    # callers to write str through a widened view of the original Signal[int].
     if USE_CURRENT_INFERENCE:
         widened = cast(HasValue[int | str], value)
         created = Binding(widened)
@@ -213,3 +216,19 @@ def test_todo_pow_fractional_exponent_of_negative_base():
         assert_type(Signal(-8) ** 0.5, Computed[float])
     else:
         assert_type(Signal(-8) ** 0.5, Computed[complex])
+
+
+def test_todo_divmod_reflected_only_result():
+    # Unlike operator syntax, builtin divmod matches a generic two-argument
+    # protocol. Its overload inference still loses reflected-only result types;
+    # combining reactive operands can even introduce a spurious nested Computed.
+    class RightOnly:
+        def __rdivmod__(self, other: int) -> tuple[str, str]: ...
+
+    source = Signal(RightOnly())
+    if USE_CURRENT_INFERENCE:
+        assert_type(divmod(1, source), Computed[Any])
+        assert_type(divmod(Signal(1), source), Computed[Computed[Any]])
+    else:
+        assert_type(divmod(1, source), Computed[tuple[str, str]])
+        assert_type(divmod(Signal(1), source), Computed[tuple[str, str]])

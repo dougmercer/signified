@@ -54,6 +54,54 @@ def test_rounding_numeric_conversion_fallbacks():
         assert math.floor(Signal(value)).value == math.floor(value)
 
 
+class Reflected:
+    def __init__(self, label: str):
+        self.label = label
+
+    def _result(self, other: int) -> str:
+        return f"{other}:{self.label}"
+
+    __radd__ = __rsub__ = __rmul__ = __rmatmul__ = _result
+    __rtruediv__ = __rfloordiv__ = __rmod__ = __rpow__ = _result
+    __rlshift__ = __rrshift__ = __rand__ = __ror__ = __rxor__ = _result
+
+    def __rdivmod__(self, other: int) -> tuple[str, str]:
+        return self._result(other), self.label
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        operator.add,
+        operator.sub,
+        operator.mul,
+        operator.matmul,
+        operator.truediv,
+        operator.floordiv,
+        operator.mod,
+        operator.pow,
+        operator.lshift,
+        operator.rshift,
+        operator.and_,
+        operator.or_,
+        operator.xor,
+        divmod,
+    ],
+)
+def test_reflected_result_types_and_updates(operation):
+    left = Signal(1)
+    right = Signal(Reflected("first"))
+    results = [operation(1, right), operation(left, Binding(right)), operation(left, right.value)]
+    for result in results:
+        assert isinstance(result, Computed)
+        assert result.value == operation(1, right.value)
+    left.value = 2
+    right.value = Reflected("second")
+    assert results[0].value == operation(1, right.value)
+    assert results[1].value == operation(2, right.value)
+    assert results[2].value == operation(2, Reflected("first"))
+
+
 class CustomOperators:
     def __init__(self, value: int):
         self.value = value

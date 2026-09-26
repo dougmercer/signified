@@ -9,6 +9,11 @@ This page summarizes notable changes across releases.
   `__index__` retain the numeric conversion fallback and infer `Computed[int]`.
 - Bitwise AND, OR, XOR, and ordering comparisons preserve custom operator return
   types, including non-boolean comparison results.
+- Arithmetic, matrix multiplication, shifts, and bitwise operators infer results
+  from right-hand reflected methods as well as left-hand methods, including when
+  both operands are reactive. These operators and ordering comparisons now reject
+  statically unsupported operand combinations instead of accepting them through
+  catch-all annotations. `divmod` retains its existing typing limitations.
 
 - `round` uses `SupportsRound` to infer `Computed[int]` when digits are omitted
   or `None`, and the declared result type when digits are provided, including
