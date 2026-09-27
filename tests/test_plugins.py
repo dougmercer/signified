@@ -1,9 +1,11 @@
+import runpy
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 import signified._reactive as reactive_module
-from signified import Binding, Signal, Variable
+from signified import Binding, Computed, Signal, Variable, plugins
 from signified.plugins import PluginManager, hookimpl
 
 
@@ -154,3 +156,70 @@ def test_plugin_manager_validates_hook_impls() -> None:
         manager.register(Misspelled())
     with pytest.raises(TypeError, match="must accept a `value` keyword argument"):
         manager.register(WrongArgument())
+
+
+@pytest.fixture
+def access_tracker(monkeypatch):
+    manager = PluginManager()
+    monkeypatch.setattr(reactive_module, "HOOKS_ENABLED", True)
+    monkeypatch.setattr(reactive_module, "plugin_manager", manager)
+    monkeypatch.setattr(plugins, "plugin_manager", manager)
+    example = Path(__file__).resolve().parents[1] / "examples" / "plugins" / "access_tracker.py"
+    return runpy.run_path(str(example))["tracker"]
+
+
+def test_access_tracker_counts_only_actual_reads_and_writes(access_tracker, capsys):
+    signal = Signal(1).with_name("source")
+    stats = access_tracker.get_stats(signal)
+    assert stats.read_count == 0
+    assert stats.write_count == 0
+    assert [event.value for event in stats.value_history] == [1]
+
+    assert signal.value == 1
+    signal.value = 2
+    signal.value = 2
+    access_tracker.print_summary()
+
+    assert "Value source:" in capsys.readouterr().out
+    assert stats.read_count == 1
+    assert stats.write_count == 1
+    assert [event.value for event in stats.value_history] == [1, 2]
+
+
+def test_access_tracker_preserves_lazy_computation(access_tracker):
+    source = Signal(1)
+    derived = Computed(lambda: source.value * 2)
+    source_stats = access_tracker.get_stats(source)
+    derived_stats = access_tracker.get_stats(derived)
+    assert source_stats.read_count == 0
+    assert derived_stats.read_count == 0
+    assert derived_stats.write_count == 0
+
+    assert derived.value == 2
+    assert derived.value == 2
+    assert source_stats.read_count == 1
+    assert derived_stats.read_count == 2
+    assert derived_stats.write_count == 1
+
+    source.value = 2
+    assert derived_stats.write_count == 1
+    assert derived.value == 4
+    assert source_stats.read_count == 2
+    assert derived_stats.read_count == 3
+    assert derived_stats.write_count == 2
+    assert [event.value for event in derived_stats.value_history] == [None, 2, 4]
+
+
+def test_access_tracker_preserves_computation_errors_and_recovery(access_tracker):
+    source = Signal(0)
+    derived = Computed(lambda: 10 / source.value)
+
+    with pytest.raises(ZeroDivisionError):
+        _ = derived.value
+
+    source.value = 2
+    assert derived.value == 5
+    stats = access_tracker.get_stats(derived)
+    assert stats.read_count == 2
+    assert stats.write_count == 2
+    assert stats.last_value == 5

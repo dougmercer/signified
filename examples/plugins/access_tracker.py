@@ -8,7 +8,7 @@ from enum import Enum, auto
 from typing import Any, Dict, List
 from weakref import WeakValueDictionary
 
-from signified import Signal, Variable, unref
+from signified import Signal, Variable
 from signified.plugins import hookimpl, plugin_manager
 
 
@@ -35,7 +35,7 @@ class AccessStats:
     last_access_time: datetime.datetime = field(default_factory=datetime.datetime.now)
     value_history: List[AccessEvent] = field(default_factory=list, repr=False)  # Rename to be clearer
 
-    def add_event(self, event_type: EventType, value: Any) -> None:
+    def add_event(self, event_type: EventType, value: Any = None) -> None:
         now = datetime.datetime.now()
 
         if event_type == EventType.READ:
@@ -61,7 +61,12 @@ class AccessStats:
 
 
 class AccessTracker:
-    """Plugin for tracking reactive value access patterns."""
+    """Plugin for tracking reactive value access patterns.
+
+    History records the internal cached value without invoking read hooks or
+    evaluating lazy computations. A Computed's creation value is its initial
+    None placeholder; its evaluated value is recorded by the updated hook.
+    """
 
     def __init__(self):
         self.stats: Dict[int, AccessStats] = defaultdict(AccessStats)
@@ -75,18 +80,18 @@ class AccessTracker:
     @hookimpl
     def created(self, value: Variable[Any]) -> None:
         """Track creation of new reactive values."""
-        self.stats[id(value)].add_event(EventType.CREATE, unref(value))
+        self.stats[id(value)].add_event(EventType.CREATE, value._value)
         self._variables[id(value)] = value
 
     @hookimpl
     def updated(self, value: Variable[Any]) -> None:
         """Track modifications to reactive values."""
-        self.stats[id(value)].add_event(EventType.WRITE, unref(value))
+        self.stats[id(value)].add_event(EventType.WRITE, value._value)
 
     @hookimpl
     def read(self, value: Variable[Any]) -> None:
         """Record a read access to a reactive value."""
-        self.stats[id(value)].add_event(EventType.READ, unref(value))
+        self.stats[id(value)].add_event(EventType.READ)
 
     def get_stats(self, value: Variable[Any]) -> AccessStats:
         """Get access statistics for a specific reactive value."""
@@ -115,8 +120,6 @@ tracker = AccessTracker()
 plugin_manager.register(tracker)
 
 if __name__ == "__main__":
-    import time
-
     # Create some reactive values and use them
     x = Signal(1).with_name("x")
     y = Signal(2).with_name("y")
@@ -124,12 +127,13 @@ if __name__ == "__main__":
     time.sleep(1)
 
     # Some modifications
-    x.value = 10  # x read and write
-    y.value = 20  # y read and write
-    x.value = 30  # x read and write
+    x.value = 10  # x write
+    y.value = 20  # y write
+    x.value = 30  # x write
 
     # More reads
-    z = (x + y).with_name("z")  # x and y read
+    z = (x + y).with_name("z")
+    _ = z.value  # z, x, and y read; z computes lazily
 
     # Wait a bit to get some time differences
     time.sleep(1)
