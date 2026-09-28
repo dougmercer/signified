@@ -25,6 +25,9 @@ This page summarizes notable changes across releases.
   use `reactive.rx.map(np.sin)`.
 - `Signal` forwards item deletion (`del signal[key]`) to the wrapped `list` or
   `dict` and notifies observers, mirroring `signal[key] = value`.
+- `Signal.at()` and `Binding.at()` restore the previous version as well as the
+  previous value on exit. Dependents that were not read inside the `with` block
+  no longer recompute afterwards; dependents read inside it still do.
 
 ### Type inference
 

@@ -184,6 +184,117 @@ def test_binding_context_manager_restores_source():
     assert outer.value == 20
 
 
+def _counting(source, calls, key):
+    def compute():
+        calls[key] = calls.get(key, 0) + 1
+        return source.value * 10
+
+    return Computed(compute)
+
+
+@pytest.mark.parametrize("make", [Signal, Binding])
+def test_at_does_not_dirty_dependents_left_unread(make):
+    frame = make(1)
+    calls = {}
+    read_inside = _counting(frame, calls, "inside")
+    left_alone = _counting(frame, calls, "alone")
+    assert read_inside.value == 10 and left_alone.value == 10
+
+    with frame.at(0):
+        assert read_inside.value == 0
+
+    assert left_alone.value == 10
+    assert read_inside.value == 10
+    assert calls == {"inside": 3, "alone": 1}
+
+
+@pytest.mark.parametrize("make", [Signal, Binding])
+def test_at_rewind_read_is_not_mistaken_for_fresh_after_next_write(make):
+    frame = make(20)
+    calls = {}
+    derived = _counting(frame, calls, "derived")
+    assert derived.value == 200
+
+    with frame.at(5):
+        assert derived.value == 50
+    frame.value = 21
+
+    assert derived.value == 210
+
+
+def test_at_restores_version_of_unchanged_value():
+    frame = Signal(1)
+    version = frame._version
+    with frame.at(2):
+        assert frame._version != version
+    assert frame._version == version
+
+
+def test_at_falls_back_to_assignment_when_written_inside():
+    frame = Signal(1)
+    calls = {}
+    derived = _counting(frame, calls, "derived")
+    assert derived.value == 10
+    version = frame._version
+
+    with frame.at(2):
+        frame.value = 3
+
+    assert frame.value == 1
+    assert frame._version != version
+    assert derived.value == 10
+
+
+def test_binding_at_does_not_restore_version_after_source_update():
+    items = [1]
+    source = Signal(items)
+    binding = Binding(source)
+    calls = {}
+    size = Computed(lambda: calls.__setitem__("size", calls.get("size", 0) + 1) or len(binding.value))
+    assert size.value == 1
+
+    with binding.at([]):
+        assert binding.value == []
+        items.append(2)
+        source.update()
+
+    assert binding.value is items
+    assert size.value == 2
+
+
+def test_binding_at_restores_version_when_effect_reads_on_exit():
+    from signified import Effect
+
+    frame = Binding(1)
+    calls = {}
+    derived = _counting(frame, calls, "derived")
+    assert derived.value == 10
+    seen = []
+    watcher = Effect(lambda: seen.append(frame.value))
+    version = frame._version
+
+    with frame.at(2):
+        pass
+
+    assert seen == [1, 2, 1]
+    assert frame._version == version
+    assert derived.value == 10
+    assert calls == {"derived": 1}
+    watcher.dispose()
+
+
+def test_at_restore_notifies_effects_that_read_inside():
+    from signified import Effect
+
+    frame = Signal(1)
+    seen = []
+    watcher = Effect(lambda: seen.append(frame.value))
+    with frame.at(2):
+        pass
+    assert seen == [1, 2, 1]
+    watcher.dispose()
+
+
 def test_with_name_sets_display_name():
     s = Signal(1).with_name("counter")
     assert f"{s:n}" == "counter"

@@ -2020,9 +2020,14 @@ class _ReactiveMixIn[T]:
         return _computed_call(operator.getitem, self, key)
 
     def _bump_version(self) -> int:
-        """Increment the local version counter and the shared global version clock."""
-        object.__setattr__(self, "_version", self._version + 1)
-        return _bump_global_version()
+        """Advance the shared global version clock and stamp this node with it.
+
+        Versions are unique across all nodes and never reused, so a node can
+        safely return to an earlier version when it returns to that exact value.
+        """
+        version = _bump_global_version()
+        object.__setattr__(self, "_version", version)
+        return version
 
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.

@@ -449,6 +449,12 @@ class Signal[T](Variable[T]):
         Restores the previous value when the context exits, even if an exception
         is raised.
 
+        The previous version is restored along with the previous value, so a
+        dependent that was not read inside the context is not left needing a
+        recompute. Dependents read inside the context recompute as usual. If
+        the signal is written again inside the context, exit falls back to an
+        ordinary assignment.
+
         Args:
             value: The temporary value to set.
 
@@ -464,11 +470,24 @@ class Signal[T](Variable[T]):
             ```
         """
         before = self._value
+        before_version = entered_version = self._version
         try:
             self.value = value
+            entered_version = self._version
             yield
         finally:
-            self.value = before
+            if self._version != entered_version:
+                self.value = before
+            elif entered_version != before_version:
+                # Versions are never reused, so `before_version` still names
+                # exactly `before`. Advance the clock anyway so a consumer that
+                # refreshed inside the context cannot take the global fast path.
+                _setattr(self, "_value", before)
+                _setattr(self, "_version", before_version)
+                _bump_global_version()
+                if HOOKS_ENABLED:
+                    plugin_manager.hook.updated(value=self)
+                self.notify()
 
     def update(self) -> None:
         """Force a notification to all observers unconditionally.
@@ -837,12 +856,13 @@ class Computed(Variable[T]):
 
     __slots__ = ["_compute_fn", "_value", "_impl"]
     _IS_COMPUTED = True
+    _IMPL_TYPE: type[_ComputedImpl] = _ComputedImpl
 
     def __init__(self, f: Callable[[], T]) -> None:
         super().__init__()
         self._compute_fn = f
         self._value = cast(T, None)  # placeholder; always set before read via _state guard
-        self._impl = _ComputedImpl(self)
+        self._impl = self._IMPL_TYPE(self)
 
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
@@ -921,6 +941,39 @@ class Computed(Variable[T]):
         return self._value
 
 
+class _BindingImpl(_ComputedImpl):
+    """Computed state for a Binding, which can return to a pre-`at()` version.
+
+    A binding read inside `at()` caches the temporary value under a new
+    version. `restore_point` remembers the value and version from before the
+    context, and the first refresh afterwards returns to them when the binding
+    resolves to that same value from that same, unchanged source.
+    """
+
+    __slots__ = ["restore_point"]
+
+    def __init__(self, owner: "Binding[Any]") -> None:
+        super().__init__(owner)
+        self.restore_point: tuple[Any, int, Variable[Any], int] | None = None
+
+    def refresh(self) -> None:
+        restore_point = self.restore_point
+        self.restore_point = None
+        forced = self._state == _State.MUST_REFRESH
+        super().refresh()
+        if restore_point is None or forced or self._error is not None:
+            return
+        value, version, source, source_version = restore_point
+        owner = self._owner
+        if (
+            owner._holder._value is source
+            and source._version == source_version
+            and not _has_changed(value, owner._value)
+        ):
+            owner._value = value
+            owner._version = version
+
+
 class Binding(Computed[T]):
     """A stable reactive handle whose current source can be replaced.
 
@@ -941,6 +994,8 @@ class Binding(Computed[T]):
     """
 
     __slots__ = ("_owned", "_holder")
+    _IMPL_TYPE = _BindingImpl
+    _impl: _BindingImpl
 
     def __init__(self, source: T | ReactiveValue[T]) -> None:
         self._owned: Signal[T] | None
@@ -1004,7 +1059,9 @@ class Binding(Computed[T]):
         """Temporarily follow a private `Signal` holding `value`.
 
         The previous source is restored when the context exits, even if an
-        exception is raised.
+        exception is raised. Like [Signal.at][signified.Signal.at], a dependent
+        that did not read the binding inside the context is not left needing a
+        recompute.
 
         Args:
             value: The temporary plain value.
@@ -1012,13 +1069,19 @@ class Binding(Computed[T]):
         if is_reactive(value):
             raise TypeError("at() requires a plain value. Use set(source) for a reactive source.")
 
-        previous = self.source
-        temporary = Signal(value)
-        try:
-            self.set(temporary)
-            yield
-        finally:
-            self.set(previous)
+        impl = self._impl
+        restorable = impl._state == _State.FRESH and impl._error is None
+        before, before_version = self._value, self._version
+        source = self.source
+        source_version = source._version
+        with self._holder.at(Signal(value)):
+            try:
+                yield
+            finally:
+                # Arm before the holder is restored, since its notification can
+                # run effects that refresh this binding.
+                if restorable and self._version != before_version:
+                    impl.restore_point = (before, before_version, source, source_version)
 
 
 class Effect:
