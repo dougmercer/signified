@@ -131,6 +131,7 @@ subscript, and attribute-access operations all return reactive
 ::: signified.as_rx
 ::: signified.batch
 ::: signified.untracked
+::: signified.tracked_fields
 
 ## Explicit deep resolution {#signified.deep_unref}
 

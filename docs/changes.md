@@ -33,6 +33,9 @@ This page summarizes notable changes across releases.
   previous object is kept and dependents are not invalidated.
   `x.rx.with_equal(equal)` sets it on an existing value and returns that value,
   including values built by operators, `computed`, `lift`, and `rx.map`.
+- Added `tracked_fields`, a class decorator that makes reassigning an attribute
+  invalidate computations that read it. Reads return the stored value unchanged.
+  It works with slotted and dict-based dataclasses, or named attributes of other classes.
 
 ### Type inference
 

@@ -6,7 +6,19 @@ from decimal import Decimal
 from math import ceil, floor, trunc
 from typing import Any, Literal, TypeVar, Union, assert_type, overload
 
-from signified import Binding, Computed, Effect, HasValue, ReactiveValue, Signal, as_rx, computed, is_reactive, unref
+from signified import (
+    Binding,
+    Computed,
+    Effect,
+    HasValue,
+    ReactiveValue,
+    Signal,
+    as_rx,
+    computed,
+    is_reactive,
+    tracked_fields,
+    unref,
+)
 from signified._protocols import _AlwaysFalse, _AlwaysTrue
 
 T = TypeVar("T")
@@ -90,6 +102,26 @@ def test_rx_with_equal_returns_exact_source_type():
     assert_type(Computed(lambda: 1.5).rx.with_equal(lambda a, b: a == b), Computed[float])
     assert_type(Binding(1).rx.with_equal(None), Binding[int])
     assert_type((Signal(2) * 3).rx.with_equal(None), Computed[int])
+
+
+def test_tracked_fields_keep_declared_attribute_types():
+    from dataclasses import dataclass
+
+    @tracked_fields
+    @dataclass(slots=True)
+    class Material:
+        roughness: HasValue[float] = 0.5
+
+    @tracked_fields("alpha")
+    @dataclass
+    class Obj:
+        alpha: HasValue[float] = 1.0
+
+    material = Material(roughness=Signal(0.2))
+    assert_type(material, Material)
+    assert_type(material.roughness, HasValue[float])
+    assert_type(Obj().alpha, HasValue[float])
+    Material(roughness="rough")  # pyright: ignore[reportArgumentType]
 
 
 def test_getattr():

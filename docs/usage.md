@@ -224,6 +224,34 @@ depend on itself. Direct self-binding is rejected; indirect loops raise when rea
 `Signal(other_signal)` stores the signal object itself. Use `Binding(other_signal)`
 when you want to follow its current value.
 
+## Track attribute reassignment {#tracked-fields}
+
+A calculation that reads `unref(material.roughness)` follows a signal stored in
+that attribute, but it cannot see the attribute itself being replaced.
+`tracked_fields` makes reassignment visible:
+
+```python
+from dataclasses import dataclass
+from signified import Computed, HasValue, Signal, tracked_fields, unref
+
+@tracked_fields
+@dataclass(slots=True)
+class Material:
+    roughness: HasValue[float] = 0.5
+
+material = Material()
+doubled = Computed(lambda: unref(material.roughness) * 2)
+material.roughness = 0.25
+print(doubled.value)  # 0.5
+material.roughness = Signal(0.1)
+print(doubled.value)  # 0.2
+```
+
+Reading the attribute returns exactly what was stored; it never unwraps.
+Assigning a signal replaces the stored one instead of writing into it. Pass
+names, as in `@tracked_fields("roughness")`, to track only some attributes, or
+to track attributes of a class that is not a dataclass.
+
 ## Force a calculation to refresh {#manual-invalidation}
 
 If you replace an input through an ordinary Python object, Signified may not
