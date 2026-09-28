@@ -136,6 +136,33 @@ class _ReactiveNamespace[T]:
 
         return _computed_call(_tap, self._source)
 
+    def with_equal(self, equal: Callable[[T, T], bool] | None) -> None:
+        """Set the custom equality the source uses to decide whether it changed.
+
+        When `equal(previous, new)` returns `True`, a new value counts as
+        unchanged: the previous object is kept and dependents are not
+        invalidated. This is the same as passing `equal=` to
+        [Signal][signified.Signal] or [Computed][signified.Computed], and also
+        reaches values built by operators, `computed`, `lift`, and `rx.map`.
+        It applies to later changes only. Pass `None` to restore the default
+        (built-in scalars by value, other objects by identity).
+
+        The source is changed in place and nothing is returned.
+
+        Example:
+            ```py
+            >>> source = Signal(1)
+            >>> parity = source.rx.map(lambda value: [value % 2])
+            >>> parity.rx.with_equal(lambda a, b: a == b)
+            >>> first = parity.value
+            >>> source.value = 3
+            >>> parity.value is first
+            True
+
+            ```
+        """
+        object.__setattr__(self._source, "_equal", equal)
+
     def len[S: Sized](self: _ReactiveNamespace[S]) -> Computed[int]:
         """Return a reactive value for ``len(source.value)``.
 

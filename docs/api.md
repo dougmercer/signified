@@ -56,6 +56,7 @@ return as reactive values (identity checks, containment, ternary, etc.):
         - map
         - effect
         - tap
+        - with_equal
         - len
         - is_
         - is_not

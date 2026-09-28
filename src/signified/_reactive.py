@@ -88,7 +88,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
     Variable is only exposed for type hinting or subclassing purposes.
     """
 
-    __slots__ = ["_observers", "_name", "_version", "__weakref__"]
+    __slots__ = ["_observers", "_name", "_version", "_equal", "__weakref__"]
     _IS_COMPUTED = False
 
     def __init__(self):
@@ -97,6 +97,7 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         _setattr(self, "_observers", observers)
         _setattr(self, "_name", "")
         _setattr(self, "_version", 0)
+        _setattr(self, "_equal", None)
 
     def subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer to this variable.
@@ -268,6 +269,15 @@ def _has_changed(previous: Any, current: Any) -> bool:
     return True
 
 
+def _call_equal(equal: Callable[[Any, Any], bool], previous: Any, current: Any) -> bool:
+    """Call a custom equality with reads untracked, so it cannot add dependencies."""
+    _COMPUTE_STACK.append(None)
+    try:
+        return equal(previous, current)
+    finally:
+        _COMPUTE_STACK.pop()
+
+
 class Signal[T](Variable[T]):
     """Mutable state.
 
@@ -280,6 +290,10 @@ class Signal[T](Variable[T]):
 
     Args:
         value: Value to wrap.
+        equal: Optional `equal(previous, new) -> bool`. When it returns `True`,
+            an assignment counts as unchanged: the previous object is kept and
+            observers are not notified. See also
+            [rx.with_equal][signified._mixin._ReactiveNamespace.with_equal].
 
     Example:
         ```py
@@ -297,11 +311,12 @@ class Signal[T](Variable[T]):
     __slots__ = ["_value"]
     _WARN_ON_VALUE = True
 
-    def __init__(self, value: T) -> None:
+    def __init__(self, value: T, *, equal: Callable[[T, T], bool] | None = None) -> None:
         super().__init__()
         if _migration.WARNINGS_ENABLED and self._WARN_ON_VALUE:
             _migration._warn_signal_value(value)
         _setattr(self, "_value", value)
+        _setattr(self, "_equal", equal)
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
 
@@ -323,6 +338,9 @@ class Signal[T](Variable[T]):
             _migration._warn_signal_value(new_value)
         old_value = self._value
         if _has_changed(old_value, new_value):
+            equal = self._equal
+            if equal is not None and _call_equal(equal, old_value, new_value):
+                return
             _setattr(self, "_value", new_value)
             self._bump_version()
             if HOOKS_ENABLED:
@@ -748,7 +766,22 @@ class _ComputedImpl:
             # 2) Subscribe to what this run read, even if it raised.
             self._dep_state.commit_refresh()
 
-        # 3) Cache the outcome. Every failed evaluation is a new outcome;
+        # 3) A custom equality can declare a new value unchanged, which keeps
+        # the previous object. Its reads are untracked and its errors are cached.
+        equal = owner._equal
+        if equal is not None and had_outcome and not had_error and next_error is None:
+            if previous_value is not next_value:
+                try:
+                    if _call_equal(equal, previous_value, next_value):
+                        next_value = previous_value
+                except Exception as error:
+                    next_value = None
+                    next_error = error
+                except BaseException:
+                    self._state = max(self._state, _State.MUST_REFRESH)
+                    raise
+
+        # 4) Cache the outcome. Every failed evaluation is a new outcome;
         # recovery changes it even if the value equals the last successful one.
         # Keep the original traceback so repeated reads do not accumulate frames.
         self._error = next_error
@@ -840,6 +873,13 @@ class Computed(Variable[T]):
 
     Args:
         f: Zero-argument function used to compute the current value.
+        equal: Optional `equal(previous, current) -> bool`. When it returns
+            `True`, a recomputed value counts as unchanged: the previous object
+            is kept and dependents are not invalidated. By default, built-in
+            scalars compare by value and other objects by identity. Reads inside
+            `equal` are not tracked, and an exception it raises is cached like
+            an exception from `f`. See also
+            [rx.with_equal][signified._mixin._ReactiveNamespace.with_equal].
 
     Example:
         ```py
@@ -852,15 +892,28 @@ class Computed(Variable[T]):
         25
 
         ```
+
+        With `equal`, a new but equal result keeps dependents clean:
+
+        ```py
+        >>> count = Signal(2)
+        >>> parity = Computed(lambda: [count.value % 2], equal=lambda a, b: a == b)
+        >>> first = parity.value
+        >>> count.value = 4
+        >>> parity.value is first
+        True
+
+        ```
     """
 
     __slots__ = ["_compute_fn", "_value", "_impl"]
     _IS_COMPUTED = True
     _IMPL_TYPE: type[_ComputedImpl] = _ComputedImpl
 
-    def __init__(self, f: Callable[[], T]) -> None:
+    def __init__(self, f: Callable[[], T], *, equal: Callable[[T, T], bool] | None = None) -> None:
         super().__init__()
         self._compute_fn = f
+        self._equal = equal
         self._value = cast(T, None)  # placeholder; always set before read via _state guard
         self._impl = self._IMPL_TYPE(self)
 

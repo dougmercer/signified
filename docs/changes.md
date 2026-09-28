@@ -28,6 +28,11 @@ This page summarizes notable changes across releases.
 - `Signal.at()` and `Binding.at()` restore the previous version as well as the
   previous value on exit. Dependents that were not read inside the `with` block
   no longer recompute afterwards; dependents read inside it still do.
+- `Signal` and `Computed` accept `equal=`, a custom equality such as
+  `np.array_equal`. When it reports a new value equal to the previous one, the
+  previous object is kept and dependents are not invalidated.
+  `x.rx.with_equal(equal)` sets it on an existing value, including values
+  built by operators, `computed`, `lift`, and `rx.map`.
 
 ### Type inference
 
