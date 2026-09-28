@@ -56,6 +56,7 @@ return as reactive values (identity checks, containment, ternary, etc.):
         - map
         - effect
         - tap
+        - with_equal
         - len
         - is_
         - is_not
@@ -130,6 +131,7 @@ subscript, and attribute-access operations all return reactive
 ::: signified.as_rx
 ::: signified.batch
 ::: signified.untracked
+::: signified.tracked_fields
 
 ## Explicit deep resolution {#signified.deep_unref}
 

@@ -110,3 +110,37 @@ def test_rx_map_is_the_escape_hatch_for_ufuncs():
     np.testing.assert_allclose(unref(result), np.array([0.0, 1.0]), atol=1e-12)
     signal.value = np.array([np.pi / 2, 0.0])
     np.testing.assert_allclose(unref(result), np.array([1.0, 0.0]), atol=1e-12)
+
+
+def test_computed_equal_keeps_equal_arrays_from_invalidating_dependents():
+    frame = Signal(0)
+    matrix = Computed(lambda: np.eye(2) * min(frame.value, 3), equal=np.array_equal)
+    calls = []
+    downstream = Computed(lambda: calls.append(1) or matrix.value.sum())
+    assert downstream.value == 0
+
+    frame.value = 5
+    assert downstream.value == 6
+    clamped = matrix.value
+    frame.value = 6
+
+    assert downstream.value == 6
+    assert matrix.value is clamped
+    assert len(calls) == 2
+
+
+def test_rx_with_equal_on_operator_result_stops_propagation():
+    frame = Signal(0)
+    base = Computed(lambda: np.eye(2) * min(frame.value, 3))
+    scaled = base * 2
+    scaled.rx.with_equal(np.array_equal)
+    calls = []
+    downstream = Computed(lambda: calls.append(1) or scaled.value.sum())
+    assert downstream.value == 0
+
+    frame.value = 5
+    assert downstream.value == 12
+    frame.value = 6
+
+    assert downstream.value == 12
+    assert len(calls) == 2

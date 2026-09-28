@@ -25,6 +25,17 @@ This page summarizes notable changes across releases.
   use `reactive.rx.map(np.sin)`.
 - `Signal` forwards item deletion (`del signal[key]`) to the wrapped `list` or
   `dict` and notifies observers, mirroring `signal[key] = value`.
+- `Signal.at()` and `Binding.at()` restore the previous version as well as the
+  previous value on exit. Dependents that were not read inside the `with` block
+  no longer recompute afterwards; dependents read inside it still do.
+- `Signal` and `Computed` accept `equal=`, a custom equality such as
+  `np.array_equal`. When it reports a new value equal to the previous one, the
+  previous object is kept and dependents are not invalidated.
+  `x.rx.with_equal(equal)` sets it on an existing value and returns that value,
+  including values built by operators, `computed`, `lift`, and `rx.map`.
+- Added `tracked_fields`, a class decorator that makes reassigning an attribute
+  invalidate computations that read it. Reads return the stored value unchanged.
+  It works with slotted and dict-based dataclasses, or named attributes of other classes.
 
 ### Type inference
 
@@ -112,6 +123,12 @@ This page summarizes notable changes across releases.
 
 - `as_rx` preserves the concrete `Signal`, `Computed`, or `Binding` type when
   passed an existing reactive value.
+
+#### Reactive namespace
+
+- `x.rx` records the exact type of `x` as well as its value type, so helpers
+  that return the source keep it as `Signal`, `Computed`, or `Binding`.
+  `rx.with_equal` returns the source, typed exactly.
 
 ## 0.6.0
 

@@ -446,3 +446,146 @@ def test_invalidate_forces_downstream_recompute_without_signal_change():
 
     assert downstream.value == 2
     assert runs == 2
+
+
+def test_computed_equal_is_not_called_for_first_value_or_identical_results():
+    comparisons = []
+    source = Signal([1])
+    result = Computed(lambda: source.value, equal=lambda a, b: comparisons.append((a, b)) or False)
+    assert result.value == [1]
+    source.update()
+    assert result.value == [1]
+    assert comparisons == []
+
+
+def test_computed_equal_error_is_cached_then_recovers():
+    source = Signal(1)
+    fail = Signal(True)
+
+    def equal(previous, current):
+        if fail.value:
+            raise ValueError("cannot compare")
+        return previous == current
+
+    result = Computed(lambda: [source.value], equal=equal)
+    assert result.value == [1]
+    source.value = 2
+    with pytest.raises(ValueError, match="cannot compare"):
+        result.value
+    source.value = 3
+    assert result.value == [3]
+
+
+def test_computed_equal_reads_are_not_tracked():
+    source = Signal(1)
+    tolerance = Signal(0)
+    result = Computed(lambda: [source.value], equal=lambda a, b: abs(a[0] - b[0]) <= tolerance.value)
+    assert result.value == [1]
+    source.value = 2
+    # A new consumer's first evaluation refreshes `result` while on the stack.
+    outer = Computed(lambda: result.value)
+    assert outer.value == [2]
+
+    assert tolerance not in result._impl._deps
+    assert tolerance not in outer._impl._deps
+
+
+def test_computed_equal_interrupt_forces_retry():
+    source = Signal(1)
+    interrupt = [True]
+
+    def equal(previous, current):
+        if interrupt[0]:
+            raise KeyboardInterrupt
+        return False
+
+    result = Computed(lambda: [source.value], equal=equal)
+    assert result.value == [1]
+    source.value = 2
+    with pytest.raises(KeyboardInterrupt):
+        result.value
+    interrupt[0] = False
+    assert result.value == [2]
+
+
+def test_rx_with_equal_applies_to_computed_from_decorator_and_can_be_cleared():
+    source = Signal(1)
+    result = computed(lambda value: [value % 2])(source)
+    assert result.rx.with_equal(lambda a, b: a == b) is result
+    first = result.value
+    source.value = 3
+    assert result.value is first
+
+    result.rx.with_equal(None)
+    source.value = 5
+    assert result.value is not first
+
+
+def test_signal_equal_keeps_previous_object_and_skips_notification():
+    calls = []
+    source = Signal([1], equal=lambda a, b: a == b)
+    derived = Computed(lambda: calls.append(1) or len(source.value))
+    assert derived.value == 1
+    original = source.value
+    version = source._version
+
+    source.value = [1]
+
+    assert source.value is original
+    assert source._version == version
+    assert derived.value == 1
+    assert len(calls) == 1
+    source.value = [1, 2]
+    assert derived.value == 2
+
+
+def test_signal_equal_is_not_called_for_identical_values_and_update_bypasses_it():
+    comparisons = []
+    items = [1]
+    source = Signal(items, equal=lambda a, b: comparisons.append(1) or True)
+    derived = Computed(lambda: len(source.value))
+    assert derived.value == 1
+
+    source.value = items
+    items.append(2)
+    source.update()
+
+    assert comparisons == []
+    assert derived.value == 2
+
+
+def test_signal_equal_error_propagates_without_changing_value():
+    def equal(previous, current):
+        raise ValueError("cannot compare")
+
+    source = Signal([1], equal=equal)
+    original = source.value
+    with pytest.raises(ValueError, match="cannot compare"):
+        source.value = [2]
+    assert source.value is original
+
+
+def test_signal_equal_reads_are_not_tracked_by_the_writing_consumer():
+    from signified import Effect
+
+    tolerance = Signal(0)
+    target = Signal([0], equal=lambda a, b: abs(a[0] - b[0]) <= tolerance.value)
+    trigger = Signal(1)
+    runs = []
+
+    def write():
+        runs.append(1)
+        target.value = [trigger.value]
+
+    watcher = Effect(write)
+    tolerance.value = 5
+    assert len(runs) == 1
+    watcher.dispose()
+
+
+def test_rx_with_equal_on_signal():
+    source = Signal([1])
+    source.rx.with_equal(lambda a, b: a == b)
+    original = source.value
+    source.value = [1]
+    assert source.value is original
