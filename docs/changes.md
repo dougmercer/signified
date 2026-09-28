@@ -31,8 +31,8 @@ This page summarizes notable changes across releases.
 - `Signal` and `Computed` accept `equal=`, a custom equality such as
   `np.array_equal`. When it reports a new value equal to the previous one, the
   previous object is kept and dependents are not invalidated.
-  `x.rx.with_equal(equal)` sets it on an existing value, including values
-  built by operators, `computed`, `lift`, and `rx.map`.
+  `x.rx.with_equal(equal)` sets it on an existing value and returns that value,
+  including values built by operators, `computed`, `lift`, and `rx.map`.
 
 ### Type inference
 
@@ -120,6 +120,12 @@ This page summarizes notable changes across releases.
 
 - `as_rx` preserves the concrete `Signal`, `Computed`, or `Binding` type when
   passed an existing reactive value.
+
+#### Reactive namespace
+
+- `x.rx` records the exact type of `x` as well as its value type, so helpers
+  that return the source keep it as `Signal`, `Computed`, or `Binding`.
+  `rx.with_equal` returns the source, typed exactly.
 
 ## 0.6.0
 

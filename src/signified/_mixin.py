@@ -11,11 +11,13 @@ from typing import (
     Callable,
     ClassVar,
     Literal,
+    Self,
     SupportsAbs,
     SupportsFloat,
     SupportsIndex,
     SupportsRound,
     Union,
+    cast,
     overload,
 )
 
@@ -34,8 +36,12 @@ def _ternary[A, B](a: A, b: B, condition: object) -> A | B:
     return a if condition else b
 
 
-class _ReactiveNamespace[T]:
-    """Helper methods available under `signal_or_computed.rx`."""
+class _ReactiveNamespace[T, Source]:
+    """Helper methods available under `signal_or_computed.rx`.
+
+    `T` is the source's value type and `Source` its exact reactive type, so
+    helpers that return the source keep it as `Signal`, `Computed`, or `Binding`.
+    """
 
     __slots__ = ("_source",)
 
@@ -136,7 +142,7 @@ class _ReactiveNamespace[T]:
 
         return _computed_call(_tap, self._source)
 
-    def with_equal(self, equal: Callable[[T, T], bool] | None) -> None:
+    def with_equal(self, equal: Callable[[T, T], bool] | None) -> Source:
         """Set the custom equality the source uses to decide whether it changed.
 
         When `equal(previous, new)` returns `True`, a new value counts as
@@ -147,13 +153,13 @@ class _ReactiveNamespace[T]:
         It applies to later changes only. Pass `None` to restore the default
         (built-in scalars by value, other objects by identity).
 
-        The source is changed in place and nothing is returned.
+        The source is changed in place and returned, so the call can end an
+        expression: `m = (rotation @ scale).rx.with_equal(np.array_equal)`.
 
         Example:
             ```py
             >>> source = Signal(1)
-            >>> parity = source.rx.map(lambda value: [value % 2])
-            >>> parity.rx.with_equal(lambda a, b: a == b)
+            >>> parity = source.rx.map(lambda value: [value % 2]).rx.with_equal(lambda a, b: a == b)
             >>> first = parity.value
             >>> source.value = 3
             >>> parity.value is first
@@ -161,9 +167,11 @@ class _ReactiveNamespace[T]:
 
             ```
         """
-        object.__setattr__(self._source, "_equal", equal)
+        source = self._source
+        object.__setattr__(source, "_equal", equal)
+        return cast(Source, source)
 
-    def len[S: Sized](self: _ReactiveNamespace[S]) -> Computed[int]:
+    def len[S: Sized](self: _ReactiveNamespace[S, Any]) -> Computed[int]:
         """Return a reactive value for ``len(source.value)``.
 
         Returns:
@@ -255,7 +263,7 @@ class _ReactiveNamespace[T]:
         """
         return _computed_call(operator.contains, container, self._source)
 
-    def contains[C: _p._MembershipContainer](self: _ReactiveNamespace[C], other: Any) -> Computed[bool]:
+    def contains[C: _p._MembershipContainer](self: _ReactiveNamespace[C, Any], other: Any) -> Computed[bool]:
         """Return a reactive value for whether `other` is in `self._source`.
 
         Args:
@@ -341,10 +349,10 @@ class _ReactiveNamespace[T]:
         return _computed_call(operator.ne, self._source, other)
 
     @overload
-    def where[A, B, C: _p._Truthy](self: _ReactiveNamespace[C], a: HasValue[A], b: HasValue[B]) -> Computed[A]: ...
+    def where[A, B, C: _p._Truthy](self: _ReactiveNamespace[C, Any], a: HasValue[A], b: HasValue[B]) -> Computed[A]: ...
 
     @overload
-    def where[A, B, C: _p._Falsy](self: _ReactiveNamespace[C], a: HasValue[A], b: HasValue[B]) -> Computed[B]: ...
+    def where[A, B, C: _p._Falsy](self: _ReactiveNamespace[C, Any], a: HasValue[A], b: HasValue[B]) -> Computed[B]: ...
 
     @overload
     def where[A, B](self, a: HasValue[A], b: HasValue[B]) -> Computed[A | B]: ...
@@ -379,10 +387,10 @@ class _ReactiveNamespace[T]:
         return _computed_call(_ternary, a, b, self._source)
 
     @overload
-    def as_bool[C: _p._Truthy](self: _ReactiveNamespace[C]) -> Computed[Literal[True]]: ...
+    def as_bool[C: _p._Truthy](self: _ReactiveNamespace[C, Any]) -> Computed[Literal[True]]: ...
 
     @overload
-    def as_bool[C: _p._Falsy](self: _ReactiveNamespace[C]) -> Computed[Literal[False]]: ...
+    def as_bool[C: _p._Falsy](self: _ReactiveNamespace[C, Any]) -> Computed[Literal[False]]: ...
 
     @overload
     def as_bool(self) -> Computed[bool]: ...
@@ -543,7 +551,7 @@ class _ReactiveMixIn[T]:
         return _computed_call(abs, self)
 
     @property
-    def rx(self) -> _ReactiveNamespace[T]:
+    def rx(self) -> _ReactiveNamespace[T, Self]:
         """Access reactive helper operations in a [namespace][signified._mixin._ReactiveNamespace]."""
         return _ReactiveNamespace(self)
 

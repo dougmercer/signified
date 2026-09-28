@@ -85,6 +85,13 @@ def test_computed_init():
     assert_type(c_float.value, float)
 
 
+def test_rx_with_equal_returns_exact_source_type():
+    assert_type(Signal(1).rx.with_equal(None), Signal[int])
+    assert_type(Computed(lambda: 1.5).rx.with_equal(lambda a, b: a == b), Computed[float])
+    assert_type(Binding(1).rx.with_equal(None), Binding[int])
+    assert_type((Signal(2) * 3).rx.with_equal(None), Computed[int])
+
+
 def test_getattr():
     class Person:
         def __init__(self, name: str):

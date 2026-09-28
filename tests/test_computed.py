@@ -511,7 +511,7 @@ def test_computed_equal_interrupt_forces_retry():
 def test_rx_with_equal_applies_to_computed_from_decorator_and_can_be_cleared():
     source = Signal(1)
     result = computed(lambda value: [value % 2])(source)
-    result.rx.with_equal(lambda a, b: a == b)
+    assert result.rx.with_equal(lambda a, b: a == b) is result
     first = result.value
     source.value = 3
     assert result.value is first
