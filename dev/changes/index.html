@@ -1118,6 +1118,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#reactive-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive namespace
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1714,6 +1725,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#reactive-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive namespace
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2178,6 +2200,17 @@
   use <code>reactive.rx.map(np.sin)</code>.</li>
 <li><code>Signal</code> forwards item deletion (<code>del signal[key]</code>) to the wrapped <code>list</code> or
   <code>dict</code> and notifies observers, mirroring <code>signal[key] = value</code>.</li>
+<li><code>Signal.at()</code> and <code>Binding.at()</code> restore the previous version as well as the
+  previous value on exit. Dependents that were not read inside the <code>with</code> block
+  no longer recompute afterwards; dependents read inside it still do.</li>
+<li><code>Signal</code> and <code>Computed</code> accept <code>equal=</code>, a custom equality such as
+  <code>np.array_equal</code>. When it reports a new value equal to the previous one, the
+  previous object is kept and dependents are not invalidated.
+  <code>x.rx.with_equal(equal)</code> sets it on an existing value and returns that value,
+  including values built by operators, <code>computed</code>, <code>lift</code>, and <code>rx.map</code>.</li>
+<li>Added <code>tracked_fields</code>, a class decorator that makes reassigning an attribute
+  invalidate computations that read it. Reads return the stored value unchanged.
+  It works with slotted and dict-based dataclasses, or named attributes of other classes.</li>
 </ul>
 <h3 id="type-inference">Type inference<a class="headerlink" href="#type-inference" title="Permanent link">&para;</a></h3>
 <h4 id="operator-protocols-and-reflected-methods">Operator protocols and reflected methods<a class="headerlink" href="#operator-protocols-and-reflected-methods" title="Permanent link">&para;</a></h4>
@@ -2264,6 +2297,12 @@
 <ul>
 <li><code>as_rx</code> preserves the concrete <code>Signal</code>, <code>Computed</code>, or <code>Binding</code> type when
   passed an existing reactive value.</li>
+</ul>
+<h4 id="reactive-namespace">Reactive namespace<a class="headerlink" href="#reactive-namespace" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>x.rx</code> records the exact type of <code>x</code> as well as its value type, so helpers
+  that return the source keep it as <code>Signal</code>, <code>Computed</code>, or <code>Binding</code>.
+  <code>rx.with_equal</code> returns the source, typed exactly.</li>
 </ul>
 <h2 id="060">0.6.0<a class="headerlink" href="#060" title="Permanent link">&para;</a></h2>
 <ul>

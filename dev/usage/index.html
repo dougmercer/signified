@@ -773,6 +773,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tracked-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Track attribute reassignment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#manual-invalidation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1333,6 +1344,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tracked-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Track attribute reassignment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#manual-invalidation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1554,19 +1576,42 @@ binding. To build a new calculation from the previous source, use <code>.derive(
 depend on itself. Direct self-binding is rejected; indirect loops raise when read.</p>
 <p><code>Signal(other_signal)</code> stores the signal object itself. Use <code>Binding(other_signal)</code>
 when you want to follow its current value.</p>
+<h2 id="tracked-fields">Track attribute reassignment<a class="headerlink" href="#tracked-fields" title="Permanent link">&para;</a></h2>
+<p>A calculation that reads <code>unref(material.roughness)</code> follows a signal stored in
+that attribute, but it cannot see the attribute itself being replaced.
+<code>tracked_fields</code> makes reassignment visible:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">HasValue</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">tracked_fields</span><span class="p">,</span> <span class="n">unref</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nd">@tracked_fields</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">Material</span><span class="p">:</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">roughness</span><span class="p">:</span> <span class="n">HasValue</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="n">material</span> <span class="o">=</span> <span class="n">Material</span><span class="p">()</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">unref</span><span class="p">(</span><span class="n">material</span><span class="o">.</span><span class="n">roughness</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="n">material</span><span class="o">.</span><span class="n">roughness</span> <span class="o">=</span> <span class="mf">0.25</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 0.5</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="n">material</span><span class="o">.</span><span class="n">roughness</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 0.2</span>
+</span></code></pre></div>
+<p>Reading the attribute returns exactly what was stored; it never unwraps.
+Assigning a signal replaces the stored one instead of writing into it. Pass
+names, as in <code>@tracked_fields("roughness")</code>, to track only some attributes, or
+to track attributes of a class that is not a dataclass.</p>
 <h2 id="manual-invalidation">Force a calculation to refresh<a class="headerlink" href="#manual-invalidation" title="Permanent link">&para;</a></h2>
 <p>If you replace an input through an ordinary Python object, Signified may not
 see the change. Call <code>.invalidate()</code> to recalculate on the next read:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">holder</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">Signal</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">holder</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="n">holder</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="n">doubled</span><span class="o">.</span><span class="n">invalidate</span><span class="p">()</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 40</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">holder</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">Signal</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">holder</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">holder</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">doubled</span><span class="o">.</span><span class="n">invalidate</span><span class="p">()</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 40</span>
 </span></code></pre></div>
 <h2 id="utility-helpers">More helpers<a class="headerlink" href="#utility-helpers" title="Permanent link">&para;</a></h2>
 <p>See the <a href="../api/">API reference</a> for:</p>

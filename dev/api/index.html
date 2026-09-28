@@ -1132,6 +1132,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#signified._mixin._ReactiveNamespace.with_equal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;with_equal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified._mixin._ReactiveNamespace.len" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1818,6 +1829,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;untracked
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signified.tracked_fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;tracked_fields
       
     </span>
   </a>
@@ -2545,6 +2567,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#signified._mixin._ReactiveNamespace.with_equal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;with_equal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified._mixin._ReactiveNamespace.len" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3238,6 +3271,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#signified.tracked_fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;tracked_fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified.deep_unref" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3497,6 +3541,25 @@ The <code>value</code> property is read/write:</p>
                 <em>required</em>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>equal</code>
+            </td>
+            <td>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="signified._reactive.Signal[T]">T</span>, <span title="signified._reactive.Signal[T]">T</span>], <span title="bool">bool</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional <code>equal(previous, new) -&gt; bool</code>. When it returns <code>True</code>,
+an assignment counts as unchanged: the previous object is kept and
+observers are not notified. See also
+<a class="autorefs autorefs-internal" href="#signified._mixin._ReactiveNamespace.with_equal">rx.with_equal</a>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -3576,6 +3639,11 @@ updates the stored value and notifies observers if the value changed.</p>
         <p>Temporarily set the signal to a given value within a context.</p>
 <p>Restores the previous value when the context exits, even if an exception
 is raised.</p>
+<p>The previous version is restored along with the previous value, so a
+dependent that was not read inside the context is not left needing a
+recompute. Dependents read inside the context recompute as usual. If
+the signal is written again inside the context, exit falls back to an
+ordinary assignment.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4030,6 +4098,28 @@ dependency changes or <code>invalidate()</code> forces another evaluation.</p>
                 <em>required</em>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>equal</code>
+            </td>
+            <td>
+                  <code><span title="typing.Callable">Callable</span>[[<span title="signified._reactive.T">T</span>, <span title="signified._reactive.T">T</span>], <span title="bool">bool</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional <code>equal(previous, current) -&gt; bool</code>. When it returns
+<code>True</code>, a recomputed value counts as unchanged: the previous object
+is kept and dependents are not invalidated. By default, built-in
+scalars compare by value and other objects by identity. Reads inside
+<code>equal</code> are not tracked, and an exception it raises is cached like
+an exception from <code>f</code>. See also
+<a class="autorefs autorefs-internal" href="#signified._mixin._ReactiveNamespace.with_equal">rx.with_equal</a>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
@@ -4043,6 +4133,14 @@ dependency changes or <code>invalidate()</code> forces another evaluation.</p>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">count</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">5</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">squared</span><span class="o">.</span><span class="n">value</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="mi">25</span>
+</span></code></pre></div>
+<p>With <code>equal</code>, a new but equal result keeps dependents clean:</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">count</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">parity</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="n">count</span><span class="o">.</span><span class="n">value</span> <span class="o">%</span> <span class="mi">2</span><span class="p">],</span> <span class="n">equal</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">==</span> <span class="n">b</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">first</span> <span class="o">=</span> <span class="n">parity</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">count</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">4</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">parity</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">first</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="kc">True</span>
 </span></code></pre></div>
 </details>
 
@@ -4327,7 +4425,9 @@ a new computation from the <code>Binding</code> that will receive that computati
 
         <p>Temporarily follow a private <code>Signal</code> holding <code>value</code>.</p>
 <p>The previous source is restored when the context exits, even if an
-exception is raised.</p>
+exception is raised. Like <a class="autorefs autorefs-internal" href="#signified.Signal.at">Signal.at</a>, a dependent
+that did not read the binding inside the context is not left needing a
+recompute.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4578,6 +4678,8 @@ return as reactive values (identity checks, containment, ternary, etc.):</p>
 
 
         <p>Helper methods available under <code>signal_or_computed.rx</code>.</p>
+<p><code>T</code> is the source's value type and <code>Source</code> its exact reactive type, so
+helpers that return the source keep it as <code>Signal</code>, <code>Computed</code>, or <code>Binding</code>.</p>
 
 
 
@@ -4818,6 +4920,46 @@ side effects, or <code>untracked()</code> to inspect a value without subscribing
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="mi">2</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">seen</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+</span></code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified._mixin._ReactiveNamespace.with_equal" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">with_equal</span>
+
+
+<a href="#signified._mixin._ReactiveNamespace.with_equal" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">with_equal</span><span class="p">(</span><span class="n">equal</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Set the custom equality the source uses to decide whether it changed.</p>
+<p>When <code>equal(previous, new)</code> returns <code>True</code>, a new value counts as
+unchanged: the previous object is kept and dependents are not
+invalidated. This is the same as passing <code>equal=</code> to
+<a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a> or <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a>, and also
+reaches values built by operators, <code>computed</code>, <code>lift</code>, and <code>rx.map</code>.
+It applies to later changes only. Pass <code>None</code> to restore the default
+(built-in scalars by value, other objects by identity).</p>
+<p>The source is changed in place and returned, so the call can end an
+expression: <code>m = (rotation @ scale).rx.with_equal(np.array_equal)</code>.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">source</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">parity</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">value</span><span class="p">:</span> <span class="p">[</span><span class="n">value</span> <span class="o">%</span> <span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">with_equal</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">==</span> <span class="n">b</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">first</span> <span class="o">=</span> <span class="n">parity</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">source</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">parity</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">first</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="kc">True</span>
 </span></code></pre></div>
 </details>
 
@@ -10140,6 +10282,65 @@ body and flush failures are grouped together.</p>
 current values and retain normal hooks and errors. Synchronous, single-
 thread use only; this context must not span await.</p>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified.tracked_fields" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.tracked_fields</span>
+
+
+<a href="#signified.tracked_fields" class="headerlink" title="Permanent link">&para;</a></h2>
+          <div class="doc-overloads">
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">tracked_fields</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n"><span title="C">C</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="C">C</span></span>
+</span></code></pre></div><div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">tracked_fields</span><span class="p">(</span><span class="o">*</span><span class="n">names</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="C">C</span></span><span class="p">],</span> <span class="n"><span title="C">C</span></span><span class="p">]</span>
+</span></code></pre></div>          </div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">tracked_fields</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Track reads and reassignment of a class's attributes.</p>
+<p>Reading a tracked attribute returns exactly what was stored: a plain value,
+or the <code>Signal</code>, <code>Computed</code>, or <code>Binding</code> that was assigned. It never
+unwraps. Inside a computation or effect, the read also depends on the
+attribute itself, so assigning a new value invalidates the reader. Use
+<a class="autorefs autorefs-internal" href="#signified.unref">unref</a> as usual to read through a stored reactive value.</p>
+<p>Assignment uses the usual change rule: built-in scalars compare by value,
+other objects by identity. Assigning a reactive value replaces the stored
+one; it never writes into the previously stored signal.</p>
+<p>Apply it above <code>@dataclass</code> to track every field, or pass names to track
+only those. Names are required for a class that is not a dataclass. Both
+slotted and dict-based classes work; frozen dataclasses are rejected.
+Copies and pickles store plain values and get their own tracking.</p>
+<p>Reads outside a computation skip the graph, but still cost a Python
+descriptor call. In-place mutation of a stored object is not observed.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasValue</span><span class="p">,</span> <span class="n">unref</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="nd">@tracked_fields</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">...</span> <span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">...</span> <span class="k">class</span><span class="w"> </span><span class="nc">Material</span><span class="p">:</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">...</span>     <span class="n">roughness</span><span class="p">:</span> <span class="n">HasValue</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">material</span> <span class="o">=</span> <span class="n">Material</span><span class="p">()</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">doubled</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">unref</span><span class="p">(</span><span class="n">material</span><span class="o">.</span><span class="n">roughness</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">doubled</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="mf">1.0</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">material</span><span class="o">.</span><span class="n">roughness</span> <span class="o">=</span> <span class="mf">0.25</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">doubled</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="mf">0.5</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">material</span><span class="o">.</span><span class="n">roughness</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">doubled</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="mf">0.2</span>
+</span></code></pre></div>
+</details>
 
     </div>
 
