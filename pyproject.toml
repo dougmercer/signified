@@ -23,7 +23,6 @@ build-backend = "uv_build"
 
 [project.optional-dependencies]
 plugins = ["pluggy"]
-ipython = ["ipython"]
 
 [dependency-groups]
 docs = [

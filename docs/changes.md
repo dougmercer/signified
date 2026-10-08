@@ -37,6 +37,11 @@ This page summarizes notable changes across releases.
   invalidate computations that read it. Reads return the stored value unchanged.
   It works with slotted and dict-based dataclasses, or named attributes of other classes.
 
+### Packaging
+
+- Removed the `ipython` extra. Notebook display works the same without it,
+  because IPython calls the display hook only when IPython is running.
+
 ### Type inference
 
 #### Operator protocols and reflected methods

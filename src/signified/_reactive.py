@@ -159,12 +159,10 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
         raise NotImplementedError("Update method should be overridden by subclasses")
 
     def _ipython_display_(self) -> None:
-        from ._ipython import _HAS_IPYTHON, IPythonObserver
-
-        if not _HAS_IPYTHON:
-            return
-
+        # IPython calls this hook itself, so IPython is importable whenever it runs.
         from IPython.display import display  # pyright: ignore[reportMissingImports]
+
+        from ._ipython import IPythonObserver
 
         handle = display(self.value, display_id=True)
         assert handle is not None
