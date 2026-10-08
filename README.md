@@ -17,8 +17,10 @@ A fast, fully-typed Python library for reactive programming.
 
 ## Getting started
 
+First, [install `uv`](https://docs.astral.sh/uv/getting-started/installation/), and then add `signified` to your project:
+
 ```console
-pip install signified
+$ uv add signified
 ```
 
 ## Why care?
