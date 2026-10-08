@@ -4,7 +4,6 @@ from typing import Any
 from unittest.mock import MagicMock
 
 from signified import Signal
-from signified import _ipython as display_module
 from signified._ipython import IPythonObserver
 
 
@@ -16,9 +15,7 @@ class MockDisplayHandle:
         self.updated_values.append(value)
 
 
-def test_ipython_observer_kept_alive_without_external_reference(monkeypatch) -> None:
-    monkeypatch.setattr(display_module, "_HAS_IPYTHON", True)
-
+def test_ipython_observer_kept_alive_without_external_reference() -> None:
     signal = Signal(1)
     handle = MockDisplayHandle()
 
@@ -30,8 +27,6 @@ def test_ipython_observer_kept_alive_without_external_reference(monkeypatch) -> 
 
 
 def test_ipython_display_subscribes_updates(monkeypatch) -> None:
-    monkeypatch.setattr(display_module, "_HAS_IPYTHON", True)
-
     shown: dict[str, Any] = {}
 
     def fake_display(value: Any, display_id: bool = False) -> MockDisplayHandle:

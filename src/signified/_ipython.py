@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import importlib.util
 import weakref
 from typing import Any
 
-_HAS_IPYTHON = importlib.util.find_spec("IPython") is not None
 DisplayHandle = Any
 
 
@@ -17,15 +15,9 @@ _ACTIVE_OBSERVERS: weakref.WeakKeyDictionary[Any, list["IPythonObserver"]] = wea
 
 
 class IPythonObserver:
-    """Observer that updates IPython display when value changes.
-
-    Only works if IPython is available.
-    """
+    """Observer that updates an IPython display handle when the value changes."""
 
     def __init__(self, me: Any, handle: DisplayHandle):  # type: ignore
-        if not _HAS_IPYTHON:
-            raise ImportError("IPython is required for IPythonObserver but is not installed")
-
         # Observers are stored as weakrefs by reactive values, so keep a strong
         # reference here to prevent immediate collection.
         _ACTIVE_OBSERVERS.setdefault(me, []).append(self)

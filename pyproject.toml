@@ -21,10 +21,6 @@ classifiers = [
 requires = ["uv_build>=0.12.5,<0.13.0"]
 build-backend = "uv_build"
 
-[project.optional-dependencies]
-plugins = ["pluggy"]
-ipython = ["ipython"]
-
 [dependency-groups]
 docs = [
     "mkdocs",
@@ -33,7 +29,7 @@ docs = [
     "mkdocs-material-extensions",
     "mike",
 ]
-test = ["pytest", "pytest-coverage", "numpy", "pluggy"]
+test = ["pytest", "pytest-coverage", "numpy"]
 lint = ["pyright"]
 dev = [
     "pytest-codspeed>=4.3.0",
