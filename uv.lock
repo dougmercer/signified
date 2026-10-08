@@ -942,11 +942,6 @@ name = "signified"
 version = "0.6.1"
 source = { editable = "." }
 
-[package.optional-dependencies]
-plugins = [
-    { name = "pluggy" },
-]
-
 [package.dev-dependencies]
 dev = [
     { name = "pytest-codspeed" },
@@ -965,14 +960,11 @@ lint = [
 ]
 test = [
     { name = "numpy" },
-    { name = "pluggy" },
     { name = "pytest" },
     { name = "pytest-coverage" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pluggy", marker = "extra == 'plugins'" }]
-provides-extras = ["plugins"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -990,7 +982,6 @@ docs = [
 lint = [{ name = "pyright" }]
 test = [
     { name = "numpy" },
-    { name = "pluggy" },
     { name = "pytest" },
     { name = "pytest-coverage" },
 ]

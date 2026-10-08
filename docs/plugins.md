@@ -1,16 +1,9 @@
 # Writing plugins
 
 Plugins let you log or inspect reads and changes to reactive values.
-Signified uses [pluggy](https://pluggy.readthedocs.io/) to call your plugin's
-methods when these events happen.
+Signified calls your plugin's methods when these events happen.
 
 ## Enable plugins
-
-Install the optional dependency:
-
-```bash
-pip install "signified[plugins]"
-```
 
 Set `SIGNIFIED_ENABLE_HOOKS=1` before importing Signified. For example, run a
 script with:
@@ -35,7 +28,8 @@ Each hook receives the reactive object as its `value` argument:
 ## Create and register a plugin {#creating-a-plugin}
 
 Implement the hooks you need with `@hookimpl`, then register the instance.
-This plugin counts new reactive values:
+A plugin can also be a module of `@hookimpl` functions. This plugin counts new
+reactive values:
 
 ```python
 from typing import Any
@@ -65,3 +59,8 @@ plugin_manager.unregister(plugin)
 Use `logging` in place of `print` if your application already has logging set
 up. Unregister the plugin when you no longer need it. The older `pm` name is
 an alias for `plugin_manager`.
+
+When several plugins implement the same hook, the most recently registered one
+runs first. `register` raises an error if the plugin is already registered, if
+an `@hookimpl` method's name is not one of the hooks above, or if it does not
+accept a `value` argument.

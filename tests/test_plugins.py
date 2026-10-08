@@ -1,7 +1,10 @@
 from typing import Any
 
+import pytest
+
 import signified._reactive as reactive_module
 from signified import Binding, Signal, Variable
+from signified.plugins import PluginManager, hookimpl
 
 
 class RecordingHook:
@@ -88,3 +91,66 @@ def test_updated_hook_runs_for_item_deletion(monkeypatch) -> None:
 
     assert signal.value == [1, 3]
     assert hook.updated_values == [signal]
+
+
+class Recorder:
+    def __init__(self, label: str, calls: list[tuple[str, str]]) -> None:
+        self.label = label
+        self.calls = calls
+
+    @hookimpl
+    def created(self, value: Variable[Any]) -> None:
+        self.calls.append((self.label, "created"))
+
+    def read(self, value: Variable[Any]) -> None:
+        self.calls.append((self.label, "read"))
+
+
+def test_plugin_manager_calls_marked_impls_most_recent_first(monkeypatch) -> None:
+    manager = PluginManager()
+    monkeypatch.setattr(reactive_module, "HOOKS_ENABLED", True)
+    monkeypatch.setattr(reactive_module, "plugin_manager", manager)
+    calls: list[tuple[str, str]] = []
+    first, second = Recorder("first", calls), Recorder("second", calls)
+    manager.register(first)
+    manager.register(second)
+
+    signal = Signal(1)
+    assert signal.value == 1
+
+    assert calls == [("second", "created"), ("first", "created")]
+
+    manager.unregister(second)
+    calls.clear()
+    Signal(2)
+    assert calls == [("first", "created")]
+
+
+def test_plugin_manager_rejects_duplicate_and_unknown_plugins() -> None:
+    manager = PluginManager()
+    plugin = Recorder("plugin", [])
+    manager.register(plugin)
+
+    with pytest.raises(ValueError, match="already registered"):
+        manager.register(plugin)
+    manager.unregister(plugin)
+    with pytest.raises(ValueError, match="not registered"):
+        manager.unregister(plugin)
+
+
+def test_plugin_manager_validates_hook_impls() -> None:
+    class Misspelled:
+        @hookimpl
+        def craeted(self, value: Variable[Any]) -> None:
+            pass
+
+    class WrongArgument:
+        @hookimpl
+        def created(self, vaule: Variable[Any]) -> None:
+            pass
+
+    manager = PluginManager()
+    with pytest.raises(ValueError, match="Unknown hook 'craeted'"):
+        manager.register(Misspelled())
+    with pytest.raises(TypeError, match="must accept a `value` keyword argument"):
+        manager.register(WrongArgument())

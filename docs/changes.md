@@ -41,6 +41,13 @@ This page summarizes notable changes across releases.
 
 - Removed the `ipython` extra. Notebook display works the same without it,
   because IPython calls the display hook only when IPython is running.
+- Plugins no longer use pluggy, and the `plugins` extra is removed. Signified
+  now has its own small plugin manager, so `SIGNIFIED_ENABLE_HOOKS=1` is all
+  that is needed to enable hooks. `@hookimpl`, `plugin_manager.register`, and
+  `plugin_manager.unregister` work as before. `register` now rejects an
+  `@hookimpl` method whose name is not a known hook, and no longer takes a
+  `name` argument. pluggy's options such as `@hookimpl(tryfirst=True)` and
+  hook wrappers are not supported.
 
 ### Type inference
 

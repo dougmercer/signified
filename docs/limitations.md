@@ -24,4 +24,4 @@ for the limits of copying and serialization.
 
 ## Plugin Hooks Are Opt-In
 
-See [Enable plugins](plugins.md#enable-plugins) for installation and setup.
+See [Enable plugins](plugins.md#enable-plugins) for setup.
