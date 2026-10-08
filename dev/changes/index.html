@@ -1041,6 +1041,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#packaging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packaging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#type-inference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1648,6 +1659,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#packaging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packaging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#type-inference" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2211,6 +2233,18 @@
 <li>Added <code>tracked_fields</code>, a class decorator that makes reassigning an attribute
   invalidate computations that read it. Reads return the stored value unchanged.
   It works with slotted and dict-based dataclasses, or named attributes of other classes.</li>
+</ul>
+<h3 id="packaging">Packaging<a class="headerlink" href="#packaging" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Removed the <code>ipython</code> extra. Notebook display works the same without it,
+  because IPython calls the display hook only when IPython is running.</li>
+<li>Plugins no longer use pluggy, and the <code>plugins</code> extra is removed. Signified
+  now has its own small plugin manager, so <code>SIGNIFIED_ENABLE_HOOKS=1</code> is all
+  that is needed to enable hooks. <code>@hookimpl</code>, <code>plugin_manager.register</code>, and
+  <code>plugin_manager.unregister</code> work as before. <code>register</code> now rejects an
+  <code>@hookimpl</code> method whose name is not a known hook, and no longer takes a
+  <code>name</code> argument. pluggy's options such as <code>@hookimpl(tryfirst=True)</code> and
+  hook wrappers are not supported.</li>
 </ul>
 <h3 id="type-inference">Type inference<a class="headerlink" href="#type-inference" title="Permanent link">&para;</a></h3>
 <h4 id="operator-protocols-and-reflected-methods">Operator protocols and reflected methods<a class="headerlink" href="#operator-protocols-and-reflected-methods" title="Permanent link">&para;</a></h4>
