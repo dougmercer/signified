@@ -55,31 +55,8 @@ def power(x, n):
 x_squared = power(x, 2)  # equivalent to the above
 ```
 
-Together, these data structures allow us to implement a wide variety of capabilities. In particular, I wrote this library to make my to-be-released animation library easier to maintain and more fun to work with.
-
-Dependencies come from reactive reads, not containment. Normal `computed` and
-`effect` calls unwrap direct reactive arguments, while ordinary containers are
-opaque. Call `deep_unref` inside a computation when recursive resolution is intended.
-Use `batch()` to group writes and `untracked()` for reads without subscribing.
-
-## ... what do you mean by "kind-of working type narrowing"?
-
-Other reactive Python libraries don't really attempt to implement type hints (e.g., [param](https://param.holoviz.org/)).
-
-``signified`` is type hinted, including rebindable values.
-
-```python
-from signified import Binding, Signal
-
-a = Signal(1.0)
-b = Binding(Signal(2))
-reveal_type(a + b)  # Computed[float]
-```
-
-We recommend **Pyright** for type inference; **Pyrefly** is usable with caveats.
-See [Type Checkers](docs/type-checkers.md) for assessed versions and compatibility
-with ty and mypy.
+Together, these data structures allow us to implement a wide variety of capabilities. In particular, I wrote this library to make my animation library `keyed` easier to maintain and more fun to work with.
 
 ## Ready to learn more?
 
-Checkout the docs at [https://dougmercer.github.io/signified](https://dougmercer.github.io/signified) or watch [my YouTube video about the library](https://youtu.be/nkuXqx-6Xwc).
+Check out the docs at [https://dougmercer.github.io/signified](https://dougmercer.github.io/signified).
