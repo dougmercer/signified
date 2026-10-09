@@ -174,3 +174,4 @@ junit/
 
 # misc
 junk/
+.venv-*/
