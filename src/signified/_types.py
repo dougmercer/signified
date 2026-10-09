@@ -5,6 +5,8 @@ from __future__ import annotations
 import weakref
 from typing import TYPE_CHECKING, Iterable, Iterator, Protocol
 
+from ._weakbase import WeakrefBase
+
 if TYPE_CHECKING:
     from ._reactive import Binding, Computed, Signal
 
@@ -32,7 +34,7 @@ class _ObserverLink[T: _SupportsUpdate]:
         self.next: _ObserverLink[T] | None = None
 
 
-class _ObserverLinks[T: _SupportsUpdate]:
+class _ObserverLinks[T: _SupportsUpdate](WeakrefBase):
     """Store observer subscriptions as explicit producer/consumer links.
 
     Producers keep a doubly linked list of weak observer refs for cheap notify

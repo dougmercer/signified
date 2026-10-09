@@ -1,0 +1,20 @@
+--- emitclass.py.orig	2026-10-09 18:18:39
++++ emitclass.py	2026-10-09 18:38:38
+@@ -447,6 +447,8 @@
+             fields["tp_call"] = "PyVectorcall_Call"
+     if managed_dict:
+         flags.append("Py_TPFLAGS_MANAGED_DICT")
++        # LOCAL PATCH (signified mypyc experiment): weakref support on 3.12+.
++        flags.append("Py_TPFLAGS_MANAGED_WEAKREF")
+     fields["tp_flags"] = " | ".join(flags)
+ 
+     fields["tp_doc"] = f"PyDoc_STR({native_class_doc_initializer(cl)})"
+@@ -1039,6 +1041,8 @@
+             emitter.emit_line("}")
+     if not cl.is_acyclic:
+         emitter.emit_line("PyObject_GC_UnTrack(self);")
++    # LOCAL PATCH (signified mypyc experiment): clear weakrefs before teardown.
++    emitter.emit_line("if (Py_TYPE(self)->tp_weaklistoffset) PyObject_ClearWeakRefs((PyObject *)self);")
+     if cl.builtin_base:
+         emitter.emit_line(f"{clear_func_name}((PyObject *)self);")
+         # For native subclasses of builtins such as dict, the base deallocator

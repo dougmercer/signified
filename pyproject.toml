@@ -156,3 +156,7 @@ project-includes = [
 [tool.pyright]
 pythonVersion = "3.12"
 include = ["src/signified", "tests/type_inference.py"]
+
+[tool.mypy]
+python_version = "3.14"
+disable_error_code = ["misc", "overload-cannot-match", "empty-body", "import-not-found", "annotation-unchecked"]

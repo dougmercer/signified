@@ -6,6 +6,8 @@ import dataclasses
 from types import MemberDescriptorType
 from typing import Any, Callable, overload
 
+from mypy_extensions import mypyc_attr
+
 from ._reactive import _COMPUTE_STACK, Signal
 
 __all__ = ["tracked_fields"]
@@ -29,10 +31,11 @@ class _FieldSource(Signal[Any]):
 
     __slots__ = ("_owner_id",)
     _WARN_ON_VALUE = False  # Storing reactive objects here is intentional.
+    _owner_id: int
 
     def __init__(self, value: Any, owner: object) -> None:
         super().__init__(value)
-        object.__setattr__(self, "_owner_id", id(owner))
+        self._owner_id = id(owner)
 
     # Copies and pickles of an instance carry the stored value, not the node.
     def __deepcopy__(self, memo: dict[int, Any]) -> Any:
@@ -44,6 +47,7 @@ class _FieldSource(Signal[Any]):
         return _stored_value, (self._value,)
 
 
+@mypyc_attr(native_class=False)
 class _TrackedField:
     """Data descriptor that tracks reads and reassignment of one attribute.
 
@@ -54,6 +58,8 @@ class _TrackedField:
     """
 
     __slots__ = ("_name", "_get", "_set", "_default")
+    _get: Callable[[Any], Any]
+    _set: Callable[[Any, Any], None]
 
     def __init__(self, name: str, slot: MemberDescriptorType | None, default: Any) -> None:
         self._name = name

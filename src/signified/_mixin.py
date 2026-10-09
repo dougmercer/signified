@@ -426,6 +426,7 @@ class _ReactiveMixIn[T]:
     # AttributeError instead of silently shadowing the reactive proxy.
     __slots__ = ()
     _IS_REACTIVE: ClassVar[Literal[True]] = True
+    _FORWARDS_ATTRIBUTE_WRITES: ClassVar[bool] = False
 
     # Opt out of NumPy's ufunc machinery. Without this, `array + reactive` coerces the
     # reactive object into a 0-d object array and returns an object-dtype ndarray of
@@ -491,6 +492,24 @@ class _ReactiveMixIn[T]:
             return _computed_call(getattr, self, name)
 
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Forward a public attribute write on a Signal to the wrapped object and notify.
+
+        Lives on this uncompiled base because mypyc forbids `__setattr__` on a
+        native class that inherits a Python class. Compiled code writes its own
+        attributes directly and never reaches this method.
+        """
+        if name == "value" or name[:1] == "_" or hasattr(type(self), name):
+            object.__setattr__(self, name, value)
+            return
+        if not self._FORWARDS_ATTRIBUTE_WRITES:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        wrapped = self._value
+        if not hasattr(wrapped, name):
+            raise AttributeError(f"'{type(wrapped).__name__}' object has no attribute '{name}'")
+        setattr(wrapped, name, value)
+        cast(Any, self).update()
 
     def __call__[**P, R](self: "_ReactiveMixIn[Callable[P, R]]", *args: P.args, **kwargs: P.kwargs) -> Computed[R]:
         """Create a reactive value for calling `self.value(*args, **kwargs)`.

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Generator
 from contextlib import contextmanager
 from enum import IntEnum
@@ -11,21 +11,19 @@ from types import TracebackType
 from typing import Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 from weakref import ref
 
+from mypy_extensions import mypyc_attr
+
 from . import _scheduler
 from . import migration as _migration
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue, _ObserverLinks
+from ._weakbase import WeakrefBase
 from .plugins import HOOKS_ENABLED, plugin_manager
 
 __all__ = ["Variable", "Signal", "Computed", "Binding", "Effect"]
 
 
 _GLOBAL_VERSION = 0
-
-# `Signal.__setattr__` is a Python-level method, so it costs a call on every
-# assignment to a Signal. Internal writes on the hot path bypass it;
-# `_ReactiveMixIn._bump_version` does the same. Computed has no override.
-_setattr = object.__setattr__
 
 
 def _bump_global_version() -> int:
@@ -79,7 +77,8 @@ class _Observer(Protocol):
         pass
 
 
-class Variable[T](ABC, _ReactiveMixIn[T]):
+@mypyc_attr(allow_interpreted_subclasses=True)
+class Variable[T](_ReactiveMixIn[T]):
     """Abstract base class for reactive values.
 
     [Signal][signified.Signal], [Computed][signified.Computed], and
@@ -90,14 +89,23 @@ class Variable[T](ABC, _ReactiveMixIn[T]):
 
     __slots__ = ["_observers", "_name", "_version", "_equal", "__weakref__"]
     _IS_COMPUTED = False
+    _observers: _ObserverLinks[_Observer]
+    _name: str
+    _version: int
+    _equal: Callable[[Any, Any], bool] | None
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the variable."""
         observers: _ObserverLinks[_Observer] = _ObserverLinks()
-        _setattr(self, "_observers", observers)
-        _setattr(self, "_name", "")
-        _setattr(self, "_version", 0)
-        _setattr(self, "_equal", None)
+        self._observers = observers
+        self._name = ""
+        self._version = 0
+        self._equal = None
+
+    def _bump_version(self) -> int:
+        version = _bump_global_version()
+        self._version = version
+        return version
 
     def subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer to this variable.
@@ -276,6 +284,7 @@ def _call_equal(equal: Callable[[Any, Any], bool], previous: Any, current: Any) 
         _COMPUTE_STACK.pop()
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Signal[T](Variable[T]):
     """Mutable state.
 
@@ -308,13 +317,15 @@ class Signal[T](Variable[T]):
 
     __slots__ = ["_value"]
     _WARN_ON_VALUE = True
+    _FORWARDS_ATTRIBUTE_WRITES = True
+    _value: T
 
     def __init__(self, value: T, *, equal: Callable[[T, T], bool] | None = None) -> None:
         super().__init__()
         if _migration.WARNINGS_ENABLED and self._WARN_ON_VALUE:
             _migration._warn_signal_value(value)
-        _setattr(self, "_value", value)
-        _setattr(self, "_equal", equal)
+        self._value = value
+        self._equal = equal
         if HOOKS_ENABLED:
             plugin_manager.hook.created(value=self)
 
@@ -339,59 +350,11 @@ class Signal[T](Variable[T]):
             equal = self._equal
             if equal is not None and _call_equal(equal, old_value, new_value):
                 return
-            _setattr(self, "_value", new_value)
+            self._value = new_value
             self._bump_version()
             if HOOKS_ENABLED:
                 plugin_manager.hook.updated(value=self)
             self.notify()
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        """Forward a public attribute write to the wrapped object and notify.
-
-        Private names and `Signal`'s own attributes (such as `value`) are
-        assigned on the wrapper. Any other name must already exist on the
-        wrapped object; the write is applied there and observers are notified,
-        exactly like `signal[key] = value`. Unknown names raise `AttributeError`
-        instead of silently creating an attribute on the wrapper.
-
-        Only `Signal` forwards writes, because only a `Signal` owns its value.
-        A [Computed][signified.Computed] holds a cache that the next refresh
-        replaces, so writing through it would mutate state it does not own.
-
-        Args:
-            name: The attribute name to assign.
-            value: The value to assign.
-
-        Raises:
-            AttributeError: If the wrapped object has no attribute `name`.
-
-        Example:
-            ```py
-            >>> class Person:
-            ...     def __init__(self, name: str):
-            ...         self.name = name
-            ...     def greet(self) -> str:
-            ...         return f"Hi, I'm {self.name}!"
-            >>> s = Signal(Person("Alice"))
-            >>> result = s.greet()
-            >>> result.value
-            "Hi, I'm Alice!"
-            >>> s.name = "Bob"
-            >>> result.value
-            "Hi, I'm Bob!"
-
-            ```
-        """
-        # Names defined on the wrapper's class (including subclasses) stay on
-        # the wrapper; `value` reaches its property setter this way.
-        if name == "value" or name[:1] == "_" or hasattr(type(self), name):
-            _setattr(self, name, value)
-            return
-        wrapped = self._value
-        if not hasattr(wrapped, name):
-            raise AttributeError(f"'{type(wrapped).__name__}' object has no attribute '{name}'")
-        setattr(wrapped, name, value)
-        self.update()
 
     def __setitem__(self, key: Any, value: Any) -> None:
         """Set an item on the wrapped `list` or `dict` and notify observers.
@@ -498,8 +461,8 @@ class Signal[T](Variable[T]):
                 # Versions are never reused, so `before_version` still names
                 # exactly `before`. Advance the clock anyway so a consumer that
                 # refreshed inside the context cannot take the global fast path.
-                _setattr(self, "_value", before)
-                _setattr(self, "_version", before_version)
+                self._value = before
+                self._version = before_version
                 _bump_global_version()
                 if HOOKS_ENABLED:
                     plugin_manager.hook.updated(value=self)
@@ -648,7 +611,7 @@ class _PythonDependencyState:
         link = self._head
         while link is not None:
             dep = link.dep
-            if link.version != dep._version or (dep._IS_COMPUTED and dep._impl._notified):
+            if link.version != dep._version or (dep._IS_COMPUTED and cast("Computed[Any]", dep)._impl._notified):
                 return True
             link = link.next
         return False
@@ -658,7 +621,7 @@ class _PythonDependencyState:
         while link is not None:
             dep = link.dep
             if dep._IS_COMPUTED:
-                dep._impl.ensure_uptodate()
+                cast("Computed[Any]", dep)._impl.ensure_uptodate()
             if link.version != dep._version:
                 return True
             link = link.next
@@ -854,6 +817,7 @@ class _ComputedImpl:
 T = TypeVar("T")
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Computed(Variable[T]):
     """Reactive value derived from a computation.
 
@@ -906,6 +870,9 @@ class Computed(Variable[T]):
 
     __slots__ = ["_compute_fn", "_value", "_impl"]
     _IS_COMPUTED = True
+    _compute_fn: Callable[[], T]
+    _value: T
+    _impl: _ComputedImpl
     _IMPL_TYPE: type[_ComputedImpl] = _ComputedImpl
 
     def __init__(self, f: Callable[[], T], *, equal: Callable[[T, T], bool] | None = None) -> None:
@@ -1015,7 +982,7 @@ class _BindingImpl(_ComputedImpl):
         if restore_point is None or forced or self._error is not None:
             return
         value, version, source, source_version = restore_point
-        owner = self._owner
+        owner = cast("Binding[Any]", self._owner)
         if (
             owner._holder._value is source
             and source._version == source_version
@@ -1025,6 +992,7 @@ class _BindingImpl(_ComputedImpl):
             owner._version = version
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Binding(Computed[T]):
     """A stable reactive handle whose current source can be replaced.
 
@@ -1046,7 +1014,6 @@ class Binding(Computed[T]):
 
     __slots__ = ("_owned", "_holder")
     _IMPL_TYPE = _BindingImpl
-    _impl: _BindingImpl
 
     def __init__(self, source: T | ReactiveValue[T]) -> None:
         self._owned: Signal[T] | None
@@ -1060,7 +1027,20 @@ class Binding(Computed[T]):
     def _read_source(self) -> T:
         return self._holder.value.value
 
-    @Computed.value.setter
+    @property
+    def value(self) -> T:
+        """Get the current value of the followed source."""
+        if HOOKS_ENABLED:
+            plugin_manager.hook.read(value=self)
+        try:
+            self._impl.ensure_uptodate()
+        finally:
+            _track_read(self)
+        if self._impl._error is not None:
+            raise self._impl._error.with_traceback(self._impl._error_traceback)
+        return self._value
+
+    @value.setter
     def value(self, new_source: HasValue[T]) -> None:
         """Select a plain value or follow a reactive source."""
         self.set(new_source)
@@ -1100,10 +1080,12 @@ class Binding(Computed[T]):
         a new computation from the `Binding` that will receive that computation.
         """
         previous = self.source
-        next_source = build(previous)
+        # mypyc checks typed call results at runtime, which would replace the
+        # error below with its own TypeError, so call through `object`.
+        next_source = cast(Callable[[Any], object], build)(previous)
         if not is_reactive(next_source):
             raise TypeError("derive() must return a Signal, Computed, or Binding")
-        return self.set(next_source)
+        return self.set(cast(ReactiveValue[T], next_source))
 
     @contextmanager
     def at(self, value: T) -> Generator[None, None, None]:
@@ -1120,7 +1102,7 @@ class Binding(Computed[T]):
         if is_reactive(value):
             raise TypeError("at() requires a plain value. Use set(source) for a reactive source.")
 
-        impl = self._impl
+        impl = cast(_BindingImpl, self._impl)
         restorable = impl._state == _State.FRESH and impl._error is None
         before, before_version = self._value, self._version
         source = self.source
@@ -1135,7 +1117,8 @@ class Binding(Computed[T]):
                     impl.restore_point = (before, before_version, source, source_version)
 
 
-class Effect:
+@mypyc_attr(allow_interpreted_subclasses=True)
+class Effect(WeakrefBase):
     """Run a function (for its side effects) and re-run it whenever its reactive dependencies change.
 
     Any reactive value read inside `fn` — via `.value` or [unref][signified.unref] — is
