@@ -835,11 +835,12 @@ fn walk(py: Python<'_>, start: &Rc<Node>) {
             Step::Skip => {}
             Step::Consumer(consumer) => match consumer.kind {
                 Kind::Effect => effects::enqueue_effect(&consumer),
-                Kind::Computed | Kind::Signal => {
+                Kind::Computed => {
                     if invalidate(&consumer, false) && has_observers(&consumer) {
                         stack.push((consumer, 0));
                     }
                 }
+                Kind::Signal => unreachable!("signals do not read other nodes"),
             },
             Step::Python(reference) => effects::enqueue_observer(reference),
         }

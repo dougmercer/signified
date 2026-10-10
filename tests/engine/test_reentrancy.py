@@ -188,15 +188,13 @@ def test_deep_chain_on_a_worker_thread_raises_instead_of_crashing():
     assert outcome == ["recursion"]
 
 
-def test_unmatched_pop_untracked_keeps_the_computation_tracking():
-    from signified import _core
-
+def test_unmatched_untracked_exit_keeps_the_computation_tracking():
     s = Signal(1)
     errors = []
 
     def compute():
         try:
-            _core.pop_untracked()
+            untracked().__exit__(None, None, None)
         except RuntimeError as error:
             errors.append(error)
         return s.value

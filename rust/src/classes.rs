@@ -192,11 +192,6 @@ impl SignalCore {
         graph::live_observer_count(py, &self.node)
     }
 
-    /// Return to an earlier value and version and notify observers.
-    fn _restore(slf: &Bound<'_, Self>, value: Bound<'_, PyAny>, version: u64) -> PyResult<()> {
-        graph::restore_signal(slf.py(), &slf.get().node, slf.as_any(), value, version)
-    }
-
     /// Assign `value`, private names and class attributes on the signal;
     /// forward any other attribute write to the wrapped object, then notify.
     fn __setattr__(
@@ -500,24 +495,6 @@ impl EffectCore {
 // Module functions
 // ---------------------------------------------------------------------------
 
-/// Start a block whose reads do not subscribe the enclosing computation.
-#[pyfunction]
-pub fn push_untracked() {
-    graph::push_frame(None);
-}
-
-#[pyfunction]
-pub fn pop_untracked() -> PyResult<()> {
-    // Check before popping, so a mismatch cannot remove a computation's frame.
-    if !graph::in_untracked_block() {
-        return Err(PyRuntimeError::new_err(
-            "pop_untracked() without a matching push_untracked()",
-        ));
-    }
-    graph::pop_frame();
-    Ok(())
-}
-
 /// Whether a reactive read right now would register a dependency.
 #[pyfunction]
 pub fn is_tracking() -> bool {
@@ -552,24 +529,6 @@ pub fn computed_call<'py>(
     let node = &obj.cast::<ComputedCore>()?.get().node;
     init_computed(&obj, node, compute, None)?;
     Ok(obj)
-}
-
-#[pyfunction]
-pub fn begin_batch() {
-    let rt = rt();
-    rt.batch_depth.set(rt.batch_depth.get() + 1);
-}
-
-#[pyfunction]
-pub fn end_batch() {
-    let rt = rt();
-    rt.batch_depth.set(rt.batch_depth.get().saturating_sub(1));
-}
-
-/// Run pending effects unless a batch, walk or flush is in progress.
-#[pyfunction]
-pub fn flush(py: Python<'_>) -> PyResult<()> {
-    effects::flush(py)
 }
 
 /// Unwrap exactly one reactive boundary: a Signal, Computed or Binding gives
@@ -608,7 +567,13 @@ impl Untracked {
 
     #[pyo3(signature = (*_exc))]
     fn __exit__(&self, _exc: &Bound<'_, PyTuple>) -> PyResult<bool> {
-        pop_untracked()?;
+        // Check before popping, so a mismatch cannot remove a computation's frame.
+        if !graph::in_untracked_block() {
+            return Err(PyRuntimeError::new_err(
+                "untracked() exited without a matching enter",
+            ));
+        }
+        drop(graph::pop_frame());
         Ok(false)
     }
 }
@@ -627,7 +592,8 @@ impl Batch {
     }
 
     fn __enter__(&self) {
-        begin_batch();
+        let rt = rt();
+        rt.batch_depth.set(rt.batch_depth.get() + 1);
     }
 
     fn __exit__(
@@ -637,7 +603,8 @@ impl Batch {
         exc: &Bound<'_, PyAny>,
         _traceback: &Bound<'_, PyAny>,
     ) -> PyResult<bool> {
-        end_batch();
+        let rt = rt();
+        rt.batch_depth.set(rt.batch_depth.get().saturating_sub(1));
         let flushed = effects::flush(py);
         if exc.is_none() {
             flushed?;

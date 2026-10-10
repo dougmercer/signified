@@ -218,8 +218,9 @@ fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
         .borrow()
         .as_ref()
         .map(|compute| match compute {
-            Compute::Function(f) | Compute::Source(f) | Compute::Call { func: f, .. } => {
-                f.clone_ref(py)
+            Compute::Function(f) => f.clone_ref(py),
+            Compute::Call { .. } | Compute::Source(_) => {
+                unreachable!("an effect runs a zero-argument function")
             }
         });
     let Some(function) = function else {
