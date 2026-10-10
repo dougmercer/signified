@@ -1,37 +1,31 @@
-"""Per-node cost of the Python engine vs the Rust core (signified._native).
+"""Per-node cost of signified's reactive graph.
 
-Usage: uv run python benchmarks/per_node.py
-Reference numbers from the mypyc experiment (origin/mypyc-experiment,
-notes/mypyc-2026-10-09.md): per extra node 0.70-0.87 us, 500-leaf frame 1.21 ms.
+Usage:
+    uv run python benchmarks/per_node.py
+    uv run python benchmarks/per_node.py --compare /path/to/other/venv/bin/python
+
+`--compare` runs the same workloads under another interpreter (for example a
+virtualenv with signified from `main`) and prints both columns.
 """
 
+import argparse
+import json
 import operator
+import subprocess
+import sys
 import timeit
 
-from signified import Computed as PyComputed
-from signified import Signal as PySignal
-from signified import _mixin, _native
+from signified import Computed, Signal
 
 OPS = [(operator.add, 1.5), (operator.mul, 0.5), (operator.sub, 2.0), (operator.truediv, 3.0)]
-ENGINES = {
-    "python": (PySignal, PyComputed, _mixin._computed_call),
-    "rust": (_native.Signal, _native.Computed, _native.computed_call),
-}
 
 
 def best_ns(fn, number=2000, repeat=7):
     return min(timeit.repeat(fn, number=number, repeat=repeat)) / number * 1e9
 
 
-def use(engine):
-    signal_cls, computed_cls, computed_call = ENGINES[engine]
-    _mixin._computed_call = computed_call  # operators build this engine's nodes
-    return signal_cls, computed_cls
-
-
-def chain_step(engine, depth):
-    signal_cls, _ = use(engine)
-    s = signal_cls(1.0)
+def chain_step(depth):
+    s = Signal(1.0)
     x = s
     for i in range(depth):
         op, k = OPS[i % len(OPS)]
@@ -47,9 +41,8 @@ def chain_step(engine, depth):
     return step
 
 
-def frame_step(engine, leaves=500):
-    signal_cls, _ = use(engine)
-    t = signal_cls(0.0)
+def frame_step(leaves=500):
+    t = Signal(0.0)
     nodes = [(t - i * 0.1) * (1.0 + i % 3) + float(i) for i in range(leaves)]
     for node in nodes:
         node.value
@@ -63,25 +56,59 @@ def frame_step(engine, leaves=500):
     return step
 
 
-def cached_read(engine):
-    signal_cls, computed_cls = use(engine)
-    s = signal_cls(1)
-    c = computed_cls(lambda: s.value + 1)
+def cached_read():
+    s = Signal(1)
+    c = Computed(lambda: s.value + 1)
     c.value
     return lambda: c.value
 
 
-try:
-    print(f"{'':>24} {'python':>10} {'rust':>10} {'speedup':>8}")
-    rows = [("cached Computed read", lambda e: cached_read(e), 200_000)]
-    rows += [(f"write+read, chain {d}", lambda e, d=d: chain_step(e, d), 2000) for d in (1, 4, 16, 64)]
-    for label, make, number in rows:
-        py_ns, rs_ns = (best_ns(make(engine), number=number) for engine in ENGINES)
-        print(f"{label:>24} {py_ns:>8.0f}ns {rs_ns:>8.0f}ns {py_ns / rs_ns:>7.1f}x")
-    py_64, rs_64 = (best_ns(chain_step(e, 64)) for e in ENGINES)
-    py_0, rs_0 = (best_ns(chain_step(e, 0)) for e in ENGINES)
-    print(f"{'per extra node':>24} {(py_64 - py_0) / 64:>8.0f}ns {(rs_64 - rs_0) / 64:>8.0f}ns")
-    py_frame, rs_frame = (best_ns(frame_step(e), number=50) / 1000 for e in ENGINES)
-    print(f"{'500-leaf frame':>24} {py_frame:>8.0f}us {rs_frame:>8.0f}us {py_frame / rs_frame:>7.1f}x")
-finally:
-    _mixin._computed_call = ENGINES["python"][2]
+def build_chain(depth=64):
+    def build():
+        s = Signal(1.0)
+        x = s
+        for i in range(depth):
+            op, k = OPS[i % len(OPS)]
+            x = op(x, k)
+        return x.value
+
+    return build
+
+
+def measure():
+    rows = {"cached Computed read": best_ns(cached_read(), number=200_000)}
+    for depth in (1, 4, 16, 64):
+        rows[f"write+read, chain {depth}"] = best_ns(chain_step(depth))
+    rows["per extra node"] = (best_ns(chain_step(64)) - best_ns(chain_step(0))) / 64
+    rows["build+read, chain 64"] = best_ns(build_chain(), number=200)
+    rows["500-leaf frame"] = best_ns(frame_step(), number=50)
+    return rows
+
+
+def fmt(ns):
+    return f"{ns / 1000:.1f}us" if ns >= 10_000 else f"{ns:.0f}ns"
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--json", action="store_true", help="print raw nanoseconds as JSON")
+    parser.add_argument("--compare", metavar="PYTHON", help="also run under this interpreter and compare")
+    args = parser.parse_args()
+
+    rows = measure()
+    if args.json:
+        print(json.dumps(rows))
+        return
+    if not args.compare:
+        for label, ns in rows.items():
+            print(f"{label:>24} {fmt(ns):>10}")
+        return
+    output = subprocess.run([args.compare, __file__, "--json"], check=True, capture_output=True, text=True).stdout
+    other = json.loads(output)
+    print(f"{'':>24} {'other':>10} {'this':>10} {'speedup':>8}")
+    for label, ns in rows.items():
+        print(f"{label:>24} {fmt(other[label]):>10} {fmt(ns):>10} {other[label] / ns:>7.1f}x")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

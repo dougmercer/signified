@@ -170,13 +170,7 @@ class Signal[T](_core.Signal[T], Variable[T]):
     - assigning `value` updates the stored value and notifies observers if it changed
 
     Assigning any other public attribute forwards the write to the wrapped
-    object and notifies observers, exactly like `signal[key] = value`. The
-    name must already exist on the wrapped object; unknown names raise
-    `AttributeError` instead of silently creating an attribute on the wrapper.
-    Private names and `Signal`'s own attributes (such as `value`) are assigned
-    on the wrapper. Only `Signal` forwards writes, because only a `Signal` owns
-    its value: a [Computed][signified.Computed] holds a cache that the next
-    refresh replaces.
+    object; see [__setattr__][signified.Signal.__setattr__].
 
     Args:
         value: Value to wrap.
@@ -197,7 +191,7 @@ class Signal[T](_core.Signal[T], Variable[T]):
 
         ```
 
-        Attribute writes reach the wrapped object:
+        Attribute writes reach the wrapped object and notify observers:
 
         ```py
         >>> class Person:
@@ -218,6 +212,61 @@ class Signal[T](_core.Signal[T], Variable[T]):
 
     __slots__ = ()
     _WARN_ON_VALUE = True
+
+    if TYPE_CHECKING:
+        # Implemented by the Rust base class; declared here for type checkers
+        # and the API docs.
+
+        def __init__(self, value: T, *, equal: Callable[[T, T], bool] | None = None) -> None: ...
+
+        @property
+        def value(self) -> T:
+            """The current value.
+
+            Getting this property returns the stored Python value. Setting it
+            updates the stored value and notifies observers if the value changed.
+            """
+            ...
+
+        @value.setter
+        def value(self, value: T) -> None: ...
+
+        def update(self) -> None:
+            """Force a notification to all observers unconditionally.
+
+            Unlike assigning to `.value`, this does **not** check whether the stored
+            value has changed. Use this when the contained object has been mutated
+            in-place and change detection cannot detect the mutation (e.g. appending
+            to a list stored in the signal).
+
+            Warning:
+                Every downstream [Computed][signified.Computed] that depends on this
+                signal will recompute on its next `.value` read, even if the underlying
+                data is unchanged. Prefer assigning to `.value` when possible.
+            """
+            ...
+
+        def __setattr__(self, name: str, value: Any) -> None:
+            """Forward a public attribute write to the wrapped object and notify.
+
+            Private names and `Signal`'s own attributes (such as `value`) are
+            assigned on the wrapper. Any other name must already exist on the
+            wrapped object; the write is applied there and observers are notified,
+            exactly like `signal[key] = value`. Unknown names raise `AttributeError`
+            instead of silently creating an attribute on the wrapper.
+
+            Only `Signal` forwards writes, because only a `Signal` owns its value.
+            A [Computed][signified.Computed] holds a cache that the next refresh
+            replaces, so writing through it would mutate state it does not own.
+
+            Args:
+                name: The attribute name to assign.
+                value: The value to assign.
+
+            Raises:
+                AttributeError: If the wrapped object has no attribute `name`.
+            """
+            ...
 
     def __setitem__(self, key: Any, value: Any) -> None:
         """Set an item on the wrapped `list` or `dict` and notify observers.
@@ -396,6 +445,17 @@ class Computed(_core.Computed[T], Variable[T]):
 
     __slots__ = ()
 
+    if TYPE_CHECKING:
+        # Implemented by the Rust base class; declared here for type checkers
+        # and the API docs.
+
+        def __init__(self, f: Callable[[], T], *, equal: Callable[[T, T], bool] | None = None) -> None: ...
+
+        @property
+        def value(self) -> T:
+            """Get the current value, recomputing lazily when stale."""
+            ...
+
     def invalidate(self) -> None:
         """Force a full recomputation on the next `.value` read.
 
@@ -464,7 +524,9 @@ class Binding(Computed[T]):
     if TYPE_CHECKING:
 
         @property
-        def value(self) -> T: ...
+        def value(self) -> T:
+            """The current source's value. Assigning selects a plain value or follows a reactive source."""
+            ...
 
         @value.setter
         def value(self, new_source: HasValue[T]) -> None: ...
@@ -595,6 +657,16 @@ class Effect(_core.Effect):
     """
 
     __slots__ = ()
+
+    if TYPE_CHECKING:
+        # Implemented by the Rust base class; declared here for type checkers
+        # and the API docs.
+
+        def __init__(self, fn: Callable[[], None]) -> None: ...
+
+        def dispose(self) -> None:
+            """Stop this effect, including any pending run. Safe to repeat."""
+            ...
 
 
 # Operators read instances of these classes natively; their `value` is the
