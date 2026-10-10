@@ -123,6 +123,34 @@ def test_dead_observers_release_their_subscription():
     assert sys.getrefcount(reference) == held - 1
 
 
+def test_subscriptions_stay_findable_after_the_observer_list_compacts():
+    s = Signal(0)
+    calls = []
+
+    class Observer:
+        def __init__(self, k: int) -> None:
+            self.k = k
+
+        def update(self) -> None:
+            calls.append(self.k)
+
+    observers = [Observer(k) for k in range(40)]
+    for observer in observers:
+        s.subscribe(observer)
+    for observer in observers[:30]:  # enough removals to compact the list
+        s.unsubscribe(observer)
+    for observer in observers[30:35]:
+        s.subscribe(observer)  # already subscribed: no second entry
+    for observer in observers[30:33]:
+        s.unsubscribe(observer)
+    del observer, observers[35:]  # the rest die and unsubscribe themselves
+    gc.collect()
+
+    s.value = 1
+    assert sorted(calls) == [33, 34]
+    assert s._observer_count() == 2
+
+
 def test_cycle_through_a_signal_at_context_is_collected():
     s = Signal(None)
     context = s.at(1)

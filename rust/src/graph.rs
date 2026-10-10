@@ -9,7 +9,7 @@
 //! a vacant slot until the list compacts, which keeps notification order.
 
 use std::cell::{Cell, RefCell};
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::rc::{Rc, Weak};
 use std::sync::OnceLock;
 
@@ -187,9 +187,10 @@ pub(crate) struct Node {
     pub(crate) name: RefCell<Option<Py<PyAny>>>,
     observers: RefCell<Vec<Observer>>,
     vacant: Cell<u32>,
-    /// The callback that removes a `subscribe()` observer when it dies, shared
-    /// by this node's subscriptions; created on first use.
-    cleanup: RefCell<Option<Py<PyAny>>>,
+    /// The slot of each `subscribe()` observer, by the observer's address;
+    /// created on first use. Boxed so nodes without such observers stay small.
+    #[allow(clippy::box_collection)]
+    subscribers: RefCell<Option<Box<HashMap<usize, u32>>>>,
     /// Set while a consumer that reads this node runs; see `register_dependency`.
     reader_link: Cell<ReaderLink>,
     /// State for computeds and effects; `None` for signals.
@@ -251,7 +252,7 @@ impl Node {
             name: RefCell::new(None),
             observers: RefCell::new(Vec::new()),
             vacant: Cell::new(0),
-            cleanup: RefCell::new(None),
+            subscribers: RefCell::new(None),
             reader_link: Cell::new(NO_READER),
             consumer,
         }
@@ -511,9 +512,18 @@ fn take_slot(node: &Node, slot: u32) -> Observer {
         Some(entry) => std::mem::replace(entry, Observer::Vacant),
         None => Observer::Vacant,
     };
-    if !matches!(removed, Observer::Vacant) {
-        node.vacant.set(node.vacant.get() + 1);
+    match &removed {
+        Observer::Vacant => return removed,
+        Observer::Python { id, .. } => {
+            if let Some(subscribers) = node.subscribers.borrow_mut().as_mut() {
+                if subscribers.get(id) == Some(&slot) {
+                    subscribers.remove(id);
+                }
+            }
+        }
+        Observer::Consumer { .. } => {}
     }
+    node.vacant.set(node.vacant.get() + 1);
     removed
 }
 
@@ -536,9 +546,9 @@ fn unsubscribe_consumer(dep: &Node, slot: u32, key: usize) {
     }
 }
 
-/// Drop vacant slots once they make up half of a long list. Consumers whose
-/// entries move get their links' slots updated. Not during a notification
-/// walk, which iterates the lists by position.
+/// Drop vacant slots once they make up half of a long list. Consumers and
+/// `subscribe()` observers whose entries move get their slots updated. Not
+/// during a notification walk, which iterates the lists by position.
 fn compact_if_sparse(node: &Node) {
     let vacant = node.vacant.get() as usize;
     let len = node.observers.borrow().len();
@@ -547,6 +557,7 @@ fn compact_if_sparse(node: &Node) {
         return;
     }
     let mut observers = node.observers.borrow_mut();
+    let mut subscribers = node.subscribers.borrow_mut();
     let mut write = 0;
     for read in 0..observers.len() {
         if matches!(observers[read], Observer::Vacant) {
@@ -554,16 +565,25 @@ fn compact_if_sparse(node: &Node) {
         }
         if read != write {
             observers.swap(read, write);
-            if let Observer::Consumer {
-                node: consumer,
-                link,
-            } = &observers[write]
-            {
-                if let Some(consumer) = consumer.upgrade() {
-                    if let Some(link) = consumer.consumer().deps.borrow().get(*link as usize) {
-                        link.slot.set(write as u32);
+            match &observers[write] {
+                Observer::Consumer {
+                    node: consumer,
+                    link,
+                } => {
+                    if let Some(consumer) = consumer.upgrade() {
+                        if let Some(link) = consumer.consumer().deps.borrow().get(*link as usize) {
+                            link.slot.set(write as u32);
+                        }
                     }
                 }
+                Observer::Python { id, .. } => {
+                    if let Some(slot) = subscribers.as_mut().and_then(|map| map.get_mut(id)) {
+                        if *slot == read as u32 {
+                            *slot = write as u32;
+                        }
+                    }
+                }
+                Observer::Vacant => {}
             }
         }
         write += 1;
@@ -1272,31 +1292,29 @@ pub(crate) fn node_of(obj: &Bound<'_, PyAny>) -> PyResult<Rc<Node>> {
 // Python observers
 // ---------------------------------------------------------------------------
 
+/// The slot recorded for the `subscribe()` observer at address `id`.
+fn subscriber_slot(node: &Node, id: usize) -> Option<u32> {
+    node.subscribers.borrow().as_ref()?.get(&id).copied()
+}
+
 /// The slot of `observer` in `node`'s observer list, if subscribed.
 fn find_python_observer(node: &Node, observer: &Bound<'_, PyAny>) -> Option<u32> {
     let py = observer.py();
     let id = observer.as_ptr() as usize;
-    let mut slot = 0;
-    loop {
-        let candidate = match node.observers.borrow().get(slot) {
-            None => return None,
-            Some(Observer::Python {
-                reference,
-                id: other,
-            }) if *other == id => Some(reference.clone_ref(py)),
-            Some(_) => None,
-        };
-        if let Some(reference) = candidate {
-            if reference
-                .bind(py)
-                .upgrade()
-                .is_some_and(|target| target.is(observer))
-            {
-                return Some(slot as u32);
-            }
-        }
-        slot += 1;
-    }
+    let slot = subscriber_slot(node, id)?;
+    let reference = match node.observers.borrow().get(slot as usize) {
+        Some(Observer::Python {
+            reference,
+            id: other,
+        }) if *other == id => reference.clone_ref(py),
+        _ => return None,
+    };
+    // An observer that died at this address may not have been removed yet.
+    let alive = reference
+        .bind(py)
+        .upgrade()
+        .is_some_and(|target| target.is(observer));
+    alive.then_some(slot)
 }
 
 pub(crate) fn add_python_observer(node: &Rc<Node>, observer: &Bound<'_, PyAny>) -> PyResult<()> {
@@ -1304,35 +1322,37 @@ pub(crate) fn add_python_observer(node: &Rc<Node>, observer: &Bound<'_, PyAny>) 
         return Ok(());
     }
     let py = observer.py();
-    let cleanup = node
-        .cleanup
-        .borrow()
-        .as_ref()
-        .map(|cleanup| cleanup.clone_ref(py));
-    let cleanup = match cleanup {
-        Some(cleanup) => cleanup,
-        None => {
-            let cleanup = Py::new(py, ObserverCleanup::new(Rc::downgrade(node)))?.into_any();
-            let old = node.cleanup.replace(Some(cleanup.clone_ref(py)));
-            drop(old);
-            cleanup
-        }
-    };
-    // The callback removes the entry as soon as the observer dies.
-    let reference = PyWeakrefReference::new_with(observer, cleanup.bind(py))?.unbind();
     let id = observer.as_ptr() as usize;
-    push_observer(node, Observer::Python { reference, id });
+    // The callback removes the entry as soon as the observer dies.
+    let cleanup = Py::new(py, ObserverCleanup::new(Rc::downgrade(node), id))?;
+    let reference = PyWeakrefReference::new_with(observer, cleanup.bind(py))?.unbind();
+    let slot = push_observer(node, Observer::Python { reference, id });
+    node.subscribers
+        .borrow_mut()
+        .get_or_insert_with(Default::default)
+        .insert(id, slot);
     Ok(())
 }
 
 /// Remove the `subscribe()` observer whose weak reference is `reference`
-/// (called from that reference's callback, once the observer has died).
-pub(crate) fn forget_observer(node: &Node, reference: *mut pyo3::ffi::PyObject) {
-    let slot = node.observers.borrow().iter().position(|observer| {
-        matches!(observer, Observer::Python { reference: entry, .. } if entry.as_ptr() == reference)
-    });
+/// and whose address was `id` (called from that reference's callback, once
+/// the observer has died).
+pub(crate) fn forget_observer(node: &Node, id: usize, reference: *mut pyo3::ffi::PyObject) {
+    let holds_reference = |slot: usize| {
+        matches!(
+            node.observers.borrow().get(slot),
+            Some(Observer::Python { reference: entry, .. }) if entry.as_ptr() == reference
+        )
+    };
+    let slot = match subscriber_slot(node, id) {
+        Some(slot) if holds_reference(slot as usize) => Some(slot),
+        // A new observer at the same address took over the record; search.
+        _ => (0..node.observers.borrow().len())
+            .find(|&slot| holds_reference(slot))
+            .map(|slot| slot as u32),
+    };
     if let Some(slot) = slot {
-        drop(vacate(node, slot as u32));
+        drop(vacate(node, slot));
     }
 }
 

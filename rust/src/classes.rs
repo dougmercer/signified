@@ -807,17 +807,18 @@ impl SignalAt {
 }
 
 /// A `subscribe()` observer's weak-reference callback: removes the
-/// observer from its node once it dies. One is shared by each node's
-/// subscriptions.
+/// observer, whose address was `id`, from its node once it dies.
 #[pyclass(frozen, module = "signified._core", name = "ObserverCleanup")]
 pub struct ObserverCleanup {
     node: graph::WeakShared,
+    id: usize,
 }
 
 impl ObserverCleanup {
-    pub(crate) fn new(node: std::rc::Weak<Node>) -> Self {
+    pub(crate) fn new(node: std::rc::Weak<Node>, id: usize) -> Self {
         ObserverCleanup {
             node: graph::WeakShared(node),
+            id,
         }
     }
 }
@@ -826,7 +827,7 @@ impl ObserverCleanup {
 impl ObserverCleanup {
     fn __call__(&self, reference: &Bound<'_, PyAny>) {
         if let Some(node) = self.node.0.upgrade() {
-            graph::forget_observer(&node, reference.as_ptr());
+            graph::forget_observer(&node, self.id, reference.as_ptr());
         }
     }
 }
