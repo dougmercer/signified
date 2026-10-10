@@ -295,6 +295,83 @@ def test_at_restore_notifies_effects_that_read_inside():
     watcher.dispose()
 
 
+@pytest.mark.parametrize("make", [Signal, Binding])
+def test_at_restores_the_value_when_entering_raises(make):
+    from signified import Effect
+
+    frame = make(1)
+
+    def reject_five():
+        if frame.value == 5:
+            raise ValueError("no fives")
+
+    watcher = Effect(reject_five)
+    with pytest.raises(ValueError, match="no fives"):
+        with frame.at(5):
+            pass
+
+    assert frame.value == 1
+    watcher.dispose()
+
+
+def test_at_restores_the_value_when_entering_and_restoring_both_raise():
+    from signified import Effect
+
+    frame = Signal(1)
+    armed = []
+
+    def reject_changes():
+        value = frame.value
+        if armed:
+            raise ValueError(value)
+
+    watcher = Effect(reject_changes)
+    armed.append(True)
+    with pytest.raises(ValueError) as caught:
+        with frame.at(5):
+            pass
+
+    assert frame.value == 1
+    assert caught.value.args == (1,)
+    assert isinstance(caught.value.__context__, ValueError)
+    assert caught.value.__context__.args == (5,)
+    watcher.dispose()
+
+
+def test_binding_at_keeps_its_source_when_entering_raises():
+    from signified import Effect
+
+    source = Signal(1)
+    binding = Binding(source)
+
+    def reject_five():
+        if binding.value == 5:
+            raise ValueError("no fives")
+
+    watcher = Effect(reject_five)
+    with pytest.raises(ValueError, match="no fives"):
+        with binding.at(5):
+            pass
+
+    assert binding.source is source
+    source.value = 2
+    assert binding.value == 2
+    watcher.dispose()
+
+
+def test_at_context_cannot_be_entered_while_active():
+    frame = Signal(0)
+    context = frame.at(5)
+
+    with context:
+        with pytest.raises(RuntimeError, match="already active"):
+            with context:
+                pass
+        assert frame.value == 5
+
+    assert frame.value == 0
+
+
 def test_with_name_sets_display_name():
     s = Signal(1).with_name("counter")
     assert f"{s:n}" == "counter"

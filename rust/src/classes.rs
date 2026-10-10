@@ -660,15 +660,13 @@ impl Batch {
     }
 }
 
-/// `with signal.at(value):` holds `value` inside the block, then returns to
-/// the previous value and, if nothing else wrote the signal, the previous
-/// version.
 /// The state of a `Signal.at()` context: the signal, the temporary value,
-/// and, once entered, the value and version before the block and the version
-/// on entry.
+/// whether a block is using the context, and, once entered, the value and
+/// version before the block and the version on entry.
 struct AtState {
     signal: Option<Py<PyAny>>,
     value: Option<Py<PyAny>>,
+    active: bool,
     saved: Option<(Py<PyAny>, u64, u64)>,
 }
 
@@ -687,6 +685,38 @@ impl SignalAt {
             .lock()
             .map_err(|_| PyRuntimeError::new_err("Signal.at() context is broken"))
     }
+
+    /// Assign the temporary value and record what to return to. If the
+    /// assignment raises after changing the value (an effect or hook
+    /// failed), the previous value is assigned back before the error
+    /// propagates, as a `finally` block would.
+    fn enter(&self, py: Python<'_>, signal: &Bound<'_, PyAny>, value: Py<PyAny>) -> PyResult<()> {
+        let node = graph::node_of(signal)?;
+        let before = graph::raw_value(py, &node).unbind();
+        let before_version = node.version.get();
+        if let Err(error) = signal.setattr(intern!(py, "value"), value) {
+            if node.version.get() == before_version {
+                return Err(error);
+            }
+            return match signal.setattr(intern!(py, "value"), before) {
+                Ok(()) => Err(error),
+                Err(restore_error) => {
+                    let context = error.into_value(py);
+                    restore_error
+                        .value(py)
+                        .setattr(intern!(py, "__context__"), context)?;
+                    Err(restore_error)
+                }
+            };
+        }
+        let entered_version = node.version.get();
+        let old = self
+            .state()?
+            .saved
+            .replace((before, before_version, entered_version));
+        drop(old);
+        Ok(())
+    }
 }
 
 #[pymethods]
@@ -697,6 +727,7 @@ impl SignalAt {
             state: std::sync::Mutex::new(AtState {
                 signal: Some(signal),
                 value: Some(value),
+                active: false,
                 saved: None,
             }),
         }
@@ -704,30 +735,31 @@ impl SignalAt {
 
     fn __enter__(&self, py: Python<'_>) -> PyResult<()> {
         let (signal, value) = {
-            let state = self.state()?;
-            match (&state.signal, &state.value) {
+            let mut state = self.state()?;
+            if state.active {
+                return Err(PyRuntimeError::new_err(
+                    "Signal.at() context is already active",
+                ));
+            }
+            let pair = match (&state.signal, &state.value) {
                 (Some(signal), Some(value)) => (signal.clone_ref(py), value.clone_ref(py)),
                 _ => return Err(PyRuntimeError::new_err("Signal.at() context was cleared")),
-            }
+            };
+            state.active = true;
+            pair
         };
-        let signal = signal.bind(py);
-        let node = graph::node_of(signal)?;
-        let before = graph::raw_value(py, &node).unbind();
-        let before_version = node.version.get();
-        signal.setattr(intern!(py, "value"), value)?;
-        let entered_version = node.version.get();
-        let old = self
-            .state()?
-            .saved
-            .replace((before, before_version, entered_version));
-        drop(old);
-        Ok(())
+        let entered = self.enter(py, signal.bind(py), value);
+        if entered.is_err() {
+            self.state()?.active = false;
+        }
+        entered
     }
 
     #[pyo3(signature = (*_exc))]
     fn __exit__(&self, py: Python<'_>, _exc: &Bound<'_, PyTuple>) -> PyResult<bool> {
         let (signal, saved) = {
             let mut state = self.state()?;
+            state.active = false;
             let saved = state.saved.take();
             (
                 state.signal.as_ref().map(|signal| signal.clone_ref(py)),
