@@ -151,8 +151,12 @@ before then, it may never run.
 Batching does not hide intermediate values or undo changes. If the batch body
 raises an error, applied writes remain and pending effects still run.
 
-Run all reactive operations on one thread. `batch()` and `untracked()` are
-synchronous blocks and must not contain `await`.
+Each thread tracks reads, batches, and runs effects on its own. Separate graphs
+can run on separate threads at the same time, and a graph built on one thread
+can be used on another afterwards. Use one graph from one thread at a time:
+reading a `Computed` while another thread is computing it raises
+`RuntimeError`. `batch()` and `untracked()` apply to the thread that enters
+them; they are synchronous blocks and must not contain `await`.
 
 ### Errors and recovery
 

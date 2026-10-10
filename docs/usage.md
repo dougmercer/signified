@@ -90,7 +90,7 @@ watcher.dispose()
 ```
 
 Values change immediately inside the block; batching does not undo writes if
-an error occurs. Run reactive operations on one thread, and do not put `await`
+an error occurs. Use a graph from one thread at a time, and do not put `await`
 inside `batch()` or `untracked()`.
 
 Use `untracked()` when a read inside an effect or calculation should not make

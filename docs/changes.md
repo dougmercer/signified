@@ -6,10 +6,33 @@ This page summarizes notable changes across releases.
 
 ### Breaking changes
 
+- **Breaking:** Signified's reactive engine is now a compiled extension written
+  in Rust (`signified._core`). `Signal`, `Computed`, `Binding` and `Effect` keep
+  their API, and most graphs update several times faster. Behavior changes:
+  - Observers added with `subscribe()` run after a change has finished
+    propagating, in the same queue as effects (so `batch()` defers them too),
+    instead of in the middle of it. Repeated notifications to one subscription
+    before it runs are combined into one call, and `unsubscribe()` cancels a
+    call that has not run yet.
+  - A signal written twice while a change is propagating now notifies both
+    times. Previously the second write could leave a dependent computed stale.
+  - Subclasses can no longer override `notify()`, `update()` or `value`;
+    defining any of them raises `TypeError`. The engine reads values and sends
+    notifications natively, so it would not call the overrides. Derive a
+    `Computed` (for example with `signal.rx.map(fn)`) instead of overriding `value`.
+  - `copy.copy()` and `copy.deepcopy()` of a `Signal`, `Computed` or `Binding`
+    raise `TypeError`. Deep-copying a `Computed` previously produced an object
+    that never updated. Instances using `tracked_fields` still copy and pickle.
+  - Reading or writing a `Signal` whose `__init__` was never called raises
+    `RuntimeError`.
 - **Breaking:** Reactive objects no longer overload `!=`. Comparisons between
   reactive objects use identity and return a plain `bool`, matching `==`.
   Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
   the existing `x.rx.eq(y)`.
+- **Breaking:** Removed the migration warnings added in 0.6:
+  `signified.migration` and `SIGNIFIED_MIGRATION_WARNINGS`. To check code
+  written for 0.5, run the warnings on 0.6 before upgrading; see
+  [Migrating to 0.6](migration.md#optional-migration-diagnostics).
 
 ### Runtime improvements
 
@@ -33,17 +56,32 @@ This page summarizes notable changes across releases.
   previous object is kept and dependents are not invalidated.
   `x.rx.with_equal(equal)` sets it on an existing value and returns that value,
   including values built by operators, `computed`, `lift`, and `rx.map`.
+- Each thread now tracks reads, batches, and runs effects on its own. Previously
+  any two threads using Signified at once, even with unrelated graphs, could
+  raise `RuntimeError: tracking frames are unbalanced`, count a read on one
+  thread as a dependency of a computation running on another, or have one
+  thread's `batch()` hold back another thread's effects. Separate graphs can now
+  run on separate threads, and a graph can be handed from one thread to
+  another. One graph should still be used by one thread at a time: reading a
+  `Computed` while another thread is computing it raises `RuntimeError`.
 - Added `tracked_fields`, a class decorator that makes reassigning an attribute
   invalidate computations that read it. Reads return the stored value unchanged.
   It works with slotted and dict-based dataclasses, or named attributes of other classes.
 
 ### Packaging
 
+- Signified now ships a compiled extension, built with maturin. Wheels cover
+  CPython 3.12 and later on Linux (x86_64 and aarch64, glibc and musl), macOS
+  (Intel and Apple silicon), Windows x64, and Pyodide 314 (Python 3.14).
+  Installing on other platforms builds from source and needs a Rust toolchain.
+  Under Pyodide, a value more than 250 refreshes deep raises `RecursionError`,
+  because the browser's stack is much smaller than a native one.
+- Plugin hooks run whenever a plugin is registered with `plugin_manager`;
+  `SIGNIFIED_ENABLE_HOOKS` and `signified.plugins.HOOKS_ENABLED` are removed.
 - Removed the `ipython` extra. Notebook display works the same without it,
   because IPython calls the display hook only when IPython is running.
 - Plugins no longer use pluggy, and the `plugins` extra is removed. Signified
-  now has its own small plugin manager, so `SIGNIFIED_ENABLE_HOOKS=1` is all
-  that is needed to enable hooks. `@hookimpl`, `plugin_manager.register`, and
+  now has its own small plugin manager. `@hookimpl`, `plugin_manager.register`, and
   `plugin_manager.unregister` work as before. `register` now rejects an
   `@hookimpl` method whose name is not a known hook, and no longer takes a
   `name` argument. pluggy's options such as `@hookimpl(tryfirst=True)` and

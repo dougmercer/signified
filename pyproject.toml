@@ -1,6 +1,6 @@
 [project]
 name = "signified"
-version = "0.6.1"
+version = "0.7.0"
 requires-python = ">=3.12"
 authors = [
     {name = "Doug Mercer", email = "dougmerceryt@gmail.com"},
@@ -11,6 +11,7 @@ maintainers = [
 description = "A fast, fully-typed Python library for reactive programming."
 readme = "README.md"
 license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 keywords = ["reactive", "signals"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -18,8 +19,18 @@ classifiers = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
-build-backend = "uv_build"
+requires = ["maturin>=1.15,<2"]
+build-backend = "maturin"
+
+[tool.maturin]
+manifest-path = "rust/Cargo.toml"
+python-source = "src"
+module-name = "signified._core"
+features = ["pyo3/extension-module"]
+
+[tool.uv]
+# Rebuild the extension on `uv sync` / `uv run` when Rust sources change.
+cache-keys = [{ file = "pyproject.toml" }, { file = "rust/Cargo.toml" }, { file = "rust/src/**/*.rs" }]
 
 [dependency-groups]
 docs = [

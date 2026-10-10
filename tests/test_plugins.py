@@ -4,8 +4,7 @@ from typing import Any
 
 import pytest
 
-import signified._reactive as reactive_module
-from signified import Binding, Computed, Signal, Variable, plugins
+from signified import Binding, Computed, Signal, Variable, _core, plugins
 from signified.plugins import PluginManager, hookimpl
 
 
@@ -30,8 +29,7 @@ class RecordingPluginManager:
 
 def enable_recording_hooks(monkeypatch) -> RecordingHook:
     manager = RecordingPluginManager()
-    monkeypatch.setattr(reactive_module, "HOOKS_ENABLED", True)
-    monkeypatch.setattr(reactive_module, "plugin_manager", manager)
+    monkeypatch.setattr(_core.config, "hooks", manager.hook)
     return manager.hook
 
 
@@ -108,10 +106,16 @@ class Recorder:
         self.calls.append((self.label, "read"))
 
 
-def test_plugin_manager_calls_marked_impls_most_recent_first(monkeypatch) -> None:
+def use_plugin_manager(monkeypatch) -> PluginManager:
+    """Make a new manager the one reactive values call, until the test ends."""
     manager = PluginManager()
-    monkeypatch.setattr(reactive_module, "HOOKS_ENABLED", True)
-    monkeypatch.setattr(reactive_module, "plugin_manager", manager)
+    monkeypatch.setattr(plugins, "plugin_manager", manager)
+    monkeypatch.setattr(_core.config, "hooks", None)
+    return manager
+
+
+def test_plugin_manager_calls_marked_impls_most_recent_first(monkeypatch) -> None:
+    manager = use_plugin_manager(monkeypatch)
     calls: list[tuple[str, str]] = []
     first, second = Recorder("first", calls), Recorder("second", calls)
     manager.register(first)
@@ -126,6 +130,25 @@ def test_plugin_manager_calls_marked_impls_most_recent_first(monkeypatch) -> Non
     calls.clear()
     Signal(2)
     assert calls == [("first", "created")]
+
+
+def test_hooks_without_implementations_are_not_called(monkeypatch) -> None:
+    called: list[object] = []
+    call = plugins._HookCaller.__call__
+
+    def spy(self, *, value: Variable[Any]) -> None:
+        called.append(self)
+        call(self, value=value)
+
+    monkeypatch.setattr(plugins._HookCaller, "__call__", spy)
+    manager = use_plugin_manager(monkeypatch)
+    manager.register(Recorder("plugin", []))  # implements only `created`
+
+    signal = Signal(1)
+    assert signal.value == 1
+    signal.value = 2
+
+    assert called == [manager.hook.created]
 
 
 def test_plugin_manager_rejects_duplicate_and_unknown_plugins() -> None:
@@ -160,10 +183,7 @@ def test_plugin_manager_validates_hook_impls() -> None:
 
 @pytest.fixture
 def access_tracker(monkeypatch):
-    manager = PluginManager()
-    monkeypatch.setattr(reactive_module, "HOOKS_ENABLED", True)
-    monkeypatch.setattr(reactive_module, "plugin_manager", manager)
-    monkeypatch.setattr(plugins, "plugin_manager", manager)
+    use_plugin_manager(monkeypatch)
     example = Path(__file__).resolve().parents[1] / "examples" / "plugins" / "access_tracker.py"
     return runpy.run_path(str(example))["tracker"]
 
@@ -223,3 +243,49 @@ def test_access_tracker_preserves_computation_errors_and_recovery(access_tracker
     assert stats.read_count == 2
     assert stats.write_count == 2
     assert stats.last_value == 5
+
+
+def test_registering_a_plugin_turns_hooks_on_and_unregistering_turns_them_off(monkeypatch) -> None:
+    monkeypatch.setattr(_core.config, "hooks", None)
+    calls: list[tuple[str, str]] = []
+    plugin = Recorder("plugin", calls)
+    plugins.plugin_manager.register(plugin)
+    try:
+        assert _core.config.hooks is plugins.plugin_manager.hook
+        Signal(1)
+        assert calls == [("plugin", "created")]
+    finally:
+        plugins.plugin_manager.unregister(plugin)
+    assert _core.config.hooks is None
+    Signal(2)
+    assert calls == [("plugin", "created")]
+
+
+def test_created_hook_can_read_an_operator_result(monkeypatch) -> None:
+    class ReadsOnCreate(RecordingHook):
+        def created(self, *, value: Variable[Any]) -> None:
+            value.value
+
+    monkeypatch.setattr(_core.config, "hooks", ReadsOnCreate())
+    source = Signal(1)
+    total = source + 2
+    assert total.value == 3
+    source.value = 5
+    assert total.value == 7
+
+
+def test_read_hook_that_writes_the_signal_leaves_readers_current(monkeypatch) -> None:
+    source = Signal(1)
+
+    class BumpsOnFirstRead(RecordingHook):
+        done = False
+
+        def read(self, *, value: Variable[Any]) -> None:
+            if value is source and not self.done:
+                self.done = True
+                source.value = 2
+
+    monkeypatch.setattr(_core.config, "hooks", BumpsOnFirstRead())
+    scaled = Computed(lambda: source.value * 10)
+    assert scaled.value == 20
+    assert scaled.value == 20

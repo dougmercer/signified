@@ -108,7 +108,8 @@ and skips unread intermediate values; it is not an automatic effect.
 
 ## Optional migration diagnostics
 
-Warnings are available in both 0.5.1 and 0.6:
+Warnings are available in 0.5.1 and 0.6, and removed in 0.7. Run them on one
+of those versions before upgrading further:
 
 ```python
 from signified import migration

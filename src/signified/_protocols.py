@@ -63,7 +63,8 @@ type _FloatLike = _IntLike | HasValue[float]
 class _ReactiveOf[V](Protocol):
     """A reactive object whose current value is a `V`."""
 
-    # Match unref's class marker: an ordinary object with .value is not unwrapped.
+    # Only signified's reactive classes declare this, so an ordinary object with
+    # .value does not match, just as unref leaves it alone.
     _IS_REACTIVE: ClassVar[Literal[True]]
 
     @property

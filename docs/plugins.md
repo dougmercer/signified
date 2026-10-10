@@ -5,14 +5,8 @@ Signified calls your plugin's methods when these events happen.
 
 ## Enable plugins
 
-Set `SIGNIFIED_ENABLE_HOOKS=1` before importing Signified. For example, run a
-script with:
-
-```bash
-SIGNIFIED_ENABLE_HOOKS=1 python your_script.py
-```
-
-Without this setting, registering a plugin has no effect.
+Hooks run while at least one plugin is registered with `plugin_manager`, as
+shown below. With no plugin registered, reactive values skip them.
 
 ## Available hooks {#plugin-hooks}
 

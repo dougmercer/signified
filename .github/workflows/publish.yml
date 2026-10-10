@@ -1,49 +1,168 @@
+# Builds and tests every distribution on pull requests, and publishes them to
+# PyPI when a release is published. PyPI's trusted publisher is configured for
+# this file name and the `pypi` environment.
 name: Upload Python Package
 
 on:
   release:
     types: [published]
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-jobs:
-  release-build:
-    runs-on: ubuntu-latest
+env:
+  # Tests an installed distribution: the source tree has no compiled extension.
+  WHEEL_TESTS: python -m pytest tests -o addopts="" -m "not benchmark" -p no:cacheprovider
 
+jobs:
+  # The extension is abi3, so one wheel per platform covers CPython 3.12+.
+  linux:
+    name: Linux ${{ matrix.platform.target }} ${{ matrix.platform.libc }}
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { runner: ubuntu-24.04, target: x86_64, libc: glibc, manylinux: auto }
+          - { runner: ubuntu-24.04-arm, target: aarch64, libc: glibc, manylinux: auto }
+          - { runner: ubuntu-24.04, target: x86_64, libc: musl, manylinux: musllinux_1_2 }
+          - { runner: ubuntu-24.04-arm, target: aarch64, libc: musl, manylinux: musllinux_1_2 }
     steps:
       - uses: actions/checkout@v6
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-
-      - name: build release distributions
-        run: uv build
-
-      - name: upload windows dists
-        uses: actions/upload-artifact@v4
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
         with:
-          name: release-dists
-          path: dist/
+          target: ${{ matrix.platform.target }}
+          manylinux: ${{ matrix.platform.manylinux }}
+          args: --release --out dist
+      - name: Test wheel
+        if: ${{ matrix.platform.libc == 'glibc' }}
+        run: |
+          python -m pip install dist/*.whl pytest numpy
+          ${{ env.WHEEL_TESTS }}
+      - name: Test wheel
+        if: ${{ matrix.platform.libc == 'musl' }}
+        run: >
+          docker run --rm -v "$PWD":/io -w /io python:3.12-alpine sh -c
+          'pip install dist/*.whl pytest numpy && ${{ env.WHEEL_TESTS }}'
+      - uses: actions/upload-artifact@v6
+        with:
+          name: wheels-linux-${{ matrix.platform.target }}-${{ matrix.platform.libc }}
+          path: dist
+
+  macos:
+    name: macOS ${{ matrix.platform.target }}
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - { runner: macos-15-intel, target: x86_64 }
+          - { runner: macos-latest, target: aarch64 }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist
+      - name: Test wheel
+        run: |
+          python -m pip install dist/*.whl pytest numpy
+          ${{ env.WHEEL_TESTS }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: wheels-macos-${{ matrix.platform.target }}
+          path: dist
+
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: x64
+          args: --release --out dist
+      - name: Test wheel
+        shell: bash
+        run: |
+          python -m pip install dist/*.whl pytest numpy
+          ${{ env.WHEEL_TESTS }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: wheels-windows-x64
+          path: dist
+
+  # The docs Playground installs this wheel from PyPI with micropip.
+  pyodide:
+    name: Pyodide
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-emscripten
+      - name: Build and test wheel
+        uses: pypa/cibuildwheel@v4.3.1
+        env:
+          CIBW_PLATFORM: pyodide
+          CIBW_BUILD: cp314-*
+          CIBW_TEST_REQUIRES: pytest numpy
+          CIBW_TEST_COMMAND: cd {project} && ${{ env.WHEEL_TESTS }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: wheels-pyodide
+          path: wheelhouse/*.whl
+
+  sdist:
+    name: Source distribution
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install from the sdist and test
+        run: |
+          python -m pip install dist/*.tar.gz pytest numpy
+          ${{ env.WHEEL_TESTS }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: wheels-sdist
+          path: dist
 
   pypi-publish:
+    name: Publish to PyPI
+    if: ${{ github.event_name == 'release' }}
+    needs: [linux, macos, windows, pyodide, sdist]
     runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/signified
-    needs:
-      - release-build
     permissions:
       id-token: write
-
     steps:
-      - name: Retrieve release distributions
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
-          name: release-dists
-          path: dist/
-
-      - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
