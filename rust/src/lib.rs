@@ -366,6 +366,11 @@ fn mark_notified(node: &Arc<Node>) -> bool {
 /// Notify `start`'s observers depth-first, like the recursive Python version,
 /// but with an explicit stack so long chains cannot overflow.
 fn notify(py: Python<'_>, start: &Arc<Node>) -> PyResult<()> {
+    // Like `_ReactiveBase.notify`, a node without observers stays out of the
+    // wave, so observers added later in the wave still hear its next write.
+    if start.observers.borrow().is_empty() {
+        return Ok(());
+    }
     if !mark_notified(start) {
         return Ok(());
     }

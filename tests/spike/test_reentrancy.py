@@ -144,6 +144,25 @@ def test_observer_subscribing_during_notify_is_kept(rx):
     assert created[0].value == 103
 
 
+def test_signal_rewritten_in_one_wave_reaches_observers_added_between_writes(rx):
+    a = rx.Signal(1)
+    b = rx.Signal(0)
+    seen = []
+
+    class WritesBTwice:
+        def update(self) -> None:
+            b.value = 1  # b has no observers yet
+            doubled = b * 2
+            seen.append(doubled.value)  # subscribes `doubled` to `b`
+            b.value = 2
+            seen.append(doubled.value)
+
+    observer = WritesBTwice()
+    a.subscribe(observer)
+    a.value = 2
+    assert seen == [2, 4]
+
+
 def test_deep_chain_on_a_worker_thread_raises_instead_of_crashing(rx):
     import threading
 
