@@ -1047,8 +1047,8 @@ pub(crate) fn call_equal(
 }
 
 /// Unwrap one reactive boundary, like `unref`. Instances of the registered
-/// classes are read natively; any other reactive object (for example a
-/// subclass that overrides `value`) goes through its Python `value` attribute.
+/// classes are read natively; other subclasses of the engine's classes (which
+/// may override `value`) go through their Python `value` attribute.
 pub(crate) fn resolve_arg<'py>(
     py: Python<'py>,
     arg: &Bound<'py, PyAny>,
@@ -1061,35 +1061,26 @@ pub(crate) fn resolve_arg<'py>(
     {
         return Ok(arg.clone());
     }
-    let arg_type = arg.get_type();
-    if is_standard_type(arg_type.as_any()) {
-        if let Ok(signal) = arg.cast::<SignalCore>() {
+    let standard = is_standard_type(arg.get_type().as_any());
+    if let Ok(signal) = arg.cast::<SignalCore>() {
+        if standard {
             return read_signal(py, &signal.get().node, arg);
         }
-        if let Ok(computed) = arg.cast::<ComputedCore>() {
+        return arg.getattr(intern!(py, "value"));
+    }
+    if let Ok(computed) = arg.cast::<ComputedCore>() {
+        if standard {
             return read_computed(py, &computed.get().node, arg);
         }
-    }
-    let is_reactive = match arg_type.getattr(intern!(py, "_IS_REACTIVE")) {
-        Ok(flag) => flag.is_truthy()?,
-        Err(_) => false,
-    };
-    if is_reactive {
         return arg.getattr(intern!(py, "value"));
     }
     Ok(arg.clone())
 }
 
-/// Whether `obj` is a Signal, Computed or Binding: an instance of the
-/// engine's classes, or of a class marked `_IS_REACTIVE`.
-pub(crate) fn is_reactive(obj: &Bound<'_, PyAny>) -> PyResult<bool> {
-    if obj.is_instance_of::<SignalCore>() || obj.is_instance_of::<ComputedCore>() {
-        return Ok(true);
-    }
-    match obj.get_type().getattr(intern!(obj.py(), "_IS_REACTIVE")) {
-        Ok(flag) => flag.is_truthy(),
-        Err(_) => Ok(false),
-    }
+/// Whether `obj` is a Signal, Computed or Binding (an instance of the
+/// engine's classes).
+pub(crate) fn is_reactive(obj: &Bound<'_, PyAny>) -> bool {
+    obj.is_instance_of::<SignalCore>() || obj.is_instance_of::<ComputedCore>()
 }
 
 /// Built-in scalars compare by value (NaN equals NaN); everything else by

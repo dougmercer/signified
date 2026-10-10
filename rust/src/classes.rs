@@ -589,7 +589,7 @@ pub fn unref<'py>(py: Python<'py>, value: &Bound<'py, PyAny>) -> PyResult<Bound<
 
 /// Whether `obj` is a reactive value (a Signal, Computed or Binding).
 #[pyfunction]
-pub fn is_reactive(obj: &Bound<'_, PyAny>) -> PyResult<bool> {
+pub fn is_reactive(obj: &Bound<'_, PyAny>) -> bool {
     graph::is_reactive(obj)
 }
 
