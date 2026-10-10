@@ -50,6 +50,11 @@ pub(crate) fn enqueue_observer(reference: Py<PyWeakrefReference>) {
     }
 }
 
+/// Cancel a queued call of the observer whose weak reference is `reference`.
+pub(crate) fn cancel_observer(reference: usize) {
+    rt().queued_observers.borrow_mut().remove(&reference);
+}
+
 /// Queue `effect`, then run the queue unless a walk, batch or flush is in
 /// progress.
 pub(crate) fn schedule(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
@@ -142,7 +147,10 @@ fn run_pending(
             }
             Job::Observer(reference) => {
                 let key = reference.as_ptr() as usize;
-                rt.queued_observers.borrow_mut().remove(&key);
+                // Unsubscribed since it was queued.
+                if !rt.queued_observers.borrow_mut().remove(&key) {
+                    continue;
+                }
                 let Some(target) = reference.bind(py).upgrade() else {
                     continue;
                 };

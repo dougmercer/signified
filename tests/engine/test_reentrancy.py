@@ -255,6 +255,25 @@ def test_equal_that_leaves_untracked_open_raises_and_stops_tracking():
     assert not _core.is_tracking()
 
 
+def test_unsubscribing_cancels_a_pending_observer_call():
+    from signified import batch
+
+    s = Signal(0)
+    calls = []
+
+    class Records:
+        def update(self) -> None:
+            calls.append(s.value)
+
+    observer = Records()
+    s.subscribe(observer)
+    with batch():
+        s.value = 1
+        s.unsubscribe(observer)
+
+    assert calls == []
+
+
 def test_observers_run_after_the_change_has_propagated():
     from signified import batch
 

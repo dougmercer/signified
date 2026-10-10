@@ -12,7 +12,8 @@ This page summarizes notable changes across releases.
   - Observers added with `subscribe()` run after a change has finished
     propagating, in the same queue as effects (so `batch()` defers them too),
     instead of in the middle of it. Repeated notifications to one subscription
-    before it runs are combined into one call.
+    before it runs are combined into one call, and `unsubscribe()` cancels a
+    call that has not run yet.
   - A signal written twice while a change is propagating now notifies both
     times. Previously the second write could leave a dependent computed stale.
   - Subclasses can no longer override `notify()`, `update()` or `value`;

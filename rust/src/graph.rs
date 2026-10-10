@@ -347,7 +347,8 @@ pub(crate) struct Runtime {
     /// Effects and observers waiting to run, in the order they were queued.
     pub(crate) pending: RefCell<VecDeque<Job>>,
     pub(crate) pending_seq: Cell<u64>,
-    /// Weak references of observers already in `pending`.
+    /// Weak references of observers waiting in `pending`. A queued observer
+    /// whose reference is missing was unsubscribed and is skipped.
     pub(crate) queued_observers: RefCell<HashSet<usize>>,
     pub(crate) flush_epoch: Cell<u64>,
     pub(crate) batch_depth: Cell<u32>,
@@ -1335,10 +1336,16 @@ pub(crate) fn forget_observer(node: &Node, reference: *mut pyo3::ffi::PyObject) 
     }
 }
 
+/// Unsubscribe `observer`, including a queued call of its `update()`.
 pub(crate) fn remove_python_observer(node: &Node, observer: &Bound<'_, PyAny>) {
-    if let Some(slot) = find_python_observer(node, observer) {
-        drop(vacate(node, slot));
+    let Some(slot) = find_python_observer(node, observer) else {
+        return;
+    };
+    let removed = vacate(node, slot);
+    if let Observer::Python { reference, .. } = &removed {
+        effects::cancel_observer(reference.as_ptr() as usize);
     }
+    drop(removed);
 }
 
 /// Live observers of `node`; dead `subscribe()` observers are removed.
