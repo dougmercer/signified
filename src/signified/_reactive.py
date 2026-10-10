@@ -124,9 +124,9 @@ class Variable[T](_ReactiveMixIn[T]):
             `self`, to allow method chaining.
         """
         self._name = name
-        hooks = _core.config.hooks
-        if hooks is not None:
-            hooks.named(value=self)
+        named = getattr(_core.config.hooks, "named", None)
+        if named:
+            named(value=self)
         return self
 
     def __copy__(self) -> Self:

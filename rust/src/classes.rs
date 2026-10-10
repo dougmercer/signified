@@ -11,7 +11,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString, PySuper, PyTuple, PyType};
 use pyo3::PyTraverseError;
 
-use crate::config;
+use crate::config::{self, Hook};
 use crate::effects;
 use crate::graph::{self, rt, Compute, Kind, Node, RestorePoint, Shared, State};
 
@@ -108,7 +108,7 @@ impl SignalCore {
         let old = node.value.replace(Some(value.unbind()));
         drop(old);
         set_equal(py, node, equal.unwrap_or_else(|| py.None()));
-        config::hook(py, intern!(py, "created"), slf.as_any())
+        config::hook(py, Hook::Created, slf.as_any())
     }
 
     #[classmethod]
@@ -264,7 +264,7 @@ fn init_computed(
     let old = node.consumer().compute.replace(Some(compute));
     drop(old);
     set_equal(py, node, equal.unwrap_or_else(|| py.None()));
-    config::hook(py, intern!(py, "created"), obj)
+    config::hook(py, Hook::Created, obj)
 }
 
 #[pymethods]

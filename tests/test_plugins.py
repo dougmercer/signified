@@ -106,9 +106,16 @@ class Recorder:
         self.calls.append((self.label, "read"))
 
 
-def test_plugin_manager_calls_marked_impls_most_recent_first(monkeypatch) -> None:
+def use_plugin_manager(monkeypatch) -> PluginManager:
+    """Make a new manager the one reactive values call, until the test ends."""
     manager = PluginManager()
-    monkeypatch.setattr(_core.config, "hooks", manager.hook)
+    monkeypatch.setattr(plugins, "plugin_manager", manager)
+    monkeypatch.setattr(_core.config, "hooks", None)
+    return manager
+
+
+def test_plugin_manager_calls_marked_impls_most_recent_first(monkeypatch) -> None:
+    manager = use_plugin_manager(monkeypatch)
     calls: list[tuple[str, str]] = []
     first, second = Recorder("first", calls), Recorder("second", calls)
     manager.register(first)
@@ -123,6 +130,25 @@ def test_plugin_manager_calls_marked_impls_most_recent_first(monkeypatch) -> Non
     calls.clear()
     Signal(2)
     assert calls == [("first", "created")]
+
+
+def test_hooks_without_implementations_are_not_called(monkeypatch) -> None:
+    called: list[object] = []
+    call = plugins._HookCaller.__call__
+
+    def spy(self, *, value: Variable[Any]) -> None:
+        called.append(self)
+        call(self, value=value)
+
+    monkeypatch.setattr(plugins._HookCaller, "__call__", spy)
+    manager = use_plugin_manager(monkeypatch)
+    manager.register(Recorder("plugin", []))  # implements only `created`
+
+    signal = Signal(1)
+    assert signal.value == 1
+    signal.value = 2
+
+    assert called == [manager.hook.created]
 
 
 def test_plugin_manager_rejects_duplicate_and_unknown_plugins() -> None:
@@ -157,9 +183,7 @@ def test_plugin_manager_validates_hook_impls() -> None:
 
 @pytest.fixture
 def access_tracker(monkeypatch):
-    manager = PluginManager()
-    monkeypatch.setattr(_core.config, "hooks", manager.hook)
-    monkeypatch.setattr(plugins, "plugin_manager", manager)
+    use_plugin_manager(monkeypatch)
     example = Path(__file__).resolve().parents[1] / "examples" / "plugins" / "access_tracker.py"
     return runpy.run_path(str(example))["tracker"]
 

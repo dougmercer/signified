@@ -23,7 +23,7 @@ use pyo3::types::{
 use pyo3::PyTraverseError;
 
 use crate::classes::{ComputedCore, ObserverCleanup, SignalCore};
-use crate::config;
+use crate::config::{self, Hook};
 use crate::effects::{self, Job};
 
 // ---------------------------------------------------------------------------
@@ -356,7 +356,10 @@ pub(crate) struct Runtime {
     pub(crate) flushing: Cell<bool>,
     /// The plugin manager's `hook` object, when hooks are on.
     pub(crate) hooks: RefCell<Option<Py<PyAny>>>,
-    pub(crate) hooks_on: Cell<bool>,
+    /// The hooks a plugin implements, indexed by `config::Hook`, and one bit
+    /// per hook in `hooks_on`.
+    pub(crate) hook_callers: RefCell<[Option<Py<PyAny>>; 3]>,
+    pub(crate) hooks_on: Cell<u8>,
     pub(crate) migration_warnings: Cell<bool>,
 }
 
@@ -378,7 +381,8 @@ pub(crate) fn rt() -> &'static Runtime {
         batch_depth: Cell::new(0),
         flushing: Cell::new(false),
         hooks: RefCell::new(None),
-        hooks_on: Cell::new(false),
+        hook_callers: RefCell::new([None, None, None]),
+        hooks_on: Cell::new(0),
         migration_warnings: Cell::new(false),
     })
 }
@@ -1015,7 +1019,7 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     }
     drop((old_value, old_error, previous));
     if changed || forced {
-        config::hook(py, intern!(py, "updated"), handle)?;
+        config::hook(py, Hook::Updated, handle)?;
     }
 
     // 5) A binding read inside `at()` returns to its pre-context value and
@@ -1171,7 +1175,7 @@ pub(crate) fn read_signal<'py>(
 ) -> PyResult<Bound<'py, PyAny>> {
     // The hook runs first and may write this signal; the value and the
     // version the read registers are both taken after it.
-    config::hook(py, intern!(py, "read"), handle)?;
+    config::hook(py, Hook::Read, handle)?;
     let value = match node.value.borrow().as_ref() {
         Some(value) => value.bind(py).clone(),
         None => return Err(uninitialized()),
@@ -1185,7 +1189,7 @@ pub(crate) fn read_computed<'py>(
     node: &Rc<Node>,
     handle: &Bound<'py, PyAny>,
 ) -> PyResult<Bound<'py, PyAny>> {
-    config::hook(py, intern!(py, "read"), handle)?;
+    config::hook(py, Hook::Read, handle)?;
     let refreshed = ensure_uptodate(py, node, handle);
     // Register the read even when the refresh raises, so the reader retries.
     track_read(node, handle);
@@ -1241,7 +1245,7 @@ pub(crate) fn write_signal(
     bump_version(node);
     drop(previous);
     drop(old);
-    config::hook(py, intern!(py, "updated"), handle)?;
+    config::hook(py, Hook::Updated, handle)?;
     notify(py, node)
 }
 
@@ -1252,7 +1256,7 @@ pub(crate) fn update_signal(
     handle: &Bound<'_, PyAny>,
 ) -> PyResult<()> {
     bump_version(node);
-    config::hook(py, intern!(py, "updated"), handle)?;
+    config::hook(py, Hook::Updated, handle)?;
     notify(py, node)
 }
 
@@ -1270,7 +1274,7 @@ pub(crate) fn restore_signal(
     node.version.set(version);
     bump_clock();
     drop(previous);
-    config::hook(py, intern!(py, "updated"), handle)?;
+    config::hook(py, Hook::Updated, handle)?;
     notify(py, node)
 }
 

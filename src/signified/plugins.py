@@ -35,6 +35,10 @@ class _HookCaller:
         for impl in self.impls:
             impl(value=value)
 
+    def __bool__(self) -> bool:
+        """Whether any plugin implements this hook; the engine skips hooks that are false."""
+        return bool(self.impls)
+
 
 class _Hooks:
     """The hooks a plugin can implement. Each receives the reactive object as ``value``.
