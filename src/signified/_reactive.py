@@ -178,7 +178,7 @@ def _reject_engine_overrides(cls: type, names: tuple[str, ...]) -> None:
     if not issubclass(cls, _NATIVE_BASES):
         return
     for name in names:
-        owner = next(klass for klass in cls.__mro__ if name in klass.__dict__)
+        owner = next(_class for _class in cls.__mro__ if name in _class.__dict__)
         if owner in _NATIVE_BASES:
             continue
         where = "" if owner is cls else f" (inherited from {owner.__name__})"
