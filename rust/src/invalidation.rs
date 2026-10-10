@@ -1,6 +1,7 @@
 //! Push: when a value changes, mark the computeds that depend on it stale
 //! and queue the effects and `subscribe()` observers that depend on it.
 
+use std::cell::Cell;
 use std::rc::Rc;
 
 use pyo3::prelude::*;
@@ -8,7 +9,7 @@ use pyo3::types::PyWeakrefReference;
 
 use crate::node::{ComputedState, Node, Role, State};
 use crate::observer_list::Observer;
-use crate::runtime::rt;
+use crate::runtime::with_rt;
 use crate::scheduler;
 
 /// Mark stale and return whether observers still need to hear about it.
@@ -32,20 +33,18 @@ pub(crate) fn invalidate(computed: &ComputedState, force: bool) -> bool {
 /// Counts one notification walk in `wave_depth` while it lives, so a panic
 /// that unwinds through a walk cannot leave the count raised and stop every
 /// later flush.
-struct Walking;
+struct Walking<'a>(&'a Cell<u32>);
 
-impl Walking {
-    fn enter() -> Walking {
-        let depth = &rt().wave_depth;
+impl Walking<'_> {
+    fn enter(depth: &Cell<u32>) -> Walking<'_> {
         depth.set(depth.get() + 1);
-        Walking
+        Walking(depth)
     }
 }
 
-impl Drop for Walking {
+impl Drop for Walking<'_> {
     fn drop(&mut self) {
-        let depth = &rt().wave_depth;
-        depth.set(depth.get() - 1);
+        self.0.set(self.0.get() - 1);
     }
 }
 
@@ -57,10 +56,13 @@ pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
     if start.observers.is_empty() {
         return Ok(());
     }
-    let walking = Walking::enter();
-    walk(py, start);
-    drop(walking);
-    if rt().wave_depth.get() == 0 {
+    let outermost = with_rt(|rt| {
+        let walking = Walking::enter(&rt.wave_depth);
+        walk(py, start);
+        drop(walking);
+        rt.wave_depth.get() == 0
+    });
+    if outermost {
         scheduler::flush(py)?;
     }
     Ok(())

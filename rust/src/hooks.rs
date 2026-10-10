@@ -7,8 +7,6 @@ use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString};
 
-use crate::runtime::rt;
-
 /// A plugin hook the engine calls.
 #[derive(Clone, Copy)]
 pub(crate) enum Hook {
@@ -36,9 +34,8 @@ impl Hook {
 /// The hooks a plugin implements, indexed by `Hook`.
 type Callers = [Option<Py<PyAny>>; Hook::ALL.len()];
 
-/// The hooks the engine calls. Part of the runtime.
-#[derive(Default)]
-pub(crate) struct Hooks {
+/// The hooks the engine calls. One set serves every thread.
+struct Hooks {
     /// The plugin manager's `hook` object, when hooks are on.
     manager_hook: RefCell<Option<Py<PyAny>>>,
     callers: RefCell<Callers>,
@@ -46,8 +43,18 @@ pub(crate) struct Hooks {
     on: Cell<u8>,
 }
 
+// SAFETY: only touched while attached to an interpreter that holds the GIL,
+// which serializes access; see `Shared` in `node`.
+unsafe impl Sync for Hooks {}
+
+static HOOKS: Hooks = Hooks {
+    manager_hook: RefCell::new(None),
+    callers: RefCell::new([None, None, None]),
+    on: Cell::new(0),
+};
+
 fn hooks() -> &'static Hooks {
-    &rt().hooks
+    &HOOKS
 }
 
 /// Engine settings, exposed to Python as `signified._core.config`.

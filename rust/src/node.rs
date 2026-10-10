@@ -34,8 +34,10 @@ pub(crate) const NO_SLOT: u32 = u32::MAX;
 /// `gil_used = true`), so the non-atomic reference counts and the cells are
 /// never accessed concurrently. No borrow is held across a call into Python,
 /// so a thread switch inside such a call never observes a cell mid-update.
-/// Concurrent use from several threads is unsupported, but it cannot cause a
-/// data race.
+/// Each thread tracks and schedules on its own; using one graph from several
+/// threads at the same time is unsupported, but it cannot cause a data race.
+/// Thread-exit cleanup runs without the GIL, so work a thread leaves queued is
+/// leaked rather than dropped; see `Queue`.
 pub(crate) struct Shared(pub(crate) Rc<Node>);
 
 unsafe impl Send for Shared {}

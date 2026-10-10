@@ -197,8 +197,8 @@ def untracked() -> AbstractContextManager[None]:
     """Read without subscribing the enclosing computation or effect.
 
     Nested computations still collect their own dependencies. Reads return
-    current values and retain normal hooks and errors. Synchronous, single-
-    thread use only; this context must not span await.
+    current values and retain normal hooks and errors. Applies only to the
+    thread that enters it; this context must not span await.
     """
     return _core.Untracked()
 

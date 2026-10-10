@@ -1,44 +1,47 @@
-//! State shared by the whole engine, and the version clock.
+//! Each thread's engine state, and the version clock all threads share.
 
 use std::cell::Cell;
-use std::sync::OnceLock;
+use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::hooks::Hooks;
 use crate::node::Node;
 use crate::scheduler::Queue;
 use crate::tracking::Frames;
 
-/// The engine's global state. The tracking frames, the queue and the hooks
-/// each belong to one module, which alone can see inside them.
+/// One thread's engine state. The tracking frames and the queue each belong
+/// to one module, which alone can see inside them. Threads track, batch and
+/// run effects independently, so graphs used on different threads do not see
+/// each other's evaluations or batches.
 #[derive(Default)]
 pub(crate) struct Runtime {
-    clock: Cell<u64>,
-    /// Nesting of notification walks; effects run when it returns to zero.
+    /// Nesting of this thread's notification walks; its effects run when it
+    /// returns to zero.
     pub(crate) wave_depth: Cell<u32>,
     pub(crate) frames: Frames,
     pub(crate) queue: Queue,
-    pub(crate) hooks: Hooks,
 }
 
-// SAFETY: as for `Shared`; one runtime is shared by all threads, like a
-// module's globals, and the GIL serializes access.
-unsafe impl Send for Runtime {}
-unsafe impl Sync for Runtime {}
-
-pub(crate) fn rt() -> &'static Runtime {
-    static RT: OnceLock<Runtime> = OnceLock::new();
-    RT.get_or_init(Runtime::default)
+thread_local! {
+    static RUNTIME: Runtime = Runtime::default();
 }
+
+/// Run `f` with the calling thread's engine state.
+pub(crate) fn with_rt<R>(f: impl FnOnce(&Runtime) -> R) -> R {
+    RUNTIME.with(f)
+}
+
+/// Shared by all threads, so versions stay unique when a graph moves from one
+/// thread to another. The GIL serializes access, so a plain load and store
+/// suffice.
+static CLOCK: AtomicU64 = AtomicU64::new(0);
 
 pub(crate) fn clock() -> u64 {
-    rt().clock.get()
+    CLOCK.load(Ordering::Relaxed)
 }
 
 /// Advance the global version clock.
 pub(crate) fn bump_clock() -> u64 {
-    let rt = rt();
-    let version = rt.clock.get() + 1;
-    rt.clock.set(version);
+    let version = CLOCK.load(Ordering::Relaxed) + 1;
+    CLOCK.store(version, Ordering::Relaxed);
     version
 }
 

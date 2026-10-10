@@ -16,30 +16,34 @@ use pyo3::prelude::*;
 use pyo3::types::PyTuple;
 
 use crate::node::{DepLink, Node, ReaderLink, NEVER, NO_SLOT};
-use crate::runtime::rt;
+use crate::runtime::with_rt;
 
 // ---------------------------------------------------------------------------
 // Tracking frames
 // ---------------------------------------------------------------------------
 
-/// The consumers being evaluated, innermost last; `None` marks an untracked
-/// block. Part of the runtime.
-#[derive(Default)]
-pub(crate) struct Frames(RefCell<Vec<Option<Rc<Node>>>>);
+type FrameStack = RefCell<Vec<Option<Rc<Node>>>>;
 
-fn frames() -> &'static RefCell<Vec<Option<Rc<Node>>>> {
-    &rt().frames.0
+/// The consumers this thread is evaluating, innermost last; `None` marks an
+/// untracked block. Part of the runtime.
+#[derive(Default)]
+pub(crate) struct Frames(FrameStack);
+
+fn with_frames<R>(f: impl FnOnce(&FrameStack) -> R) -> R {
+    with_rt(|rt| f(&rt.frames.0))
 }
 
 /// Push a tracking frame and return the depth to pass to `end_frame`.
 pub(crate) fn push_frame(frame: Option<Rc<Node>>) -> usize {
-    let mut frames = frames().borrow_mut();
-    frames.push(frame);
-    frames.len() - 1
+    with_frames(|frames| {
+        let mut frames = frames.borrow_mut();
+        frames.push(frame);
+        frames.len() - 1
+    })
 }
 
 fn pop_frame() -> Option<Option<Rc<Node>>> {
-    frames().borrow_mut().pop()
+    with_frames(|frames| frames.borrow_mut().pop())
 }
 
 /// Remove the frame that `push_frame` returned `depth` for. If code inside
@@ -47,41 +51,54 @@ fn pop_frame() -> Option<Option<Rc<Node>>> {
 /// the run fails, so later reads are not registered with the wrong consumer.
 #[inline]
 pub(crate) fn end_frame(depth: usize) -> PyResult<()> {
-    let mut frames = frames().borrow_mut();
-    if frames.len() == depth + 1 {
-        let frame = frames.pop();
-        drop(frames);
-        drop(frame);
-        return Ok(());
+    let popped = with_frames(|frames| {
+        let mut frames = frames.borrow_mut();
+        (frames.len() == depth + 1).then(|| frames.pop())
+    });
+    match popped {
+        Some(frame) => {
+            drop(frame);
+            Ok(())
+        }
+        None => unbalanced_frames(depth),
     }
-    drop(frames);
-    unbalanced_frames(depth)
 }
 
 #[cold]
 fn unbalanced_frames(depth: usize) -> PyResult<()> {
-    let removed = {
-        let mut frames = frames().borrow_mut();
+    let removed = with_frames(|frames| {
+        let mut frames = frames.borrow_mut();
         let keep = depth.min(frames.len());
         frames.split_off(keep)
-    };
+    });
     // Dropping a frame can free its node.
     drop(removed);
     Err(PyRuntimeError::new_err(
         "tracking frames are unbalanced: an untracked() block was left open inside a computation \
-         or effect, or the reactive graph was used from several threads",
+         or effect",
     ))
 }
 
 /// Whether the innermost frame is an untracked block.
 fn in_untracked_block() -> bool {
-    matches!(frames().borrow().last(), Some(None))
+    with_frames(|frames| matches!(frames.borrow().last(), Some(None)))
+}
+
+/// Whether `node` is being evaluated on this thread.
+#[cold]
+pub(crate) fn is_evaluating(node: &Rc<Node>) -> bool {
+    with_frames(|frames| {
+        frames
+            .borrow()
+            .iter()
+            .any(|frame| frame.as_ref().is_some_and(|frame| Rc::ptr_eq(frame, node)))
+    })
 }
 
 /// Whether a reactive read right now would register a dependency.
 #[pyfunction]
 pub fn is_tracking() -> bool {
-    matches!(frames().borrow().last(), Some(Some(_)))
+    with_frames(|frames| matches!(frames.borrow().last(), Some(Some(_))))
 }
 
 /// `with untracked():` reads inside do not subscribe the enclosing
@@ -118,13 +135,15 @@ impl Untracked {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn track_read(node: &Rc<Node>, handle: &Bound<'_, PyAny>) {
-    let frames = frames().borrow();
-    if let Some(Some(reader)) = frames.last() {
-        // Self-reads would make a node depend on itself.
-        if !Rc::ptr_eq(reader, node) {
-            register_dependency(reader, node, handle);
+    with_frames(|frames| {
+        let frames = frames.borrow();
+        if let Some(Some(reader)) = frames.last() {
+            // Self-reads would make a node depend on itself.
+            if !Rc::ptr_eq(reader, node) {
+                register_dependency(reader, node, handle);
+            }
         }
-    }
+    })
 }
 
 /// Stamp `dep`'s link with the current run, adding the link if needed. While

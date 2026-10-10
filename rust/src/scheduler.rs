@@ -6,6 +6,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::num::NonZeroU64;
 use std::rc::{Rc, Weak};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use pyo3::exceptions::{PyException, PyRuntimeError};
 use pyo3::intern;
@@ -13,7 +14,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyList, PyWeakrefReference};
 
 use crate::node::Node;
-use crate::runtime::rt;
+use crate::runtime::with_rt;
 
 const MAX_RUNS: u32 = 100;
 
@@ -25,39 +26,57 @@ enum Job {
     Observer(Py<PyWeakrefReference>),
 }
 
-/// Work waiting to run, and the state of the flush that runs it. Part of the
-/// runtime.
+/// The work a thread has waiting to run, and the state of the flush that
+/// runs it. Part of the runtime.
 #[derive(Default)]
 pub(crate) struct Queue {
     /// Effects and observers waiting to run, in the order they were queued.
     pending: RefCell<VecDeque<Job>>,
-    pending_seq: Cell<u64>,
     /// Weak references of observers waiting in `pending`. A queued observer
     /// whose reference is missing was unsubscribed and is skipped.
     queued_observers: RefCell<HashSet<usize>>,
-    flush_epoch: Cell<u64>,
     batch_depth: Cell<u32>,
     flushing: Cell<bool>,
 }
 
-fn queue() -> &'static Queue {
-    &rt().queue
+/// A thread can exit inside a `batch()` it never closed. Its queued work is
+/// leaked: freeing it then would touch nodes without holding the GIL.
+impl Drop for Queue {
+    fn drop(&mut self) {
+        std::mem::forget(std::mem::take(self.pending.get_mut()));
+    }
+}
+
+fn with_queue<R>(f: impl FnOnce(&Queue) -> R) -> R {
+    with_rt(|rt| f(&rt.queue))
+}
+
+/// Numbers queued effects and flushes. Shared by all threads, so a number is
+/// never reused for another queuing or flush, wherever it happens. The GIL
+/// serializes access, so a plain load and store suffice.
+static PENDING_SEQ: AtomicU64 = AtomicU64::new(0);
+static FLUSH_EPOCH: AtomicU64 = AtomicU64::new(0);
+
+fn next_number(counter: &AtomicU64) -> NonZeroU64 {
+    let number = NonZeroU64::MIN.saturating_add(counter.load(Ordering::Relaxed));
+    counter.store(number.get(), Ordering::Relaxed);
+    number
 }
 
 /// Marks a flush in progress while it lives, so a panic that unwinds through
 /// a flush cannot leave the mark set and block every later flush.
-struct Flushing;
+struct Flushing<'a>(&'a Queue);
 
-impl Flushing {
-    fn start() -> Flushing {
-        queue().flushing.set(true);
-        Flushing
+impl Flushing<'_> {
+    fn start(queue: &Queue) -> Flushing<'_> {
+        queue.flushing.set(true);
+        Flushing(queue)
     }
 }
 
-impl Drop for Flushing {
+impl Drop for Flushing<'_> {
     fn drop(&mut self) {
-        queue().flushing.set(false);
+        self.0.flushing.set(false);
     }
 }
 
@@ -67,34 +86,35 @@ pub(crate) fn enqueue_effect(effect: &Rc<Node>) {
     if !state.active.get() || state.queued.get().is_some() {
         return;
     }
-    let queue = queue();
-    let seq = NonZeroU64::MIN.saturating_add(queue.pending_seq.get());
-    queue.pending_seq.set(seq.get());
+    let seq = next_number(&PENDING_SEQ);
     state.queued.set(Some(seq));
-    queue.pending.borrow_mut().push_back(Job::Effect {
-        node: Rc::downgrade(effect),
-        seq,
+    with_queue(|queue| {
+        queue.pending.borrow_mut().push_back(Job::Effect {
+            node: Rc::downgrade(effect),
+            seq,
+        })
     });
 }
 
 /// Queue a `subscribe()` observer unless it is already queued.
 pub(crate) fn enqueue_observer(reference: Py<PyWeakrefReference>) {
-    let queue = queue();
-    let fresh = queue
-        .queued_observers
-        .borrow_mut()
-        .insert(reference.as_ptr() as usize);
-    if fresh {
-        queue
-            .pending
+    with_queue(|queue| {
+        let fresh = queue
+            .queued_observers
             .borrow_mut()
-            .push_back(Job::Observer(reference));
-    }
+            .insert(reference.as_ptr() as usize);
+        if fresh {
+            queue
+                .pending
+                .borrow_mut()
+                .push_back(Job::Observer(reference));
+        }
+    })
 }
 
 /// Cancel a queued call of the observer whose weak reference is `reference`.
 pub(crate) fn cancel_observer(reference: usize) {
-    queue().queued_observers.borrow_mut().remove(&reference);
+    with_queue(|queue| queue.queued_observers.borrow_mut().remove(&reference));
 }
 
 /// Queue `effect`, then run the queue unless a walk, batch or flush is in
@@ -113,48 +133,49 @@ pub(crate) fn discard(effect: &Node) {
 /// `ExceptionGroup`. Something that keeps queuing itself stops the flush after
 /// `MAX_RUNS` runs.
 pub(crate) fn flush(py: Python<'_>) -> PyResult<()> {
-    let queue = queue();
-    if queue.pending.borrow().is_empty()
-        || queue.flushing.get()
-        || queue.batch_depth.get() > 0
-        || rt().wave_depth.get() > 0
-    {
-        return Ok(());
-    }
-    let flushing = Flushing::start();
-    let epoch = queue.flush_epoch.get() + 1;
-    queue.flush_epoch.set(epoch);
-    let mut errors = Vec::new();
-    // Runs per observer, keyed by its address and checked against a weak
-    // reference to it.
-    let mut observer_runs: HashMap<usize, (Py<PyWeakrefReference>, u32)> = HashMap::new();
-    let outcome = run_pending(py, epoch, &mut observer_runs, &mut errors);
-    // Whatever is left was abandoned by an error.
-    let abandoned = std::mem::take(&mut *queue.pending.borrow_mut());
-    queue.queued_observers.borrow_mut().clear();
-    for job in &abandoned {
-        if let Job::Effect { node, seq } = job {
-            if let Some(effect) = node.upgrade() {
-                if effect.effect_state().queued.get() == Some(*seq) {
-                    effect.effect_state().queued.set(None);
+    with_rt(|rt| {
+        let queue = &rt.queue;
+        if queue.pending.borrow().is_empty()
+            || queue.flushing.get()
+            || queue.batch_depth.get() > 0
+            || rt.wave_depth.get() > 0
+        {
+            return Ok(());
+        }
+        let flushing = Flushing::start(queue);
+        let epoch = next_number(&FLUSH_EPOCH).get();
+        let mut errors = Vec::new();
+        // Runs per observer, keyed by its address and checked against a weak
+        // reference to it.
+        let mut observer_runs: HashMap<usize, (Py<PyWeakrefReference>, u32)> = HashMap::new();
+        let outcome = run_pending(py, queue, epoch, &mut observer_runs, &mut errors);
+        // Whatever is left was abandoned by an error.
+        let abandoned = std::mem::take(&mut *queue.pending.borrow_mut());
+        queue.queued_observers.borrow_mut().clear();
+        for job in &abandoned {
+            if let Job::Effect { node, seq } = job {
+                if let Some(effect) = node.upgrade() {
+                    if effect.effect_state().queued.get() == Some(*seq) {
+                        effect.effect_state().queued.set(None);
+                    }
                 }
             }
         }
-    }
-    drop(flushing);
-    drop(abandoned);
-    drop(observer_runs);
-    outcome?;
-    raise_errors(py, errors)
+        drop(flushing);
+        drop(abandoned);
+        drop(observer_runs);
+        outcome?;
+        raise_errors(py, errors)
+    })
 }
 
 fn run_pending(
     py: Python<'_>,
+    queue: &Queue,
     epoch: u64,
     observer_runs: &mut HashMap<usize, (Py<PyWeakrefReference>, u32)>,
     errors: &mut Vec<PyErr>,
 ) -> PyResult<()> {
-    let queue = queue();
     loop {
         let job = queue.pending.borrow_mut().pop_front();
         let Some(job) = job else {
@@ -258,8 +279,7 @@ impl Batch {
     }
 
     fn __enter__(&self) {
-        let queue = queue();
-        queue.batch_depth.set(queue.batch_depth.get() + 1);
+        with_queue(|queue| queue.batch_depth.set(queue.batch_depth.get() + 1));
     }
 
     fn __exit__(
@@ -269,10 +289,11 @@ impl Batch {
         exc: &Bound<'_, PyAny>,
         _traceback: &Bound<'_, PyAny>,
     ) -> PyResult<bool> {
-        let queue = queue();
-        queue
-            .batch_depth
-            .set(queue.batch_depth.get().saturating_sub(1));
+        with_queue(|queue| {
+            queue
+                .batch_depth
+                .set(queue.batch_depth.get().saturating_sub(1))
+        });
         let flushed = flush(py);
         if exc.is_none() {
             flushed?;

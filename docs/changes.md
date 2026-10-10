@@ -56,6 +56,14 @@ This page summarizes notable changes across releases.
   previous object is kept and dependents are not invalidated.
   `x.rx.with_equal(equal)` sets it on an existing value and returns that value,
   including values built by operators, `computed`, `lift`, and `rx.map`.
+- Each thread now tracks reads, batches, and runs effects on its own. Previously
+  any two threads using Signified at once, even with unrelated graphs, could
+  raise `RuntimeError: tracking frames are unbalanced`, count a read on one
+  thread as a dependency of a computation running on another, or have one
+  thread's `batch()` hold back another thread's effects. Separate graphs can now
+  run on separate threads, and a graph can be handed from one thread to
+  another. One graph should still be used by one thread at a time: reading a
+  `Computed` while another thread is computing it raises `RuntimeError`.
 - Added `tracked_fields`, a class decorator that makes reassigning an attribute
   invalidate computations that read it. Reads return the stored value unchanged.
   It works with slotted and dict-based dataclasses, or named attributes of other classes.

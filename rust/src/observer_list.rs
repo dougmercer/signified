@@ -13,7 +13,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
 use crate::node::Node;
-use crate::runtime::rt;
+use crate::runtime::with_rt;
 
 /// Observer lists at least this long compact once half their slots are vacant.
 const COMPACT_MIN_LEN: usize = 16;
@@ -151,7 +151,7 @@ impl ObserverList {
         let len = entries.len();
         let all_vacant = *vacant as usize == len;
         let sparse = len >= COMPACT_MIN_LEN && *vacant as usize * 2 > len;
-        if rt().wave_depth.get() > 0 || !(all_vacant || sparse) {
+        if !(all_vacant || sparse) || with_rt(|rt| rt.wave_depth.get() > 0) {
             return;
         }
         let mut write = 0;

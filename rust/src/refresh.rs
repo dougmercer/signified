@@ -12,7 +12,7 @@ use crate::hooks::{self, Hook};
 use crate::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
 use crate::runtime::{bump_version, clock};
 use crate::stack;
-use crate::tracking::{commit_refresh, end_frame, push_frame, start_refresh};
+use crate::tracking::{commit_refresh, end_frame, is_evaluating, push_frame, start_refresh};
 use crate::values::{call_equal, has_changed, unref};
 
 /// Native stack to keep free for the Python code a refresh may call.
@@ -138,9 +138,12 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     let computed = node.computed_state();
     let restore_point = computed.restore.take();
     if computed.computing.get() {
-        return Err(PyRuntimeError::new_err(
-            "Cycle detected while evaluating Computed",
-        ));
+        // On this thread it is a cycle; otherwise another thread is running it.
+        return Err(PyRuntimeError::new_err(if is_evaluating(node) {
+            "Cycle detected while evaluating Computed"
+        } else {
+            "Computed is being evaluated on another thread"
+        }));
     }
     let forced = computed.state.get() == State::MustRefresh;
     let had_outcome = computed.state.get() != State::Uninitialized;

@@ -11,10 +11,12 @@
 //!   release the borrow, then call, allocate or drop. Allocating can run the
 //!   garbage collector, and dropping can run `__del__` and weakref callbacks.
 //! - `__traverse__` only uses `try_borrow`; a busy cell is skipped.
-//! - State is only touched while attached to an interpreter that holds the GIL,
-//!   which serializes all access; see the `Send`/`Sync` impls in `node`. The
-//!   module declares `gil_used = true`, so a free-threaded interpreter
-//!   re-enables the GIL when it is imported.
+//! - Each thread has its own tracking frames, queue and walk depth
+//!   (`runtime`); the version clock and plugin hooks are shared. State is only
+//!   touched while attached to an interpreter that holds the GIL, which
+//!   serializes all access; see the `Send`/`Sync` impls in `node`. The module
+//!   declares `gil_used = true`, so a free-threaded interpreter re-enables the
+//!   GIL when it is imported.
 //! - Every nested refresh holds a level of Python's recursion budget and
 //!   checks native stack headroom, so deep graphs raise `RecursionError`.
 
