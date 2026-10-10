@@ -218,9 +218,11 @@ fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
         return Ok(());
     };
     graph::start_refresh(effect);
-    graph::push_frame(Some(effect.clone()));
-    let result = function.bind(py).call0();
-    graph::pop_frame();
+    let depth = graph::push_frame(Some(effect.clone()));
+    let mut result = function.bind(py).call0().map(drop);
+    if let Err(error) = graph::end_frame(depth) {
+        result = Err(error);
+    }
     if consumer.active.get() {
         // Subscribe to what this run read, even if it raised, so a change to
         // any of it retries the callback.
@@ -229,7 +231,7 @@ fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
         graph::detach_all_deps(effect);
     }
     drop(function);
-    drop(result?);
+    result?;
     // Also catches writes after a read during the first run, before the
     // subscriptions existed.
     if consumer.active.get() && graph::invalidated_since_read(effect) {

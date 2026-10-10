@@ -401,12 +401,46 @@ pub(crate) fn bump_version(node: &Node) -> u64 {
     version
 }
 
-pub(crate) fn push_frame(frame: Option<Rc<Node>>) {
-    rt().frames.borrow_mut().push(frame);
+/// Push a tracking frame and return the depth to pass to `end_frame`.
+pub(crate) fn push_frame(frame: Option<Rc<Node>>) -> usize {
+    let mut frames = rt().frames.borrow_mut();
+    frames.push(frame);
+    frames.len() - 1
 }
 
 pub(crate) fn pop_frame() -> Option<Option<Rc<Node>>> {
     rt().frames.borrow_mut().pop()
+}
+
+/// Remove the frame that `push_frame` returned `depth` for. If code inside
+/// left an `untracked()` block open, the frames above it are removed too and
+/// the run fails, so later reads are not registered with the wrong consumer.
+#[inline]
+pub(crate) fn end_frame(depth: usize) -> PyResult<()> {
+    let mut frames = rt().frames.borrow_mut();
+    if frames.len() == depth + 1 {
+        let frame = frames.pop();
+        drop(frames);
+        drop(frame);
+        return Ok(());
+    }
+    drop(frames);
+    unbalanced_frames(depth)
+}
+
+#[cold]
+fn unbalanced_frames(depth: usize) -> PyResult<()> {
+    let removed = {
+        let mut frames = rt().frames.borrow_mut();
+        let keep = depth.min(frames.len());
+        frames.split_off(keep)
+    };
+    // Dropping a frame can free its node.
+    drop(removed);
+    Err(PyRuntimeError::new_err(
+        "tracking frames are unbalanced: an untracked() block was left open inside a computation \
+         or effect, or the reactive graph was used from several threads",
+    ))
 }
 
 /// Whether the innermost frame is an untracked block.
@@ -881,14 +915,16 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     // 1) Evaluate with dependency tracking enabled.
     consumer.computing.set(true);
     start_refresh(node);
-    push_frame(Some(node.clone()));
+    let depth = push_frame(Some(node.clone()));
     let mut result = run_compute(py, &compute);
     if let Ok(value) = &result {
         if let Err(error) = config::warn_computed_result(py, handle, value.bind(py)) {
             result = Err(error);
         }
     }
-    pop_frame();
+    if let Err(error) = end_frame(depth) {
+        result = Err(error);
+    }
     consumer.computing.set(false);
     // 2) Subscribe to what this run read, even if it raised.
     commit_refresh(node);
@@ -1035,9 +1071,9 @@ pub(crate) fn call_equal(
     previous: &Bound<'_, PyAny>,
     current: &Bound<'_, PyAny>,
 ) -> PyResult<bool> {
-    push_frame(None);
+    let depth = push_frame(None);
     let result = equal.call1((previous, current));
-    pop_frame();
+    end_frame(depth)?;
     result?.is_truthy()
 }
 

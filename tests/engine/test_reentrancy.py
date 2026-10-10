@@ -208,6 +208,53 @@ def test_unmatched_pop_untracked_keeps_the_computation_tracking():
     assert c.value == 2
 
 
+def test_computation_that_leaves_untracked_open_raises_and_stops_tracking():
+    from signified import _core
+
+    s = Signal(1)
+
+    def leaks():
+        untracked().__enter__()
+        return s.value
+
+    c = Computed(leaks)
+    with pytest.raises(RuntimeError, match="untracked"):
+        c.value
+    assert not _core.is_tracking()
+
+
+def test_effect_that_leaves_untracked_open_raises_and_stops_tracking():
+    from signified import Effect, _core
+
+    s = Signal(1)
+
+    def leaks():
+        untracked().__enter__()
+        s.value
+
+    with pytest.raises(RuntimeError, match="untracked"):
+        Effect(leaks)
+    assert not _core.is_tracking()
+
+
+def test_equal_that_leaves_untracked_open_raises_and_stops_tracking():
+    from signified import _core
+
+    s = Signal(1)
+
+    def leaky_equal(previous, current):
+        untracked().__enter__()
+        return previous == current
+
+    leaky = Computed(lambda: s.value, equal=leaky_equal)
+    reader = Computed(lambda: leaky.value + 1)
+    assert reader.value == 2
+    s.value = 2
+    with pytest.raises(RuntimeError, match="untracked"):
+        reader.value
+    assert not _core.is_tracking()
+
+
 def test_observers_run_after_the_change_has_propagated():
     from signified import batch
 
