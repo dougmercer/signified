@@ -248,3 +248,20 @@ def test_created_hook_can_read_an_operator_result(monkeypatch) -> None:
     assert total.value == 3
     source.value = 5
     assert total.value == 7
+
+
+def test_read_hook_that_writes_the_signal_leaves_readers_current(monkeypatch) -> None:
+    source = Signal(1)
+
+    class BumpsOnFirstRead(RecordingHook):
+        done = False
+
+        def read(self, *, value: Variable[Any]) -> None:
+            if value is source and not self.done:
+                self.done = True
+                source.value = 2
+
+    monkeypatch.setattr(_core.config, "hooks", BumpsOnFirstRead())
+    scaled = Computed(lambda: source.value * 10)
+    assert scaled.value == 20
+    assert scaled.value == 20

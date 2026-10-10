@@ -266,7 +266,7 @@ impl Node {
 
     /// Visit every Python object this node owns; busy cells are skipped.
     pub(crate) fn traverse(&self, visit: &PyVisit<'_>) -> Result<(), PyTraverseError> {
-        for cell in [&self.value, &self.equal] {
+        for cell in [&self.value, &self.equal, &self.name] {
             if let Ok(object) = cell.try_borrow() {
                 if let Some(object) = object.as_ref() {
                     visit.call(object)?;
@@ -1112,11 +1112,13 @@ pub(crate) fn read_signal<'py>(
     node: &Rc<Node>,
     handle: &Bound<'py, PyAny>,
 ) -> PyResult<Bound<'py, PyAny>> {
+    // The hook runs first and may write this signal; the value and the
+    // version the read registers are both taken after it.
+    config::hook(py, intern!(py, "read"), handle)?;
     let value = match node.value.borrow().as_ref() {
         Some(value) => value.bind(py).clone(),
         None => return Err(uninitialized()),
     };
-    config::hook(py, intern!(py, "read"), handle)?;
     track_read(node, handle);
     Ok(value)
 }

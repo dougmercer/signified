@@ -131,3 +131,17 @@ def test_cycle_through_a_signal_at_context_is_collected():
     del s, context
     gc.collect()
     assert ref() is None
+
+
+def test_cycle_through_a_name_is_collected():
+    class Name(str):
+        pass
+
+    s = Signal(0)
+    name = Name("label")
+    name.owner = s
+    s.with_name(name)
+    ref = weakref.ref(s)
+    del s, name
+    gc.collect()
+    assert ref() is None
