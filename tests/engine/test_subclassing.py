@@ -1,8 +1,10 @@
 """Python-side customization that a native fast path must not bypass."""
 
+from signified import Computed, Signal
 
-def test_subclass_value_override_is_used_by_operators(rx):
-    class CountingSignal(rx.Signal):
+
+def test_subclass_value_override_is_used_by_operators():
+    class CountingSignal(Signal):
         reads = 0
 
         @property
@@ -20,8 +22,8 @@ def test_subclass_value_override_is_used_by_operators(rx):
     assert CountingSignal.reads >= 1
 
 
-def test_subclass_instances_keep_reactive_behavior(rx):
-    class Named(rx.Signal):
+def test_subclass_instances_keep_reactive_behavior():
+    class Named(Signal):
         __slots__ = ()
 
     s = Named(3)
@@ -31,17 +33,17 @@ def test_subclass_instances_keep_reactive_behavior(rx):
     assert doubled.value == 8
 
 
-def test_runtime_generic_subscription(rx):
-    assert rx.Signal[int] is not None
-    assert rx.Computed[int] is not None
+def test_runtime_generic_subscription():
+    assert Signal[int] is not None
+    assert Computed[int] is not None
 
 
-def test_attribute_proxy_and_forwarded_writes(rx):
+def test_attribute_proxy_and_forwarded_writes():
     class Box:
         def __init__(self, size):
             self.size = size
 
-    s = rx.Signal(Box(1))
+    s = Signal(Box(1))
     size = s.size
     assert size.value == 1
     s.size = 5  # forwarded to the wrapped object, then notifies

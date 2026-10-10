@@ -2,11 +2,13 @@
 
 import pytest
 
+from signified import Computed, Signal, untracked
 
-def test_observer_writes_other_signal_during_notify(rx):
-    a = rx.Signal(1)
-    b = rx.Signal(10)
-    total = rx.Computed(lambda: a.value + b.value)
+
+def test_observer_writes_other_signal_during_notify():
+    a = Signal(1)
+    b = Signal(10)
+    total = Computed(lambda: a.value + b.value)
     assert total.value == 11
 
     class WritesB:
@@ -19,8 +21,8 @@ def test_observer_writes_other_signal_during_notify(rx):
     assert total.value == 22
 
 
-def test_observer_writes_the_signal_it_observes(rx):
-    a = rx.Signal(1)
+def test_observer_writes_the_signal_it_observes():
+    a = Signal(1)
     doubled = a * 2
 
     class BumpsOnce:
@@ -38,8 +40,8 @@ def test_observer_writes_the_signal_it_observes(rx):
     assert doubled.value == 204
 
 
-def test_observer_reads_during_notify(rx):
-    a = rx.Signal(1)
+def test_observer_reads_during_notify():
+    a = Signal(1)
     doubled = a * 2
     seen = []
 
@@ -53,25 +55,25 @@ def test_observer_reads_during_notify(rx):
     assert seen == [6]
 
 
-def test_compute_may_write_an_unrelated_signal(rx):
-    log = rx.Signal(0)
-    s = rx.Signal(1)
+def test_compute_may_write_an_unrelated_signal():
+    log = Signal(0)
+    s = Signal(1)
 
     def compute():
         log.value = log.value + 1
         return s.value * 2
 
-    c = rx.Computed(compute)
+    c = Computed(compute)
     assert c.value == 2
     s.value = 3
     assert c.value == 6
-    with rx.untracked():
+    with untracked():
         assert log.value == 2
 
 
-def test_failed_compute_keeps_dependencies_read_before_failure(rx):
-    gate = rx.Signal(False)
-    s = rx.Signal(1)
+def test_failed_compute_keeps_dependencies_read_before_failure():
+    gate = Signal(False)
+    s = Signal(1)
 
     def compute():
         value = s.value
@@ -79,15 +81,15 @@ def test_failed_compute_keeps_dependencies_read_before_failure(rx):
             raise ValueError("closed")
         return value
 
-    c = rx.Computed(compute)
+    c = Computed(compute)
     with pytest.raises(ValueError):
         c.value
     gate.value = True
     assert c.value == 1
 
 
-def test_moderate_chain_works(rx):
-    s = rx.Signal(0)
+def test_moderate_chain_works():
+    s = Signal(0)
     x = s
     for _ in range(100):
         x = x + 1
@@ -96,8 +98,8 @@ def test_moderate_chain_works(rx):
     assert x.value == 101
 
 
-def test_very_deep_chain_raises_recursion_error_instead_of_crashing(rx):
-    s = rx.Signal(0)
+def test_very_deep_chain_raises_recursion_error_instead_of_crashing():
+    s = Signal(0)
     x = s
     for _ in range(100_000):
         x = x + 1
@@ -105,8 +107,8 @@ def test_very_deep_chain_raises_recursion_error_instead_of_crashing(rx):
         x.value
 
 
-def test_observer_error_leaves_engine_usable(rx):
-    a = rx.Signal(1)
+def test_observer_error_leaves_engine_usable():
+    a = Signal(1)
     doubled = a * 2
 
     class FailsOnce:
@@ -126,8 +128,8 @@ def test_observer_error_leaves_engine_usable(rx):
     assert doubled.value == 6
 
 
-def test_observer_subscribing_during_notify_is_kept(rx):
-    a = rx.Signal(1)
+def test_observer_subscribing_during_notify_is_kept():
+    a = Signal(1)
     created = []
 
     class Spawns:
@@ -144,9 +146,9 @@ def test_observer_subscribing_during_notify_is_kept(rx):
     assert created[0].value == 103
 
 
-def test_signal_rewritten_in_one_wave_reaches_observers_added_between_writes(rx):
-    a = rx.Signal(1)
-    b = rx.Signal(0)
+def test_signal_rewritten_in_one_wave_reaches_observers_added_between_writes():
+    a = Signal(1)
+    b = Signal(0)
     seen = []
 
     class WritesBTwice:
@@ -163,13 +165,13 @@ def test_signal_rewritten_in_one_wave_reaches_observers_added_between_writes(rx)
     assert seen == [2, 4]
 
 
-def test_deep_chain_on_a_worker_thread_raises_instead_of_crashing(rx):
+def test_deep_chain_on_a_worker_thread_raises_instead_of_crashing():
     import threading
 
     outcome = []
 
     def run():
-        s = rx.Signal(0)
+        s = Signal(0)
         x = s
         for _ in range(100_000):
             x = x + 1

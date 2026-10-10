@@ -220,7 +220,7 @@ def test_computed_deduplicates_repeated_dependency_reads():
     derived = Computed(lambda: source.value + source.value)
 
     assert derived.value == 4
-    assert len(tuple(derived._impl._deps)) == 1
+    assert len(tuple(derived._deps)) == 1
 
 
 def test_computed_retains_transient_dependencies_across_gc():
@@ -228,10 +228,10 @@ def test_computed_retains_transient_dependencies_across_gc():
     outer = Computed(lambda: (frame + 1).value * 10)
 
     assert outer.value == 10
-    assert len(tuple(outer._impl._deps)) == 1
+    assert len(tuple(outer._deps)) == 1
 
     gc.collect()
-    assert len(tuple(outer._impl._deps)) == 1
+    assert len(tuple(outer._deps)) == 1
 
     frame.value = 1
     assert outer.value == 20
@@ -254,7 +254,7 @@ def test_computed_exception_keeps_dependencies_read_before_the_failure():
     derived = Computed(compute)
 
     assert derived.value == 1
-    assert set(derived._impl._deps) == {flag, left}
+    assert set(derived._deps) == {flag, left}
 
     flag.value = False
     fail.value = True
@@ -262,7 +262,7 @@ def test_computed_exception_keeps_dependencies_read_before_the_failure():
         _ = derived.value
 
     # The failed run read flag, right, and fail; left was not read.
-    assert set(derived._impl._deps) == {flag, right, fail}
+    assert set(derived._deps) == {flag, right, fail}
     fail.value = False
     assert derived.value == 10
 
@@ -486,8 +486,8 @@ def test_computed_equal_reads_are_not_tracked():
     outer = Computed(lambda: result.value)
     assert outer.value == [2]
 
-    assert tolerance not in result._impl._deps
-    assert tolerance not in outer._impl._deps
+    assert tolerance not in result._deps
+    assert tolerance not in outer._deps
 
 
 def test_computed_equal_interrupt_forces_retry():

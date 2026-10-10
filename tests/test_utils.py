@@ -169,4 +169,4 @@ def test_is_reactive_does_not_evaluate_or_subscribe():
     assert not is_reactive(1)
     observer = Computed(lambda: is_reactive(source))
     assert observer.value is True
-    assert not source._observers
+    assert source._observer_count() == 0

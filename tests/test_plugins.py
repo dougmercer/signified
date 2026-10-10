@@ -4,8 +4,7 @@ from typing import Any
 
 import pytest
 
-import signified._reactive as reactive_module
-from signified import Binding, Computed, Signal, Variable, plugins
+from signified import Binding, Computed, Signal, Variable, _core, plugins
 from signified.plugins import PluginManager, hookimpl
 
 
@@ -30,8 +29,7 @@ class RecordingPluginManager:
 
 def enable_recording_hooks(monkeypatch) -> RecordingHook:
     manager = RecordingPluginManager()
-    monkeypatch.setattr(reactive_module, "HOOKS_ENABLED", True)
-    monkeypatch.setattr(reactive_module, "plugin_manager", manager)
+    monkeypatch.setattr(_core.config, "hooks", manager.hook)
     return manager.hook
 
 
@@ -110,8 +108,7 @@ class Recorder:
 
 def test_plugin_manager_calls_marked_impls_most_recent_first(monkeypatch) -> None:
     manager = PluginManager()
-    monkeypatch.setattr(reactive_module, "HOOKS_ENABLED", True)
-    monkeypatch.setattr(reactive_module, "plugin_manager", manager)
+    monkeypatch.setattr(_core.config, "hooks", manager.hook)
     calls: list[tuple[str, str]] = []
     first, second = Recorder("first", calls), Recorder("second", calls)
     manager.register(first)
@@ -161,8 +158,7 @@ def test_plugin_manager_validates_hook_impls() -> None:
 @pytest.fixture
 def access_tracker(monkeypatch):
     manager = PluginManager()
-    monkeypatch.setattr(reactive_module, "HOOKS_ENABLED", True)
-    monkeypatch.setattr(reactive_module, "plugin_manager", manager)
+    monkeypatch.setattr(_core.config, "hooks", manager.hook)
     monkeypatch.setattr(plugins, "plugin_manager", manager)
     example = Path(__file__).resolve().parents[1] / "examples" / "plugins" / "access_tracker.py"
     return runpy.run_path(str(example))["tracker"]

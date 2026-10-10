@@ -323,7 +323,7 @@ def test_dispose_during_callback_does_not_resubscribe():
     source.value = 1
     source.value = 3
     assert seen == [0, 1]
-    assert not source._observers
+    assert source._observer_count() == 0
 
 
 def test_queue_does_not_keep_effect_alive():
@@ -576,14 +576,12 @@ def test_reentrant_batch_from_effect_joins_active_flush():
 def test_untracked_reads_keep_plugin_hooks(monkeypatch):
     from types import SimpleNamespace
 
-    import signified._reactive as reactive
-    from signified import unref
+    from signified import _core, unref
 
     source = Signal(1)
     reads = []
     hook = SimpleNamespace(read=lambda *, value: reads.append(id(value)))
-    monkeypatch.setattr(reactive, "HOOKS_ENABLED", True)
-    monkeypatch.setattr(reactive, "plugin_manager", SimpleNamespace(hook=hook))
+    monkeypatch.setattr(_core.config, "hooks", hook)
     with untracked():
         assert source.value == 1
         assert unref(source) == 1
