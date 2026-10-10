@@ -1,13 +1,99 @@
 # Rust Core Results
 
-`signified.Signal`, `Computed`, `Binding` and `Effect` now run on a Rust core (`signified._core`); the Python engine is gone. Compared with `main`:
+`signified.Signal`, `Computed`, `Binding` and `Effect` now run on a Rust core (`signified._core`); the Python engine is gone. Compared with `main`, as of Part 3:
 
-- **CodSpeed (CI, `main` vs this branch):** "Merging this PR will improve performance by ×3.6" — 30 benchmarks faster, 2 unchanged, none slower. Largest gains ×9.5 (`fanout`, `diamond_updates`).
-- **Per extra node in a chain:** 2.07 µs → 0.28 µs (7.4×). A 500-leaf frame: 2.37 ms → 0.40 ms (6.0×).
-- **key3d `moving` scene:** 40.9 → 34.2 ms per frame (−16%), first frame 1071 → 659 ms, with byte-identical output in all four benchmark scenes. key3d's test suite passes unchanged (1004 passed, 1 skipped).
-- **Tests:** the existing suite passes on 3.12, 3.13 and 3.14 (also `-X dev` with unraisable exceptions as errors), and in CI.
+- **Local CodSpeed suite:** 4.3× faster (geometric mean of 32 benchmarks), up to 9.7×; none slower. CodSpeed in CI reported ×3.6 for Part 2.
+- **Per extra node in a chain:** 2.03 µs → 0.19 µs (10.9×). A 500-leaf frame: 2.31 ms → 0.27 ms (8.7×).
+- **key3d `moving` scene:** 40.4 → 32.5 ms per frame (−20%, same session), with byte-identical output in all four benchmark scenes. key3d's test suite passes unchanged (1004 passed, 1 skipped).
+- **Tests:** the suite passes on 3.12, 3.13 and 3.14 (also `-X dev` with unraisable exceptions as errors).
+
+## Part 3: Rust-native data structures, fewer compatibility quirks (2026-10-10)
+
+- **Commits:** `38a9896` (engine rework and behavior changes), `f3396c6` (native `unref`, `is_reactive`, `untracked`, `batch`, `Signal.at`), `1acd49b` (reactivity checked by class)
+
+### Behavior changes
+
+These were compatibility quirks of the Python engine:
+
+- `subscribe()` observers run after a change has finished propagating, queued with effects (so `batch()` defers them too), instead of in the middle of it. Repeated notifications to one subscription before it runs are combined.
+- A signal written twice while a change propagates notifies both times. Before, the second write was swallowed and a dependent computed could stay stale for good (reproduced on `main`).
+- Overriding `notify()` or `update()` in a subclass raises `TypeError` at class creation; the engine does not call those overrides.
+- Copying a `Signal`, `Computed` or `Binding` raises `TypeError` (instances using `tracked_fields` still copy and pickle).
+- Reading or writing a `Signal` whose `__init__` never ran raises `RuntimeError`.
+- Hooks run while a plugin is registered with `plugin_manager`; `SIGNIFIED_ENABLE_HOOKS` and `HOOKS_ENABLED` are gone.
+- `is_reactive` is true for instances of the engine's classes; the `_IS_REACTIVE` class attribute is no longer consulted.
+
+### Internals
+
+- **Edges.** A dependency link records its slot in the source's observer list, and that entry records the link's position, so unsubscribing is O(1). Removed entries leave vacant slots until the list compacts, which keeps notification order. A freed consumer unsubscribes immediately instead of being pruned later.
+- **Lookup.** While a consumer runs, each source it has read records where its link is, so a read finds its link without a search or a hash (the technique Preact signals uses). This replaced a read-order cursor and a hash index.
+- **Notification.** The walk runs no Python code now that observers are queued, so it iterates the observer lists in place instead of copying them, and the per-wave hash set is gone.
+- **Effects** record their queued state and run counts on the node instead of in hash maps.
+- **Memory.** Nodes are `Rc` instead of `Arc` (the GIL already serializes access), and signal nodes no longer carry computed and effect state.
+- **Native helpers.** `Binding` reads its holder and source in Rust. `unref` and `is_reactive` are native functions, and `untracked()`, `batch()` and `Signal.at()` return native context managers instead of generator-based ones.
+
+A randomized test (`tests/engine/test_churn.py`) churns dynamic dependencies, subscriptions and freed consumers and checks every value and observer count; it fails when compaction stops updating link slots.
+
+### Results
+
+`benchmarks/per_node.py --compare` (other = `main`):
+
+```
+                              other       this  speedup
+    cached Computed read      133ns       54ns     2.5x
+     write+read, chain 1     2049ns      373ns     5.5x
+     write+read, chain 4     6672ns      896ns     7.4x
+    write+read, chain 16     24.5us     3139ns     7.8x
+    write+read, chain 64    134.9us     12.0us    11.2x
+          per extra node     2033ns      187ns    10.9x
+    build+read, chain 64    224.9us     45.6us     4.9x
+          500-leaf frame   2310.0us    266.7us     8.7x
+```
+
+Local CodSpeed suite (walltime, best round):
+
+| Benchmark | main (Python engine) | Rust core | speedup |
+| --- | ---: | ---: | ---: |
+| `signal_create` | 855ns | 198ns | 4.3x |
+| `signal_read` | 123ns | 90ns | 1.4x |
+| `signal_write` | 477ns | 147ns | 3.3x |
+| `signal_update` | 286ns | 127ns | 2.2x |
+| `computed_create` | 1.08us | 322ns | 3.4x |
+| `computed_read` | 171ns | 92ns | 1.9x |
+| `computed_propagation` | 1.87us | 377ns | 5.0x |
+| `computed_invalidate` | 2.51us | 402ns | 6.2x |
+| `computed_decorator` | 4.33us | 717ns | 6.0x |
+| `operator_chain` | 13.09us | 2.14us | 6.1x |
+| `binding_chain_read` | 172ns | 93ns | 1.8x |
+| `unref` | 159ns | 86ns | 1.9x |
+| `binding_unref` | 208ns | 98ns | 2.1x |
+| `deep_unref_dict` | 1.86us | 1.76us | 1.1x |
+| `deep_computed_container` | 170ns | 94ns | 1.8x |
+| `effect_creation` | 4.16us | 1.91us | 2.2x |
+| `effect_fanout_updates` | 24.18ms | 3.82ms | 6.3x |
+| `deep_chain_updates` | 1.25ms | 135.54us | 9.2x |
+| `fanout` | 3.90ms | 416.18us | 9.4x |
+| `diamond_updates` | 32.89ms | 3.50ms | 9.4x |
+| `animation_stack` | 25.79ms | 3.80ms | 6.8x |
+| `multi_input_computed` | 2.07ms | 357.28us | 5.8x |
+| `stacked_layers` | 25.39ms | 2.62ms | 9.7x |
+| `shared_clock_reads` | 16.92ms | 2.71ms | 6.2x |
+| `dynamic_dependency_switch` | 3.87ms | 473.69us | 8.2x |
+| `shared_dependency_branches` | 8.07ms | 1.05ms | 7.7x |
+| `computed_signal_at` | 6.12ms | 1.14ms | 5.3x |
+| `scoped_context_reads` | 9.87ms | 1.81ms | 5.4x |
+| `subscription_churn` | 17.66ms | 3.54ms | 5.0x |
+| `build_deep_chain` | 550.58us | 109.01us | 5.1x |
+| `build_fanout_graph` | 1.07ms | 179.40us | 6.0x |
+| `build_diamond_graph` | 2.22ms | 388.11us | 5.7x |
+
+Geometric mean speedup: 4.29× over the 32 benchmarks (3.39× after Part 2). None is slower than `main`. The smallest gains are `deep_unref_dict` (1.1×, still a Python function) and `signal_read` (1.4×, mostly the benchmark's own lambda call).
+
+key3d, same machine and session, `--frames 48 --repeat 5`: `moving` 40.44 ms per frame on `main`, 32.48 ms on this branch. The four-scene run against `main`'s saved fingerprints: `street` 18.85, `moving` 32.90, `textured` 9.30, `instanced` 4.33 ms per frame, all with identical output. key3d's test suite: 1004 passed, 1 skipped.
 
 ## Part 2: the public classes on the Rust core (2026-10-10)
+
+Numbers in this part are for `04d17c8`–`dbee1b0`; Part 3 supersedes them.
 
 - **Machine:** Apple M1 Max (10 cores, 64 GB), macOS 26.2, arm64; CPython 3.14.3 unless noted
 - **Commits:** `04d17c8` (engine and classes), `417c207` (docs and typing declarations, benchmark), `dbee1b0` (review fixes)
@@ -117,7 +203,7 @@ Geometric mean speedup: 3.39× over the 32 benchmarks. The smallest gains are `d
 - **Packaging.** `publish.yml` still runs `uv build`, which now produces one platform-specific wheel plus an sdist that needs a Rust toolchain to install. It needs `PyO3/maturin-action` builds of abi3-py312 wheels for Linux (x86_64 and aarch64, manylinux and musllinux), macOS (x86_64 and arm64) and Windows x64. Pyodide needs a decision: an emscripten build, or unsupported.
 - **Other workflows.** `test`, `type checks` and CodSpeed build the extension on `ubuntu-latest`, which ships Rust. `docs` builds the package too, and should keep working for the same reason; it only runs on `main` and tags, so it has not run on this branch.
 - **Free-threaded Python.** The module declares `gil_used = true`, so a free-threaded interpreter turns the GIL back on when it imports signified.
-- **Tuning.** Still in Python on hot paths: `unref` (1.2× in CodSpeed) and `deep_unref`. `Binding` evaluates its source through a Python bound method. `dependencies_changed` clones each dependency's handle as it walks.
+- **Tuning.** Done in Part 3, except `deep_unref`, which is still Python.
 
 ## Part 1: prototype (2026-10-09)
 
