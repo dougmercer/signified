@@ -168,7 +168,7 @@ class _ReactiveNamespace[T, Source]:
             ```
         """
         source = self._source
-        object.__setattr__(source, "_equal", equal)
+        setattr(source, "_equal", equal)
         return cast(Source, source)
 
     def len[S: Sized](self: _ReactiveNamespace[S, Any]) -> Computed[int]:
@@ -481,7 +481,7 @@ class _ReactiveMixIn[T]:
 
             ```
         """
-        if name in {"value", "_value", "_impl"}:
+        if name in {"value", "_value"}:
             return super().__getattribute__(name)
 
         if name.startswith("__") and name.endswith("__"):
@@ -2054,17 +2054,7 @@ class _ReactiveMixIn[T]:
         """
         return _computed_call(operator.getitem, self, key)
 
-    def _bump_version(self) -> int:
-        """Advance the shared global version clock and stamp this node with it.
-
-        Versions are unique across all nodes and never reused, so a node can
-        safely return to an earlier version when it returns to that exact value.
-        """
-        version = _bump_global_version()
-        object.__setattr__(self, "_version", version)
-        return version
-
 
 # Loaded after _ReactiveMixIn is defined to avoid import cycles.
 from ._functions import _computed_call  # noqa: E402
-from ._reactive import Effect, _bump_global_version  # noqa: E402
+from ._reactive import Effect  # noqa: E402

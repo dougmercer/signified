@@ -18,8 +18,18 @@ classifiers = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
-build-backend = "uv_build"
+requires = ["maturin>=1.15,<2"]
+build-backend = "maturin"
+
+[tool.maturin]
+manifest-path = "rust/Cargo.toml"
+python-source = "src"
+module-name = "signified._core"
+features = ["pyo3/extension-module"]
+
+[tool.uv]
+# Rebuild the extension on `uv sync` / `uv run` when Rust sources change.
+cache-keys = [{ file = "pyproject.toml" }, { file = "rust/Cargo.toml" }, { file = "rust/src/**/*.rs" }]
 
 [dependency-groups]
 docs = [

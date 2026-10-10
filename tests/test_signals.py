@@ -156,7 +156,7 @@ def test_signal_drops_garbage_collected_observers():
     gc.collect()
 
     assert observer_ref() is None
-    assert not s._observers
+    assert s._observer_count() == 0
 
 
 def test_signal_context_manager():

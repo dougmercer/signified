@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from functools import wraps
-from typing import Any, Callable, TypeGuard, overload
+from typing import TYPE_CHECKING, Any, Callable, TypeGuard, overload
 
+from . import _core
 from . import migration as _migration
 from ._reactive import Binding, Computed, Effect, Signal, is_reactive
 from ._types import HasValue, ReactiveValue
@@ -46,7 +47,9 @@ def _computed_call[R](func: Callable[..., R], *args: Any, **kwargs: Any) -> Comp
     """
     if _migration.WARNINGS_ENABLED:
         _migration._warn_nested_reactive_arguments("computed", args, kwargs)
-    return Computed(_bind_args(func, args, kwargs))
+    if kwargs:
+        return Computed(_bind_args(func, args, kwargs))
+    return _core.computed_call(Computed, func, args)
 
 
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
@@ -71,7 +74,9 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
     def wrapper(*args: Any, **kwargs: Any) -> Computed[R]:
         if _migration.WARNINGS_ENABLED:
             _migration._warn_nested_reactive_arguments("computed", args, kwargs)
-        return Computed(_bind_args(func, args, kwargs))
+        if kwargs:
+            return Computed(_bind_args(func, args, kwargs))
+        return _core.computed_call(Computed, func, args)
 
     return wrapper
 
@@ -126,38 +131,38 @@ def effect(func: Callable[..., None]) -> Callable[..., Effect]:
     return wrapper
 
 
-@overload
-def unref[T](value: HasValue[T]) -> T: ...
+if TYPE_CHECKING:
 
+    @overload
+    def unref[T](value: HasValue[T]) -> T: ...
 
-@overload
-def unref[T, U](value: HasValue[T] | HasValue[U]) -> T | U: ...
+    @overload
+    def unref[T, U](value: HasValue[T] | HasValue[U]) -> T | U: ...
 
+    def unref(value: Any) -> Any:
+        """Unwrap exactly one reactive boundary.
 
-def unref(value: Any) -> Any:
-    """Unwrap exactly one reactive boundary.
+        When called inside a [Computed][signified.Computed] or [Effect][signified.Effect]
+        evaluation, the reactive registers as a dependency — equivalent to reading
+        `.value` directly.
 
-    When called inside a [Computed][signified.Computed] or [Effect][signified.Effect]
-    evaluation, the reactive registers as a dependency — equivalent to reading
-    `.value` directly.
+        Args:
+            value: Plain value or reactive value.
 
-    Args:
-        value: Plain value or reactive value.
+        Returns:
+            The value inside one reactive wrapper, or the original plain value.
 
-    Returns:
-        The value inside one reactive wrapper, or the original plain value.
+        Example:
+            ```py
+            source = Signal(5)
+            unref(source)  # 5
+            ```
+        """
+        ...
 
-    Example:
-        ```py
-        >>> source = Signal(5)
-        >>> unref(source)
-        5
-
-        ```
-    """
-    if not is_reactive(value):
-        return value
-    return value.value
+else:
+    # Native: called inside most computations.
+    unref = _core.unref
 
 
 def has_value[T](obj: Any, type_: type[T]) -> TypeGuard[HasValue[T]]:

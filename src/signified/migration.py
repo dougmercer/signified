@@ -11,6 +11,8 @@ from typing import Any
 from warnings import warn
 from weakref import WeakSet
 
+from . import _core
+
 __all__ = ["SignifiedMigrationWarning", "enable_warnings", "disable_warnings", "warnings", "warnings_enabled"]
 
 
@@ -21,6 +23,7 @@ class SignifiedMigrationWarning(UserWarning):
 _TRUE_ENV_VALUES = {"1", "true", "yes", "on"}
 _PACKAGE_ROOT = os.path.dirname(__file__)
 WARNINGS_ENABLED = os.getenv("SIGNIFIED_MIGRATION_WARNINGS", "").lower() in _TRUE_ENV_VALUES
+_core.config.migration_warnings = WARNINGS_ENABLED
 _WARNED_COMPUTED_RESULTS: WeakSet[Any] = WeakSet()
 
 if importlib.util.find_spec("numpy") is not None:
@@ -33,12 +36,14 @@ def enable_warnings() -> None:
     """Enable migration warnings for subsequent reactive operations."""
     global WARNINGS_ENABLED
     WARNINGS_ENABLED = True
+    _core.config.migration_warnings = True
 
 
 def disable_warnings() -> None:
     """Disable migration warnings."""
     global WARNINGS_ENABLED
     WARNINGS_ENABLED = False
+    _core.config.migration_warnings = False
 
 
 def warnings_enabled() -> bool:

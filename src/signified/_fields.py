@@ -6,7 +6,8 @@ import dataclasses
 from types import MemberDescriptorType
 from typing import Any, Callable, overload
 
-from ._reactive import _COMPUTE_STACK, Signal
+from ._core import is_tracking
+from ._reactive import Signal
 
 __all__ = ["tracked_fields"]
 
@@ -32,9 +33,12 @@ class _FieldSource(Signal[Any]):
 
     def __init__(self, value: Any, owner: object) -> None:
         super().__init__(value)
-        object.__setattr__(self, "_owner_id", id(owner))
+        self._owner_id = id(owner)
 
     # Copies and pickles of an instance carry the stored value, not the node.
+    def __copy__(self) -> Any:
+        return self._value
+
     def __deepcopy__(self, memo: dict[int, Any]) -> Any:
         from copy import deepcopy
 
@@ -80,8 +84,7 @@ class _TrackedField:
         if obj is None:
             return self
         stored = self._get(obj)
-        stack = _COMPUTE_STACK
-        if not stack or stack[-1] is None:
+        if not is_tracking():
             return stored._value if type(stored) is _FieldSource else stored
         if type(stored) is not _FieldSource or stored._owner_id != id(obj):
             value = stored._value if type(stored) is _FieldSource else stored
