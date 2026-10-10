@@ -29,7 +29,6 @@ class _FieldSource(Signal[Any]):
     """
 
     __slots__ = ("_owner_id",)
-    _WARN_ON_VALUE = False  # Storing reactive objects here is intentional.
 
     def __init__(self, value: Any, owner: object) -> None:
         super().__init__(value)

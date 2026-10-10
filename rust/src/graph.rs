@@ -360,7 +360,6 @@ pub(crate) struct Runtime {
     /// per hook in `hooks_on`.
     pub(crate) hook_callers: RefCell<[Option<Py<PyAny>>; 3]>,
     pub(crate) hooks_on: Cell<u8>,
-    pub(crate) migration_warnings: Cell<bool>,
 }
 
 // SAFETY: as for `Shared`; one runtime is shared by all threads, like a
@@ -383,7 +382,6 @@ pub(crate) fn rt() -> &'static Runtime {
         hooks: RefCell::new(None),
         hook_callers: RefCell::new([None, None, None]),
         hooks_on: Cell::new(0),
-        migration_warnings: Cell::new(false),
     })
 }
 
@@ -943,11 +941,6 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     start_refresh(node);
     let depth = push_frame(Some(node.clone()));
     let mut result = run_compute(py, &compute);
-    if let Ok(value) = &result {
-        if let Err(error) = config::warn_computed_result(py, handle, value.bind(py)) {
-            result = Err(error);
-        }
-    }
     if let Err(error) = end_frame(depth) {
         result = Err(error);
     }
@@ -1224,7 +1217,6 @@ pub(crate) fn write_signal(
     handle: &Bound<'_, PyAny>,
     value: Bound<'_, PyAny>,
 ) -> PyResult<()> {
-    config::warn_signal_value(py, handle, &value)?;
     let old = node.value.borrow().as_ref().map(|old| old.clone_ref(py));
     let Some(old) = old else {
         return Err(uninitialized());

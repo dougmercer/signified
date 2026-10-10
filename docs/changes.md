@@ -29,6 +29,10 @@ This page summarizes notable changes across releases.
   reactive objects use identity and return a plain `bool`, matching `==`.
   Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
   the existing `x.rx.eq(y)`.
+- **Breaking:** Removed the migration warnings added in 0.6:
+  `signified.migration` and `SIGNIFIED_MIGRATION_WARNINGS`. To check code
+  written for 0.5, run the warnings on 0.6 before upgrading; see
+  [Migrating to 0.6](migration.md#optional-migration-diagnostics).
 
 ### Runtime improvements
 

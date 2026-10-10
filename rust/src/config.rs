@@ -1,4 +1,4 @@
-//! Opt-in instrumentation: plugin hooks and migration warnings.
+//! Plugin hooks.
 
 use pyo3::intern;
 use pyo3::prelude::*;
@@ -36,7 +36,6 @@ impl Hook {
 /// off. When it is set, the engine records which of its `read`, `created` and
 /// `updated` callables are present and truthy, and calls only those; set it
 /// again after they change. (`named` is called from Python.)
-/// `migration_warnings` mirrors `signified.migration.warnings_enabled()`.
 #[pyclass(frozen, module = "signified._core", name = "Config")]
 pub struct Config;
 
@@ -71,16 +70,6 @@ impl Config {
         drop(old);
         Ok(())
     }
-
-    #[getter]
-    fn migration_warnings(&self) -> bool {
-        rt().migration_warnings.get()
-    }
-
-    #[setter]
-    fn set_migration_warnings(&self, enabled: bool) {
-        rt().migration_warnings.set(enabled);
-    }
 }
 
 /// Call `hook` with `value=value`, if a plugin implements it.
@@ -99,45 +88,4 @@ pub(crate) fn hook(py: Python<'_>, hook: Hook, value: &Bound<'_, PyAny>) -> PyRe
     kwargs.set_item(intern!(py, "value"), value)?;
     caller.bind(py).call((), Some(&kwargs))?;
     Ok(())
-}
-
-/// Warn when a signal of a class that opts in receives a reactive value or a
-/// container holding one.
-pub(crate) fn warn_signal_value(
-    py: Python<'_>,
-    owner: &Bound<'_, PyAny>,
-    value: &Bound<'_, PyAny>,
-) -> PyResult<()> {
-    if !rt().migration_warnings.get() {
-        return Ok(());
-    }
-    let opted_in = match owner.get_type().getattr(intern!(py, "_WARN_ON_VALUE")) {
-        Ok(flag) => flag.is_truthy()?,
-        Err(_) => true,
-    };
-    if opted_in {
-        migration(py)?
-            .getattr(intern!(py, "_warn_signal_value"))?
-            .call1((value,))?;
-    }
-    Ok(())
-}
-
-/// Warn when a computation returns a reactive value or a container holding one.
-pub(crate) fn warn_computed_result(
-    py: Python<'_>,
-    owner: &Bound<'_, PyAny>,
-    value: &Bound<'_, PyAny>,
-) -> PyResult<()> {
-    if !rt().migration_warnings.get() {
-        return Ok(());
-    }
-    migration(py)?
-        .getattr(intern!(py, "_warn_reactive_computed_result"))?
-        .call1((owner, value))?;
-    Ok(())
-}
-
-fn migration(py: Python<'_>) -> PyResult<Bound<'_, PyModule>> {
-    py.import(intern!(py, "signified.migration"))
 }

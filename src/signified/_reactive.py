@@ -254,7 +254,6 @@ class Signal[T](_core.Signal[T], Variable[T]):
     """
 
     __slots__ = ()
-    _WARN_ON_VALUE = True
 
     if TYPE_CHECKING:
         # Implemented by the Rust base class; declared here for type checkers
@@ -405,13 +404,6 @@ class Signal[T](_core.Signal[T], Variable[T]):
         return _core.SignalAt(self, value)
 
 
-class _BindingSource[T](Signal[ReactiveValue[T]]):
-    """Internal source selection; storing reactive objects here is intentional."""
-
-    __slots__ = ()
-    _WARN_ON_VALUE = False
-
-
 # We intentionally use a `TypeVar` here rather than PEP 695 syntax to ensure
 # that Computed[T] is explicitly invariant.
 #
@@ -544,7 +536,7 @@ class Binding(Computed[T]):
             self._owned = None
         else:
             source = self._owned = Signal(cast(T, source))
-        self._holder: Signal[ReactiveValue[T]] = _BindingSource(cast(ReactiveValue[T], source))
+        self._holder: Signal[ReactiveValue[T]] = Signal(cast(ReactiveValue[T], source))
         # Reads the holder, then the source it holds, natively.
         self._init_source(self._holder)
 

@@ -19,7 +19,6 @@ Functions:
     batch: Defer effects across multiple writes.
     untracked: Read without subscribing the enclosing consumer.
     tracked_fields: Track reads and reassignment of a class's attributes.
-    migration: Opt-in diagnostics for behavior changed in 0.6.
 
 Attributes:
     ReactiveValue: Union of Signal, Computed, and Binding types.
@@ -27,7 +26,7 @@ Attributes:
 """
 
 # Import _mixin first to initialize _ReactiveMixIn before runtime classes.
-from . import _mixin, migration
+from . import _mixin
 from ._fields import tracked_fields
 from ._functions import as_rx, computed, effect, has_value, unref
 from ._reactive import Binding, Computed, Effect, Signal, Variable, is_reactive, untracked
@@ -56,5 +55,4 @@ __all__ = [
     "batch",
     "untracked",
     "tracked_fields",
-    "migration",
 ]

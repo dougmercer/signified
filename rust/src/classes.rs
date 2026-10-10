@@ -103,7 +103,6 @@ impl SignalCore {
         equal: Option<Py<PyAny>>,
     ) -> PyResult<()> {
         let py = slf.py();
-        config::warn_signal_value(py, slf.as_any(), &value)?;
         let node = &slf.get().node;
         let old = node.value.replace(Some(value.unbind()));
         drop(old);

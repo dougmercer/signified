@@ -77,7 +77,6 @@ class Effect:
 
 class Config:
     hooks: Any
-    migration_warnings: bool
 
 config: Config
 
