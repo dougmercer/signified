@@ -102,3 +102,32 @@ def test_graph_built_on_another_thread_is_usable_here():
     assert box["doubled"].value == 10
     box.clear()
     gc.collect()
+
+
+def test_dead_observers_release_their_subscription():
+    import sys
+
+    s = Signal(0)
+
+    class Observer:
+        def update(self) -> None:
+            pass
+
+    observer = Observer()
+    s.subscribe(observer)
+    (reference,) = weakref.getweakrefs(observer)
+    held = sys.getrefcount(reference)
+    del observer
+    gc.collect()
+    # Only this test's reference (and getrefcount's argument) remain.
+    assert sys.getrefcount(reference) == held - 1
+
+
+def test_cycle_through_a_signal_at_context_is_collected():
+    s = Signal(None)
+    context = s.at(1)
+    s.value = context
+    ref = weakref.ref(s)
+    del s, context
+    gc.collect()
+    assert ref() is None

@@ -235,3 +235,16 @@ def test_registering_a_plugin_turns_hooks_on_and_unregistering_turns_them_off(mo
     assert _core.config.hooks is None
     Signal(2)
     assert calls == [("plugin", "created")]
+
+
+def test_created_hook_can_read_an_operator_result(monkeypatch) -> None:
+    class ReadsOnCreate(RecordingHook):
+        def created(self, *, value: Variable[Any]) -> None:
+            value.value
+
+    monkeypatch.setattr(_core.config, "hooks", ReadsOnCreate())
+    source = Signal(1)
+    total = source + 2
+    assert total.value == 3
+    source.value = 5
+    assert total.value == 7

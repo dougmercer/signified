@@ -22,7 +22,7 @@ use pyo3::types::{
 };
 use pyo3::PyTraverseError;
 
-use crate::classes::{ComputedCore, SignalCore};
+use crate::classes::{ComputedCore, ObserverCleanup, SignalCore};
 use crate::config;
 use crate::effects::{self, Job};
 
@@ -75,6 +75,12 @@ impl std::ops::Deref for Shared {
         &self.0
     }
 }
+
+/// `Weak<Node>` made `Send` and `Sync`, for the same reason as `Shared`.
+pub(crate) struct WeakShared(pub(crate) Weak<Node>);
+
+unsafe impl Send for WeakShared {}
+unsafe impl Sync for WeakShared {}
 
 /// An entry in a node's observer list.
 pub(crate) enum Observer {
@@ -181,6 +187,9 @@ pub(crate) struct Node {
     pub(crate) name: RefCell<Option<Py<PyAny>>>,
     observers: RefCell<Vec<Observer>>,
     vacant: Cell<u32>,
+    /// The callback that removes a `subscribe()` observer when it dies, shared
+    /// by this node's subscriptions; created on first use.
+    cleanup: RefCell<Option<Py<PyAny>>>,
     /// Set while a consumer that reads this node runs; see `register_dependency`.
     reader_link: Cell<ReaderLink>,
     /// State for computeds and effects; `None` for signals.
@@ -242,6 +251,7 @@ impl Node {
             name: RefCell::new(None),
             observers: RefCell::new(Vec::new()),
             vacant: Cell::new(0),
+            cleanup: RefCell::new(None),
             reader_link: Cell::new(NO_READER),
             consumer,
         }
@@ -1250,14 +1260,41 @@ fn find_python_observer(node: &Node, observer: &Bound<'_, PyAny>) -> Option<u32>
     }
 }
 
-pub(crate) fn add_python_observer(node: &Node, observer: &Bound<'_, PyAny>) -> PyResult<()> {
+pub(crate) fn add_python_observer(node: &Rc<Node>, observer: &Bound<'_, PyAny>) -> PyResult<()> {
     if find_python_observer(node, observer).is_some() {
         return Ok(());
     }
-    let reference = PyWeakrefReference::new(observer)?.unbind();
+    let py = observer.py();
+    let cleanup = node
+        .cleanup
+        .borrow()
+        .as_ref()
+        .map(|cleanup| cleanup.clone_ref(py));
+    let cleanup = match cleanup {
+        Some(cleanup) => cleanup,
+        None => {
+            let cleanup = Py::new(py, ObserverCleanup::new(Rc::downgrade(node)))?.into_any();
+            let old = node.cleanup.replace(Some(cleanup.clone_ref(py)));
+            drop(old);
+            cleanup
+        }
+    };
+    // The callback removes the entry as soon as the observer dies.
+    let reference = PyWeakrefReference::new_with(observer, cleanup.bind(py))?.unbind();
     let id = observer.as_ptr() as usize;
     push_observer(node, Observer::Python { reference, id });
     Ok(())
+}
+
+/// Remove the `subscribe()` observer whose weak reference is `reference`
+/// (called from that reference's callback, once the observer has died).
+pub(crate) fn forget_observer(node: &Node, reference: *mut pyo3::ffi::PyObject) {
+    let slot = node.observers.borrow().iter().position(|observer| {
+        matches!(observer, Observer::Python { reference: entry, .. } if entry.as_ptr() == reference)
+    });
+    if let Some(slot) = slot {
+        drop(vacate(node, slot as u32));
+    }
 }
 
 pub(crate) fn remove_python_observer(node: &Node, observer: &Bound<'_, PyAny>) {

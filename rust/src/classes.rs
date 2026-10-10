@@ -531,24 +531,26 @@ pub fn has_changed(previous: &Bound<'_, PyAny>, current: &Bound<'_, PyAny>) -> P
     graph::has_changed(previous, current)
 }
 
-/// `cls(func)`, computing `func(*args)` with each direct reactive argument
-/// unwrapped natively on every evaluation.
+/// A new `cls` (a `Computed` class) computing `func(*args)`, with each direct
+/// reactive argument unwrapped natively on every evaluation. The computation
+/// is complete before the `created` hook sees the object.
 #[pyfunction]
 pub fn computed_call<'py>(
     cls: &Bound<'py, PyType>,
     func: Py<PyAny>,
     args: &Bound<'py, PyTuple>,
 ) -> PyResult<Bound<'py, PyAny>> {
-    let obj = cls.call1((func.clone_ref(cls.py()),))?;
-    if !args.is_empty() {
-        let node = &obj.cast::<ComputedCore>()?.get().node;
-        let call = Compute::Call {
+    let obj = cls.call_method1(intern!(cls.py(), "__new__"), (cls,))?;
+    let compute = if args.is_empty() {
+        Compute::Function(func)
+    } else {
+        Compute::Call {
             func,
             args: args.iter().map(|arg| arg.unbind()).collect(),
-        };
-        let old = node.consumer().compute.replace(Some(call));
-        drop(old);
-    }
+        }
+    };
+    let node = &obj.cast::<ComputedCore>()?.get().node;
+    init_computed(&obj, node, compute, None)?;
     Ok(obj)
 }
 
@@ -661,20 +663,27 @@ impl Batch {
 /// `with signal.at(value):` holds `value` inside the block, then returns to
 /// the previous value and, if nothing else wrote the signal, the previous
 /// version.
-/// The value and version before a `Signal.at()` block, and the version on entry.
-type SavedState = Option<(Py<PyAny>, u64, u64)>;
+/// The state of a `Signal.at()` context: the signal, the temporary value,
+/// and, once entered, the value and version before the block and the version
+/// on entry.
+struct AtState {
+    signal: Option<Py<PyAny>>,
+    value: Option<Py<PyAny>>,
+    saved: Option<(Py<PyAny>, u64, u64)>,
+}
 
+/// `with signal.at(value):` holds `value` inside the block, then returns to
+/// the previous value and, if nothing else wrote the signal, the previous
+/// version.
 #[pyclass(frozen, module = "signified._core", name = "SignalAt")]
 pub struct SignalAt {
-    signal: Py<PyAny>,
-    value: Py<PyAny>,
-    /// The value and version before the block, and the version on entry.
-    saved: std::sync::Mutex<SavedState>,
+    // Never locked across a call into Python.
+    state: std::sync::Mutex<AtState>,
 }
 
 impl SignalAt {
-    fn saved(&self) -> PyResult<std::sync::MutexGuard<'_, SavedState>> {
-        self.saved
+    fn state(&self) -> PyResult<std::sync::MutexGuard<'_, AtState>> {
+        self.state
             .lock()
             .map_err(|_| PyRuntimeError::new_err("Signal.at() context is broken"))
     }
@@ -685,21 +694,31 @@ impl SignalAt {
     #[new]
     fn new(signal: Py<PyAny>, value: Py<PyAny>) -> Self {
         SignalAt {
-            signal,
-            value,
-            saved: std::sync::Mutex::new(None),
+            state: std::sync::Mutex::new(AtState {
+                signal: Some(signal),
+                value: Some(value),
+                saved: None,
+            }),
         }
     }
 
     fn __enter__(&self, py: Python<'_>) -> PyResult<()> {
-        let signal = self.signal.bind(py);
+        let (signal, value) = {
+            let state = self.state()?;
+            match (&state.signal, &state.value) {
+                (Some(signal), Some(value)) => (signal.clone_ref(py), value.clone_ref(py)),
+                _ => return Err(PyRuntimeError::new_err("Signal.at() context was cleared")),
+            }
+        };
+        let signal = signal.bind(py);
         let node = graph::node_of(signal)?;
         let before = graph::raw_value(py, &node).unbind();
         let before_version = node.version.get();
-        signal.setattr(intern!(py, "value"), self.value.bind(py))?;
+        signal.setattr(intern!(py, "value"), value)?;
         let entered_version = node.version.get();
         let old = self
-            .saved()?
+            .state()?
+            .saved
             .replace((before, before_version, entered_version));
         drop(old);
         Ok(())
@@ -707,11 +726,19 @@ impl SignalAt {
 
     #[pyo3(signature = (*_exc))]
     fn __exit__(&self, py: Python<'_>, _exc: &Bound<'_, PyTuple>) -> PyResult<bool> {
-        let saved = self.saved()?.take();
-        let Some((before, before_version, entered_version)) = saved else {
+        let (signal, saved) = {
+            let mut state = self.state()?;
+            let saved = state.saved.take();
+            (
+                state.signal.as_ref().map(|signal| signal.clone_ref(py)),
+                saved,
+            )
+        };
+        let (Some(signal), Some((before, before_version, entered_version))) = (signal, saved)
+        else {
             return Ok(false);
         };
-        let signal = self.signal.bind(py);
+        let signal = signal.bind(py);
         let node = graph::node_of(signal)?;
         if node.version.get() != entered_version {
             // Written again inside the block: an ordinary assignment.
@@ -722,5 +749,52 @@ impl SignalAt {
             graph::restore_signal(py, &node, signal, before.into_bound(py), before_version)?;
         }
         Ok(false)
+    }
+
+    fn __traverse__(&self, visit: PyVisit<'_>) -> Result<(), PyTraverseError> {
+        // A busy lock is skipped, like a busy cell in a node.
+        if let Ok(state) = self.state.try_lock() {
+            for object in [&state.signal, &state.value].into_iter().flatten() {
+                visit.call(object)?;
+            }
+            if let Some((before, ..)) = &state.saved {
+                visit.call(before)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn __clear__(&self) {
+        let taken = self
+            .state
+            .lock()
+            .ok()
+            .map(|mut state| (state.signal.take(), state.value.take(), state.saved.take()));
+        drop(taken);
+    }
+}
+
+/// A `subscribe()` observer's weak-reference callback: removes the
+/// observer from its node once it dies. One is shared by each node's
+/// subscriptions.
+#[pyclass(frozen, module = "signified._core", name = "ObserverCleanup")]
+pub struct ObserverCleanup {
+    node: graph::WeakShared,
+}
+
+impl ObserverCleanup {
+    pub(crate) fn new(node: std::rc::Weak<Node>) -> Self {
+        ObserverCleanup {
+            node: graph::WeakShared(node),
+        }
+    }
+}
+
+#[pymethods]
+impl ObserverCleanup {
+    fn __call__(&self, reference: &Bound<'_, PyAny>) {
+        if let Some(node) = self.node.0.upgrade() {
+            graph::forget_observer(&node, reference.as_ptr());
+        }
     }
 }
