@@ -93,6 +93,11 @@ class Variable[T](_ReactiveMixIn[T]):
         def update(self) -> None: ...
         def invalidate(self) -> None: ...
 
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
+        # Signal, Computed and Binding take `__new__` from their engine base
+        # class, so only a class without one reaches here.
+        raise TypeError(f"Can't instantiate {cls.__name__}: reactive values must be a Signal, Computed or Binding")
+
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         _reject_engine_overrides(cls, ("notify", "update", "value"))

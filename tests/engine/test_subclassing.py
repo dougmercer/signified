@@ -2,7 +2,7 @@
 
 import pytest
 
-from signified import Computed, Effect, Signal
+from signified import Computed, Effect, Signal, Variable
 
 
 @pytest.mark.parametrize("base", [Signal, Computed])
@@ -68,3 +68,12 @@ def test_override_inherited_from_a_mixin_raises(name):
     mixin = type("Mixin", (), {name: member})
     with pytest.raises(TypeError, match=f"overrides {name}"):
         type("Custom", (mixin, Signal), {})
+
+
+def test_variable_without_an_engine_base_cannot_be_instantiated():
+    class Plain(Variable):
+        __slots__ = ()
+
+    for cls in (Variable, Plain):
+        with pytest.raises(TypeError, match="Signal, Computed or Binding"):
+            cls()
