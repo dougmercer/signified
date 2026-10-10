@@ -11,6 +11,7 @@ maintainers = [
 description = "A fast, fully-typed Python library for reactive programming."
 readme = "README.md"
 license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 keywords = ["reactive", "signals"]
 classifiers = [
     "Development Status :: 3 - Alpha",

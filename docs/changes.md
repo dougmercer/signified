@@ -62,8 +62,12 @@ This page summarizes notable changes across releases.
 
 ### Packaging
 
-- Signified now ships a compiled extension, built with maturin. Installing from
-  source needs a Rust toolchain.
+- Signified now ships a compiled extension, built with maturin. Wheels cover
+  CPython 3.12 and later on Linux (x86_64 and aarch64, glibc and musl), macOS
+  (Intel and Apple silicon), Windows x64, and Pyodide 314 (Python 3.14).
+  Installing on other platforms builds from source and needs a Rust toolchain.
+  Under Pyodide, a value more than 250 refreshes deep raises `RecursionError`,
+  because the browser's stack is much smaller than a native one.
 - Plugin hooks run whenever a plugin is registered with `plugin_manager`;
   `SIGNIFIED_ENABLE_HOOKS` and `signified.plugins.HOOKS_ENABLED` are removed.
 - Removed the `ipython` extra. Notebook display works the same without it,

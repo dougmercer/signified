@@ -1,7 +1,10 @@
 """Lifetime and garbage-collection behavior: the riskiest part of a Rust core."""
 
 import gc
+import sys
 import weakref
+
+import pytest
 
 from signified import Computed, Signal
 
@@ -85,6 +88,7 @@ def test_engine_survives_garbage_collection_at_every_allocation():
         gc.set_threshold(*thresholds)
 
 
+@pytest.mark.skipif(sys.platform == "emscripten", reason="Pyodide has no threads")
 def test_graph_built_on_another_thread_is_usable_here():
     import threading
 

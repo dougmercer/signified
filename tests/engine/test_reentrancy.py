@@ -181,6 +181,7 @@ def test_signal_rewritten_in_one_wave_reaches_observers_added_between_writes():
     assert seen == [2, 4]
 
 
+@pytest.mark.skipif(sys.platform == "emscripten", reason="Pyodide has no threads")
 def test_deep_chain_on_a_worker_thread_raises_instead_of_crashing():
     import threading
 
