@@ -44,10 +44,10 @@ pub fn unref<'py>(py: Python<'py>, value: &Bound<'py, PyAny>) -> PyResult<Bound<
 /// The engine node behind a Signal, Computed or Binding.
 pub(crate) fn node_of(obj: &Bound<'_, PyAny>) -> PyResult<Rc<Node>> {
     if let Ok(signal) = obj.cast::<SignalCore>() {
-        return Ok(signal.get().node.0.clone());
+        return Ok(Rc::clone(&signal.get().node));
     }
     if let Ok(computed) = obj.cast::<ComputedCore>() {
-        return Ok(computed.get().node.0.clone());
+        return Ok(Rc::clone(&computed.get().node));
     }
     Err(PyTypeError::new_err(format!(
         "expected a Signal, Computed or Binding, got {}",

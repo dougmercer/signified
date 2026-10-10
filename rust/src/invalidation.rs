@@ -6,10 +6,10 @@ use std::rc::Rc;
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
-use crate::node::{Kind, Node, Observer, State};
+use crate::node::{Kind, Node, State};
+use crate::observer_list::Observer;
 use crate::runtime::rt;
 use crate::scheduler;
-use crate::tracking::has_observers;
 
 /// Mark stale and return whether observers still need to hear about it.
 /// `force` upgrades to `MustRefresh`, bypassing the dependency check.
@@ -30,20 +30,38 @@ pub(crate) fn invalidate(node: &Node, force: bool) -> bool {
     true
 }
 
+/// Counts one notification walk in `wave_depth` while it lives, so a panic
+/// that unwinds through a walk cannot leave the count raised and stop every
+/// later flush.
+struct Walking;
+
+impl Walking {
+    fn enter() -> Walking {
+        let depth = &rt().wave_depth;
+        depth.set(depth.get() + 1);
+        Walking
+    }
+}
+
+impl Drop for Walking {
+    fn drop(&mut self) {
+        let depth = &rt().wave_depth;
+        depth.set(depth.get() - 1);
+    }
+}
+
 /// Tell `start`'s observers it changed: mark dependent computeds stale,
 /// depth-first, and queue dependent effects and `subscribe()` observers.
 /// No Python code runs during the walk. Queued work runs once the outermost
 /// walk ends, unless a batch or flush is in progress.
 pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
-    if !has_observers(start) {
+    if start.observers.is_empty() {
         return Ok(());
     }
-    let rt = rt();
-    rt.wave_depth.set(rt.wave_depth.get() + 1);
+    let walking = Walking::enter();
     walk(py, start);
-    let depth = rt.wave_depth.get() - 1;
-    rt.wave_depth.set(depth);
-    if depth == 0 {
+    drop(walking);
+    if rt().wave_depth.get() == 0 {
         scheduler::flush(py)?;
     }
     Ok(())
@@ -60,7 +78,7 @@ enum Step {
 fn walk(py: Python<'_>, start: &Rc<Node>) {
     let mut stack: Vec<(Rc<Node>, usize)> = vec![(start.clone(), 0)];
     while let Some((node, index)) = stack.last_mut() {
-        let step = match node.observers.borrow().get(*index) {
+        let step = match node.observers.get(*index).as_deref() {
             None => Step::Done,
             Some(Observer::Vacant) => Step::Skip,
             Some(Observer::Consumer { node, .. }) => {
@@ -77,7 +95,7 @@ fn walk(py: Python<'_>, start: &Rc<Node>) {
             Step::Consumer(consumer) => match consumer.kind {
                 Kind::Effect => scheduler::enqueue_effect(&consumer),
                 Kind::Computed => {
-                    if invalidate(&consumer, false) && has_observers(&consumer) {
+                    if invalidate(&consumer, false) && !consumer.observers.is_empty() {
                         stack.push((consumer, 0));
                     }
                 }

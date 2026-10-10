@@ -8,32 +8,38 @@
 //! so either side can find the other in constant time. Removed observers leave
 //! a vacant slot until the list compacts, which keeps notification order.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyTuple;
 
-use crate::node::{DepLink, Node, Observer, ReaderLink, NEVER, NO_SLOT};
+use crate::node::{DepLink, Node, ReaderLink, NEVER, NO_SLOT};
 use crate::runtime::rt;
-
-/// Observer lists at least this long compact once half their slots are vacant.
-const COMPACT_MIN_LEN: usize = 16;
 
 // ---------------------------------------------------------------------------
 // Tracking frames
 // ---------------------------------------------------------------------------
 
+/// The consumers being evaluated, innermost last; `None` marks an untracked
+/// block. Part of the runtime.
+#[derive(Default)]
+pub(crate) struct Frames(RefCell<Vec<Option<Rc<Node>>>>);
+
+fn frames() -> &'static RefCell<Vec<Option<Rc<Node>>>> {
+    &rt().frames.0
+}
+
 /// Push a tracking frame and return the depth to pass to `end_frame`.
 pub(crate) fn push_frame(frame: Option<Rc<Node>>) -> usize {
-    let mut frames = rt().frames.borrow_mut();
+    let mut frames = frames().borrow_mut();
     frames.push(frame);
     frames.len() - 1
 }
 
 fn pop_frame() -> Option<Option<Rc<Node>>> {
-    rt().frames.borrow_mut().pop()
+    frames().borrow_mut().pop()
 }
 
 /// Remove the frame that `push_frame` returned `depth` for. If code inside
@@ -41,7 +47,7 @@ fn pop_frame() -> Option<Option<Rc<Node>>> {
 /// the run fails, so later reads are not registered with the wrong consumer.
 #[inline]
 pub(crate) fn end_frame(depth: usize) -> PyResult<()> {
-    let mut frames = rt().frames.borrow_mut();
+    let mut frames = frames().borrow_mut();
     if frames.len() == depth + 1 {
         let frame = frames.pop();
         drop(frames);
@@ -55,7 +61,7 @@ pub(crate) fn end_frame(depth: usize) -> PyResult<()> {
 #[cold]
 fn unbalanced_frames(depth: usize) -> PyResult<()> {
     let removed = {
-        let mut frames = rt().frames.borrow_mut();
+        let mut frames = frames().borrow_mut();
         let keep = depth.min(frames.len());
         frames.split_off(keep)
     };
@@ -69,13 +75,13 @@ fn unbalanced_frames(depth: usize) -> PyResult<()> {
 
 /// Whether the innermost frame is an untracked block.
 fn in_untracked_block() -> bool {
-    matches!(rt().frames.borrow().last(), Some(None))
+    matches!(frames().borrow().last(), Some(None))
 }
 
 /// Whether a reactive read right now would register a dependency.
 #[pyfunction]
 pub fn is_tracking() -> bool {
-    matches!(rt().frames.borrow().last(), Some(Some(_)))
+    matches!(frames().borrow().last(), Some(Some(_)))
 }
 
 /// `with untracked():` reads inside do not subscribe the enclosing
@@ -108,11 +114,11 @@ impl Untracked {
 }
 
 // ---------------------------------------------------------------------------
-// Recording reads
+// Dependency links
 // ---------------------------------------------------------------------------
 
 pub(crate) fn track_read(node: &Rc<Node>, handle: &Bound<'_, PyAny>) {
-    let frames = rt().frames.borrow();
+    let frames = frames().borrow();
     if let Some(Some(reader)) = frames.last() {
         // Self-reads would make a node depend on itself.
         if !Rc::ptr_eq(reader, node) {
@@ -207,27 +213,17 @@ pub(crate) fn commit_refresh(reader: &Rc<Node>) {
         deps.split_off(write)
     };
     for (dep, slot, position) in moved {
-        if let Some(Observer::Consumer { link, .. }) =
-            dep.observers.borrow_mut().get_mut(slot as usize)
-        {
-            *link = position;
-        }
+        dep.observers.set_link(slot, position);
     }
     let key = node_key(reader);
     for link in &dropped {
         let slot = link.slot.get();
         if slot != NO_SLOT {
-            unsubscribe_consumer(&link.node, slot, key);
+            link.node.observers.remove_consumer(slot, key);
         }
     }
     for (dep, position) in subscribe {
-        let slot = push_observer(
-            &dep,
-            Observer::Consumer {
-                node: Rc::downgrade(reader),
-                link: position,
-            },
-        );
+        let slot = dep.observers.push_consumer(Rc::downgrade(reader), position);
         if let Some(link) = consumer.deps.borrow().get(position as usize) {
             link.slot.set(slot);
         }
@@ -262,110 +258,8 @@ pub(crate) fn dependency_handles<'py>(
     PyTuple::new(py, handles)
 }
 
-// ---------------------------------------------------------------------------
-// Observer lists
-// ---------------------------------------------------------------------------
-
 fn node_key(node: &Node) -> usize {
     node as *const Node as usize
-}
-
-pub(crate) fn has_observers(node: &Node) -> bool {
-    node.observers.borrow().len() > node.vacant.get() as usize
-}
-
-pub(crate) fn push_observer(node: &Node, observer: Observer) -> u32 {
-    let mut observers = node.observers.borrow_mut();
-    observers.push(observer);
-    (observers.len() - 1) as u32
-}
-
-/// Remove the observer in `slot` without compacting, and return it so the
-/// caller drops it with nothing borrowed.
-pub(crate) fn take_slot(node: &Node, slot: u32) -> Observer {
-    let removed = match node.observers.borrow_mut().get_mut(slot as usize) {
-        Some(entry) => std::mem::replace(entry, Observer::Vacant),
-        None => Observer::Vacant,
-    };
-    match &removed {
-        Observer::Vacant => return removed,
-        Observer::Python { id, .. } => {
-            if let Some(subscribers) = node.subscribers.borrow_mut().as_mut() {
-                if subscribers.get(id) == Some(&slot) {
-                    subscribers.remove(id);
-                }
-            }
-        }
-        Observer::Consumer { .. } => {}
-    }
-    node.vacant.set(node.vacant.get() + 1);
-    removed
-}
-
-/// Remove the observer in `slot`, compacting the list if it got sparse.
-pub(crate) fn vacate(node: &Node, slot: u32) -> Observer {
-    let removed = take_slot(node, slot);
-    compact_if_sparse(node);
-    removed
-}
-
-/// Remove the consumer `key`'s entry in `dep`'s observer list, if `slot`
-/// still holds it.
-fn unsubscribe_consumer(dep: &Node, slot: u32, key: usize) {
-    let owned = matches!(
-        dep.observers.borrow().get(slot as usize),
-        Some(Observer::Consumer { node, .. }) if node.as_ptr() as usize == key
-    );
-    if owned {
-        drop(vacate(dep, slot));
-    }
-}
-
-/// Drop vacant slots once they make up half of a long list. Consumers and
-/// `subscribe()` observers whose entries move get their slots updated. Not
-/// during a notification walk, which iterates the lists by position.
-pub(crate) fn compact_if_sparse(node: &Node) {
-    let vacant = node.vacant.get() as usize;
-    let len = node.observers.borrow().len();
-    let all_vacant = vacant == len;
-    if rt().wave_depth.get() > 0 || !(all_vacant || (len >= COMPACT_MIN_LEN && vacant * 2 > len)) {
-        return;
-    }
-    let mut observers = node.observers.borrow_mut();
-    let mut subscribers = node.subscribers.borrow_mut();
-    let mut write = 0;
-    for read in 0..observers.len() {
-        if matches!(observers[read], Observer::Vacant) {
-            continue;
-        }
-        if read != write {
-            observers.swap(read, write);
-            match &observers[write] {
-                Observer::Consumer {
-                    node: consumer,
-                    link,
-                } => {
-                    if let Some(consumer) = consumer.upgrade() {
-                        if let Some(link) = consumer.consumer().deps.borrow().get(*link as usize) {
-                            link.slot.set(write as u32);
-                        }
-                    }
-                }
-                Observer::Python { id, .. } => {
-                    if let Some(slot) = subscribers.as_mut().and_then(|map| map.get_mut(id)) {
-                        if *slot == read as u32 {
-                            *slot = write as u32;
-                        }
-                    }
-                }
-                Observer::Vacant => {}
-            }
-        }
-        write += 1;
-    }
-    // Only vacant entries are truncated, so nothing Python is dropped here.
-    observers.truncate(write);
-    node.vacant.set(0);
 }
 
 /// Unsubscribe a consumer (identified by `key`) from each of `links`, and
@@ -377,7 +271,7 @@ pub(crate) fn unlink(key: usize, links: &[DepLink]) {
         }
         let slot = link.slot.get();
         if slot != NO_SLOT {
-            unsubscribe_consumer(&link.node, slot, key);
+            link.node.observers.remove_consumer(slot, key);
         }
     }
 }

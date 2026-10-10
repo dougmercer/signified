@@ -1,6 +1,8 @@
 //! Plugin hooks: the engine calls a plugin's `read`, `created` and `updated`
 //! hooks, which are set through `signified._core.config`.
 
+use std::cell::{Cell, RefCell};
+
 use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString};
@@ -31,6 +33,23 @@ impl Hook {
     }
 }
 
+/// The hooks a plugin implements, indexed by `Hook`.
+type Callers = [Option<Py<PyAny>>; Hook::ALL.len()];
+
+/// The hooks the engine calls. Part of the runtime.
+#[derive(Default)]
+pub(crate) struct Hooks {
+    /// The plugin manager's `hook` object, when hooks are on.
+    manager_hook: RefCell<Option<Py<PyAny>>>,
+    callers: RefCell<Callers>,
+    /// One bit per hook in `callers`.
+    on: Cell<u8>,
+}
+
+fn hooks() -> &'static Hooks {
+    &rt().hooks
+}
+
 /// Engine settings, exposed to Python as `signified._core.config`.
 ///
 /// `hooks` is the plugin manager's `hook` object, or `None` to turn hooks
@@ -44,7 +63,8 @@ pub struct Config;
 impl Config {
     #[getter]
     fn hooks(&self, py: Python<'_>) -> Option<Py<PyAny>> {
-        rt().hooks
+        hooks()
+            .manager_hook
             .borrow()
             .as_ref()
             .map(|hooks| hooks.clone_ref(py))
@@ -52,7 +72,7 @@ impl Config {
 
     #[setter]
     fn set_hooks(&self, py: Python<'_>, hooks: Py<PyAny>) -> PyResult<()> {
-        let mut callers: [Option<Py<PyAny>>; 3] = [None, None, None];
+        let mut callers = Callers::default();
         let mut on = 0;
         if !hooks.is_none(py) {
             for hook in Hook::ALL {
@@ -64,10 +84,13 @@ impl Config {
                 }
             }
         }
-        let hooks = if hooks.is_none(py) { None } else { Some(hooks) };
-        let rt = rt();
-        rt.hooks_on.set(on);
-        let old = (rt.hooks.replace(hooks), rt.hook_callers.replace(callers));
+        let manager_hook = if hooks.is_none(py) { None } else { Some(hooks) };
+        let state = self::hooks();
+        state.on.set(on);
+        let old = (
+            state.manager_hook.replace(manager_hook),
+            state.callers.replace(callers),
+        );
         drop(old);
         Ok(())
     }
@@ -75,11 +98,11 @@ impl Config {
 
 /// Call `hook` with `value=value`, if a plugin implements it.
 pub(crate) fn call(py: Python<'_>, hook: Hook, value: &Bound<'_, PyAny>) -> PyResult<()> {
-    let rt = rt();
-    if rt.hooks_on.get() & hook.bit() == 0 {
+    let hooks = hooks();
+    if hooks.on.get() & hook.bit() == 0 {
         return Ok(());
     }
-    let caller = rt.hook_callers.borrow()[hook as usize]
+    let caller = hooks.callers.borrow()[hook as usize]
         .as_ref()
         .map(|caller| caller.clone_ref(py));
     let Some(caller) = caller else {

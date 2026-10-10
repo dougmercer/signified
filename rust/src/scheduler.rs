@@ -2,7 +2,9 @@
 //! `batch()`. Both kinds of work are queued during a notification walk and
 //! run, in the order they were queued, once the outermost walk or batch ends.
 
-use std::collections::HashMap;
+use std::cell::{Cell, RefCell};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::num::NonZeroU64;
 use std::rc::{Rc, Weak};
 
 use pyo3::exceptions::{PyException, PyRuntimeError};
@@ -16,24 +18,60 @@ use crate::runtime::rt;
 const MAX_RUNS: u32 = 100;
 
 /// Work waiting in the queue.
-pub(crate) enum Job {
+enum Job {
     /// An effect, valid while its `queued` number is still `seq`.
-    Effect { node: Weak<Node>, seq: u64 },
+    Effect { node: Weak<Node>, seq: NonZeroU64 },
     /// A `subscribe()` observer's weak reference; its `update()` is called.
     Observer(Py<PyWeakrefReference>),
+}
+
+/// Work waiting to run, and the state of the flush that runs it. Part of the
+/// runtime.
+#[derive(Default)]
+pub(crate) struct Queue {
+    /// Effects and observers waiting to run, in the order they were queued.
+    pending: RefCell<VecDeque<Job>>,
+    pending_seq: Cell<u64>,
+    /// Weak references of observers waiting in `pending`. A queued observer
+    /// whose reference is missing was unsubscribed and is skipped.
+    queued_observers: RefCell<HashSet<usize>>,
+    flush_epoch: Cell<u64>,
+    batch_depth: Cell<u32>,
+    flushing: Cell<bool>,
+}
+
+fn queue() -> &'static Queue {
+    &rt().queue
+}
+
+/// Marks a flush in progress while it lives, so a panic that unwinds through
+/// a flush cannot leave the mark set and block every later flush.
+struct Flushing;
+
+impl Flushing {
+    fn start() -> Flushing {
+        queue().flushing.set(true);
+        Flushing
+    }
+}
+
+impl Drop for Flushing {
+    fn drop(&mut self) {
+        queue().flushing.set(false);
+    }
 }
 
 /// Queue `effect` unless it is disposed or already queued.
 pub(crate) fn enqueue_effect(effect: &Rc<Node>) {
     let consumer = effect.consumer();
-    if !consumer.active.get() || consumer.queued.get() != 0 {
+    if !consumer.active.get() || consumer.queued.get().is_some() {
         return;
     }
-    let rt = rt();
-    let seq = rt.pending_seq.get() + 1;
-    rt.pending_seq.set(seq);
-    consumer.queued.set(seq);
-    rt.pending.borrow_mut().push_back(Job::Effect {
+    let queue = queue();
+    let seq = NonZeroU64::MIN.saturating_add(queue.pending_seq.get());
+    queue.pending_seq.set(seq.get());
+    consumer.queued.set(Some(seq));
+    queue.pending.borrow_mut().push_back(Job::Effect {
         node: Rc::downgrade(effect),
         seq,
     });
@@ -41,19 +79,22 @@ pub(crate) fn enqueue_effect(effect: &Rc<Node>) {
 
 /// Queue a `subscribe()` observer unless it is already queued.
 pub(crate) fn enqueue_observer(reference: Py<PyWeakrefReference>) {
-    let rt = rt();
-    let fresh = rt
+    let queue = queue();
+    let fresh = queue
         .queued_observers
         .borrow_mut()
         .insert(reference.as_ptr() as usize);
     if fresh {
-        rt.pending.borrow_mut().push_back(Job::Observer(reference));
+        queue
+            .pending
+            .borrow_mut()
+            .push_back(Job::Observer(reference));
     }
 }
 
 /// Cancel a queued call of the observer whose weak reference is `reference`.
 pub(crate) fn cancel_observer(reference: usize) {
-    rt().queued_observers.borrow_mut().remove(&reference);
+    queue().queued_observers.borrow_mut().remove(&reference);
 }
 
 /// Queue `effect`, then run the queue unless a walk, batch or flush is in
@@ -65,42 +106,42 @@ pub(crate) fn schedule(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
 
 /// Drop a queued run of `effect`, if any.
 pub(crate) fn discard(effect: &Node) {
-    effect.consumer().queued.set(0);
+    effect.consumer().queued.set(None);
 }
 
 /// Run queued work in order. One failure is raised directly and several as an
 /// `ExceptionGroup`. Something that keeps queuing itself stops the flush after
 /// `MAX_RUNS` runs.
 pub(crate) fn flush(py: Python<'_>) -> PyResult<()> {
-    let rt = rt();
-    if rt.pending.borrow().is_empty()
-        || rt.flushing.get()
-        || rt.batch_depth.get() > 0
-        || rt.wave_depth.get() > 0
+    let queue = queue();
+    if queue.pending.borrow().is_empty()
+        || queue.flushing.get()
+        || queue.batch_depth.get() > 0
+        || rt().wave_depth.get() > 0
     {
         return Ok(());
     }
-    rt.flushing.set(true);
-    let epoch = rt.flush_epoch.get() + 1;
-    rt.flush_epoch.set(epoch);
+    let flushing = Flushing::start();
+    let epoch = queue.flush_epoch.get() + 1;
+    queue.flush_epoch.set(epoch);
     let mut errors = Vec::new();
     // Runs per observer, keyed by its address and checked against a weak
     // reference to it.
     let mut observer_runs: HashMap<usize, (Py<PyWeakrefReference>, u32)> = HashMap::new();
     let outcome = run_pending(py, epoch, &mut observer_runs, &mut errors);
     // Whatever is left was abandoned by an error.
-    let abandoned = std::mem::take(&mut *rt.pending.borrow_mut());
-    rt.queued_observers.borrow_mut().clear();
+    let abandoned = std::mem::take(&mut *queue.pending.borrow_mut());
+    queue.queued_observers.borrow_mut().clear();
     for job in &abandoned {
         if let Job::Effect { node, seq } = job {
             if let Some(effect) = node.upgrade() {
-                if effect.consumer().queued.get() == *seq {
-                    effect.consumer().queued.set(0);
+                if effect.consumer().queued.get() == Some(*seq) {
+                    effect.consumer().queued.set(None);
                 }
             }
         }
     }
-    rt.flushing.set(false);
+    drop(flushing);
     drop(abandoned);
     drop(observer_runs);
     outcome?;
@@ -113,9 +154,9 @@ fn run_pending(
     observer_runs: &mut HashMap<usize, (Py<PyWeakrefReference>, u32)>,
     errors: &mut Vec<PyErr>,
 ) -> PyResult<()> {
-    let rt = rt();
+    let queue = queue();
     loop {
-        let job = rt.pending.borrow_mut().pop_front();
+        let job = queue.pending.borrow_mut().pop_front();
         let Some(job) = job else {
             return Ok(());
         };
@@ -126,10 +167,10 @@ fn run_pending(
                 };
                 let consumer = effect.consumer();
                 // Discarded, or queued again since.
-                if consumer.queued.get() != seq {
+                if consumer.queued.get() != Some(seq) {
                     continue;
                 }
-                consumer.queued.set(0);
+                consumer.queued.set(None);
                 if !consumer.active.get() {
                     continue;
                 }
@@ -149,7 +190,7 @@ fn run_pending(
             Job::Observer(reference) => {
                 let key = reference.as_ptr() as usize;
                 // Unsubscribed since it was queued.
-                if !rt.queued_observers.borrow_mut().remove(&key) {
+                if !queue.queued_observers.borrow_mut().remove(&key) {
                     continue;
                 }
                 let Some(target) = reference.bind(py).upgrade() else {
@@ -217,8 +258,8 @@ impl Batch {
     }
 
     fn __enter__(&self) {
-        let rt = rt();
-        rt.batch_depth.set(rt.batch_depth.get() + 1);
+        let queue = queue();
+        queue.batch_depth.set(queue.batch_depth.get() + 1);
     }
 
     fn __exit__(
@@ -228,8 +269,10 @@ impl Batch {
         exc: &Bound<'_, PyAny>,
         _traceback: &Bound<'_, PyAny>,
     ) -> PyResult<bool> {
-        let rt = rt();
-        rt.batch_depth.set(rt.batch_depth.get().saturating_sub(1));
+        let queue = queue();
+        queue
+            .batch_depth
+            .set(queue.batch_depth.get().saturating_sub(1));
         let flushed = flush(py);
         if exc.is_none() {
             flushed?;

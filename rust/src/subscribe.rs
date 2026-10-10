@@ -7,9 +7,9 @@ use std::rc::Rc;
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
-use crate::node::{Node, Observer, WeakShared};
+use crate::node::{Node, WeakShared};
+use crate::observer_list::Observer;
 use crate::scheduler;
-use crate::tracking::{compact_if_sparse, push_observer, take_slot, vacate};
 
 /// A `subscribe()` observer's weak-reference callback: removes the
 /// observer, whose address was `id`, from its node once it dies.
@@ -28,17 +28,12 @@ impl ObserverCleanup {
     }
 }
 
-/// The slot recorded for the `subscribe()` observer at address `id`.
-fn subscriber_slot(node: &Node, id: usize) -> Option<u32> {
-    node.subscribers.borrow().as_ref()?.get(&id).copied()
-}
-
 /// The slot of `observer` in `node`'s observer list, if subscribed.
 fn find_python_observer(node: &Node, observer: &Bound<'_, PyAny>) -> Option<u32> {
     let py = observer.py();
     let id = observer.as_ptr() as usize;
-    let slot = subscriber_slot(node, id)?;
-    let reference = match node.observers.borrow().get(slot as usize) {
+    let slot = node.observers.subscriber_slot(id)?;
+    let reference = match node.observers.get(slot as usize).as_deref() {
         Some(Observer::Python {
             reference,
             id: other,
@@ -68,11 +63,7 @@ pub(crate) fn add_python_observer(node: &Rc<Node>, observer: &Bound<'_, PyAny>) 
         },
     )?;
     let reference = PyWeakrefReference::new_with(observer, cleanup.bind(py))?.unbind();
-    let slot = push_observer(node, Observer::Python { reference, id });
-    node.subscribers
-        .borrow_mut()
-        .get_or_insert_with(Default::default)
-        .insert(id, slot);
+    node.observers.push_subscriber(reference, id);
     Ok(())
 }
 
@@ -82,19 +73,19 @@ pub(crate) fn add_python_observer(node: &Rc<Node>, observer: &Bound<'_, PyAny>) 
 fn forget_observer(node: &Node, id: usize, reference: *mut pyo3::ffi::PyObject) {
     let holds_reference = |slot: usize| {
         matches!(
-            node.observers.borrow().get(slot),
+            node.observers.get(slot).as_deref(),
             Some(Observer::Python { reference: entry, .. }) if entry.as_ptr() == reference
         )
     };
-    let slot = match subscriber_slot(node, id) {
+    let slot = match node.observers.subscriber_slot(id) {
         Some(slot) if holds_reference(slot as usize) => Some(slot),
         // A new observer at the same address took over the record; search.
-        _ => (0..node.observers.borrow().len())
+        _ => (0..node.observers.slot_count())
             .find(|&slot| holds_reference(slot))
             .map(|slot| slot as u32),
     };
     if let Some(slot) = slot {
-        drop(vacate(node, slot));
+        drop(node.observers.vacate(slot));
     }
 }
 
@@ -103,7 +94,7 @@ pub(crate) fn remove_python_observer(node: &Node, observer: &Bound<'_, PyAny>) {
     let Some(slot) = find_python_observer(node, observer) else {
         return;
     };
-    let removed = vacate(node, slot);
+    let removed = node.observers.vacate(slot);
     if let Observer::Python { reference, .. } = &removed {
         scheduler::cancel_observer(reference.as_ptr() as usize);
     }
@@ -116,7 +107,7 @@ pub(crate) fn live_observer_count(py: Python<'_>, node: &Node) -> usize {
     let mut dead = Vec::new();
     let mut slot = 0;
     loop {
-        let alive = match node.observers.borrow().get(slot) {
+        let alive = match node.observers.get(slot).as_deref() {
             None => break,
             Some(Observer::Vacant) => None,
             Some(Observer::Consumer { node, .. }) => Some(node.strong_count() > 0),
@@ -131,8 +122,11 @@ pub(crate) fn live_observer_count(py: Python<'_>, node: &Node) -> usize {
         }
         slot += 1;
     }
-    let removed: Vec<Observer> = dead.into_iter().map(|slot| take_slot(node, slot)).collect();
-    compact_if_sparse(node);
+    let removed: Vec<Observer> = dead
+        .into_iter()
+        .map(|slot| node.observers.take(slot))
+        .collect();
+    node.observers.compact_if_sparse();
     drop(removed);
     count
 }

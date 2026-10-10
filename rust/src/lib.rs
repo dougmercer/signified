@@ -23,6 +23,7 @@ mod effect;
 mod hooks;
 mod invalidation;
 mod node;
+mod observer_list;
 mod refresh;
 mod runtime;
 mod scheduler;

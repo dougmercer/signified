@@ -3,14 +3,15 @@
 //! state that records what it read.
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::num::NonZeroU64;
 use std::rc::{Rc, Weak};
 
 use pyo3::gc::PyVisit;
 use pyo3::prelude::*;
-use pyo3::types::{PyString, PyWeakrefReference};
+use pyo3::types::PyString;
 use pyo3::PyTraverseError;
 
+use crate::observer_list::ObserverList;
 use crate::tracking;
 
 /// Staleness of a computed node, ordered by invalidation priority.
@@ -67,20 +68,6 @@ pub(crate) struct WeakShared(pub(crate) Weak<Node>);
 
 unsafe impl Send for WeakShared {}
 unsafe impl Sync for WeakShared {}
-
-/// An entry in a node's observer list.
-pub(crate) enum Observer {
-    /// A removed entry, dropped when the list compacts.
-    Vacant,
-    /// A computed or effect; `link` is the position of its link to this node.
-    Consumer { node: Weak<Node>, link: u32 },
-    /// An object passed to `subscribe()`, held weakly. `id` is its address,
-    /// compared before the weak reference is resolved.
-    Python {
-        reference: Py<PyWeakrefReference>,
-        id: usize,
-    },
-}
 
 /// How a computed node or effect produces its value.
 pub(crate) enum Compute {
@@ -171,12 +158,7 @@ pub(crate) struct Node {
     pub(crate) value: RefCell<Option<Py<PyAny>>>,
     pub(crate) equal: RefCell<Option<Py<PyAny>>>,
     pub(crate) name: RefCell<Option<Py<PyAny>>>,
-    pub(crate) observers: RefCell<Vec<Observer>>,
-    pub(crate) vacant: Cell<u32>,
-    /// The slot of each `subscribe()` observer, by the observer's address;
-    /// created on first use. Boxed so nodes without such observers stay small.
-    #[allow(clippy::box_collection)]
-    pub(crate) subscribers: RefCell<Option<Box<HashMap<usize, u32>>>>,
+    pub(crate) observers: ObserverList,
     /// Set while a consumer that reads this node runs; see `register_dependency`.
     pub(crate) reader_link: Cell<ReaderLink>,
     /// State for computeds and effects; `None` for signals.
@@ -198,8 +180,8 @@ pub(crate) struct Consumer {
     pub(crate) active: Cell<bool>,
     /// Effects only: has run at least once.
     pub(crate) has_run: Cell<bool>,
-    /// Effects only: the queue sequence number while queued, else 0.
-    pub(crate) queued: Cell<u64>,
+    /// Effects only: the queue sequence number while queued.
+    pub(crate) queued: Cell<Option<NonZeroU64>>,
     /// Effects only: runs in the flush numbered `run_epoch`.
     pub(crate) runs: Cell<u32>,
     pub(crate) run_epoch: Cell<u64>,
@@ -225,7 +207,7 @@ impl Node {
                 restore: RefCell::new(None),
                 active: Cell::new(false),
                 has_run: Cell::new(false),
-                queued: Cell::new(0),
+                queued: Cell::new(None),
                 runs: Cell::new(0),
                 run_epoch: Cell::new(0),
             })),
@@ -236,9 +218,7 @@ impl Node {
             value: RefCell::new(None),
             equal: RefCell::new(None),
             name: RefCell::new(None),
-            observers: RefCell::new(Vec::new()),
-            vacant: Cell::new(0),
-            subscribers: RefCell::new(None),
+            observers: ObserverList::default(),
             reader_link: Cell::new(NO_READER),
             consumer,
         }
