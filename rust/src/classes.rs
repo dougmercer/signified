@@ -578,3 +578,158 @@ pub fn _register_standard_types(types: Vec<Bound<'_, PyType>>) {
         graph::register_standard_type(ty.into_any().unbind());
     }
 }
+
+/// Unwrap exactly one reactive boundary: a Signal, Computed or Binding gives
+/// its value (a dependency read, inside a computation); anything else is
+/// returned unchanged.
+#[pyfunction]
+pub fn unref<'py>(py: Python<'py>, value: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyAny>> {
+    graph::resolve_arg(py, value)
+}
+
+/// Whether `obj` is a reactive value (a Signal, Computed or Binding).
+#[pyfunction]
+pub fn is_reactive(obj: &Bound<'_, PyAny>) -> PyResult<bool> {
+    graph::is_reactive(obj)
+}
+
+// ---------------------------------------------------------------------------
+// Context managers
+// ---------------------------------------------------------------------------
+
+/// `with untracked():` reads inside do not subscribe the enclosing
+/// computation or effect.
+#[pyclass(frozen, module = "signified._core", name = "Untracked")]
+pub struct Untracked;
+
+#[pymethods]
+impl Untracked {
+    #[new]
+    fn new() -> Self {
+        Untracked
+    }
+
+    fn __enter__(&self) {
+        graph::push_frame(None);
+    }
+
+    #[pyo3(signature = (*_exc))]
+    fn __exit__(&self, _exc: &Bound<'_, PyTuple>) -> PyResult<bool> {
+        pop_untracked()?;
+        Ok(false)
+    }
+}
+
+/// `with batch():` defers effects and observers until the outermost batch
+/// exits. A body exception together with flush failures is raised as a
+/// `BaseExceptionGroup`.
+#[pyclass(frozen, module = "signified._core", name = "Batch")]
+pub struct Batch;
+
+#[pymethods]
+impl Batch {
+    #[new]
+    fn new() -> Self {
+        Batch
+    }
+
+    fn __enter__(&self) {
+        begin_batch();
+    }
+
+    fn __exit__(
+        &self,
+        py: Python<'_>,
+        _exc_type: &Bound<'_, PyAny>,
+        exc: &Bound<'_, PyAny>,
+        _traceback: &Bound<'_, PyAny>,
+    ) -> PyResult<bool> {
+        end_batch();
+        let flushed = effects::flush(py);
+        if exc.is_none() {
+            flushed?;
+            return Ok(false);
+        }
+        let Err(flush_error) = flushed else {
+            // Re-raise the body's exception unchanged.
+            return Ok(false);
+        };
+        let group = py
+            .import(intern!(py, "builtins"))?
+            .getattr(intern!(py, "BaseExceptionGroup"))?
+            .call1((
+                "Signified batch body and effect failures",
+                (exc, flush_error.into_value(py)),
+            ))?;
+        // Like `raise ... from None`.
+        group.setattr(intern!(py, "__suppress_context__"), true)?;
+        Err(PyErr::from_value(group))
+    }
+}
+
+/// `with signal.at(value):` holds `value` inside the block, then returns to
+/// the previous value and, if nothing else wrote the signal, the previous
+/// version.
+/// The value and version before a `Signal.at()` block, and the version on entry.
+type SavedState = Option<(Py<PyAny>, u64, u64)>;
+
+#[pyclass(frozen, module = "signified._core", name = "SignalAt")]
+pub struct SignalAt {
+    signal: Py<PyAny>,
+    value: Py<PyAny>,
+    /// The value and version before the block, and the version on entry.
+    saved: std::sync::Mutex<SavedState>,
+}
+
+impl SignalAt {
+    fn saved(&self) -> PyResult<std::sync::MutexGuard<'_, SavedState>> {
+        self.saved
+            .lock()
+            .map_err(|_| PyRuntimeError::new_err("Signal.at() context is broken"))
+    }
+}
+
+#[pymethods]
+impl SignalAt {
+    #[new]
+    fn new(signal: Py<PyAny>, value: Py<PyAny>) -> Self {
+        SignalAt {
+            signal,
+            value,
+            saved: std::sync::Mutex::new(None),
+        }
+    }
+
+    fn __enter__(&self, py: Python<'_>) -> PyResult<()> {
+        let signal = self.signal.bind(py);
+        let node = graph::node_of(signal)?;
+        let before = graph::raw_value(py, &node).unbind();
+        let before_version = node.version.get();
+        signal.setattr(intern!(py, "value"), self.value.bind(py))?;
+        let entered_version = node.version.get();
+        let old = self
+            .saved()?
+            .replace((before, before_version, entered_version));
+        drop(old);
+        Ok(())
+    }
+
+    #[pyo3(signature = (*_exc))]
+    fn __exit__(&self, py: Python<'_>, _exc: &Bound<'_, PyTuple>) -> PyResult<bool> {
+        let saved = self.saved()?.take();
+        let Some((before, before_version, entered_version)) = saved else {
+            return Ok(false);
+        };
+        let signal = self.signal.bind(py);
+        let node = graph::node_of(signal)?;
+        if node.version.get() != entered_version {
+            // Written again inside the block: an ordinary assignment.
+            signal.setattr(intern!(py, "value"), before)?;
+        } else if entered_version != before_version {
+            // Versions are never reused, so `before_version` still names
+            // exactly `before`.
+            graph::restore_signal(py, &node, signal, before.into_bound(py), before_version)?;
+        }
+        Ok(false)
+    }
+}

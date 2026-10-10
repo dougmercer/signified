@@ -1080,6 +1080,18 @@ pub(crate) fn resolve_arg<'py>(
     Ok(arg.clone())
 }
 
+/// Whether `obj` is a Signal, Computed or Binding: an instance of the
+/// engine's classes, or of a class marked `_IS_REACTIVE`.
+pub(crate) fn is_reactive(obj: &Bound<'_, PyAny>) -> PyResult<bool> {
+    if obj.is_instance_of::<SignalCore>() || obj.is_instance_of::<ComputedCore>() {
+        return Ok(true);
+    }
+    match obj.get_type().getattr(intern!(obj.py(), "_IS_REACTIVE")) {
+        Ok(flag) => flag.is_truthy(),
+        Err(_) => Ok(false),
+    }
+}
+
 /// Built-in scalars compare by value (NaN equals NaN); everything else by
 /// identity. No user equality methods or array comparisons run.
 pub(crate) fn has_changed(

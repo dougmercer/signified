@@ -31,6 +31,9 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<classes::ComputedCore>()?;
     m.add_class::<classes::EffectCore>()?;
     m.add_class::<config::Config>()?;
+    m.add_class::<classes::Untracked>()?;
+    m.add_class::<classes::Batch>()?;
+    m.add_class::<classes::SignalAt>()?;
     m.add("config", Bound::new(m.py(), config::Config)?)?;
     m.add_function(wrap_pyfunction!(classes::push_untracked, m)?)?;
     m.add_function(wrap_pyfunction!(classes::pop_untracked, m)?)?;
@@ -41,5 +44,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(classes::end_batch, m)?)?;
     m.add_function(wrap_pyfunction!(classes::flush, m)?)?;
     m.add_function(wrap_pyfunction!(classes::_register_standard_types, m)?)?;
+    m.add_function(wrap_pyfunction!(classes::unref, m)?)?;
+    m.add_function(wrap_pyfunction!(classes::is_reactive, m)?)?;
     Ok(())
 }

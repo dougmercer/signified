@@ -9,7 +9,7 @@ operators, the attribute proxy, `.rx`, and typing.
 from __future__ import annotations
 
 from collections.abc import Generator
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 
 from . import _core
@@ -19,29 +19,32 @@ from ._types import HasValue, ReactiveValue
 __all__ = ["Variable", "Signal", "Computed", "Binding", "Effect"]
 
 
-@overload
-def is_reactive[T](obj: HasValue[T]) -> TypeGuard[ReactiveValue[T]]: ...
+if TYPE_CHECKING:
 
+    @overload
+    def is_reactive[T](obj: HasValue[T]) -> TypeGuard[ReactiveValue[T]]: ...
 
-@overload
-def is_reactive[T, U](obj: HasValue[T] | HasValue[U]) -> TypeGuard[ReactiveValue[T] | ReactiveValue[U]]: ...
+    @overload
+    def is_reactive[T, U](obj: HasValue[T] | HasValue[U]) -> TypeGuard[ReactiveValue[T] | ReactiveValue[U]]: ...
 
+    def is_reactive(obj: object) -> bool:
+        """Return whether an object is a signified reactive wrapper.
 
-def is_reactive(obj: object) -> bool:
-    """Return whether an object is a signified reactive wrapper.
+        This guard narrows a plain-or-reactive [HasValue][signified.HasValue] to
+        [ReactiveValue][signified.ReactiveValue] in the true branch without reading
+        the wrapped value or creating a dependency.
 
-    This guard narrows a plain-or-reactive [HasValue][signified.HasValue] to
-    [ReactiveValue][signified.ReactiveValue] in the true branch without reading
-    the wrapped value or creating a dependency.
+        Args:
+            obj: Value to inspect.
 
-    Args:
-        obj: Value to inspect.
+        Returns:
+            `True` for a [Signal][signified.Signal], [Computed][signified.Computed],
+            or [Binding][signified.Binding].
+        """
+        ...
 
-    Returns:
-        `True` for a [Signal][signified.Signal], [Computed][signified.Computed],
-        or [Binding][signified.Binding].
-    """
-    return getattr(type(obj), "_IS_REACTIVE", False)
+else:
+    is_reactive = _core.is_reactive
 
 
 def _coerce_to_bool(value: Any) -> bool:
@@ -167,19 +170,14 @@ def _reject_engine_overrides(cls: type) -> None:
             )
 
 
-@contextmanager
-def untracked() -> Generator[None, None, None]:
+def untracked() -> AbstractContextManager[None]:
     """Read without subscribing the enclosing computation or effect.
 
     Nested computations still collect their own dependencies. Reads return
     current values and retain normal hooks and errors. Synchronous, single-
     thread use only; this context must not span await.
     """
-    _core.push_untracked()
-    try:
-        yield
-    finally:
-        _core.pop_untracked()
+    return _core.Untracked()
 
 
 class Signal[T](_core.Signal[T], Variable[T]):
@@ -355,8 +353,7 @@ class Signal[T](_core.Signal[T], Variable[T]):
         del wrapped[key]
         self.update()
 
-    @contextmanager
-    def at(self, value: T) -> Generator[None, None, None]:
+    def at(self, value: T) -> AbstractContextManager[None]:
         """Temporarily set the signal to a given value within a context.
 
         Restores the previous value when the context exits, even if an exception
@@ -382,20 +379,7 @@ class Signal[T](_core.Signal[T], Variable[T]):
 
             ```
         """
-        before = self._value
-        before_version = entered_version = self._version
-        try:
-            self.value = value
-            entered_version = self._version
-            yield
-        finally:
-            if self._version != entered_version:
-                self.value = before
-            elif entered_version != before_version:
-                # Versions are never reused, so `before_version` still names
-                # exactly `before`. The clock still advances, so a consumer that
-                # refreshed inside the context cannot take the global fast path.
-                self._restore(before, before_version)
+        return _core.SignalAt(self, value)
 
 
 class _BindingSource[T](Signal[ReactiveValue[T]]):
