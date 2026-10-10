@@ -247,3 +247,24 @@ def test_signal_written_twice_during_propagation_keeps_dependents_current():
     a.value = 1
     assert seen == [10, 20]
     assert c.value == 20
+
+
+def test_observer_that_resubscribes_itself_still_hits_the_run_limit():
+    source = Signal(0)
+
+    class Resubscribes:
+        runs = 0
+
+        def update(self) -> None:
+            self.runs += 1
+            if self.runs >= 500:  # bound the loop if the limit is missed
+                return
+            source.unsubscribe(self)
+            source.subscribe(self)
+            source.value += 1
+
+    observer = Resubscribes()
+    source.subscribe(observer)
+    with pytest.raises(RuntimeError, match="did not settle"):
+        source.value = 1
+    assert observer.runs == 100

@@ -78,7 +78,8 @@ pub(crate) fn flush(py: Python<'_>) -> PyResult<()> {
     let epoch = rt.flush_epoch.get() + 1;
     rt.flush_epoch.set(epoch);
     let mut errors = Vec::new();
-    // Holds each observer's weak reference, so its address stays unique.
+    // Runs per observer, keyed by its address and checked against a weak
+    // reference to it.
     let mut observer_runs: HashMap<usize, (Py<PyWeakrefReference>, u32)> = HashMap::new();
     let outcome = run_pending(py, epoch, &mut observer_runs, &mut errors);
     // Whatever is left was abandoned by an error.
@@ -145,7 +146,21 @@ fn run_pending(
                 let Some(target) = reference.bind(py).upgrade() else {
                     continue;
                 };
-                let entry = observer_runs.entry(key).or_insert_with(|| (reference, 0));
+                // Count runs per observer, not per subscription, so an observer
+                // that resubscribes itself still reaches the limit. The entry
+                // keeps a weak reference to its observer: one whose observer
+                // died, and whose address was reused, starts over.
+                let entry = observer_runs
+                    .entry(target.as_ptr() as usize)
+                    .or_insert_with(|| (reference.clone_ref(py), 0));
+                let same_observer = entry
+                    .0
+                    .bind(py)
+                    .upgrade()
+                    .is_some_and(|seen| seen.is(&target));
+                if !same_observer {
+                    *entry = (reference.clone_ref(py), 0);
+                }
                 entry.1 += 1;
                 if entry.1 > MAX_RUNS {
                     errors.push(PyRuntimeError::new_err(format!(

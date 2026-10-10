@@ -60,3 +60,11 @@ def test_reading_an_uninitialized_signal_raises():
         s.value = 1
     Signal.__init__(s, 2)
     assert s.value == 2
+
+
+@pytest.mark.parametrize("name", ["value", "update", "notify"])
+def test_override_inherited_from_a_mixin_raises(name):
+    member = property(lambda self: 99) if name == "value" else (lambda self: None)
+    mixin = type("Mixin", (), {name: member})
+    with pytest.raises(TypeError, match=f"overrides {name}"):
+        type("Custom", (mixin, Signal), {})

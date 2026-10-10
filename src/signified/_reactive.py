@@ -160,18 +160,30 @@ def _copy_error(value: object) -> TypeError:
     return TypeError(f"{name} objects cannot be copied; create a new {name} instead")
 
 
+_NATIVE_BASES = (_core.Signal, _core.Computed, _core.Effect)
+
+
 def _reject_engine_overrides(cls: type, names: tuple[str, ...]) -> None:
-    """Fail at class creation if `cls` overrides a member the engine never calls through Python."""
+    """Fail at class creation if `cls` would use a Python version of a member the engine implements.
+
+    The engine reads values and sends notifications natively, so each of
+    `names` must resolve to the native base, not to `cls` or a class mixed in
+    before the base.
+    """
+    if not issubclass(cls, _NATIVE_BASES):
+        return
     for name in names:
-        if name not in cls.__dict__:
+        owner = next(klass for klass in cls.__mro__ if name in klass.__dict__)
+        if owner in _NATIVE_BASES:
             continue
+        where = "" if owner is cls else f" (inherited from {owner.__name__})"
         if name == "value":
             raise TypeError(
-                f"{cls.__name__} overrides value, but signified reads values natively and never "
-                "calls a Python value property. Derive a Computed instead, such as signal.rx.map(fn)."
+                f"{cls.__name__} overrides value{where}, but signified reads values natively and "
+                "never calls a Python value property. Derive a Computed instead, such as signal.rx.map(fn)."
             )
         raise TypeError(
-            f"{cls.__name__} overrides {name}(), but signified never calls Python "
+            f"{cls.__name__} overrides {name}(){where}, but signified never calls Python "
             f"overrides of {name}(). Use an Effect or subscribe() to react to changes."
         )
 
