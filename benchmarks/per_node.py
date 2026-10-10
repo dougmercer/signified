@@ -1,6 +1,6 @@
-"""Per-node cost of the Python engine vs the Rust core (signified._spike).
+"""Per-node cost of the Python engine vs the Rust core (signified._native).
 
-Usage: uv run python benchmarks/spike_per_node.py
+Usage: uv run python benchmarks/per_node.py
 Reference numbers from the mypyc experiment (origin/mypyc-experiment,
 notes/mypyc-2026-10-09.md): per extra node 0.70-0.87 us, 500-leaf frame 1.21 ms.
 """
@@ -10,12 +10,12 @@ import timeit
 
 from signified import Computed as PyComputed
 from signified import Signal as PySignal
-from signified import _mixin, _spike
+from signified import _mixin, _native
 
 OPS = [(operator.add, 1.5), (operator.mul, 0.5), (operator.sub, 2.0), (operator.truediv, 3.0)]
 ENGINES = {
     "python": (PySignal, PyComputed, _mixin._computed_call),
-    "rust": (_spike.Signal, _spike.Computed, _spike.computed_call),
+    "rust": (_native.Signal, _native.Computed, _native.computed_call),
 }
 
 

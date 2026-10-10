@@ -1,9 +1,9 @@
-//! `signified._core`: the reactive graph engine (spike).
+//! `signified._core`: the reactive graph engine.
 //!
 //! A port of the propagation algorithm in `signified/_reactive.py`: push
 //! invalidation, pull refresh with version checks, mark-and-sweep dependency
 //! tracking. Python sees `Signal` and `Computed` base classes; the public
-//! classes in `signified/_spike.py` subclass them together with the mixin.
+//! classes in `signified/_native.py` subclass them together with the mixin.
 //!
 //! Rules that keep this sound while Python code runs inside the engine:
 //! - Never call Python, and never drop a `Py`, while a `RefCell` in a `Node` is

@@ -1,8 +1,7 @@
-"""Run every spike test against the current Python engine and the Rust core.
+"""Run every engine test against the Python engine and the Rust core.
 
 The Python engine is the reference: a test's expected values must hold for
-both. The `rust` parameter fails with ImportError until `signified._spike`
-exists, which is the expected red state before Task 3.
+both.
 """
 
 from __future__ import annotations
@@ -26,15 +25,15 @@ def rx(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> Simpl
             name="python", Signal=Signal, Computed=Computed, untracked=untracked, observer_count=observer_count
         )
 
-    from signified import _spike
+    from signified import _native
 
     # Operators on the shared mixin build nodes through `_computed_call`; point
     # them at the Rust engine for this test only.
-    monkeypatch.setattr(_mixin, "_computed_call", _spike.computed_call)
+    monkeypatch.setattr(_mixin, "_computed_call", _native.computed_call)
     return SimpleNamespace(
         name="rust",
-        Signal=_spike.Signal,
-        Computed=_spike.Computed,
-        untracked=_spike.untracked,
+        Signal=_native.Signal,
+        Computed=_native.Computed,
+        untracked=_native.untracked,
         observer_count=lambda source: source._observer_count(),
     )

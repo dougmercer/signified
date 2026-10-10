@@ -1,4 +1,4 @@
-"""Spike facade: public-shaped reactive classes over the Rust core.
+"""Public-shaped reactive classes over the Rust core.
 
 `Signal` and `Computed` here subclass the native base classes in
 `signified._core` together with the existing `_ReactiveMixIn`, which keeps the
