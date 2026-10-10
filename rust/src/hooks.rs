@@ -1,10 +1,11 @@
-//! Plugin hooks.
+//! Plugin hooks: the engine calls a plugin's `read`, `created` and `updated`
+//! hooks, which are set through `signified._core.config`.
 
 use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString};
 
-use crate::graph::rt;
+use crate::runtime::rt;
 
 /// A plugin hook the engine calls.
 #[derive(Clone, Copy)]
@@ -73,7 +74,7 @@ impl Config {
 }
 
 /// Call `hook` with `value=value`, if a plugin implements it.
-pub(crate) fn hook(py: Python<'_>, hook: Hook, value: &Bound<'_, PyAny>) -> PyResult<()> {
+pub(crate) fn call(py: Python<'_>, hook: Hook, value: &Bound<'_, PyAny>) -> PyResult<()> {
     let rt = rt();
     if rt.hooks_on.get() & hook.bit() == 0 {
         return Ok(());

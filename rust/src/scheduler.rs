@@ -1,6 +1,6 @@
-//! Running effects and `subscribe()` observers. Both are queued during a
-//! notification walk and run, in the order they were queued, once the
-//! outermost walk or batch ends.
+//! The queue of effects and `subscribe()` observers waiting to run, and
+//! `batch()`. Both kinds of work are queued during a notification walk and
+//! run, in the order they were queued, once the outermost walk or batch ends.
 
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -10,7 +10,8 @@ use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyWeakrefReference};
 
-use crate::graph::{self, rt, Compute, Node};
+use crate::node::Node;
+use crate::runtime::rt;
 
 const MAX_RUNS: u32 = 100;
 
@@ -143,7 +144,7 @@ fn run_pending(
                     )));
                     return Ok(());
                 }
-                run(py, &effect)
+                crate::effect::run(py, &effect)
             }
             Job::Observer(reference) => {
                 let key = reference.as_ptr() as usize;
@@ -202,49 +203,51 @@ fn raise_errors(py: Python<'_>, mut errors: Vec<PyErr>) -> PyResult<()> {
     }
 }
 
-/// Run one effect if its dependencies changed since its last run.
-fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
-    let consumer = effect.consumer();
-    if consumer.has_run.get() && !graph::dependencies_changed(py, effect)? {
-        return Ok(());
+/// `with batch():` defers effects and observers until the outermost batch
+/// exits. A body exception together with flush failures is raised as a
+/// `BaseExceptionGroup`.
+#[pyclass(frozen, module = "signified._core", name = "Batch")]
+pub struct Batch;
+
+#[pymethods]
+impl Batch {
+    #[new]
+    fn new() -> Self {
+        Batch
     }
-    // Refreshing a dependency can dispose this effect through user code.
-    if !consumer.active.get() {
-        return Ok(());
+
+    fn __enter__(&self) {
+        let rt = rt();
+        rt.batch_depth.set(rt.batch_depth.get() + 1);
     }
-    consumer.has_run.set(true);
-    let function = consumer
-        .compute
-        .borrow()
-        .as_ref()
-        .map(|compute| match compute {
-            Compute::Function(f) => f.clone_ref(py),
-            Compute::Call { .. } | Compute::Source(_) => {
-                unreachable!("an effect runs a zero-argument function")
-            }
-        });
-    let Some(function) = function else {
-        return Ok(());
-    };
-    graph::start_refresh(effect);
-    let depth = graph::push_frame(Some(effect.clone()));
-    let mut result = function.bind(py).call0().map(drop);
-    if let Err(error) = graph::end_frame(depth) {
-        result = Err(error);
+
+    fn __exit__(
+        &self,
+        py: Python<'_>,
+        _exc_type: &Bound<'_, PyAny>,
+        exc: &Bound<'_, PyAny>,
+        _traceback: &Bound<'_, PyAny>,
+    ) -> PyResult<bool> {
+        let rt = rt();
+        rt.batch_depth.set(rt.batch_depth.get().saturating_sub(1));
+        let flushed = flush(py);
+        if exc.is_none() {
+            flushed?;
+            return Ok(false);
+        }
+        let Err(flush_error) = flushed else {
+            // Re-raise the body's exception unchanged.
+            return Ok(false);
+        };
+        let group = py
+            .import(intern!(py, "builtins"))?
+            .getattr(intern!(py, "BaseExceptionGroup"))?
+            .call1((
+                "Signified batch body and effect failures",
+                (exc, flush_error.into_value(py)),
+            ))?;
+        // Like `raise ... from None`.
+        group.setattr(intern!(py, "__suppress_context__"), true)?;
+        Err(PyErr::from_value(group))
     }
-    if consumer.active.get() {
-        // Subscribe to what this run read, even if it raised, so a change to
-        // any of it retries the callback.
-        graph::commit_refresh(effect);
-    } else {
-        graph::detach_all_deps(effect);
-    }
-    drop(function);
-    result?;
-    // Also catches writes after a read during the first run, before the
-    // subscriptions existed.
-    if consumer.active.get() && graph::invalidated_since_read(effect) {
-        schedule(py, effect)?;
-    }
-    Ok(())
 }
