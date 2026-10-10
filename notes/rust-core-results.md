@@ -17,7 +17,7 @@ These were compatibility quirks of the Python engine:
 
 - `subscribe()` observers run after a change has finished propagating, queued with effects (so `batch()` defers them too), instead of in the middle of it. Repeated notifications to one subscription before it runs are combined.
 - A signal written twice while a change propagates notifies both times. Before, the second write was swallowed and a dependent computed could stay stale for good (reproduced on `main`).
-- Overriding `notify()` or `update()` in a subclass raises `TypeError` at class creation; the engine does not call those overrides.
+- Overriding `notify()`, `update()` or `value` in a subclass raises `TypeError` at class creation; the engine does not call those overrides. With `value` no longer overridable, operators and `unref` read every instance natively, and the class registry they used is gone (`e8e9a9a`).
 - Copying a `Signal`, `Computed` or `Binding` raises `TypeError` (instances using `tracked_fields` still copy and pickle).
 - Reading or writing a `Signal` whose `__init__` never ran raises `RuntimeError`.
 - Hooks run while a plugin is registered with `plugin_manager`; `SIGNIFIED_ENABLE_HOOKS` and `HOOKS_ENABLED` are gone.
