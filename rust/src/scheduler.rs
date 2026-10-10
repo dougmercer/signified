@@ -63,14 +63,14 @@ impl Drop for Flushing {
 
 /// Queue `effect` unless it is disposed or already queued.
 pub(crate) fn enqueue_effect(effect: &Rc<Node>) {
-    let consumer = effect.consumer();
-    if !consumer.active.get() || consumer.queued.get().is_some() {
+    let state = effect.effect_state();
+    if !state.active.get() || state.queued.get().is_some() {
         return;
     }
     let queue = queue();
     let seq = NonZeroU64::MIN.saturating_add(queue.pending_seq.get());
     queue.pending_seq.set(seq.get());
-    consumer.queued.set(Some(seq));
+    state.queued.set(Some(seq));
     queue.pending.borrow_mut().push_back(Job::Effect {
         node: Rc::downgrade(effect),
         seq,
@@ -106,7 +106,7 @@ pub(crate) fn schedule(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
 
 /// Drop a queued run of `effect`, if any.
 pub(crate) fn discard(effect: &Node) {
-    effect.consumer().queued.set(None);
+    effect.effect_state().queued.set(None);
 }
 
 /// Run queued work in order. One failure is raised directly and several as an
@@ -135,8 +135,8 @@ pub(crate) fn flush(py: Python<'_>) -> PyResult<()> {
     for job in &abandoned {
         if let Job::Effect { node, seq } = job {
             if let Some(effect) = node.upgrade() {
-                if effect.consumer().queued.get() == Some(*seq) {
-                    effect.consumer().queued.set(None);
+                if effect.effect_state().queued.get() == Some(*seq) {
+                    effect.effect_state().queued.set(None);
                 }
             }
         }
@@ -165,21 +165,21 @@ fn run_pending(
                 let Some(effect) = node.upgrade() else {
                     continue;
                 };
-                let consumer = effect.consumer();
+                let state = effect.effect_state();
                 // Discarded, or queued again since.
-                if consumer.queued.get() != Some(seq) {
+                if state.queued.get() != Some(seq) {
                     continue;
                 }
-                consumer.queued.set(None);
-                if !consumer.active.get() {
+                state.queued.set(None);
+                if !state.active.get() {
                     continue;
                 }
-                if consumer.run_epoch.get() != epoch {
-                    consumer.run_epoch.set(epoch);
-                    consumer.runs.set(0);
+                if state.run_epoch.get() != epoch {
+                    state.run_epoch.set(epoch);
+                    state.runs.set(0);
                 }
-                consumer.runs.set(consumer.runs.get() + 1);
-                if consumer.runs.get() > MAX_RUNS {
+                state.runs.set(state.runs.get() + 1);
+                if state.runs.get() > MAX_RUNS {
                     errors.push(PyRuntimeError::new_err(format!(
                         "Effect did not settle after {MAX_RUNS} runs"
                     )));

@@ -168,7 +168,7 @@ impl ObserverList {
                     } => {
                         if let Some(consumer) = consumer.upgrade() {
                             if let Some(link) =
-                                consumer.consumer().deps.borrow().get(*link as usize)
+                                consumer.reader_state().deps.borrow().get(*link as usize)
                             {
                                 link.slot.set(write as u32);
                             }

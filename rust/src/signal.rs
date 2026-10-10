@@ -13,7 +13,7 @@ use pyo3::PyTraverseError;
 use crate::class_getitem;
 use crate::hooks::{self, Hook};
 use crate::invalidation;
-use crate::node::{Kind, Node, Shared};
+use crate::node::{Node, Role, Shared};
 use crate::runtime::{bump_clock, bump_version};
 use crate::subscribe;
 use crate::tracking::track_read;
@@ -44,7 +44,7 @@ impl SignalCore {
     #[pyo3(signature = (*_args, **_kwargs))]
     fn new(_args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>) -> Self {
         SignalCore {
-            node: Shared::new(Kind::Signal),
+            node: Shared::new(Role::Signal),
         }
     }
 

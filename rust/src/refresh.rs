@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyTuple;
 
 use crate::hooks::{self, Hook};
-use crate::node::{CachedError, Compute, Consumer, Kind, Node, RestorePoint, State};
+use crate::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
 use crate::runtime::{bump_version, clock};
 use crate::tracking::{commit_refresh, end_frame, push_frame, start_refresh};
 use crate::values::{call_equal, has_changed, unref};
@@ -73,22 +73,22 @@ pub(crate) fn ensure_uptodate(
     node: &Rc<Node>,
     handle: &Bound<'_, PyAny>,
 ) -> PyResult<()> {
-    let consumer = node.consumer();
-    if consumer.state.get() == State::Fresh {
+    let computed = node.computed_state();
+    if computed.state.get() == State::Fresh {
         return Ok(());
     }
     let _guard = RecursionGuard::enter(py)?;
     // Any refresh attempt means observers must be told about the next change.
-    consumer.notified.set(false);
-    let state = consumer.state.get();
+    computed.notified.set(false);
+    let state = computed.state.get();
     // The graph has not changed since this node was last current.
-    if state == State::Stale && consumer.clock_seen.get() == clock() {
-        consumer.state.set(State::Fresh);
+    if state == State::Stale && computed.clock_seen.get() == clock() {
+        computed.state.set(State::Fresh);
         return Ok(());
     }
     if state == State::Stale && !dependencies_changed(py, node)? {
-        consumer.state.set(State::Fresh);
-        consumer.clock_seen.set(clock());
+        computed.state.set(State::Fresh);
+        computed.clock_seen.set(clock());
         return Ok(());
     }
     refresh(py, node, handle)
@@ -97,7 +97,7 @@ pub(crate) fn ensure_uptodate(
 /// Bring computed dependencies up to date, then report whether any
 /// dependency's version differs from the one this consumer last saw.
 pub(crate) fn dependencies_changed(py: Python<'_>, node: &Rc<Node>) -> PyResult<bool> {
-    let deps = &node.consumer().deps;
+    let deps = &node.reader_state().deps;
     let mut position = 0;
     loop {
         // Signals are compared in place; a computed may run Python code to
@@ -107,7 +107,7 @@ pub(crate) fn dependencies_changed(py: Python<'_>, node: &Rc<Node>) -> PyResult<
             let Some(link) = deps.get(position) else {
                 return Ok(false);
             };
-            if link.node.kind != Kind::Computed {
+            if !matches!(link.node.role, Role::Computed(_)) {
                 if link.version != link.node.version.get() {
                     return Ok(true);
                 }
@@ -127,24 +127,24 @@ pub(crate) fn dependencies_changed(py: Python<'_>, node: &Rc<Node>) -> PyResult<
 
 /// Effects only: a dependency changed after this run read it.
 pub(crate) fn invalidated_since_read(node: &Node) -> bool {
-    node.consumer().deps.borrow().iter().any(|link| {
+    node.reader_state().deps.borrow().iter().any(|link| {
         link.version != link.node.version.get()
-            || (link.node.kind == Kind::Computed && link.node.consumer().notified.get())
+            || matches!(&link.node.role, Role::Computed(computed) if computed.notified.get())
     })
 }
 
 fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
-    let consumer = node.consumer();
-    let restore_point = consumer.restore.take();
-    if consumer.computing.get() {
+    let computed = node.computed_state();
+    let restore_point = computed.restore.take();
+    if computed.computing.get() {
         return Err(PyRuntimeError::new_err(
             "Cycle detected while evaluating Computed",
         ));
     }
-    let forced = consumer.state.get() == State::MustRefresh;
-    let had_outcome = consumer.state.get() != State::Uninitialized;
-    let had_error = consumer.error.borrow().is_some();
-    let compute = consumer
+    let forced = computed.state.get() == State::MustRefresh;
+    let had_outcome = computed.state.get() != State::Uninitialized;
+    let had_error = computed.error.borrow().is_some();
+    let compute = computed
         .compute
         .borrow()
         .as_ref()
@@ -156,14 +156,14 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     };
 
     // 1) Evaluate with dependency tracking enabled.
-    consumer.computing.set(true);
+    computed.computing.set(true);
     start_refresh(node);
     let depth = push_frame(Some(node.clone()));
     let mut result = run_compute(py, &compute);
     if let Err(error) = end_frame(depth) {
         result = Err(error);
     }
-    consumer.computing.set(false);
+    computed.computing.set(false);
     // 2) Subscribe to what this run read, even if it raised.
     commit_refresh(node);
     drop(compute);
@@ -171,7 +171,7 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     let (mut next_value, mut next_error) = match result {
         Ok(value) => (Some(value), None),
         Err(error) if error.is_instance_of::<PyException>(py) => (None, Some(error)),
-        Err(error) => return Err(escalate(consumer, error)),
+        Err(error) => return Err(escalate(computed, error)),
     };
 
     // 3) A custom equality can declare a new value unchanged, which keeps the
@@ -196,7 +196,7 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
                         next_value = None;
                         next_error = Some(error);
                     }
-                    Err(error) => return Err(escalate(consumer, error)),
+                    Err(error) => return Err(escalate(computed, error)),
                 }
             }
         }
@@ -219,16 +219,16 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
         exception: error.into_value(py).into_any(),
     });
     let has_error = cached.is_some();
-    let old_error = consumer.error.replace(cached);
-    consumer.state.set(State::Fresh);
+    let old_error = computed.error.replace(cached);
+    computed.state.set(State::Fresh);
     let mut old_value = None;
     if changed {
         old_value = node.value.replace(next_value);
-        consumer.clock_seen.set(bump_version(node));
+        computed.clock_seen.set(bump_version(node));
     } else if forced {
-        consumer.clock_seen.set(bump_version(node));
+        computed.clock_seen.set(bump_version(node));
     } else {
-        consumer.clock_seen.set(clock());
+        computed.clock_seen.set(clock());
     }
     drop((old_value, old_error, previous));
     if changed || forced {
@@ -247,9 +247,9 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
 
 /// A control-flow exception aborts evaluation instead of being cached; the
 /// next read must retry even though dependencies were committed.
-fn escalate(consumer: &Consumer, error: PyErr) -> PyErr {
-    if consumer.state.get() < State::MustRefresh {
-        consumer.state.set(State::MustRefresh);
+fn escalate(computed: &ComputedState, error: PyErr) -> PyErr {
+    if computed.state.get() < State::MustRefresh {
+        computed.state.set(State::MustRefresh);
     }
     error
 }

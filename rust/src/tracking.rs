@@ -132,7 +132,7 @@ pub(crate) fn track_read(node: &Rc<Node>, handle: &Bound<'_, PyAny>) {
 /// lookup needs no search. Only Rust allocations happen here, so holding
 /// borrows is safe.
 fn register_dependency(reader: &Rc<Node>, dep: &Rc<Node>, handle: &Bound<'_, PyAny>) {
-    let consumer = reader.consumer();
+    let consumer = reader.reader_state();
     let token = consumer.token.get();
     let read_version = dep.version.get();
     let key = node_key(reader);
@@ -165,7 +165,7 @@ fn register_dependency(reader: &Rc<Node>, dep: &Rc<Node>, handle: &Bound<'_, PyA
 
 /// Begin a run: new token, and point each dependency at its link.
 pub(crate) fn start_refresh(node: &Rc<Node>) {
-    let consumer = node.consumer();
+    let consumer = node.reader_state();
     consumer.token.set(consumer.token.get() + 1);
     let reader = node_key(node);
     for (position, link) in consumer.deps.borrow().iter().enumerate() {
@@ -181,7 +181,7 @@ pub(crate) fn start_refresh(node: &Rc<Node>) {
 /// after successful and failed runs alike, so a consumer always depends on
 /// exactly what its last run read.
 pub(crate) fn commit_refresh(reader: &Rc<Node>) {
-    let consumer = reader.consumer();
+    let consumer = reader.reader_state();
     let token = consumer.token.get();
     let mut subscribe: Vec<(Rc<Node>, u32)> = Vec::new();
     let mut moved: Vec<(Rc<Node>, u32, u32)> = Vec::new();
@@ -234,7 +234,7 @@ pub(crate) fn commit_refresh(reader: &Rc<Node>) {
 
 /// Unsubscribe from every dependency and forget them.
 pub(crate) fn detach_all_deps(reader: &Rc<Node>) {
-    let Some(consumer) = reader.consumer.as_deref() else {
+    let Some(consumer) = reader.role.reader_state() else {
         return;
     };
     let links = std::mem::take(&mut *consumer.deps.borrow_mut());
@@ -249,7 +249,7 @@ pub(crate) fn dependency_handles<'py>(
     node: &Node,
 ) -> PyResult<Bound<'py, PyTuple>> {
     let handles: Vec<Py<PyAny>> = node
-        .consumer()
+        .reader_state()
         .deps
         .borrow()
         .iter()

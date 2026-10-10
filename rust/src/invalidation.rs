@@ -6,27 +6,26 @@ use std::rc::Rc;
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
-use crate::node::{Kind, Node, State};
+use crate::node::{ComputedState, Node, Role, State};
 use crate::observer_list::Observer;
 use crate::runtime::rt;
 use crate::scheduler;
 
 /// Mark stale and return whether observers still need to hear about it.
 /// `force` upgrades to `MustRefresh`, bypassing the dependency check.
-pub(crate) fn invalidate(node: &Node, force: bool) -> bool {
-    let consumer = node.consumer();
+pub(crate) fn invalidate(computed: &ComputedState, force: bool) -> bool {
     let target = if force {
         State::MustRefresh
     } else {
         State::Stale
     };
-    if consumer.state.get() < target {
-        consumer.state.set(target);
+    if computed.state.get() < target {
+        computed.state.set(target);
     }
-    if consumer.notified.get() {
+    if computed.notified.get() {
         return false;
     }
-    consumer.notified.set(true);
+    computed.notified.set(true);
     true
 }
 
@@ -92,14 +91,14 @@ fn walk(py: Python<'_>, start: &Rc<Node>) {
                 stack.pop();
             }
             Step::Skip => {}
-            Step::Consumer(consumer) => match consumer.kind {
-                Kind::Effect => scheduler::enqueue_effect(&consumer),
-                Kind::Computed => {
-                    if invalidate(&consumer, false) && !consumer.observers.is_empty() {
+            Step::Consumer(consumer) => match &consumer.role {
+                Role::Effect(_) => scheduler::enqueue_effect(&consumer),
+                Role::Computed(computed) => {
+                    if invalidate(computed, false) && !consumer.observers.is_empty() {
                         stack.push((consumer, 0));
                     }
                 }
-                Kind::Signal => unreachable!("signals do not read other nodes"),
+                Role::Signal => unreachable!("signals do not read other nodes"),
             },
             Step::Python(reference) => scheduler::enqueue_observer(reference),
         }

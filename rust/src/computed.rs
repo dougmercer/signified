@@ -13,7 +13,7 @@ use pyo3::PyTraverseError;
 use crate::class_getitem;
 use crate::hooks::{self, Hook};
 use crate::invalidation;
-use crate::node::{Compute, Kind, Node, RestorePoint, Shared, State};
+use crate::node::{Compute, Node, RestorePoint, Role, Shared, State};
 use crate::refresh;
 use crate::runtime;
 use crate::subscribe;
@@ -39,7 +39,7 @@ fn init_computed(
     equal: Option<Py<PyAny>>,
 ) -> PyResult<()> {
     let py = obj.py();
-    let old = node.consumer().compute.replace(Some(compute));
+    let old = node.computed_state().compute.replace(Some(compute));
     drop(old);
     node.set_equal(py, equal.unwrap_or_else(|| py.None()));
     hooks::call(py, Hook::Created, obj)
@@ -51,7 +51,7 @@ impl ComputedCore {
     #[pyo3(signature = (*_args, **_kwargs))]
     fn new(_args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>) -> Self {
         ComputedCore {
-            node: Shared::new(Kind::Computed),
+            node: Shared::new(Role::Computed(Default::default())),
         }
     }
 
@@ -133,7 +133,7 @@ impl ComputedCore {
 
     /// Mark this computed stale and notify its observers.
     fn update(&self, py: Python<'_>) -> PyResult<()> {
-        if invalidation::invalidate(&self.node, false) {
+        if invalidation::invalidate(self.node.computed_state(), false) {
             invalidation::notify(py, &self.node)?;
         }
         Ok(())
@@ -142,7 +142,7 @@ impl ComputedCore {
     /// Force a full recomputation on the next read, even if dependency
     /// versions look unchanged.
     fn _invalidate(&self, py: Python<'_>) -> PyResult<()> {
-        if !invalidation::invalidate(&self.node, true) {
+        if !invalidation::invalidate(self.node.computed_state(), true) {
             return Ok(());
         }
         runtime::bump_clock();
@@ -174,8 +174,8 @@ impl ComputedCore {
 
     /// Whether the current outcome is a fresh value a `Binding` can return to.
     fn _restorable(&self) -> bool {
-        let consumer = self.node.consumer();
-        consumer.state.get() == State::Fresh && consumer.error.borrow().is_none()
+        let computed = self.node.computed_state();
+        computed.state.get() == State::Fresh && computed.error.borrow().is_none()
     }
 
     /// After `Binding.at()`: return to `value` at `version` on the next
@@ -196,7 +196,7 @@ impl ComputedCore {
             source_node: values::node_of(source)?,
             source_version,
         };
-        let old = self.node.consumer().restore.replace(Some(point));
+        let old = self.node.computed_state().restore.replace(Some(point));
         drop(old);
         Ok(())
     }
@@ -243,7 +243,7 @@ pub(crate) fn read_computed<'py>(
     // Register the read even when the refresh raises, so the reader retries.
     tracking::track_read(node, handle);
     refreshed?;
-    let cached = node.consumer().error.borrow().as_ref().map(|cached| {
+    let cached = node.computed_state().error.borrow().as_ref().map(|cached| {
         (
             cached.exception.clone_ref(py),
             cached.traceback.as_ref().map(|tb| tb.clone_ref(py)),

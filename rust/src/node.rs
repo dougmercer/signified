@@ -1,6 +1,5 @@
 //! The engine's record of one reactive value: a `Node`, with its value,
-//! version and observer list, and for computeds and effects the `Consumer`
-//! state that records what it read.
+//! version and observer list, and a `Role` holding what only its kind needs.
 
 use std::cell::{Cell, RefCell};
 use std::num::NonZeroU64;
@@ -25,13 +24,6 @@ pub(crate) enum State {
     Uninitialized,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum Kind {
-    Signal,
-    Computed,
-    Effect,
-}
-
 pub(crate) const NEVER: u64 = u64::MAX;
 pub(crate) const NO_SLOT: u32 = u32::MAX;
 
@@ -50,8 +42,8 @@ unsafe impl Send for Shared {}
 unsafe impl Sync for Shared {}
 
 impl Shared {
-    pub(crate) fn new(kind: Kind) -> Shared {
-        Shared(Rc::new(Node::new(kind)))
+    pub(crate) fn new(role: Role) -> Shared {
+        Shared(Rc::new(Node::new(role)))
     }
 }
 
@@ -69,7 +61,7 @@ pub(crate) struct WeakShared(pub(crate) Weak<Node>);
 unsafe impl Send for WeakShared {}
 unsafe impl Sync for WeakShared {}
 
-/// How a computed node or effect produces its value.
+/// How a computed produces its value.
 pub(crate) enum Compute {
     /// A zero-argument Python callable.
     Function(Py<PyAny>),
@@ -153,7 +145,6 @@ pub(crate) struct RestorePoint {
 }
 
 pub(crate) struct Node {
-    pub(crate) kind: Kind,
     pub(crate) version: Cell<u64>,
     pub(crate) value: RefCell<Option<Py<PyAny>>>,
     pub(crate) equal: RefCell<Option<Py<PyAny>>>,
@@ -161,74 +152,109 @@ pub(crate) struct Node {
     pub(crate) observers: ObserverList,
     /// Set while a consumer that reads this node runs; see `register_dependency`.
     pub(crate) reader_link: Cell<ReaderLink>,
-    /// State for computeds and effects; `None` for signals.
-    pub(crate) consumer: Option<Box<Consumer>>,
+    pub(crate) role: Role,
 }
 
-/// The part of a node that reads other nodes: computeds and effects.
-pub(crate) struct Consumer {
+/// What kind of node this is, with the state only that kind keeps.
+pub(crate) enum Role {
+    Signal,
+    Computed(Box<ComputedState>),
+    Effect(Box<EffectState>),
+}
+
+impl Role {
+    /// What a computed or effect read; `None` for a signal.
+    pub(crate) fn reader_state(&self) -> Option<&ReaderState> {
+        match self {
+            Role::Signal => None,
+            Role::Computed(computed) => Some(&computed.reader),
+            Role::Effect(effect) => Some(&effect.reader),
+        }
+    }
+}
+
+/// What a consumer (a computed or effect) read on its last run.
+#[derive(Default)]
+pub(crate) struct ReaderState {
+    pub(crate) token: Cell<u64>,
+    pub(crate) deps: RefCell<Vec<DepLink>>,
+}
+
+pub(crate) struct ComputedState {
+    pub(crate) reader: ReaderState,
     pub(crate) compute: RefCell<Option<Compute>>,
     pub(crate) state: Cell<State>,
     pub(crate) computing: Cell<bool>,
     pub(crate) notified: Cell<bool>,
     pub(crate) clock_seen: Cell<u64>,
-    pub(crate) token: Cell<u64>,
-    pub(crate) deps: RefCell<Vec<DepLink>>,
     pub(crate) error: RefCell<Option<CachedError>>,
     pub(crate) restore: RefCell<Option<RestorePoint>>,
-    /// Effects only: not disposed.
+}
+
+/// A computed starts uninitialized.
+impl Default for ComputedState {
+    fn default() -> ComputedState {
+        ComputedState {
+            reader: ReaderState::default(),
+            compute: RefCell::new(None),
+            state: Cell::new(State::Uninitialized),
+            computing: Cell::new(false),
+            notified: Cell::new(false),
+            clock_seen: Cell::new(NEVER),
+            error: RefCell::new(None),
+            restore: RefCell::new(None),
+        }
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct EffectState {
+    pub(crate) reader: ReaderState,
+    /// The zero-argument callback.
+    pub(crate) function: RefCell<Option<Py<PyAny>>>,
+    /// Not disposed.
     pub(crate) active: Cell<bool>,
-    /// Effects only: has run at least once.
+    /// Has run at least once.
     pub(crate) has_run: Cell<bool>,
-    /// Effects only: the queue sequence number while queued.
+    /// The queue sequence number while queued.
     pub(crate) queued: Cell<Option<NonZeroU64>>,
-    /// Effects only: runs in the flush numbered `run_epoch`.
+    /// Runs in the flush numbered `run_epoch`.
     pub(crate) runs: Cell<u32>,
     pub(crate) run_epoch: Cell<u64>,
 }
 
 impl Node {
-    pub(crate) fn new(kind: Kind) -> Node {
-        let consumer = match kind {
-            Kind::Signal => None,
-            Kind::Computed | Kind::Effect => Some(Box::new(Consumer {
-                compute: RefCell::new(None),
-                state: Cell::new(if kind == Kind::Computed {
-                    State::Uninitialized
-                } else {
-                    State::Fresh
-                }),
-                computing: Cell::new(false),
-                notified: Cell::new(false),
-                clock_seen: Cell::new(NEVER),
-                token: Cell::new(0),
-                deps: RefCell::new(Vec::new()),
-                error: RefCell::new(None),
-                restore: RefCell::new(None),
-                active: Cell::new(false),
-                has_run: Cell::new(false),
-                queued: Cell::new(None),
-                runs: Cell::new(0),
-                run_epoch: Cell::new(0),
-            })),
-        };
+    pub(crate) fn new(role: Role) -> Node {
         Node {
-            kind,
             version: Cell::new(0),
             value: RefCell::new(None),
             equal: RefCell::new(None),
             name: RefCell::new(None),
             observers: ObserverList::default(),
             reader_link: Cell::new(NO_READER),
-            consumer,
+            role,
         }
     }
 
-    /// The consumer state of a computed or effect.
-    pub(crate) fn consumer(&self) -> &Consumer {
-        self.consumer
-            .as_deref()
+    /// What this computed or effect read.
+    pub(crate) fn reader_state(&self) -> &ReaderState {
+        self.role
+            .reader_state()
             .expect("only computeds and effects read other nodes")
+    }
+
+    pub(crate) fn computed_state(&self) -> &ComputedState {
+        match &self.role {
+            Role::Computed(computed) => computed,
+            _ => panic!("expected a computed node"),
+        }
+    }
+
+    pub(crate) fn effect_state(&self) -> &EffectState {
+        match &self.role {
+            Role::Effect(effect) => effect,
+            _ => panic!("expected an effect node"),
+        }
     }
 
     /// The stored value, without tracking a read.
@@ -273,31 +299,42 @@ impl Node {
                 }
             }
         }
-        let Some(consumer) = self.consumer.as_deref() else {
-            return Ok(());
-        };
-        if let Ok(compute) = consumer.compute.try_borrow() {
-            if let Some(compute) = compute.as_ref() {
-                compute.traverse(visit)?;
+        match &self.role {
+            Role::Signal => {}
+            Role::Computed(computed) => {
+                if let Ok(compute) = computed.compute.try_borrow() {
+                    if let Some(compute) = compute.as_ref() {
+                        compute.traverse(visit)?;
+                    }
+                }
+                if let Ok(error) = computed.error.try_borrow() {
+                    if let Some(cached) = error.as_ref() {
+                        visit.call(&cached.exception)?;
+                        if let Some(traceback) = cached.traceback.as_ref() {
+                            visit.call(traceback)?;
+                        }
+                    }
+                }
+                if let Ok(restore) = computed.restore.try_borrow() {
+                    if let Some(point) = restore.as_ref() {
+                        visit.call(&point.value)?;
+                        visit.call(&point.source)?;
+                    }
+                }
             }
-        }
-        if let Ok(error) = consumer.error.try_borrow() {
-            if let Some(cached) = error.as_ref() {
-                visit.call(&cached.exception)?;
-                if let Some(traceback) = cached.traceback.as_ref() {
-                    visit.call(traceback)?;
+            Role::Effect(effect) => {
+                if let Ok(function) = effect.function.try_borrow() {
+                    if let Some(function) = function.as_ref() {
+                        visit.call(function)?;
+                    }
                 }
             }
         }
-        if let Ok(deps) = consumer.deps.try_borrow() {
-            for link in deps.iter() {
-                visit.call(&link.handle)?;
-            }
-        }
-        if let Ok(restore) = consumer.restore.try_borrow() {
-            if let Some(point) = restore.as_ref() {
-                visit.call(&point.value)?;
-                visit.call(&point.source)?;
+        if let Some(reader) = self.role.reader_state() {
+            if let Ok(deps) = reader.deps.try_borrow() {
+                for link in deps.iter() {
+                    visit.call(&link.handle)?;
+                }
             }
         }
         Ok(())
@@ -309,14 +346,19 @@ impl Node {
         let value = self.value.take();
         let equal = self.equal.take();
         let name = self.name.take();
-        let consumer = self.consumer.as_deref().map(|consumer| {
-            (
-                consumer.compute.take(),
-                consumer.error.take(),
-                consumer.restore.take(),
-            )
-        });
-        drop((value, equal, name, consumer));
+        let computed = match &self.role {
+            Role::Computed(computed) => Some((
+                computed.compute.take(),
+                computed.error.take(),
+                computed.restore.take(),
+            )),
+            _ => None,
+        };
+        let function = match &self.role {
+            Role::Effect(effect) => effect.function.take(),
+            _ => None,
+        };
+        drop((value, equal, name, computed, function));
     }
 }
 
@@ -324,12 +366,15 @@ impl Drop for Node {
     /// A freed consumer unsubscribes from its dependencies right away.
     fn drop(&mut self) {
         let key = self as *const Node as usize;
-        if let Some(consumer) = self.consumer.as_mut() {
-            let links = std::mem::take(consumer.deps.get_mut());
-            tracking::unlink(key, &links);
-            // Dropping the links can free dependencies and run Python code;
-            // nothing is borrowed here.
-            drop(links);
-        }
+        let reader = match &mut self.role {
+            Role::Signal => return,
+            Role::Computed(computed) => &mut computed.reader,
+            Role::Effect(effect) => &mut effect.reader,
+        };
+        let links = std::mem::take(reader.deps.get_mut());
+        tracking::unlink(key, &links);
+        // Dropping the links can free dependencies and run Python code;
+        // nothing is borrowed here.
+        drop(links);
     }
 }
