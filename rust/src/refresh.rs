@@ -11,6 +11,7 @@ use pyo3::types::PyTuple;
 use crate::hooks::{self, Hook};
 use crate::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
 use crate::runtime::{bump_version, clock};
+use crate::stack;
 use crate::tracking::{commit_refresh, end_frame, push_frame, start_refresh};
 use crate::values::{call_equal, has_changed, unref};
 
@@ -41,7 +42,7 @@ struct RecursionGuard;
 
 impl RecursionGuard {
     fn enter(py: Python<'_>) -> PyResult<RecursionGuard> {
-        if stacker::remaining_stack().is_some_and(|free| free < MIN_FREE_STACK) {
+        if stack::remaining().is_some_and(|free| free < MIN_FREE_STACK) {
             return Err(too_deep());
         }
         #[cfg(target_os = "emscripten")]
