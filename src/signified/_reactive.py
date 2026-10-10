@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from contextlib import contextmanager
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 
 from . import _core
@@ -127,6 +128,25 @@ class Variable[T](_ReactiveMixIn[T]):
             hooks.named(value=self)
         return self
 
+    def __copy__(self) -> Self:
+        """Return a new, independent reactive value configured like this one.
+
+        A `Signal` copy holds the same value object; a `Computed` or `Binding`
+        copy has the same function and computes on its first read. The copy has
+        no observers.
+        """
+        return _copy_node(self, None)
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> Self:
+        """Return a new, independent reactive value with deep-copied state.
+
+        A `Signal` copy holds a deep copy of the value. A `Computed` copy runs a
+        deep copy of its function, which for an ordinary function or lambda is
+        the function itself, so it reads the same sources; a `Binding` copy
+        follows a copy of its source.
+        """
+        return _copy_node(self, memo)
+
     def __format__(self, format_spec: str) -> str:
         """Format the variable with custom display options.
 
@@ -143,6 +163,46 @@ class Variable[T](_ReactiveMixIn[T]):
             name_part = f"name='{self._name}', " if self._name else ""
             return f"{type(self).__name__}({name_part}value={self.value!r}, id={id(self)})"
         return super().__format__(format_spec)  # Handles other format specs
+
+
+def _copy_node[V: Variable[Any]](original: V, memo: dict[int, Any] | None) -> V:
+    """Copy a reactive value into a new node of the same class (see `Variable.__copy__`)."""
+    cls = type(original)
+    clone = cls.__new__(cls)
+    if memo is None:
+
+        def dup(value: Any) -> Any:
+            return value
+
+    else:
+        # Register first, so state that refers back to `original` (such as a
+        # Binding's bound `_read_source`) refers to the clone.
+        memo[id(original)] = clone
+
+        def dup(value: Any) -> Any:
+            return deepcopy(value, memo)
+
+    cast(Any, original)._copy_into(clone, dup)
+    # Attributes a Python subclass adds, in slots or an instance dict.
+    for klass in cls.__mro__:
+        slots = klass.__dict__.get("__slots__", ())
+        for name in (slots,) if isinstance(slots, str) else slots:
+            if name in ("__dict__", "__weakref__"):
+                continue
+            if name.startswith("__") and not name.endswith("__"):
+                name = f"_{klass.__name__.lstrip('_')}{name}"
+            descriptor = klass.__dict__.get(name)
+            if descriptor is None:
+                continue
+            try:
+                value = descriptor.__get__(original, klass)
+            except AttributeError:
+                continue
+            descriptor.__set__(clone, dup(value))
+    state = getattr(original, "__dict__", None)
+    if state:
+        clone.__dict__.update({key: dup(value) for key, value in state.items()})
+    return clone
 
 
 @contextmanager

@@ -36,6 +36,9 @@ class _FieldSource(Signal[Any]):
         self._owner_id = id(owner)
 
     # Copies and pickles of an instance carry the stored value, not the node.
+    def __copy__(self) -> Any:
+        return self._value
+
     def __deepcopy__(self, memo: dict[int, Any]) -> Any:
         from copy import deepcopy
 

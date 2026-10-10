@@ -186,3 +186,23 @@ def test_deep_chain_on_a_worker_thread_raises_instead_of_crashing():
     thread.start()
     thread.join()
     assert outcome == ["recursion"]
+
+
+def test_unmatched_pop_untracked_keeps_the_computation_tracking():
+    from signified import _core
+
+    s = Signal(1)
+    errors = []
+
+    def compute():
+        try:
+            _core.pop_untracked()
+        except RuntimeError as error:
+            errors.append(error)
+        return s.value
+
+    c = Computed(compute)
+    assert c.value == 1
+    assert len(errors) == 1
+    s.value = 2
+    assert c.value == 2

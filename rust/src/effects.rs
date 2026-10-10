@@ -154,7 +154,7 @@ fn run(py: Python<'_>, effect: &Arc<Node>) -> PyResult<()> {
         // any of it retries the callback.
         graph::commit_refresh(py, effect, None);
     } else {
-        graph::detach_all_deps(effect, None);
+        graph::detach_all_deps(py, effect, None);
     }
     drop(function);
     drop(result?);

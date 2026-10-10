@@ -82,7 +82,7 @@ pub(crate) enum Compute {
 }
 
 impl Compute {
-    fn clone_ref(&self, py: Python<'_>) -> Compute {
+    pub(crate) fn clone_ref(&self, py: Python<'_>) -> Compute {
         match self {
             Compute::Function(f) => Compute::Function(f.clone_ref(py)),
             Compute::Call { func, args } => Compute::Call {
@@ -138,8 +138,14 @@ pub(crate) struct Node {
     dep_index: RefCell<Option<HashMap<usize, usize>>>,
     pub(crate) error: RefCell<Option<CachedError>>,
     pub(crate) restore: RefCell<Option<RestorePoint>>,
-    /// The node's class overrides `update`, so it subscribes as a Python observer.
+    /// The node's class overrides `update` (or, for a computed, `notify`):
+    /// the engine calls it, and a consumer subscribes as a Python observer.
     pub(crate) python_update: Cell<bool>,
+    /// The node's class overrides `notify`, so the engine calls it.
+    pub(crate) python_notify: Cell<bool>,
+    /// A weak reference to the node's Python object, kept only when its class
+    /// overrides `update` or `notify`.
+    pub(crate) owner: RefCell<Option<Py<PyWeakrefReference>>>,
     /// Effects only: not disposed.
     pub(crate) active: Cell<bool>,
     /// Effects only: has run at least once.
@@ -178,6 +184,8 @@ impl Node {
             error: RefCell::new(None),
             restore: RefCell::new(None),
             python_update: Cell::new(false),
+            python_notify: Cell::new(false),
+            owner: RefCell::new(None),
             active: Cell::new(false),
             has_run: Cell::new(false),
         }
@@ -230,15 +238,16 @@ impl Node {
     }
 
     /// Drop every Python object this node owns (for `__clear__`).
-    pub(crate) fn clear(self: &Arc<Self>) {
-        detach_all_deps(self, None);
+    pub(crate) fn clear(self: &Arc<Self>, py: Python<'_>) {
+        detach_all_deps(py, self, None);
         let compute = self.compute.take();
         let value = self.value.take();
         let equal = self.equal.take();
         let name = self.name.take();
         let error = self.error.take();
         let restore = self.restore.take();
-        drop((compute, value, equal, name, error, restore));
+        let owner = self.owner.take();
+        drop((compute, value, equal, name, error, restore, owner));
     }
 }
 
@@ -318,6 +327,11 @@ pub(crate) fn push_frame(frame: Option<Arc<Node>>) {
 
 pub(crate) fn pop_frame() -> Option<Option<Arc<Node>>> {
     rt().frames.borrow_mut().pop()
+}
+
+/// Whether the innermost frame is an untracked block.
+pub(crate) fn in_untracked_block() -> bool {
+    matches!(rt().frames.borrow().last(), Some(None))
 }
 
 /// Whether a read right now would register a dependency.
@@ -457,7 +471,8 @@ pub(crate) fn commit_refresh(
     handle: Option<&Bound<'_, PyAny>>,
 ) {
     let token = reader.token.get();
-    let python_update = reader.python_update.get() && handle.is_some();
+    let owner = owner_of(py, reader, handle);
+    let python_update = owner.is_some();
     let mut dropped = Vec::new();
     let mut subscribe = Vec::new();
     let mut unsubscribe = Vec::new();
@@ -501,14 +516,14 @@ pub(crate) fn commit_refresh(
             *index = None;
         }
     }
-    if let Some(handle) = handle {
+    if let Some(owner) = &owner {
         for dep in subscribe {
             // Errors here mean the reader cannot be weakly referenced, which
             // `__init__` already ruled out.
-            let _ = add_python_observer(&dep, handle);
+            let _ = add_python_observer(&dep, owner);
         }
         for dep in unsubscribe {
-            remove_python_observer(py, &dep, handle);
+            remove_python_observer(py, &dep, owner);
         }
     }
     // Dropping a link can free its dependency, which can run Python code.
@@ -525,25 +540,48 @@ fn remove_node_observer(dep: &Node, reader: &Arc<Node>) {
         });
 }
 
+/// The Python object of a consumer that subscribes through Python, if any.
+fn owner_of<'py>(
+    py: Python<'py>,
+    node: &Node,
+    handle: Option<&Bound<'py, PyAny>>,
+) -> Option<Bound<'py, PyAny>> {
+    if !node.python_update.get() {
+        return None;
+    }
+    if let Some(handle) = handle {
+        return Some(handle.clone());
+    }
+    let reference = node
+        .owner
+        .borrow()
+        .as_ref()
+        .map(|reference| reference.clone_ref(py));
+    reference.and_then(|reference| reference.bind(py).upgrade())
+}
+
 /// Unsubscribe from every dependency and forget them.
-pub(crate) fn detach_all_deps(reader: &Arc<Node>, handle: Option<&Bound<'_, PyAny>>) {
+pub(crate) fn detach_all_deps(
+    py: Python<'_>,
+    reader: &Arc<Node>,
+    handle: Option<&Bound<'_, PyAny>>,
+) {
     let links = std::mem::take(&mut *reader.deps.borrow_mut());
     reader.dep_index.replace(None);
+    let owner = owner_of(py, reader, handle);
     for link in &links {
         if link.active {
-            if reader.python_update.get() {
-                if let Some(handle) = handle {
-                    remove_python_observer(handle.py(), &link.node, handle);
-                }
-            } else {
-                remove_node_observer(&link.node, reader);
+            match &owner {
+                Some(owner) => remove_python_observer(py, &link.node, owner),
+                None => remove_node_observer(&link.node, reader),
             }
         }
     }
     drop(links);
 }
 
-/// The Python objects of a consumer's current dependencies, in read order.
+/// The Python objects of a consumer's current dependencies, in the order
+/// they were first read.
 pub(crate) fn dependency_handles<'py>(
     py: Python<'py>,
     node: &Node,
@@ -609,6 +647,19 @@ fn mark_notified(node: &Node) -> bool {
 /// depth-first, schedule dependent effects, call Python observers' `update()`.
 /// A node without observers stays out of the wave, so observers added later in
 /// the wave still hear its next write. Effects run once the outermost wave ends.
+/// Notify `node`'s observers through its class's `notify` if it overrides it.
+pub(crate) fn notify_node(
+    py: Python<'_>,
+    node: &Arc<Node>,
+    handle: &Bound<'_, PyAny>,
+) -> PyResult<()> {
+    if node.python_notify.get() {
+        handle.call_method0(intern!(py, "notify"))?;
+        return Ok(());
+    }
+    notify(py, node)
+}
+
 pub(crate) fn notify(py: Python<'_>, start: &Arc<Node>) -> PyResult<()> {
     let observers = snapshot_observers(py, start);
     if observers.is_empty() || !mark_notified(start) {
@@ -1045,7 +1096,7 @@ pub(crate) fn write_signal(
     drop(previous);
     drop(old);
     config::hook(py, intern!(py, "updated"), handle)?;
-    notify(py, node)
+    notify_node(py, node, handle)
 }
 
 /// Notify a signal's observers unconditionally (after an in-place mutation).
@@ -1056,7 +1107,7 @@ pub(crate) fn update_signal(
 ) -> PyResult<()> {
     bump_version(node);
     config::hook(py, intern!(py, "updated"), handle)?;
-    notify(py, node)
+    notify_node(py, node, handle)
 }
 
 /// Return a signal to an earlier value and version (the end of `Signal.at`).
@@ -1074,7 +1125,7 @@ pub(crate) fn restore_signal(
     bump_clock();
     drop(previous);
     config::hook(py, intern!(py, "updated"), handle)?;
-    notify(py, node)
+    notify_node(py, node, handle)
 }
 
 /// The engine node behind a Signal, Computed or Binding.

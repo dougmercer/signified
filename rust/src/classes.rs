@@ -8,7 +8,7 @@ use pyo3::exceptions::{PyAttributeError, PyRuntimeError};
 use pyo3::gc::PyVisit;
 use pyo3::intern;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyString, PySuper, PyTuple, PyType};
+use pyo3::types::{PyDict, PyString, PySuper, PyTuple, PyType, PyWeakrefReference};
 use pyo3::PyTraverseError;
 
 use crate::config;
@@ -59,6 +59,46 @@ fn set_equal(py: Python<'_>, node: &Node, equal: Py<PyAny>) {
     drop(old);
 }
 
+/// Record which engine entry points `obj`'s class overrides in Python, so the
+/// engine calls them instead of the native versions: `update` (and, for a
+/// computed, `notify`) makes a consumer subscribe as a Python observer, and
+/// `notify` is called whenever the node notifies its observers.
+fn configure_overrides(
+    obj: &Bound<'_, PyAny>,
+    node: &Node,
+    base: &Bound<'_, PyType>,
+) -> PyResult<()> {
+    let py = obj.py();
+    let ty = obj.get_type();
+    if graph::is_standard_type(ty.as_any()) {
+        return Ok(());
+    }
+    let overrides = |name: &Bound<'_, PyString>| -> PyResult<bool> {
+        Ok(!ty.getattr(name)?.is(&base.getattr(name)?))
+    };
+    let update = overrides(intern!(py, "update"))?;
+    let notify = node.kind != Kind::Effect && overrides(intern!(py, "notify"))?;
+    node.python_update
+        .set(update || (node.kind == Kind::Computed && notify));
+    node.python_notify.set(notify);
+    if update || notify {
+        let reference = PyWeakrefReference::new(obj)?.unbind();
+        let old = node.owner.replace(Some(reference));
+        drop(old);
+    }
+    Ok(())
+}
+
+/// A signal's `update`, through its class's override if there is one.
+fn update_signal_through_class(slf: &Bound<'_, SignalCore>) -> PyResult<()> {
+    let node = &slf.get().node;
+    if node.python_update.get() {
+        slf.call_method0(intern!(slf.py(), "update"))?;
+        return Ok(());
+    }
+    graph::update_signal(slf.py(), node, slf.as_any())
+}
+
 fn generic_setattr(
     obj: &Bound<'_, PyAny>,
     name: &Bound<'_, PyString>,
@@ -104,12 +144,33 @@ impl SignalCore {
         let old = node.value.replace(Some(value.unbind()));
         drop(old);
         set_equal(py, node, equal.unwrap_or_else(|| py.None()));
+        configure_overrides(slf.as_any(), node, &py.get_type::<SignalCore>())?;
         config::hook(py, intern!(py, "created"), slf.as_any())
     }
 
     #[classmethod]
     fn __class_getitem__(cls: &Bound<'_, PyType>, item: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
         class_getitem(&cls.py().get_type::<SignalCore>(), cls, item)
+    }
+
+    /// Give `clone`, a new instance of this signal's class, this signal's
+    /// value (passed through `dup`), equality and name.
+    fn _copy_into(
+        slf: &Bound<'_, Self>,
+        clone: &Bound<'_, PyAny>,
+        dup: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
+        let py = slf.py();
+        let source = &slf.get().node;
+        let target = &clone.cast::<SignalCore>()?.get().node;
+        let value = dup.call1((graph::raw_value(py, source),))?;
+        let equal = dup.call1((equal_of(py, source),))?;
+        let old = target.value.replace(Some(value.unbind()));
+        drop(old);
+        set_equal(py, target, equal.unbind());
+        set_name(target, name_of(py, source).unbind());
+        configure_overrides(clone, target, &py.get_type::<SignalCore>())?;
+        config::hook(py, intern!(py, "created"), clone)
     }
 
     /// The current value. Reading it inside a computation or effect makes it a
@@ -165,7 +226,7 @@ impl SignalCore {
 
     /// Force downstream recomputation; for a Signal, the same as `update()`.
     fn invalidate(slf: &Bound<'_, Self>) -> PyResult<()> {
-        graph::update_signal(slf.py(), &slf.get().node, slf.as_any())
+        update_signal_through_class(slf)
     }
 
     /// Notify all observers by calling their `update` method.
@@ -218,7 +279,7 @@ impl SignalCore {
             )));
         }
         wrapped.setattr(name, value)?;
-        graph::update_signal(py, node, slf.as_any())
+        update_signal_through_class(slf)
     }
 
     fn __delattr__(slf: &Bound<'_, Self>, name: &Bound<'_, PyString>) -> PyResult<()> {
@@ -229,8 +290,8 @@ impl SignalCore {
         self.node.traverse(&visit)
     }
 
-    fn __clear__(&self) {
-        self.node.clear();
+    fn __clear__(&self, py: Python<'_>) {
+        self.node.clear(py);
     }
 }
 
@@ -250,20 +311,6 @@ pub struct ComputedCore {
     pub(crate) node: Arc<Node>,
 }
 
-/// Whether instances of `obj`'s class must be notified through a Python
-/// `update()` call because the class overrides it.
-fn overrides_update(obj: &Bound<'_, PyAny>) -> PyResult<bool> {
-    let py = obj.py();
-    let ty = obj.get_type();
-    if graph::is_standard_type(ty.as_any()) {
-        return Ok(false);
-    }
-    let native = py
-        .get_type::<ComputedCore>()
-        .getattr(intern!(py, "update"))?;
-    Ok(!ty.getattr(intern!(py, "update"))?.is(&native))
-}
-
 fn init_computed(
     obj: &Bound<'_, PyAny>,
     node: &Node,
@@ -274,7 +321,7 @@ fn init_computed(
     let old = node.compute.replace(Some(compute));
     drop(old);
     set_equal(py, node, equal.unwrap_or_else(|| py.None()));
-    node.python_update.set(overrides_update(obj)?);
+    configure_overrides(obj, node, &py.get_type::<ComputedCore>())?;
     config::hook(py, intern!(py, "created"), obj)
 }
 
@@ -296,6 +343,36 @@ impl ComputedCore {
     #[classmethod]
     fn __class_getitem__(cls: &Bound<'_, PyType>, item: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
         class_getitem(&cls.py().get_type::<ComputedCore>(), cls, item)
+    }
+
+    /// Give `clone`, a new instance of this computed's class, the same
+    /// function (passed through `dup`), equality and name. The clone computes
+    /// on its first read.
+    fn _copy_into(
+        slf: &Bound<'_, Self>,
+        clone: &Bound<'_, PyAny>,
+        dup: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
+        let py = slf.py();
+        let source = &slf.get().node;
+        let target = &clone.cast::<ComputedCore>()?.get().node;
+        let compute = source
+            .compute
+            .borrow()
+            .as_ref()
+            .map(|compute| compute.clone_ref(py));
+        // Operator nodes keep their inputs, as a closure over them would.
+        let compute = match compute {
+            Some(Compute::Function(f)) => Some(Compute::Function(dup.call1((f,))?.unbind())),
+            other => other,
+        };
+        let equal = dup.call1((equal_of(py, source),))?;
+        let old = target.compute.replace(compute);
+        drop(old);
+        set_equal(py, target, equal.unbind());
+        set_name(target, name_of(py, source).unbind());
+        configure_overrides(clone, target, &py.get_type::<ComputedCore>())?;
+        config::hook(py, intern!(py, "created"), clone)
     }
 
     /// The current value, recomputed lazily when a dependency changed. A
@@ -352,28 +429,31 @@ impl ComputedCore {
         set_name(&self.node, name);
     }
 
-    /// The reactive values the last evaluation read, in read order.
+    /// The reactive values the last evaluation read, in the order they were
+    /// first read.
     #[getter]
     fn _deps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyTuple>> {
         graph::dependency_handles(py, &self.node)
     }
 
     /// Mark this computed stale when notified by an upstream dependency.
-    fn update(&self, py: Python<'_>) -> PyResult<()> {
-        if graph::invalidate(&self.node, false) {
-            graph::notify(py, &self.node)?;
+    fn update(slf: &Bound<'_, Self>) -> PyResult<()> {
+        let node = &slf.get().node;
+        if graph::invalidate(node, false) {
+            graph::notify_node(slf.py(), node, slf.as_any())?;
         }
         Ok(())
     }
 
     /// Force a full recomputation on the next read, even if dependency
     /// versions look unchanged.
-    fn _invalidate(&self, py: Python<'_>) -> PyResult<()> {
-        if !graph::invalidate(&self.node, true) {
+    fn _invalidate(slf: &Bound<'_, Self>) -> PyResult<()> {
+        let node = &slf.get().node;
+        if !graph::invalidate(node, true) {
             return Ok(());
         }
         graph::bump_clock();
-        graph::notify(py, &self.node)
+        graph::notify_node(slf.py(), node, slf.as_any())
     }
 
     /// Notify all observers by calling their `update` method.
@@ -430,8 +510,8 @@ impl ComputedCore {
         self.node.traverse(&visit)
     }
 
-    fn __clear__(&self) {
-        self.node.clear();
+    fn __clear__(&self, py: Python<'_>) {
+        self.node.clear(py);
     }
 }
 
@@ -461,6 +541,7 @@ impl EffectCore {
         drop(old);
         node.active.set(true);
         node.has_run.set(false);
+        configure_overrides(slf.as_any(), node, &slf.py().get_type::<EffectCore>())?;
         effects::schedule(slf.py(), node)
     }
 
@@ -470,13 +551,14 @@ impl EffectCore {
     }
 
     /// Stop this effect, including any pending run. Safe to repeat.
-    fn dispose(&self) {
-        self.node.active.set(false);
-        effects::discard(&self.node);
-        graph::detach_all_deps(&self.node, None);
+    fn dispose(slf: &Bound<'_, Self>) {
+        let node = &slf.get().node;
+        node.active.set(false);
+        effects::discard(node);
+        graph::detach_all_deps(slf.py(), node, Some(slf.as_any()));
     }
 
-    /// The reactive values the last run read, in read order.
+    /// The reactive values the last run read, in the order they were first read.
     #[getter]
     fn _deps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyTuple>> {
         graph::dependency_handles(py, &self.node)
@@ -491,10 +573,10 @@ impl EffectCore {
         self.node.traverse(&visit)
     }
 
-    fn __clear__(&self) {
+    fn __clear__(&self, py: Python<'_>) {
         self.node.active.set(false);
         effects::discard(&self.node);
-        self.node.clear();
+        self.node.clear(py);
     }
 }
 
@@ -510,12 +592,14 @@ pub fn push_untracked() {
 
 #[pyfunction]
 pub fn pop_untracked() -> PyResult<()> {
-    match graph::pop_frame() {
-        Some(None) => Ok(()),
-        _ => Err(PyRuntimeError::new_err(
+    // Check before popping, so a mismatch cannot remove a computation's frame.
+    if !graph::in_untracked_block() {
+        return Err(PyRuntimeError::new_err(
             "pop_untracked() without a matching push_untracked()",
-        )),
+        ));
     }
+    graph::pop_frame();
+    Ok(())
 }
 
 /// Whether a reactive read right now would register a dependency.
