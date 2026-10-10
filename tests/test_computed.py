@@ -201,14 +201,14 @@ def test_binding_source_change_invalidates_computed_once():
     outer = Binding(inner)
     calls = 0
 
-    class CountingComputed(Computed):
+    class Counter:
         def update(self) -> None:
             nonlocal calls
             calls += 1
-            super().update()
 
-    derived = CountingComputed(lambda: outer.value + 1)
-    _ = derived.value
+    derived = Computed(lambda: outer.value + 1)
+    counter = Counter()
+    derived.subscribe(counter)
     inner.value = 2
 
     assert calls == 1

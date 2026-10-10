@@ -2,18 +2,18 @@
 //! module-level functions. `signified/_reactive.py` subclasses these together
 //! with the operator mixin to build the public classes.
 
-use std::sync::Arc;
+use std::rc::Rc;
 
 use pyo3::exceptions::{PyAttributeError, PyRuntimeError};
 use pyo3::gc::PyVisit;
 use pyo3::intern;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyString, PySuper, PyTuple, PyType, PyWeakrefReference};
+use pyo3::types::{PyDict, PyString, PySuper, PyTuple, PyType};
 use pyo3::PyTraverseError;
 
 use crate::config;
 use crate::effects;
-use crate::graph::{self, rt, Compute, Kind, Node, RestorePoint, State};
+use crate::graph::{self, rt, Compute, Kind, Node, RestorePoint, Shared, State};
 
 /// `cls[item]` on the base class itself, and the next `__class_getitem__` in
 /// the MRO (`typing.Generic`'s) for the public subclasses.
@@ -32,6 +32,10 @@ fn class_getitem(
     }
     let next = PySuper::new(base, cls)?.getattr(intern!(py, "__class_getitem__"))?;
     Ok(next.call1((item,))?.unbind())
+}
+
+fn new_node(kind: Kind) -> Shared {
+    Shared(Rc::new(Node::new(kind)))
 }
 
 fn name_of<'py>(py: Python<'py>, node: &Node) -> Bound<'py, PyAny> {
@@ -59,46 +63,6 @@ fn set_equal(py: Python<'_>, node: &Node, equal: Py<PyAny>) {
     drop(old);
 }
 
-/// Record which engine entry points `obj`'s class overrides in Python, so the
-/// engine calls them instead of the native versions: `update` (and, for a
-/// computed, `notify`) makes a consumer subscribe as a Python observer, and
-/// `notify` is called whenever the node notifies its observers.
-fn configure_overrides(
-    obj: &Bound<'_, PyAny>,
-    node: &Node,
-    base: &Bound<'_, PyType>,
-) -> PyResult<()> {
-    let py = obj.py();
-    let ty = obj.get_type();
-    if graph::is_standard_type(ty.as_any()) {
-        return Ok(());
-    }
-    let overrides = |name: &Bound<'_, PyString>| -> PyResult<bool> {
-        Ok(!ty.getattr(name)?.is(&base.getattr(name)?))
-    };
-    let update = overrides(intern!(py, "update"))?;
-    let notify = node.kind != Kind::Effect && overrides(intern!(py, "notify"))?;
-    node.python_update
-        .set(update || (node.kind == Kind::Computed && notify));
-    node.python_notify.set(notify);
-    if update || notify {
-        let reference = PyWeakrefReference::new(obj)?.unbind();
-        let old = node.owner.replace(Some(reference));
-        drop(old);
-    }
-    Ok(())
-}
-
-/// A signal's `update`, through its class's override if there is one.
-fn update_signal_through_class(slf: &Bound<'_, SignalCore>) -> PyResult<()> {
-    let node = &slf.get().node;
-    if node.python_update.get() {
-        slf.call_method0(intern!(slf.py(), "update"))?;
-        return Ok(());
-    }
-    graph::update_signal(slf.py(), node, slf.as_any())
-}
-
 fn generic_setattr(
     obj: &Bound<'_, PyAny>,
     name: &Bound<'_, PyString>,
@@ -119,7 +83,7 @@ fn generic_setattr(
 /// Base class of `signified.Signal`: mutable state.
 #[pyclass(subclass, weakref, frozen, module = "signified._core", name = "Signal")]
 pub struct SignalCore {
-    pub(crate) node: Arc<Node>,
+    pub(crate) node: Shared,
 }
 
 #[pymethods]
@@ -128,7 +92,7 @@ impl SignalCore {
     #[pyo3(signature = (*_args, **_kwargs))]
     fn new(_args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>) -> Self {
         SignalCore {
-            node: Arc::new(Node::new(Kind::Signal)),
+            node: new_node(Kind::Signal),
         }
     }
 
@@ -144,33 +108,12 @@ impl SignalCore {
         let old = node.value.replace(Some(value.unbind()));
         drop(old);
         set_equal(py, node, equal.unwrap_or_else(|| py.None()));
-        configure_overrides(slf.as_any(), node, &py.get_type::<SignalCore>())?;
         config::hook(py, intern!(py, "created"), slf.as_any())
     }
 
     #[classmethod]
     fn __class_getitem__(cls: &Bound<'_, PyType>, item: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
         class_getitem(&cls.py().get_type::<SignalCore>(), cls, item)
-    }
-
-    /// Give `clone`, a new instance of this signal's class, this signal's
-    /// value (passed through `dup`), equality and name.
-    fn _copy_into(
-        slf: &Bound<'_, Self>,
-        clone: &Bound<'_, PyAny>,
-        dup: &Bound<'_, PyAny>,
-    ) -> PyResult<()> {
-        let py = slf.py();
-        let source = &slf.get().node;
-        let target = &clone.cast::<SignalCore>()?.get().node;
-        let value = dup.call1((graph::raw_value(py, source),))?;
-        let equal = dup.call1((equal_of(py, source),))?;
-        let old = target.value.replace(Some(value.unbind()));
-        drop(old);
-        set_equal(py, target, equal.unbind());
-        set_name(target, name_of(py, source).unbind());
-        configure_overrides(clone, target, &py.get_type::<SignalCore>())?;
-        config::hook(py, intern!(py, "created"), clone)
     }
 
     /// The current value. Reading it inside a computation or effect makes it a
@@ -226,23 +169,23 @@ impl SignalCore {
 
     /// Force downstream recomputation; for a Signal, the same as `update()`.
     fn invalidate(slf: &Bound<'_, Self>) -> PyResult<()> {
-        update_signal_through_class(slf)
+        graph::update_signal(slf.py(), &slf.get().node, slf.as_any())
     }
 
-    /// Notify all observers by calling their `update` method.
+    /// Notify all observers without marking a change.
     fn notify(&self, py: Python<'_>) -> PyResult<()> {
         graph::notify(py, &self.node)
     }
 
     /// Subscribe an observer (any object with an `update()` method). It is
-    /// held weakly.
+    /// held weakly, and its `update()` runs after each change, like an effect.
     fn subscribe(&self, observer: &Bound<'_, PyAny>) -> PyResult<()> {
         graph::add_python_observer(&self.node, observer)
     }
 
     /// Unsubscribe an observer.
     fn unsubscribe(&self, observer: &Bound<'_, PyAny>) {
-        graph::remove_python_observer(observer.py(), &self.node, observer);
+        graph::remove_python_observer(&self.node, observer);
     }
 
     fn _observer_count(&self, py: Python<'_>) -> usize {
@@ -279,7 +222,7 @@ impl SignalCore {
             )));
         }
         wrapped.setattr(name, value)?;
-        update_signal_through_class(slf)
+        graph::update_signal(py, node, slf.as_any())
     }
 
     fn __delattr__(slf: &Bound<'_, Self>, name: &Bound<'_, PyString>) -> PyResult<()> {
@@ -290,8 +233,8 @@ impl SignalCore {
         self.node.traverse(&visit)
     }
 
-    fn __clear__(&self, py: Python<'_>) {
-        self.node.clear(py);
+    fn __clear__(&self) {
+        self.node.clear();
     }
 }
 
@@ -308,7 +251,7 @@ impl SignalCore {
     name = "Computed"
 )]
 pub struct ComputedCore {
-    pub(crate) node: Arc<Node>,
+    pub(crate) node: Shared,
 }
 
 fn init_computed(
@@ -318,10 +261,9 @@ fn init_computed(
     equal: Option<Py<PyAny>>,
 ) -> PyResult<()> {
     let py = obj.py();
-    let old = node.compute.replace(Some(compute));
+    let old = node.consumer().compute.replace(Some(compute));
     drop(old);
     set_equal(py, node, equal.unwrap_or_else(|| py.None()));
-    configure_overrides(obj, node, &py.get_type::<ComputedCore>())?;
     config::hook(py, intern!(py, "created"), obj)
 }
 
@@ -331,7 +273,7 @@ impl ComputedCore {
     #[pyo3(signature = (*_args, **_kwargs))]
     fn new(_args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>) -> Self {
         ComputedCore {
-            node: Arc::new(Node::new(Kind::Computed)),
+            node: new_node(Kind::Computed),
         }
     }
 
@@ -340,39 +282,14 @@ impl ComputedCore {
         init_computed(slf.as_any(), &slf.get().node, Compute::Function(f), equal)
     }
 
+    /// Initialize as a `Binding` over `holder`, a signal holding the source.
+    fn _init_source(slf: &Bound<'_, Self>, holder: Py<PyAny>) -> PyResult<()> {
+        init_computed(slf.as_any(), &slf.get().node, Compute::Source(holder), None)
+    }
+
     #[classmethod]
     fn __class_getitem__(cls: &Bound<'_, PyType>, item: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
         class_getitem(&cls.py().get_type::<ComputedCore>(), cls, item)
-    }
-
-    /// Give `clone`, a new instance of this computed's class, the same
-    /// function (passed through `dup`), equality and name. The clone computes
-    /// on its first read.
-    fn _copy_into(
-        slf: &Bound<'_, Self>,
-        clone: &Bound<'_, PyAny>,
-        dup: &Bound<'_, PyAny>,
-    ) -> PyResult<()> {
-        let py = slf.py();
-        let source = &slf.get().node;
-        let target = &clone.cast::<ComputedCore>()?.get().node;
-        let compute = source
-            .compute
-            .borrow()
-            .as_ref()
-            .map(|compute| compute.clone_ref(py));
-        // Operator nodes keep their inputs, as a closure over them would.
-        let compute = match compute {
-            Some(Compute::Function(f)) => Some(Compute::Function(dup.call1((f,))?.unbind())),
-            other => other,
-        };
-        let equal = dup.call1((equal_of(py, source),))?;
-        let old = target.compute.replace(compute);
-        drop(old);
-        set_equal(py, target, equal.unbind());
-        set_name(target, name_of(py, source).unbind());
-        configure_overrides(clone, target, &py.get_type::<ComputedCore>())?;
-        config::hook(py, intern!(py, "created"), clone)
     }
 
     /// The current value, recomputed lazily when a dependency changed. A
@@ -436,33 +353,32 @@ impl ComputedCore {
         graph::dependency_handles(py, &self.node)
     }
 
-    /// Mark this computed stale when notified by an upstream dependency.
-    fn update(slf: &Bound<'_, Self>) -> PyResult<()> {
-        let node = &slf.get().node;
-        if graph::invalidate(node, false) {
-            graph::notify_node(slf.py(), node, slf.as_any())?;
+    /// Mark this computed stale and notify its observers.
+    fn update(&self, py: Python<'_>) -> PyResult<()> {
+        if graph::invalidate(&self.node, false) {
+            graph::notify(py, &self.node)?;
         }
         Ok(())
     }
 
     /// Force a full recomputation on the next read, even if dependency
     /// versions look unchanged.
-    fn _invalidate(slf: &Bound<'_, Self>) -> PyResult<()> {
-        let node = &slf.get().node;
-        if !graph::invalidate(node, true) {
+    fn _invalidate(&self, py: Python<'_>) -> PyResult<()> {
+        if !graph::invalidate(&self.node, true) {
             return Ok(());
         }
         graph::bump_clock();
-        graph::notify_node(slf.py(), node, slf.as_any())
+        graph::notify(py, &self.node)
     }
 
-    /// Notify all observers by calling their `update` method.
+    /// Notify all observers without marking a change.
     fn notify(&self, py: Python<'_>) -> PyResult<()> {
         graph::notify(py, &self.node)
     }
 
     /// Subscribe an observer after evaluating, so the observer sees every
-    /// later upstream change. The observer is held weakly.
+    /// later upstream change. The observer is held weakly, and its `update()`
+    /// runs after each change, like an effect.
     fn subscribe(slf: &Bound<'_, Self>, observer: &Bound<'_, PyAny>) -> PyResult<()> {
         let node = &slf.get().node;
         graph::ensure_uptodate(slf.py(), node, slf.as_any())?;
@@ -471,7 +387,7 @@ impl ComputedCore {
 
     /// Unsubscribe an observer.
     fn unsubscribe(&self, observer: &Bound<'_, PyAny>) {
-        graph::remove_python_observer(observer.py(), &self.node, observer);
+        graph::remove_python_observer(&self.node, observer);
     }
 
     fn _observer_count(&self, py: Python<'_>) -> usize {
@@ -480,7 +396,8 @@ impl ComputedCore {
 
     /// Whether the current outcome is a fresh value a `Binding` can return to.
     fn _restorable(&self) -> bool {
-        self.node.state.get() == State::Fresh && self.node.error.borrow().is_none()
+        let consumer = self.node.consumer();
+        consumer.state.get() == State::Fresh && consumer.error.borrow().is_none()
     }
 
     /// After `Binding.at()`: return to `value` at `version` on the next
@@ -501,7 +418,7 @@ impl ComputedCore {
             source_node: graph::node_of(source)?,
             source_version,
         };
-        let old = self.node.restore.replace(Some(point));
+        let old = self.node.consumer().restore.replace(Some(point));
         drop(old);
         Ok(())
     }
@@ -510,8 +427,8 @@ impl ComputedCore {
         self.node.traverse(&visit)
     }
 
-    fn __clear__(&self, py: Python<'_>) {
-        self.node.clear(py);
+    fn __clear__(&self) {
+        self.node.clear();
     }
 }
 
@@ -522,7 +439,7 @@ impl ComputedCore {
 /// Base class of `signified.Effect`: a callback re-run when what it read changes.
 #[pyclass(subclass, weakref, frozen, module = "signified._core", name = "Effect")]
 pub struct EffectCore {
-    pub(crate) node: Arc<Node>,
+    pub(crate) node: Shared,
 }
 
 #[pymethods]
@@ -531,17 +448,17 @@ impl EffectCore {
     #[pyo3(signature = (*_args, **_kwargs))]
     fn new(_args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>) -> Self {
         EffectCore {
-            node: Arc::new(Node::new(Kind::Effect)),
+            node: new_node(Kind::Effect),
         }
     }
 
     fn __init__(slf: &Bound<'_, Self>, r#fn: Py<PyAny>) -> PyResult<()> {
         let node = &slf.get().node;
-        let old = node.compute.replace(Some(Compute::Function(r#fn)));
+        let consumer = node.consumer();
+        let old = consumer.compute.replace(Some(Compute::Function(r#fn)));
         drop(old);
-        node.active.set(true);
-        node.has_run.set(false);
-        configure_overrides(slf.as_any(), node, &slf.py().get_type::<EffectCore>())?;
+        consumer.active.set(true);
+        consumer.has_run.set(false);
         effects::schedule(slf.py(), node)
     }
 
@@ -551,11 +468,10 @@ impl EffectCore {
     }
 
     /// Stop this effect, including any pending run. Safe to repeat.
-    fn dispose(slf: &Bound<'_, Self>) {
-        let node = &slf.get().node;
-        node.active.set(false);
-        effects::discard(node);
-        graph::detach_all_deps(slf.py(), node, Some(slf.as_any()));
+    fn dispose(&self) {
+        self.node.consumer().active.set(false);
+        effects::discard(&self.node);
+        graph::detach_all_deps(&self.node);
     }
 
     /// The reactive values the last run read, in the order they were first read.
@@ -566,17 +482,17 @@ impl EffectCore {
 
     #[getter]
     fn _active(&self) -> bool {
-        self.node.active.get()
+        self.node.consumer().active.get()
     }
 
     fn __traverse__(&self, visit: PyVisit<'_>) -> Result<(), PyTraverseError> {
         self.node.traverse(&visit)
     }
 
-    fn __clear__(&self, py: Python<'_>) {
-        self.node.active.set(false);
+    fn __clear__(&self) {
+        self.node.consumer().active.set(false);
         effects::discard(&self.node);
-        self.node.clear(py);
+        self.node.clear();
     }
 }
 
@@ -630,7 +546,7 @@ pub fn computed_call<'py>(
             func,
             args: args.iter().map(|arg| arg.unbind()).collect(),
         };
-        let old = node.compute.replace(Some(call));
+        let old = node.consumer().compute.replace(Some(call));
         drop(old);
     }
     Ok(obj)
@@ -648,7 +564,7 @@ pub fn end_batch() {
     rt.batch_depth.set(rt.batch_depth.get().saturating_sub(1));
 }
 
-/// Run pending effects unless a batch, wave or flush is in progress.
+/// Run pending effects unless a batch, walk or flush is in progress.
 #[pyfunction]
 pub fn flush(py: Python<'_>) -> PyResult<()> {
     effects::flush(py)

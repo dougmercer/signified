@@ -1,91 +1,36 @@
-"""Copying reactive values: a copy is a new, independent node."""
+"""Reactive values cannot be copied; copy the inputs and build new ones."""
 
 import copy
 from dataclasses import dataclass
 
-from signified import Binding, Computed, Signal
+import pytest
+
+from signified import Binding, Computed, Effect, Signal, tracked_fields
 
 
-def test_shallow_copy_of_a_signal_is_independent_and_shares_the_value():
-    items = [1, 2]
-    s = Signal(items)
-    clone = copy.copy(s)
-    assert type(clone) is Signal
-    assert clone is not s
-    assert clone.value is items
-    clone.value = [3]
-    assert s.value is items
+@pytest.mark.parametrize("make", [lambda: Signal(1), lambda: Computed(lambda: 1), lambda: Binding(1)])
+@pytest.mark.parametrize("duplicate", [copy.copy, copy.deepcopy])
+def test_copying_a_reactive_value_raises(make, duplicate):
+    value = make()
+    with pytest.raises(TypeError, match="cannot be copied"):
+        duplicate(value)
 
 
-def test_deepcopy_of_a_signal_copies_the_value():
-    s = Signal([1, 2])
-    clone = copy.deepcopy(s)
-    assert clone.value == [1, 2]
-    assert clone.value is not s.value
-    s.value = [9]
-    assert clone.value == [1, 2]
+def test_copying_an_effect_raises():
+    effect = Effect(lambda: None)
+    with pytest.raises(TypeError):
+        copy.copy(effect)
+    effect.dispose()
 
 
-def test_deepcopy_of_a_structure_keeps_shared_signals_shared():
+def test_tracked_field_instances_still_copy():
+    @tracked_fields
     @dataclass
-    class Scene:
-        a: Signal[int]
-        b: Signal[int]
+    class Material:
+        roughness: float = 0.5
 
-    shared = Signal(1)
-    scene = copy.deepcopy(Scene(shared, shared))
-    assert scene.a is scene.b
-    assert scene.a is not shared
-    assert scene.a.value == 1
-
-
-def test_copy_keeps_custom_equality_and_name():
-    s = Signal([1], equal=lambda a, b: a == b).with_name("items")
-    clone = copy.deepcopy(s)
-    assert clone._name == "items"
-    first = clone.value
-    clone.value = [1]
-    assert clone.value is first
-
-
-def test_deepcopy_of_a_computed_recomputes_from_its_function():
-    s = Signal(2)
-    c = Computed(lambda: s.value * 10)
-    assert c.value == 20
-    clone = copy.deepcopy(c)
-    assert type(clone) is Computed
-    assert clone.value == 20
-    s.value = 3  # the function reads the original signal, as before the copy
-    assert clone.value == 30
-
-
-def test_deepcopy_of_an_operator_node_reads_the_same_inputs_as_a_lambda_would():
-    s = Signal(2)
-    doubled = s * 2
-    clone = copy.deepcopy(doubled)
-    assert clone.value == 4
-    s.value = 5
-    assert clone.value == 10
-
-
-def test_deepcopy_of_a_binding_follows_a_copy_of_its_source():
-    source = Signal(1)
-    binding = Binding(source)
-    clone = copy.deepcopy(binding)
-    assert clone.value == 1
-    assert clone.source is not source
-    clone.set(7)
-    assert clone.value == 7
-    assert binding.value == 1
-
-
-def test_copied_subclass_keeps_python_attributes():
-    class Labeled(Signal):
-        __slots__ = ("label",)
-
-    s = Labeled(1)
-    s.label = "x"
-    clone = copy.copy(s)
-    assert type(clone) is Labeled
-    assert clone.label == "x"
-    assert clone.value == 1
+    material = Material()
+    doubled = Computed(lambda: material.roughness * 2)
+    assert doubled.value == 1.0  # the read creates the hidden source
+    for duplicate in (copy.copy(material), copy.deepcopy(material)):
+        assert duplicate.roughness == 0.5

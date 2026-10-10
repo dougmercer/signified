@@ -1,10 +1,17 @@
 //! Graph state and the propagation algorithm: dependency tracking, push
-//! invalidation and pull refresh, ported from the Python engine that
-//! signified 0.6 shipped with.
+//! invalidation and pull refresh.
+//!
+//! Edges are stored twice. A consumer (computed or effect) keeps its
+//! dependencies in `deps`, in the order it first read them. Each dependency
+//! keeps its consumers in `observers`. A dependency link records its slot in
+//! the dependency's observer list, and that entry records the link's position,
+//! so either side can find the other in constant time. Removed observers leave
+//! a vacant slot until the list compacts, which keeps notification order.
 
 use std::cell::{Cell, RefCell};
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::{Arc, OnceLock, Weak};
+use std::collections::{HashSet, VecDeque};
+use std::rc::{Rc, Weak};
+use std::sync::OnceLock;
 
 use pyo3::exceptions::{PyException, PyRecursionError, PyRuntimeError, PyTypeError};
 use pyo3::gc::PyVisit;
@@ -17,7 +24,7 @@ use pyo3::PyTraverseError;
 
 use crate::classes::{ComputedCore, SignalCore};
 use crate::config;
-use crate::effects;
+use crate::effects::{self, Job};
 
 // ---------------------------------------------------------------------------
 // Graph state
@@ -42,32 +49,45 @@ pub(crate) enum Kind {
 }
 
 pub(crate) const NEVER: u64 = u64::MAX;
+const NO_SLOT: u32 = u32::MAX;
 
-/// Above this many dependencies, a node indexes its links by dependency.
-const INDEX_THRESHOLD: usize = 16;
+/// Observer lists at least this long compact once half their slots are vacant.
+const COMPACT_MIN_LEN: usize = 16;
 
-/// A subscriber of a node. Engine nodes are held weakly in Rust; Python
-/// observers added with `subscribe()`, and computeds whose class overrides
-/// `update`, are held through Python weakrefs.
-pub(crate) enum Observer {
-    Node(Weak<Node>),
-    Python(Py<PyWeakrefReference>),
+/// `Rc<Node>` made `Send` and `Sync` so a Python object can own one.
+///
+/// SAFETY: nodes are only touched while attached to an interpreter that holds
+/// the GIL, which lets one thread run at a time (the module is
+/// `gil_used = true`), so the non-atomic reference counts and the cells are
+/// never accessed concurrently. No borrow is held across a call into Python,
+/// so a thread switch inside such a call never observes a cell mid-update.
+/// Concurrent use from several threads is unsupported, but it cannot cause a
+/// data race.
+pub(crate) struct Shared(pub(crate) Rc<Node>);
+
+unsafe impl Send for Shared {}
+unsafe impl Sync for Shared {}
+
+impl std::ops::Deref for Shared {
+    type Target = Rc<Node>;
+
+    fn deref(&self) -> &Rc<Node> {
+        &self.0
+    }
 }
 
-impl Observer {
-    fn clone_ref(&self, py: Python<'_>) -> Observer {
-        match self {
-            Observer::Node(weak) => Observer::Node(weak.clone()),
-            Observer::Python(reference) => Observer::Python(reference.clone_ref(py)),
-        }
-    }
-
-    fn is_alive(&self, py: Python<'_>) -> bool {
-        match self {
-            Observer::Node(weak) => weak.strong_count() > 0,
-            Observer::Python(reference) => reference.bind(py).upgrade().is_some(),
-        }
-    }
+/// An entry in a node's observer list.
+pub(crate) enum Observer {
+    /// A removed entry, dropped when the list compacts.
+    Vacant,
+    /// A computed or effect; `link` is the position of its link to this node.
+    Consumer { node: Weak<Node>, link: u32 },
+    /// An object passed to `subscribe()`, held weakly. `id` is its address,
+    /// compared before the weak reference is resolved.
+    Python {
+        reference: Py<PyWeakrefReference>,
+        id: usize,
+    },
 }
 
 /// How a computed node or effect produces its value.
@@ -79,6 +99,8 @@ pub(crate) enum Compute {
         func: Py<PyAny>,
         args: Vec<Py<PyAny>>,
     },
+    /// A `Binding`: read the holder signal, then the source it holds.
+    Source(Py<PyAny>),
 }
 
 impl Compute {
@@ -89,19 +111,50 @@ impl Compute {
                 func: func.clone_ref(py),
                 args: args.iter().map(|arg| arg.clone_ref(py)).collect(),
             },
+            Compute::Source(holder) => Compute::Source(holder.clone_ref(py)),
+        }
+    }
+
+    fn traverse(&self, visit: &PyVisit<'_>) -> Result<(), PyTraverseError> {
+        match self {
+            Compute::Function(f) => visit.call(f),
+            Compute::Call { func, args } => {
+                visit.call(func)?;
+                for arg in args {
+                    visit.call(arg)?;
+                }
+                Ok(())
+            }
+            Compute::Source(holder) => visit.call(holder),
         }
     }
 }
 
-/// Edge from a consumer to one dependency, reused across refreshes.
+/// Which consumer last read a node during a run, and where that consumer's
+/// link to the node is.
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct ReaderLink {
+    reader: usize,
+    position: u32,
+}
+
+const NO_READER: ReaderLink = ReaderLink {
+    reader: 0,
+    position: 0,
+};
+
+/// Edge from a consumer to one dependency, reused across runs.
 pub(crate) struct DepLink {
-    pub(crate) node: Arc<Node>,
+    pub(crate) node: Rc<Node>,
     /// The dependency's Python object; keeps it alive and is visible to the GC.
     pub(crate) handle: Py<PyAny>,
     version: u64,
     read_version: u64,
     seen: u64,
-    active: bool,
+    /// This consumer's entry in `node.observers`, once subscribed.
+    slot: Cell<u32>,
+    /// `node.reader_link` before this run, restored when the run ends.
+    rollback: Cell<ReaderLink>,
 }
 
 /// A failed evaluation, kept as Python objects so the GC can traverse it.
@@ -114,108 +167,111 @@ pub(crate) struct CachedError {
 pub(crate) struct RestorePoint {
     pub(crate) value: Py<PyAny>,
     pub(crate) version: u64,
-    pub(crate) holder: Arc<Node>,
+    pub(crate) holder: Rc<Node>,
     pub(crate) source: Py<PyAny>,
-    pub(crate) source_node: Arc<Node>,
+    pub(crate) source_node: Rc<Node>,
     pub(crate) source_version: u64,
 }
 
 pub(crate) struct Node {
     pub(crate) kind: Kind,
-    pub(crate) value: RefCell<Option<Py<PyAny>>>,
     pub(crate) version: Cell<u64>,
-    pub(crate) observers: RefCell<Vec<Observer>>,
-    pub(crate) compute: RefCell<Option<Compute>>,
+    pub(crate) value: RefCell<Option<Py<PyAny>>>,
     pub(crate) equal: RefCell<Option<Py<PyAny>>>,
     pub(crate) name: RefCell<Option<Py<PyAny>>>,
+    observers: RefCell<Vec<Observer>>,
+    vacant: Cell<u32>,
+    /// Set while a consumer that reads this node runs; see `register_dependency`.
+    reader_link: Cell<ReaderLink>,
+    /// State for computeds and effects; `None` for signals.
+    consumer: Option<Box<Consumer>>,
+}
+
+/// The part of a node that reads other nodes: computeds and effects.
+pub(crate) struct Consumer {
+    pub(crate) compute: RefCell<Option<Compute>>,
     pub(crate) state: Cell<State>,
     computing: Cell<bool>,
     pub(crate) notified: Cell<bool>,
     clock_seen: Cell<u64>,
     token: Cell<u64>,
-    pub(crate) deps: RefCell<Vec<DepLink>>,
-    dep_cursor: Cell<usize>,
-    dep_index: RefCell<Option<HashMap<usize, usize>>>,
+    deps: RefCell<Vec<DepLink>>,
     pub(crate) error: RefCell<Option<CachedError>>,
     pub(crate) restore: RefCell<Option<RestorePoint>>,
-    /// The node's class overrides `update` (or, for a computed, `notify`):
-    /// the engine calls it, and a consumer subscribes as a Python observer.
-    pub(crate) python_update: Cell<bool>,
-    /// The node's class overrides `notify`, so the engine calls it.
-    pub(crate) python_notify: Cell<bool>,
-    /// A weak reference to the node's Python object, kept only when its class
-    /// overrides `update` or `notify`.
-    pub(crate) owner: RefCell<Option<Py<PyWeakrefReference>>>,
     /// Effects only: not disposed.
     pub(crate) active: Cell<bool>,
     /// Effects only: has run at least once.
     pub(crate) has_run: Cell<bool>,
+    /// Effects only: the queue sequence number while queued, else 0.
+    pub(crate) queued: Cell<u64>,
+    /// Effects only: runs in the flush numbered `run_epoch`.
+    pub(crate) runs: Cell<u32>,
+    pub(crate) run_epoch: Cell<u64>,
 }
-
-// SAFETY: every field is read and written only by code running while attached
-// to the interpreter, and the GIL lets one thread run at a time (the module is
-// `gil_used = true`). No borrow is held across a call into Python, so a thread
-// switch inside such a call never observes a cell mid-update. Concurrent use
-// from several threads is unsupported, but it cannot cause a data race.
-unsafe impl Send for Node {}
-unsafe impl Sync for Node {}
 
 impl Node {
     pub(crate) fn new(kind: Kind) -> Node {
+        let consumer = match kind {
+            Kind::Signal => None,
+            Kind::Computed | Kind::Effect => Some(Box::new(Consumer {
+                compute: RefCell::new(None),
+                state: Cell::new(if kind == Kind::Computed {
+                    State::Uninitialized
+                } else {
+                    State::Fresh
+                }),
+                computing: Cell::new(false),
+                notified: Cell::new(false),
+                clock_seen: Cell::new(NEVER),
+                token: Cell::new(0),
+                deps: RefCell::new(Vec::new()),
+                error: RefCell::new(None),
+                restore: RefCell::new(None),
+                active: Cell::new(false),
+                has_run: Cell::new(false),
+                queued: Cell::new(0),
+                runs: Cell::new(0),
+                run_epoch: Cell::new(0),
+            })),
+        };
         Node {
             kind,
-            value: RefCell::new(None),
             version: Cell::new(0),
-            observers: RefCell::new(Vec::new()),
-            compute: RefCell::new(None),
+            value: RefCell::new(None),
             equal: RefCell::new(None),
             name: RefCell::new(None),
-            state: Cell::new(match kind {
-                Kind::Computed => State::Uninitialized,
-                Kind::Signal | Kind::Effect => State::Fresh,
-            }),
-            computing: Cell::new(false),
-            notified: Cell::new(false),
-            clock_seen: Cell::new(NEVER),
-            token: Cell::new(0),
-            deps: RefCell::new(Vec::new()),
-            dep_cursor: Cell::new(0),
-            dep_index: RefCell::new(None),
-            error: RefCell::new(None),
-            restore: RefCell::new(None),
-            python_update: Cell::new(false),
-            python_notify: Cell::new(false),
-            owner: RefCell::new(None),
-            active: Cell::new(false),
-            has_run: Cell::new(false),
+            observers: RefCell::new(Vec::new()),
+            vacant: Cell::new(0),
+            reader_link: Cell::new(NO_READER),
+            consumer,
         }
+    }
+
+    /// The consumer state of a computed or effect.
+    pub(crate) fn consumer(&self) -> &Consumer {
+        self.consumer
+            .as_deref()
+            .expect("only computeds and effects read other nodes")
     }
 
     /// Visit every Python object this node owns; busy cells are skipped.
     pub(crate) fn traverse(&self, visit: &PyVisit<'_>) -> Result<(), PyTraverseError> {
-        if let Ok(value) = self.value.try_borrow() {
-            if let Some(value) = value.as_ref() {
-                visit.call(value)?;
-            }
-        }
-        if let Ok(compute) = self.compute.try_borrow() {
-            match compute.as_ref() {
-                Some(Compute::Function(f)) => visit.call(f)?,
-                Some(Compute::Call { func, args }) => {
-                    visit.call(func)?;
-                    for arg in args {
-                        visit.call(arg)?;
-                    }
+        for cell in [&self.value, &self.equal] {
+            if let Ok(object) = cell.try_borrow() {
+                if let Some(object) = object.as_ref() {
+                    visit.call(object)?;
                 }
-                None => {}
             }
         }
-        if let Ok(equal) = self.equal.try_borrow() {
-            if let Some(equal) = equal.as_ref() {
-                visit.call(equal)?;
+        let Some(consumer) = self.consumer.as_deref() else {
+            return Ok(());
+        };
+        if let Ok(compute) = consumer.compute.try_borrow() {
+            if let Some(compute) = compute.as_ref() {
+                compute.traverse(visit)?;
             }
         }
-        if let Ok(error) = self.error.try_borrow() {
+        if let Ok(error) = consumer.error.try_borrow() {
             if let Some(cached) = error.as_ref() {
                 visit.call(&cached.exception)?;
                 if let Some(traceback) = cached.traceback.as_ref() {
@@ -223,12 +279,12 @@ impl Node {
                 }
             }
         }
-        if let Ok(deps) = self.deps.try_borrow() {
+        if let Ok(deps) = consumer.deps.try_borrow() {
             for link in deps.iter() {
                 visit.call(&link.handle)?;
             }
         }
-        if let Ok(restore) = self.restore.try_borrow() {
+        if let Ok(restore) = consumer.restore.try_borrow() {
             if let Some(point) = restore.as_ref() {
                 visit.call(&point.value)?;
                 visit.call(&point.source)?;
@@ -238,37 +294,54 @@ impl Node {
     }
 
     /// Drop every Python object this node owns (for `__clear__`).
-    pub(crate) fn clear(self: &Arc<Self>, py: Python<'_>) {
-        detach_all_deps(py, self, None);
-        let compute = self.compute.take();
+    pub(crate) fn clear(self: &Rc<Self>) {
+        detach_all_deps(self);
         let value = self.value.take();
         let equal = self.equal.take();
         let name = self.name.take();
-        let error = self.error.take();
-        let restore = self.restore.take();
-        let owner = self.owner.take();
-        drop((compute, value, equal, name, error, restore, owner));
+        let consumer = self.consumer.as_deref().map(|consumer| {
+            (
+                consumer.compute.take(),
+                consumer.error.take(),
+                consumer.restore.take(),
+            )
+        });
+        drop((value, equal, name, consumer));
+    }
+}
+
+impl Drop for Node {
+    /// A freed consumer unsubscribes from its dependencies right away.
+    fn drop(&mut self) {
+        let key = self as *const Node as usize;
+        if let Some(consumer) = self.consumer.as_mut() {
+            let links = std::mem::take(consumer.deps.get_mut());
+            unlink(key, &links);
+            // Dropping the links can free dependencies and run Python code;
+            // nothing is borrowed here.
+            drop(links);
+        }
     }
 }
 
 // ---------------------------------------------------------------------------
-// Runtime: version clock, tracking frames, notification wave, effect queue
+// Runtime: version clock, tracking frames, notification depth, effect queue
 // ---------------------------------------------------------------------------
 
 pub(crate) struct Runtime {
     clock: Cell<u64>,
     /// The consumer being evaluated, innermost last; `None` marks an untracked block.
-    frames: RefCell<Vec<Option<Arc<Node>>>>,
-    /// Nodes already notified in the current wave.
-    wave: RefCell<HashSet<usize>>,
+    frames: RefCell<Vec<Option<Rc<Node>>>>,
+    /// Nesting of notification walks; effects run when it returns to zero.
     pub(crate) wave_depth: Cell<u32>,
     /// Classes whose `.value` is the engine's own getter (see `resolve_arg`).
     standard_types: RefCell<Vec<Py<PyAny>>>,
-    /// Effects waiting to run, in scheduling order, with a sequence number.
-    pub(crate) pending: RefCell<VecDeque<(Weak<Node>, u64)>>,
-    /// The live sequence number of each pending effect.
-    pub(crate) pending_index: RefCell<HashMap<usize, u64>>,
+    /// Effects and observers waiting to run, in the order they were queued.
+    pub(crate) pending: RefCell<VecDeque<Job>>,
     pub(crate) pending_seq: Cell<u64>,
+    /// Weak references of observers already in `pending`.
+    pub(crate) queued_observers: RefCell<HashSet<usize>>,
+    pub(crate) flush_epoch: Cell<u64>,
     pub(crate) batch_depth: Cell<u32>,
     pub(crate) flushing: Cell<bool>,
     /// The plugin manager's `hook` object, when hooks are on.
@@ -277,8 +350,8 @@ pub(crate) struct Runtime {
     pub(crate) migration_warnings: Cell<bool>,
 }
 
-// SAFETY: as for `Node`; one runtime is shared by all threads, like the
-// module-level state of a Python implementation, and the GIL serializes access.
+// SAFETY: as for `Shared`; one runtime is shared by all threads, like a
+// module's globals, and the GIL serializes access.
 unsafe impl Send for Runtime {}
 unsafe impl Sync for Runtime {}
 
@@ -287,12 +360,12 @@ pub(crate) fn rt() -> &'static Runtime {
     RT.get_or_init(|| Runtime {
         clock: Cell::new(0),
         frames: RefCell::new(Vec::new()),
-        wave: RefCell::new(HashSet::new()),
         wave_depth: Cell::new(0),
         standard_types: RefCell::new(Vec::new()),
         pending: RefCell::new(VecDeque::new()),
-        pending_index: RefCell::new(HashMap::new()),
         pending_seq: Cell::new(0),
+        queued_observers: RefCell::new(HashSet::new()),
+        flush_epoch: Cell::new(0),
         batch_depth: Cell::new(0),
         flushing: Cell::new(false),
         hooks: RefCell::new(None),
@@ -321,11 +394,11 @@ pub(crate) fn bump_version(node: &Node) -> u64 {
     version
 }
 
-pub(crate) fn push_frame(frame: Option<Arc<Node>>) {
+pub(crate) fn push_frame(frame: Option<Rc<Node>>) {
     rt().frames.borrow_mut().push(frame);
 }
 
-pub(crate) fn pop_frame() -> Option<Option<Arc<Node>>> {
+pub(crate) fn pop_frame() -> Option<Option<Rc<Node>>> {
     rt().frames.borrow_mut().pop()
 }
 
@@ -384,199 +457,242 @@ impl Drop for RecursionGuard {
 }
 
 // ---------------------------------------------------------------------------
-// Dependency tracking
+// Observer lists
 // ---------------------------------------------------------------------------
 
 fn node_key(node: &Node) -> usize {
     node as *const Node as usize
 }
 
-fn track_read(node: &Arc<Node>, handle: &Bound<'_, PyAny>) {
+fn has_observers(node: &Node) -> bool {
+    node.observers.borrow().len() > node.vacant.get() as usize
+}
+
+fn push_observer(node: &Node, observer: Observer) -> u32 {
+    let mut observers = node.observers.borrow_mut();
+    observers.push(observer);
+    (observers.len() - 1) as u32
+}
+
+/// Remove the observer in `slot` without compacting, and return it so the
+/// caller drops it with nothing borrowed.
+fn take_slot(node: &Node, slot: u32) -> Observer {
+    let removed = match node.observers.borrow_mut().get_mut(slot as usize) {
+        Some(entry) => std::mem::replace(entry, Observer::Vacant),
+        None => Observer::Vacant,
+    };
+    if !matches!(removed, Observer::Vacant) {
+        node.vacant.set(node.vacant.get() + 1);
+    }
+    removed
+}
+
+/// Remove the observer in `slot`, compacting the list if it got sparse.
+fn vacate(node: &Node, slot: u32) -> Observer {
+    let removed = take_slot(node, slot);
+    compact_if_sparse(node);
+    removed
+}
+
+/// Remove the consumer `key`'s entry in `dep`'s observer list, if `slot`
+/// still holds it.
+fn unsubscribe_consumer(dep: &Node, slot: u32, key: usize) {
+    let owned = matches!(
+        dep.observers.borrow().get(slot as usize),
+        Some(Observer::Consumer { node, .. }) if node.as_ptr() as usize == key
+    );
+    if owned {
+        drop(vacate(dep, slot));
+    }
+}
+
+/// Drop vacant slots once they make up half of a long list. Consumers whose
+/// entries move get their links' slots updated. Not during a notification
+/// walk, which iterates the lists by position.
+fn compact_if_sparse(node: &Node) {
+    let vacant = node.vacant.get() as usize;
+    let len = node.observers.borrow().len();
+    let all_vacant = vacant == len;
+    if rt().wave_depth.get() > 0 || !(all_vacant || (len >= COMPACT_MIN_LEN && vacant * 2 > len)) {
+        return;
+    }
+    let mut observers = node.observers.borrow_mut();
+    let mut write = 0;
+    for read in 0..observers.len() {
+        if matches!(observers[read], Observer::Vacant) {
+            continue;
+        }
+        if read != write {
+            observers.swap(read, write);
+            if let Observer::Consumer {
+                node: consumer,
+                link,
+            } = &observers[write]
+            {
+                if let Some(consumer) = consumer.upgrade() {
+                    if let Some(link) = consumer.consumer().deps.borrow().get(*link as usize) {
+                        link.slot.set(write as u32);
+                    }
+                }
+            }
+        }
+        write += 1;
+    }
+    // Only vacant entries are truncated, so nothing Python is dropped here.
+    observers.truncate(write);
+    node.vacant.set(0);
+}
+
+/// Unsubscribe a consumer (identified by `key`) from each of `links`, and
+/// undo `register_dependency` bookkeeping that still points at it.
+fn unlink(key: usize, links: &[DepLink]) {
+    for link in links.iter().rev() {
+        if link.node.reader_link.get().reader == key {
+            link.node.reader_link.set(link.rollback.get());
+        }
+        let slot = link.slot.get();
+        if slot != NO_SLOT {
+            unsubscribe_consumer(&link.node, slot, key);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Dependency tracking
+// ---------------------------------------------------------------------------
+
+fn track_read(node: &Rc<Node>, handle: &Bound<'_, PyAny>) {
     let frames = rt().frames.borrow();
     if let Some(Some(reader)) = frames.last() {
         // Self-reads would make a node depend on itself.
-        if !Arc::ptr_eq(reader, node) {
+        if !Rc::ptr_eq(reader, node) {
             register_dependency(reader, node, handle);
         }
     }
 }
 
-/// Stamp `dep`'s link with the current refresh, adding the link if needed.
-/// Only Rust allocations happen here, so holding borrows is safe.
-fn register_dependency(reader: &Node, dep: &Arc<Node>, handle: &Bound<'_, PyAny>) {
-    let token = reader.token.get();
+/// Stamp `dep`'s link with the current run, adding the link if needed. While
+/// a consumer runs, each of its dependencies records where its link is, so the
+/// lookup needs no search. Only Rust allocations happen here, so holding
+/// borrows is safe.
+fn register_dependency(reader: &Rc<Node>, dep: &Rc<Node>, handle: &Bound<'_, PyAny>) {
+    let consumer = reader.consumer();
+    let token = consumer.token.get();
     let read_version = dep.version.get();
-    let mut deps = reader.deps.borrow_mut();
-    // Reads usually repeat the previous refresh's order, so try the next link first.
-    let cursor = reader.dep_cursor.get();
-    let position = if deps
-        .get(cursor)
-        .is_some_and(|link| Arc::ptr_eq(&link.node, dep))
-    {
-        Some(cursor)
-    } else {
-        match reader.dep_index.borrow().as_ref() {
-            Some(index) => index.get(&node_key(dep)).copied(),
-            None => deps.iter().position(|link| Arc::ptr_eq(&link.node, dep)),
-        }
-    };
-    match position {
-        Some(position) => {
-            let link = &mut deps[position];
-            link.seen = token;
-            link.read_version = read_version;
-            reader.dep_cursor.set(position + 1);
-        }
-        None => {
-            let position = deps.len();
-            deps.push(DepLink {
-                node: dep.clone(),
-                handle: handle.clone().unbind(),
-                version: NEVER,
-                read_version,
-                seen: token,
-                active: false,
-            });
-            reader.dep_cursor.set(position + 1);
-            let mut index = reader.dep_index.borrow_mut();
-            match index.as_mut() {
-                Some(index) => {
-                    index.insert(node_key(dep), position);
-                }
-                None if deps.len() > INDEX_THRESHOLD => *index = Some(build_index(&deps)),
-                None => {}
+    let key = node_key(reader);
+    let current = dep.reader_link.get();
+    let mut deps = consumer.deps.borrow_mut();
+    if current.reader == key {
+        if let Some(link) = deps.get_mut(current.position as usize) {
+            if Rc::ptr_eq(&link.node, dep) {
+                link.seen = token;
+                link.read_version = read_version;
+                return;
             }
         }
     }
+    let position = deps.len() as u32;
+    deps.push(DepLink {
+        node: dep.clone(),
+        handle: handle.clone().unbind(),
+        version: NEVER,
+        read_version,
+        seen: token,
+        slot: Cell::new(NO_SLOT),
+        rollback: Cell::new(current),
+    });
+    dep.reader_link.set(ReaderLink {
+        reader: key,
+        position,
+    });
 }
 
-fn build_index(deps: &[DepLink]) -> HashMap<usize, usize> {
-    deps.iter()
-        .enumerate()
-        .map(|(position, link)| (node_key(&link.node), position))
-        .collect()
+/// Begin a run: new token, and point each dependency at its link.
+pub(crate) fn start_refresh(node: &Rc<Node>) {
+    let consumer = node.consumer();
+    consumer.token.set(consumer.token.get() + 1);
+    let reader = node_key(node);
+    for (position, link) in consumer.deps.borrow().iter().enumerate() {
+        link.rollback.set(link.node.reader_link.get());
+        link.node.reader_link.set(ReaderLink {
+            reader,
+            position: position as u32,
+        });
+    }
 }
 
-pub(crate) fn start_refresh(node: &Node) {
-    node.token.set(node.token.get() + 1);
-    node.dep_cursor.set(0);
-}
-
-/// Subscribe to every dependency read during this run and drop the rest. Runs
+/// End a run: subscribe to every dependency it read and drop the rest. Runs
 /// after successful and failed runs alike, so a consumer always depends on
 /// exactly what its last run read.
-pub(crate) fn commit_refresh(
-    py: Python<'_>,
-    reader: &Arc<Node>,
-    handle: Option<&Bound<'_, PyAny>>,
-) {
-    let token = reader.token.get();
-    let owner = owner_of(py, reader, handle);
-    let python_update = owner.is_some();
-    let mut dropped = Vec::new();
-    let mut subscribe = Vec::new();
-    let mut unsubscribe = Vec::new();
-    {
-        let mut deps = reader.deps.borrow_mut();
-        let mut kept = Vec::with_capacity(deps.len());
-        for mut link in deps.drain(..) {
-            if link.seen == token {
-                if !link.active {
-                    if python_update {
-                        subscribe.push(link.node.clone());
-                    } else {
-                        link.node
-                            .observers
-                            .borrow_mut()
-                            .push(Observer::Node(Arc::downgrade(reader)));
-                    }
-                    link.active = true;
-                }
-                link.version = link.read_version;
-                kept.push(link);
-            } else {
-                if link.active {
-                    if python_update {
-                        unsubscribe.push(link.node.clone());
-                    } else {
-                        remove_node_observer(&link.node, reader);
-                    }
-                }
-                dropped.push(link);
-            }
+pub(crate) fn commit_refresh(reader: &Rc<Node>) {
+    let consumer = reader.consumer();
+    let token = consumer.token.get();
+    let mut subscribe: Vec<(Rc<Node>, u32)> = Vec::new();
+    let mut moved: Vec<(Rc<Node>, u32, u32)> = Vec::new();
+    let dropped = {
+        let mut deps = consumer.deps.borrow_mut();
+        // Undo `start_refresh` and `register_dependency`, innermost first.
+        for link in deps.iter().rev() {
+            link.node.reader_link.set(link.rollback.get());
         }
-        let changed = !dropped.is_empty();
-        *deps = kept;
-        let mut index = reader.dep_index.borrow_mut();
-        if deps.len() > INDEX_THRESHOLD {
-            if changed || index.is_none() {
-                *index = Some(build_index(&deps));
+        // Keep links read this run, in order, at the front.
+        let mut write = 0;
+        for read in 0..deps.len() {
+            if deps[read].seen != token {
+                continue;
             }
-        } else {
-            *index = None;
+            if read != write {
+                deps.swap(read, write);
+            }
+            let link = &mut deps[write];
+            link.version = link.read_version;
+            let slot = link.slot.get();
+            if slot == NO_SLOT {
+                subscribe.push((link.node.clone(), write as u32));
+            } else if read != write {
+                moved.push((link.node.clone(), slot, write as u32));
+            }
+            write += 1;
+        }
+        deps.split_off(write)
+    };
+    for (dep, slot, position) in moved {
+        if let Some(Observer::Consumer { link, .. }) =
+            dep.observers.borrow_mut().get_mut(slot as usize)
+        {
+            *link = position;
         }
     }
-    if let Some(owner) = &owner {
-        for dep in subscribe {
-            // Errors here mean the reader cannot be weakly referenced, which
-            // `__init__` already ruled out.
-            let _ = add_python_observer(&dep, owner);
+    let key = node_key(reader);
+    for link in &dropped {
+        let slot = link.slot.get();
+        if slot != NO_SLOT {
+            unsubscribe_consumer(&link.node, slot, key);
         }
-        for dep in unsubscribe {
-            remove_python_observer(py, &dep, owner);
+    }
+    for (dep, position) in subscribe {
+        let slot = push_observer(
+            &dep,
+            Observer::Consumer {
+                node: Rc::downgrade(reader),
+                link: position,
+            },
+        );
+        if let Some(link) = consumer.deps.borrow().get(position as usize) {
+            link.slot.set(slot);
         }
     }
     // Dropping a link can free its dependency, which can run Python code.
     drop(dropped);
 }
 
-fn remove_node_observer(dep: &Node, reader: &Arc<Node>) {
-    let target = Arc::as_ptr(reader);
-    dep.observers
-        .borrow_mut()
-        .retain(|observer| match observer {
-            Observer::Node(weak) => weak.as_ptr() != target && weak.strong_count() > 0,
-            Observer::Python(_) => true,
-        });
-}
-
-/// The Python object of a consumer that subscribes through Python, if any.
-fn owner_of<'py>(
-    py: Python<'py>,
-    node: &Node,
-    handle: Option<&Bound<'py, PyAny>>,
-) -> Option<Bound<'py, PyAny>> {
-    if !node.python_update.get() {
-        return None;
-    }
-    if let Some(handle) = handle {
-        return Some(handle.clone());
-    }
-    let reference = node
-        .owner
-        .borrow()
-        .as_ref()
-        .map(|reference| reference.clone_ref(py));
-    reference.and_then(|reference| reference.bind(py).upgrade())
-}
-
 /// Unsubscribe from every dependency and forget them.
-pub(crate) fn detach_all_deps(
-    py: Python<'_>,
-    reader: &Arc<Node>,
-    handle: Option<&Bound<'_, PyAny>>,
-) {
-    let links = std::mem::take(&mut *reader.deps.borrow_mut());
-    reader.dep_index.replace(None);
-    let owner = owner_of(py, reader, handle);
-    for link in &links {
-        if link.active {
-            match &owner {
-                Some(owner) => remove_python_observer(py, &link.node, owner),
-                None => remove_node_observer(&link.node, reader),
-            }
-        }
-    }
+pub(crate) fn detach_all_deps(reader: &Rc<Node>) {
+    let Some(consumer) = reader.consumer.as_deref() else {
+        return;
+    };
+    let links = std::mem::take(&mut *consumer.deps.borrow_mut());
+    unlink(node_key(reader), &links);
     drop(links);
 }
 
@@ -587,6 +703,7 @@ pub(crate) fn dependency_handles<'py>(
     node: &Node,
 ) -> PyResult<Bound<'py, PyTuple>> {
     let handles: Vec<Py<PyAny>> = node
+        .consumer()
         .deps
         .borrow()
         .iter()
@@ -602,121 +719,77 @@ pub(crate) fn dependency_handles<'py>(
 /// Mark stale and return whether observers still need to hear about it.
 /// `force` upgrades to `MustRefresh`, bypassing the dependency check.
 pub(crate) fn invalidate(node: &Node, force: bool) -> bool {
+    let consumer = node.consumer();
     let target = if force {
         State::MustRefresh
     } else {
         State::Stale
     };
-    if node.state.get() < target {
-        node.state.set(target);
+    if consumer.state.get() < target {
+        consumer.state.set(target);
     }
-    if node.notified.get() {
+    if consumer.notified.get() {
         return false;
     }
-    node.notified.set(true);
+    consumer.notified.set(true);
     true
 }
 
-/// Prune dead observers and return a snapshot that is safe to iterate while
-/// Python code runs.
-fn snapshot_observers(py: Python<'_>, node: &Node) -> Vec<Observer> {
-    let current = std::mem::take(&mut *node.observers.borrow_mut());
-    let (alive, dead): (Vec<Observer>, Vec<Observer>) = current
-        .into_iter()
-        .partition(|observer| observer.is_alive(py));
-    let snapshot = alive
-        .iter()
-        .map(|observer| observer.clone_ref(py))
-        .collect();
-    {
-        let mut observers = node.observers.borrow_mut();
-        // Keep anything subscribed while the list was taken out.
-        let added = std::mem::take(&mut *observers);
-        *observers = alive;
-        observers.extend(added);
-    }
-    drop(dead);
-    snapshot
-}
-
-fn mark_notified(node: &Node) -> bool {
-    rt().wave.borrow_mut().insert(node_key(node))
-}
-
-/// Tell `start`'s observers it changed: invalidate dependent computeds
-/// depth-first, schedule dependent effects, call Python observers' `update()`.
-/// A node without observers stays out of the wave, so observers added later in
-/// the wave still hear its next write. Effects run once the outermost wave ends.
-/// Notify `node`'s observers through its class's `notify` if it overrides it.
-pub(crate) fn notify_node(
-    py: Python<'_>,
-    node: &Arc<Node>,
-    handle: &Bound<'_, PyAny>,
-) -> PyResult<()> {
-    if node.python_notify.get() {
-        handle.call_method0(intern!(py, "notify"))?;
-        return Ok(());
-    }
-    notify(py, node)
-}
-
-pub(crate) fn notify(py: Python<'_>, start: &Arc<Node>) -> PyResult<()> {
-    let observers = snapshot_observers(py, start);
-    if observers.is_empty() || !mark_notified(start) {
+/// Tell `start`'s observers it changed: mark dependent computeds stale,
+/// depth-first, and queue dependent effects and `subscribe()` observers.
+/// No Python code runs during the walk. Queued work runs once the outermost
+/// walk ends, unless a batch or flush is in progress.
+pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
+    if !has_observers(start) {
         return Ok(());
     }
     let rt = rt();
     rt.wave_depth.set(rt.wave_depth.get() + 1);
-    let result = notify_wave(py, observers);
+    walk(py, start);
     let depth = rt.wave_depth.get() - 1;
     rt.wave_depth.set(depth);
-    if depth == 0 {
-        rt.wave.borrow_mut().clear();
-    }
-    result?;
     if depth == 0 {
         effects::flush(py)?;
     }
     Ok(())
 }
 
-/// Walk observers depth-first with an explicit stack, so long chains cannot
-/// overflow.
-fn notify_wave(py: Python<'_>, first: Vec<Observer>) -> PyResult<()> {
-    let mut frames: Vec<(Vec<Observer>, usize)> = vec![(first, 0)];
-    while let Some((observers, index)) = frames.last_mut() {
-        if *index >= observers.len() {
-            frames.pop();
-            continue;
-        }
-        let observer = observers[*index].clone_ref(py);
+enum Step {
+    Done,
+    Skip,
+    Consumer(Rc<Node>),
+    Python(Py<PyWeakrefReference>),
+}
+
+/// Depth-first, with an explicit stack so long chains cannot overflow.
+fn walk(py: Python<'_>, start: &Rc<Node>) {
+    let mut stack: Vec<(Rc<Node>, usize)> = vec![(start.clone(), 0)];
+    while let Some((node, index)) = stack.last_mut() {
+        let step = match node.observers.borrow().get(*index) {
+            None => Step::Done,
+            Some(Observer::Vacant) => Step::Skip,
+            Some(Observer::Consumer { node, .. }) => {
+                node.upgrade().map_or(Step::Skip, Step::Consumer)
+            }
+            Some(Observer::Python { reference, .. }) => Step::Python(reference.clone_ref(py)),
+        };
         *index += 1;
-        match observer {
-            Observer::Node(weak) => {
-                let Some(node) = weak.upgrade() else {
-                    continue;
-                };
-                match node.kind {
-                    Kind::Effect => effects::schedule(py, &node)?,
-                    Kind::Computed | Kind::Signal => {
-                        if invalidate(&node, false) {
-                            let next = snapshot_observers(py, &node);
-                            if !next.is_empty() && mark_notified(&node) {
-                                frames.push((next, 0));
-                            }
-                        }
+        match step {
+            Step::Done => {
+                stack.pop();
+            }
+            Step::Skip => {}
+            Step::Consumer(consumer) => match consumer.kind {
+                Kind::Effect => effects::enqueue_effect(&consumer),
+                Kind::Computed | Kind::Signal => {
+                    if invalidate(&consumer, false) && has_observers(&consumer) {
+                        stack.push((consumer, 0));
                     }
                 }
-            }
-            Observer::Python(reference) => {
-                let target = reference.bind(py).upgrade();
-                if let Some(target) = target {
-                    target.call_method0(intern!(py, "update"))?;
-                }
-            }
+            },
+            Step::Python(reference) => effects::enqueue_observer(reference),
         }
     }
-    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -725,24 +798,25 @@ fn notify_wave(py: Python<'_>, first: Vec<Observer>) -> PyResult<()> {
 
 pub(crate) fn ensure_uptodate(
     py: Python<'_>,
-    node: &Arc<Node>,
+    node: &Rc<Node>,
     handle: &Bound<'_, PyAny>,
 ) -> PyResult<()> {
-    if node.state.get() == State::Fresh {
+    let consumer = node.consumer();
+    if consumer.state.get() == State::Fresh {
         return Ok(());
     }
     let _guard = RecursionGuard::enter(py)?;
     // Any refresh attempt means observers must be told about the next change.
-    node.notified.set(false);
-    let state = node.state.get();
+    consumer.notified.set(false);
+    let state = consumer.state.get();
     // The graph has not changed since this node was last current.
-    if state == State::Stale && node.clock_seen.get() == clock() {
-        node.state.set(State::Fresh);
+    if state == State::Stale && consumer.clock_seen.get() == clock() {
+        consumer.state.set(State::Fresh);
         return Ok(());
     }
     if state == State::Stale && !dependencies_changed(py, node)? {
-        node.state.set(State::Fresh);
-        node.clock_seen.set(clock());
+        consumer.state.set(State::Fresh);
+        consumer.clock_seen.set(clock());
         return Ok(());
     }
     refresh(py, node, handle)
@@ -750,20 +824,28 @@ pub(crate) fn ensure_uptodate(
 
 /// Bring computed dependencies up to date, then report whether any
 /// dependency's version differs from the one this consumer last saw.
-pub(crate) fn dependencies_changed(py: Python<'_>, node: &Arc<Node>) -> PyResult<bool> {
+pub(crate) fn dependencies_changed(py: Python<'_>, node: &Rc<Node>) -> PyResult<bool> {
+    let deps = &node.consumer().deps;
     let mut position = 0;
     loop {
-        let next = node
-            .deps
-            .borrow()
-            .get(position)
-            .map(|link| (link.node.clone(), link.handle.clone_ref(py), link.version));
-        let Some((dep, handle, seen_version)) = next else {
-            return Ok(false);
+        // Signals are compared in place; a computed may run Python code to
+        // refresh, so it is copied out first.
+        let computed = {
+            let deps = deps.borrow();
+            let Some(link) = deps.get(position) else {
+                return Ok(false);
+            };
+            if link.node.kind != Kind::Computed {
+                if link.version != link.node.version.get() {
+                    return Ok(true);
+                }
+                position += 1;
+                continue;
+            }
+            (link.node.clone(), link.handle.clone_ref(py), link.version)
         };
-        if dep.kind == Kind::Computed {
-            ensure_uptodate(py, &dep, handle.bind(py))?;
-        }
+        let (dep, handle, seen_version) = computed;
+        ensure_uptodate(py, &dep, handle.bind(py))?;
         if seen_version != dep.version.get() {
             return Ok(true);
         }
@@ -773,23 +855,24 @@ pub(crate) fn dependencies_changed(py: Python<'_>, node: &Arc<Node>) -> PyResult
 
 /// Effects only: a dependency changed after this run read it.
 pub(crate) fn invalidated_since_read(node: &Node) -> bool {
-    node.deps.borrow().iter().any(|link| {
+    node.consumer().deps.borrow().iter().any(|link| {
         link.version != link.node.version.get()
-            || (link.node.kind == Kind::Computed && link.node.notified.get())
+            || (link.node.kind == Kind::Computed && link.node.consumer().notified.get())
     })
 }
 
-fn refresh(py: Python<'_>, node: &Arc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
-    let restore_point = node.restore.take();
-    if node.computing.get() {
+fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
+    let consumer = node.consumer();
+    let restore_point = consumer.restore.take();
+    if consumer.computing.get() {
         return Err(PyRuntimeError::new_err(
             "Cycle detected while evaluating Computed",
         ));
     }
-    let forced = node.state.get() == State::MustRefresh;
-    let had_outcome = node.state.get() != State::Uninitialized;
-    let had_error = node.error.borrow().is_some();
-    let compute = node
+    let forced = consumer.state.get() == State::MustRefresh;
+    let had_outcome = consumer.state.get() != State::Uninitialized;
+    let had_error = consumer.error.borrow().is_some();
+    let compute = consumer
         .compute
         .borrow()
         .as_ref()
@@ -801,7 +884,7 @@ fn refresh(py: Python<'_>, node: &Arc<Node>, handle: &Bound<'_, PyAny>) -> PyRes
     };
 
     // 1) Evaluate with dependency tracking enabled.
-    node.computing.set(true);
+    consumer.computing.set(true);
     start_refresh(node);
     push_frame(Some(node.clone()));
     let mut result = run_compute(py, &compute);
@@ -811,15 +894,15 @@ fn refresh(py: Python<'_>, node: &Arc<Node>, handle: &Bound<'_, PyAny>) -> PyRes
         }
     }
     pop_frame();
-    node.computing.set(false);
+    consumer.computing.set(false);
     // 2) Subscribe to what this run read, even if it raised.
-    commit_refresh(py, node, Some(handle));
+    commit_refresh(node);
     drop(compute);
 
     let (mut next_value, mut next_error) = match result {
         Ok(value) => (Some(value), None),
         Err(error) if error.is_instance_of::<PyException>(py) => (None, Some(error)),
-        Err(error) => return Err(escalate(node, error)),
+        Err(error) => return Err(escalate(consumer, error)),
     };
 
     // 3) A custom equality can declare a new value unchanged, which keeps the
@@ -837,14 +920,14 @@ fn refresh(py: Python<'_>, node: &Arc<Node>, handle: &Bound<'_, PyAny>) -> PyRes
             .map(|equal| equal.clone_ref(py));
         if let (Some(equal), Some(previous), Some(next)) = (&equal, &previous, &next_value) {
             if !previous.is(next) {
-                match call_equal(py, equal.bind(py), previous.bind(py), next.bind(py)) {
+                match call_equal(equal.bind(py), previous.bind(py), next.bind(py)) {
                     Ok(true) => next_value = Some(previous.clone_ref(py)),
                     Ok(false) => {}
                     Err(error) if error.is_instance_of::<PyException>(py) => {
                         next_value = None;
                         next_error = Some(error);
                     }
-                    Err(error) => return Err(escalate(node, error)),
+                    Err(error) => return Err(escalate(consumer, error)),
                 }
             }
         }
@@ -867,16 +950,16 @@ fn refresh(py: Python<'_>, node: &Arc<Node>, handle: &Bound<'_, PyAny>) -> PyRes
         exception: error.into_value(py).into_any(),
     });
     let has_error = cached.is_some();
-    let old_error = node.error.replace(cached);
-    node.state.set(State::Fresh);
+    let old_error = consumer.error.replace(cached);
+    consumer.state.set(State::Fresh);
     let mut old_value = None;
     if changed {
         old_value = node.value.replace(next_value);
-        node.clock_seen.set(bump_version(node));
+        consumer.clock_seen.set(bump_version(node));
     } else if forced {
-        node.clock_seen.set(bump_version(node));
+        consumer.clock_seen.set(bump_version(node));
     } else {
-        node.clock_seen.set(clock());
+        consumer.clock_seen.set(clock());
     }
     drop((old_value, old_error, previous));
     if changed || forced {
@@ -895,9 +978,9 @@ fn refresh(py: Python<'_>, node: &Arc<Node>, handle: &Bound<'_, PyAny>) -> PyRes
 
 /// A control-flow exception aborts evaluation instead of being cached; the
 /// next read must retry even though dependencies were committed.
-fn escalate(node: &Node, error: PyErr) -> PyErr {
-    if node.state.get() < State::MustRefresh {
-        node.state.set(State::MustRefresh);
+fn escalate(consumer: &Consumer, error: PyErr) -> PyErr {
+    if consumer.state.get() < State::MustRefresh {
+        consumer.state.set(State::MustRefresh);
     }
     error
 }
@@ -944,17 +1027,19 @@ pub(crate) fn run_compute(py: Python<'_>, compute: &Compute) -> PyResult<Py<PyAn
                 }
             }
         }
+        Compute::Source(holder) => {
+            let source = resolve_arg(py, holder.bind(py))?;
+            Ok(resolve_arg(py, &source)?.unbind())
+        }
     }
 }
 
 /// Call a custom equality with reads untracked, so it cannot add dependencies.
 pub(crate) fn call_equal(
-    py: Python<'_>,
     equal: &Bound<'_, PyAny>,
     previous: &Bound<'_, PyAny>,
     current: &Bound<'_, PyAny>,
 ) -> PyResult<bool> {
-    let _ = py;
     push_frame(None);
     let result = equal.call1((previous, current));
     pop_frame();
@@ -964,7 +1049,10 @@ pub(crate) fn call_equal(
 /// Unwrap one reactive boundary, like `unref`. Instances of the registered
 /// classes are read natively; any other reactive object (for example a
 /// subclass that overrides `value`) goes through its Python `value` attribute.
-fn resolve_arg<'py>(py: Python<'py>, arg: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyAny>> {
+pub(crate) fn resolve_arg<'py>(
+    py: Python<'py>,
+    arg: &Bound<'py, PyAny>,
+) -> PyResult<Bound<'py, PyAny>> {
     if arg.is_none()
         || arg.is_exact_instance_of::<PyFloat>()
         || arg.is_exact_instance_of::<PyInt>()
@@ -1025,19 +1113,27 @@ pub(crate) fn has_changed(
 // Reads and writes
 // ---------------------------------------------------------------------------
 
+fn uninitialized() -> PyErr {
+    PyRuntimeError::new_err("Signal.__init__() was not called")
+}
+
 pub(crate) fn read_signal<'py>(
     py: Python<'py>,
-    node: &Arc<Node>,
+    node: &Rc<Node>,
     handle: &Bound<'py, PyAny>,
 ) -> PyResult<Bound<'py, PyAny>> {
+    let value = match node.value.borrow().as_ref() {
+        Some(value) => value.bind(py).clone(),
+        None => return Err(uninitialized()),
+    };
     config::hook(py, intern!(py, "read"), handle)?;
     track_read(node, handle);
-    Ok(raw_value(py, node))
+    Ok(value)
 }
 
 pub(crate) fn read_computed<'py>(
     py: Python<'py>,
-    node: &Arc<Node>,
+    node: &Rc<Node>,
     handle: &Bound<'py, PyAny>,
 ) -> PyResult<Bound<'py, PyAny>> {
     config::hook(py, intern!(py, "read"), handle)?;
@@ -1045,7 +1141,7 @@ pub(crate) fn read_computed<'py>(
     // Register the read even when the refresh raises, so the reader retries.
     track_read(node, handle);
     refreshed?;
-    let cached = node.error.borrow().as_ref().map(|cached| {
+    let cached = node.consumer().error.borrow().as_ref().map(|cached| {
         (
             cached.exception.clone_ref(py),
             cached.traceback.as_ref().map(|tb| tb.clone_ref(py)),
@@ -1070,25 +1166,26 @@ pub(crate) fn raw_value<'py>(py: Python<'py>, node: &Node) -> Bound<'py, PyAny> 
 /// Assign a signal's value; observers hear about it only if it changed.
 pub(crate) fn write_signal(
     py: Python<'_>,
-    node: &Arc<Node>,
+    node: &Rc<Node>,
     handle: &Bound<'_, PyAny>,
     value: Bound<'_, PyAny>,
 ) -> PyResult<()> {
     config::warn_signal_value(py, handle, &value)?;
     let old = node.value.borrow().as_ref().map(|old| old.clone_ref(py));
-    if let Some(old) = &old {
-        if !has_changed(old.bind(py), &value)? {
+    let Some(old) = old else {
+        return Err(uninitialized());
+    };
+    if !has_changed(old.bind(py), &value)? {
+        return Ok(());
+    }
+    let equal = node
+        .equal
+        .borrow()
+        .as_ref()
+        .map(|equal| equal.clone_ref(py));
+    if let Some(equal) = equal {
+        if call_equal(equal.bind(py), old.bind(py), &value)? {
             return Ok(());
-        }
-        let equal = node
-            .equal
-            .borrow()
-            .as_ref()
-            .map(|equal| equal.clone_ref(py));
-        if let Some(equal) = equal {
-            if call_equal(py, equal.bind(py), old.bind(py), &value)? {
-                return Ok(());
-            }
         }
     }
     let previous = node.value.replace(Some(value.unbind()));
@@ -1096,18 +1193,18 @@ pub(crate) fn write_signal(
     drop(previous);
     drop(old);
     config::hook(py, intern!(py, "updated"), handle)?;
-    notify_node(py, node, handle)
+    notify(py, node)
 }
 
 /// Notify a signal's observers unconditionally (after an in-place mutation).
 pub(crate) fn update_signal(
     py: Python<'_>,
-    node: &Arc<Node>,
+    node: &Rc<Node>,
     handle: &Bound<'_, PyAny>,
 ) -> PyResult<()> {
     bump_version(node);
     config::hook(py, intern!(py, "updated"), handle)?;
-    notify_node(py, node, handle)
+    notify(py, node)
 }
 
 /// Return a signal to an earlier value and version (the end of `Signal.at`).
@@ -1115,7 +1212,7 @@ pub(crate) fn update_signal(
 /// cannot take the unchanged-graph fast path.
 pub(crate) fn restore_signal(
     py: Python<'_>,
-    node: &Arc<Node>,
+    node: &Rc<Node>,
     handle: &Bound<'_, PyAny>,
     value: Bound<'_, PyAny>,
     version: u64,
@@ -1125,16 +1222,16 @@ pub(crate) fn restore_signal(
     bump_clock();
     drop(previous);
     config::hook(py, intern!(py, "updated"), handle)?;
-    notify_node(py, node, handle)
+    notify(py, node)
 }
 
 /// The engine node behind a Signal, Computed or Binding.
-pub(crate) fn node_of(obj: &Bound<'_, PyAny>) -> PyResult<Arc<Node>> {
+pub(crate) fn node_of(obj: &Bound<'_, PyAny>) -> PyResult<Rc<Node>> {
     if let Ok(signal) = obj.cast::<SignalCore>() {
-        return Ok(signal.get().node.clone());
+        return Ok(signal.get().node.0.clone());
     }
     if let Ok(computed) = obj.cast::<ComputedCore>() {
-        return Ok(computed.get().node.clone());
+        return Ok(computed.get().node.0.clone());
     }
     Err(PyTypeError::new_err(format!(
         "expected a Signal, Computed or Binding, got {}",
@@ -1146,51 +1243,72 @@ pub(crate) fn node_of(obj: &Bound<'_, PyAny>) -> PyResult<Arc<Node>> {
 // Python observers
 // ---------------------------------------------------------------------------
 
-pub(crate) fn add_python_observer(node: &Node, observer: &Bound<'_, PyAny>) -> PyResult<()> {
+/// The slot of `observer` in `node`'s observer list, if subscribed.
+fn find_python_observer(node: &Node, observer: &Bound<'_, PyAny>) -> Option<u32> {
     let py = observer.py();
-    let existing: Vec<Py<PyWeakrefReference>> = node
-        .observers
-        .borrow()
-        .iter()
-        .filter_map(|o| match o {
-            Observer::Python(reference) => Some(reference.clone_ref(py)),
-            Observer::Node(_) => None,
-        })
-        .collect();
-    for reference in &existing {
-        if let Some(target) = reference.bind(py).upgrade() {
-            if target.is(observer) {
-                return Ok(());
+    let id = observer.as_ptr() as usize;
+    let mut slot = 0;
+    loop {
+        let candidate = match node.observers.borrow().get(slot) {
+            None => return None,
+            Some(Observer::Python {
+                reference,
+                id: other,
+            }) if *other == id => Some(reference.clone_ref(py)),
+            Some(_) => None,
+        };
+        if let Some(reference) = candidate {
+            if reference
+                .bind(py)
+                .upgrade()
+                .is_some_and(|target| target.is(observer))
+            {
+                return Some(slot as u32);
             }
         }
+        slot += 1;
     }
-    drop(existing);
+}
+
+pub(crate) fn add_python_observer(node: &Node, observer: &Bound<'_, PyAny>) -> PyResult<()> {
+    if find_python_observer(node, observer).is_some() {
+        return Ok(());
+    }
     let reference = PyWeakrefReference::new(observer)?.unbind();
-    node.observers
-        .borrow_mut()
-        .push(Observer::Python(reference));
+    let id = observer.as_ptr() as usize;
+    push_observer(node, Observer::Python { reference, id });
     Ok(())
 }
 
-pub(crate) fn remove_python_observer(py: Python<'_>, node: &Node, observer: &Bound<'_, PyAny>) {
-    let current = std::mem::take(&mut *node.observers.borrow_mut());
-    let (removed, kept): (Vec<Observer>, Vec<Observer>) =
-        current.into_iter().partition(|o| match o {
-            Observer::Python(reference) => reference
-                .bind(py)
-                .upgrade()
-                .is_some_and(|target| target.is(observer)),
-            Observer::Node(_) => false,
-        });
-    {
-        let mut observers = node.observers.borrow_mut();
-        let added = std::mem::take(&mut *observers);
-        *observers = kept;
-        observers.extend(added);
+pub(crate) fn remove_python_observer(node: &Node, observer: &Bound<'_, PyAny>) {
+    if let Some(slot) = find_python_observer(node, observer) {
+        drop(vacate(node, slot));
     }
-    drop(removed);
 }
 
+/// Live observers of `node`; dead `subscribe()` observers are removed.
 pub(crate) fn live_observer_count(py: Python<'_>, node: &Node) -> usize {
-    snapshot_observers(py, node).len()
+    let mut count = 0;
+    let mut dead = Vec::new();
+    let mut slot = 0;
+    loop {
+        let alive = match node.observers.borrow().get(slot) {
+            None => break,
+            Some(Observer::Vacant) => None,
+            Some(Observer::Consumer { node, .. }) => Some(node.strong_count() > 0),
+            Some(Observer::Python { reference, .. }) => {
+                Some(reference.bind(py).upgrade().is_some())
+            }
+        };
+        match alive {
+            Some(true) => count += 1,
+            Some(false) => dead.push(slot as u32),
+            None => {}
+        }
+        slot += 1;
+    }
+    let removed: Vec<Observer> = dead.into_iter().map(|slot| take_slot(node, slot)).collect();
+    compact_if_sparse(node);
+    drop(removed);
+    count
 }

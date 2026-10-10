@@ -10,19 +10,13 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from contextlib import contextmanager
-from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Callable, Protocol, Self, TypeGuard, TypeVar, cast, overload
 
 from . import _core
 from ._mixin import _ReactiveMixIn
 from ._types import HasValue, ReactiveValue
-from .plugins import HOOKS_ENABLED, plugin_manager
 
 __all__ = ["Variable", "Signal", "Computed", "Binding", "Effect"]
-
-
-if HOOKS_ENABLED:
-    _core.config.hooks = plugin_manager.hook
 
 
 @overload
@@ -96,6 +90,10 @@ class Variable[T](_ReactiveMixIn[T]):
         def update(self) -> None: ...
         def invalidate(self) -> None: ...
 
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        _reject_engine_overrides(cls)
+
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
         return f"<{self.value!r}>"
@@ -129,23 +127,12 @@ class Variable[T](_ReactiveMixIn[T]):
         return self
 
     def __copy__(self) -> Self:
-        """Return a new, independent reactive value configured like this one.
-
-        A `Signal` copy holds the same value object; a `Computed` or `Binding`
-        copy has the same function and computes on its first read. The copy has
-        no observers.
-        """
-        return _copy_node(self, None)
+        """Reactive values cannot be copied."""
+        raise _copy_error(self)
 
     def __deepcopy__(self, memo: dict[int, Any]) -> Self:
-        """Return a new, independent reactive value with deep-copied state.
-
-        A `Signal` copy holds a deep copy of the value. A `Computed` copy runs a
-        deep copy of its function, which for an ordinary function or lambda is
-        the function itself, so it reads the same sources; a `Binding` copy
-        follows a copy of its source.
-        """
-        return _copy_node(self, memo)
+        """Reactive values cannot be copied."""
+        raise _copy_error(self)
 
     def __format__(self, format_spec: str) -> str:
         """Format the variable with custom display options.
@@ -165,44 +152,19 @@ class Variable[T](_ReactiveMixIn[T]):
         return super().__format__(format_spec)  # Handles other format specs
 
 
-def _copy_node[V: Variable[Any]](original: V, memo: dict[int, Any] | None) -> V:
-    """Copy a reactive value into a new node of the same class (see `Variable.__copy__`)."""
-    cls = type(original)
-    clone = cls.__new__(cls)
-    if memo is None:
+def _copy_error(value: object) -> TypeError:
+    name = type(value).__name__
+    return TypeError(f"{name} objects cannot be copied; create a new {name} instead")
 
-        def dup(value: Any) -> Any:
-            return value
 
-    else:
-        # Register first, so state that refers back to `original` (such as a
-        # Binding's bound `_read_source`) refers to the clone.
-        memo[id(original)] = clone
-
-        def dup(value: Any) -> Any:
-            return deepcopy(value, memo)
-
-    cast(Any, original)._copy_into(clone, dup)
-    # Attributes a Python subclass adds, in slots or an instance dict.
-    for klass in cls.__mro__:
-        slots = klass.__dict__.get("__slots__", ())
-        for name in (slots,) if isinstance(slots, str) else slots:
-            if name in ("__dict__", "__weakref__"):
-                continue
-            if name.startswith("__") and not name.endswith("__"):
-                name = f"_{klass.__name__.lstrip('_')}{name}"
-            descriptor = klass.__dict__.get(name)
-            if descriptor is None:
-                continue
-            try:
-                value = descriptor.__get__(original, klass)
-            except AttributeError:
-                continue
-            descriptor.__set__(clone, dup(value))
-    state = getattr(original, "__dict__", None)
-    if state:
-        clone.__dict__.update({key: dup(value) for key, value in state.items()})
-    return clone
+def _reject_engine_overrides(cls: type) -> None:
+    """Fail at class creation if `cls` overrides a method the engine never calls."""
+    for name in ("notify", "update"):
+        if name in cls.__dict__:
+            raise TypeError(
+                f"{cls.__name__} overrides {name}(), but signified never calls Python "
+                f"overrides of {name}(). Use an Effect or subscribe() to react to changes."
+            )
 
 
 @contextmanager
@@ -576,10 +538,8 @@ class Binding(Computed[T]):
         else:
             source = self._owned = Signal(cast(T, source))
         self._holder: Signal[ReactiveValue[T]] = _BindingSource(cast(ReactiveValue[T], source))
-        super().__init__(self._read_source)
-
-    def _read_source(self) -> T:
-        return self._holder.value.value
+        # Reads the holder, then the source it holds, natively.
+        self._init_source(self._holder)
 
     if TYPE_CHECKING:
 
@@ -717,6 +677,10 @@ class Effect(_core.Effect):
     """
 
     __slots__ = ()
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        _reject_engine_overrides(cls)
 
     if TYPE_CHECKING:
         # Implemented by the Rust base class; declared here for type checkers

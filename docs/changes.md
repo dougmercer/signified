@@ -6,6 +6,22 @@ This page summarizes notable changes across releases.
 
 ### Breaking changes
 
+- **Breaking:** Signified's reactive engine is now a compiled extension written
+  in Rust (`signified._core`). `Signal`, `Computed`, `Binding` and `Effect` keep
+  their API, and most graphs update several times faster. Behavior changes:
+  - Observers added with `subscribe()` run after a change has finished
+    propagating, in the same queue as effects (so `batch()` defers them too),
+    instead of in the middle of it. Repeated notifications to one subscription
+    before it runs are combined into one call.
+  - A signal written twice while a change is propagating now notifies both
+    times. Previously the second write could leave a dependent computed stale.
+  - Subclasses can no longer override `notify()` or `update()`; defining either
+    raises `TypeError`. Signified never called these overrides reliably.
+  - `copy.copy()` and `copy.deepcopy()` of a `Signal`, `Computed` or `Binding`
+    raise `TypeError`. Deep-copying a `Computed` previously produced an object
+    that never updated. Instances using `tracked_fields` still copy and pickle.
+  - Reading or writing a `Signal` whose `__init__` was never called raises
+    `RuntimeError`.
 - **Breaking:** Reactive objects no longer overload `!=`. Comparisons between
   reactive objects use identity and return a plain `bool`, matching `==`.
   Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
@@ -39,11 +55,14 @@ This page summarizes notable changes across releases.
 
 ### Packaging
 
+- Signified now ships a compiled extension, built with maturin. Installing from
+  source needs a Rust toolchain.
+- Plugin hooks run whenever a plugin is registered with `plugin_manager`;
+  `SIGNIFIED_ENABLE_HOOKS` and `signified.plugins.HOOKS_ENABLED` are removed.
 - Removed the `ipython` extra. Notebook display works the same without it,
   because IPython calls the display hook only when IPython is running.
 - Plugins no longer use pluggy, and the `plugins` extra is removed. Signified
-  now has its own small plugin manager, so `SIGNIFIED_ENABLE_HOOKS=1` is all
-  that is needed to enable hooks. `@hookimpl`, `plugin_manager.register`, and
+  now has its own small plugin manager. `@hookimpl`, `plugin_manager.register`, and
   `plugin_manager.unregister` work as before. `register` now rejects an
   `@hookimpl` method whose name is not a known hook, and no longer takes a
   `name` argument. pluggy's options such as `@hookimpl(tryfirst=True)` and

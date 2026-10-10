@@ -1,53 +1,73 @@
-//! Synchronous effect scheduling: effects run after the outermost
-//! notification wave or batch, in the order they were scheduled.
+//! Running effects and `subscribe()` observers. Both are queued during a
+//! notification walk and run, in the order they were queued, once the
+//! outermost walk or batch ends.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Weak};
+use std::rc::{Rc, Weak};
 
 use pyo3::exceptions::{PyException, PyRuntimeError};
 use pyo3::intern;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyList, PyWeakrefReference};
 
 use crate::graph::{self, rt, Compute, Node};
 
-const MAX_RUNS_PER_EFFECT: u32 = 100;
+const MAX_RUNS: u32 = 100;
 
-fn key(node: &Node) -> usize {
-    node as *const Node as usize
+/// Work waiting in the queue.
+pub(crate) enum Job {
+    /// An effect, valid while its `queued` number is still `seq`.
+    Effect { node: Weak<Node>, seq: u64 },
+    /// A `subscribe()` observer's weak reference; its `update()` is called.
+    Observer(Py<PyWeakrefReference>),
 }
 
-/// Queue `effect` to run, then run the queue unless a wave, batch or flush is
-/// in progress. An effect already queued keeps its place.
-pub(crate) fn schedule(py: Python<'_>, effect: &Arc<Node>) -> PyResult<()> {
-    if !effect.active.get() {
-        return Ok(());
+/// Queue `effect` unless it is disposed or already queued.
+pub(crate) fn enqueue_effect(effect: &Rc<Node>) {
+    let consumer = effect.consumer();
+    if !consumer.active.get() || consumer.queued.get() != 0 {
+        return;
     }
     let rt = rt();
-    let key = key(effect);
-    let queued = rt.pending_index.borrow().contains_key(&key);
-    if !queued {
-        let seq = rt.pending_seq.get() + 1;
-        rt.pending_seq.set(seq);
-        rt.pending_index.borrow_mut().insert(key, seq);
-        rt.pending
-            .borrow_mut()
-            .push_back((Arc::downgrade(effect), seq));
+    let seq = rt.pending_seq.get() + 1;
+    rt.pending_seq.set(seq);
+    consumer.queued.set(seq);
+    rt.pending.borrow_mut().push_back(Job::Effect {
+        node: Rc::downgrade(effect),
+        seq,
+    });
+}
+
+/// Queue a `subscribe()` observer unless it is already queued.
+pub(crate) fn enqueue_observer(reference: Py<PyWeakrefReference>) {
+    let rt = rt();
+    let fresh = rt
+        .queued_observers
+        .borrow_mut()
+        .insert(reference.as_ptr() as usize);
+    if fresh {
+        rt.pending.borrow_mut().push_back(Job::Observer(reference));
     }
+}
+
+/// Queue `effect`, then run the queue unless a walk, batch or flush is in
+/// progress.
+pub(crate) fn schedule(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
+    enqueue_effect(effect);
     flush(py)
 }
 
-/// Drop a pending run of `effect`, if any.
+/// Drop a queued run of `effect`, if any.
 pub(crate) fn discard(effect: &Node) {
-    rt().pending_index.borrow_mut().remove(&key(effect));
+    effect.consumer().queued.set(0);
 }
 
-/// Run pending effects in order. One failure is raised directly and several
-/// as an `ExceptionGroup`; an effect that keeps rescheduling itself stops the
-/// flush after `MAX_RUNS_PER_EFFECT` runs.
+/// Run queued work in order. One failure is raised directly and several as an
+/// `ExceptionGroup`. Something that keeps queuing itself stops the flush after
+/// `MAX_RUNS` runs.
 pub(crate) fn flush(py: Python<'_>) -> PyResult<()> {
     let rt = rt();
-    if rt.pending_index.borrow().is_empty()
+    if rt.pending.borrow().is_empty()
         || rt.flushing.get()
         || rt.batch_depth.get() > 0
         || rt.wave_depth.get() > 0
@@ -55,53 +75,88 @@ pub(crate) fn flush(py: Python<'_>) -> PyResult<()> {
         return Ok(());
     }
     rt.flushing.set(true);
+    let epoch = rt.flush_epoch.get() + 1;
+    rt.flush_epoch.set(epoch);
     let mut errors = Vec::new();
-    // Weak keys keep an address from being reused by another effect mid-flush.
-    let mut runs: HashMap<usize, (Weak<Node>, u32)> = HashMap::new();
-    let outcome = run_pending(py, &mut runs, &mut errors);
-    rt.pending.borrow_mut().clear();
-    rt.pending_index.borrow_mut().clear();
+    // Holds each observer's weak reference, so its address stays unique.
+    let mut observer_runs: HashMap<usize, (Py<PyWeakrefReference>, u32)> = HashMap::new();
+    let outcome = run_pending(py, epoch, &mut observer_runs, &mut errors);
+    // Whatever is left was abandoned by an error.
+    let abandoned = std::mem::take(&mut *rt.pending.borrow_mut());
+    rt.queued_observers.borrow_mut().clear();
+    for job in &abandoned {
+        if let Job::Effect { node, seq } = job {
+            if let Some(effect) = node.upgrade() {
+                if effect.consumer().queued.get() == *seq {
+                    effect.consumer().queued.set(0);
+                }
+            }
+        }
+    }
     rt.flushing.set(false);
-    drop(runs);
+    drop(abandoned);
+    drop(observer_runs);
     outcome?;
     raise_errors(py, errors)
 }
 
 fn run_pending(
     py: Python<'_>,
-    runs: &mut HashMap<usize, (Weak<Node>, u32)>,
+    epoch: u64,
+    observer_runs: &mut HashMap<usize, (Py<PyWeakrefReference>, u32)>,
     errors: &mut Vec<PyErr>,
 ) -> PyResult<()> {
     let rt = rt();
     loop {
-        let next = rt.pending.borrow_mut().pop_front();
-        let Some((weak, seq)) = next else {
+        let job = rt.pending.borrow_mut().pop_front();
+        let Some(job) = job else {
             return Ok(());
         };
-        let key = weak.as_ptr() as usize;
-        {
-            let mut index = rt.pending_index.borrow_mut();
-            // Discarded, or superseded by a later schedule.
-            if index.get(&key) != Some(&seq) {
-                continue;
+        let outcome = match job {
+            Job::Effect { node, seq } => {
+                let Some(effect) = node.upgrade() else {
+                    continue;
+                };
+                let consumer = effect.consumer();
+                // Discarded, or queued again since.
+                if consumer.queued.get() != seq {
+                    continue;
+                }
+                consumer.queued.set(0);
+                if !consumer.active.get() {
+                    continue;
+                }
+                if consumer.run_epoch.get() != epoch {
+                    consumer.run_epoch.set(epoch);
+                    consumer.runs.set(0);
+                }
+                consumer.runs.set(consumer.runs.get() + 1);
+                if consumer.runs.get() > MAX_RUNS {
+                    errors.push(PyRuntimeError::new_err(format!(
+                        "Effect did not settle after {MAX_RUNS} runs"
+                    )));
+                    return Ok(());
+                }
+                run(py, &effect)
             }
-            index.remove(&key);
-        }
-        let Some(effect) = weak.upgrade() else {
-            continue;
+            Job::Observer(reference) => {
+                let key = reference.as_ptr() as usize;
+                rt.queued_observers.borrow_mut().remove(&key);
+                let Some(target) = reference.bind(py).upgrade() else {
+                    continue;
+                };
+                let entry = observer_runs.entry(key).or_insert_with(|| (reference, 0));
+                entry.1 += 1;
+                if entry.1 > MAX_RUNS {
+                    errors.push(PyRuntimeError::new_err(format!(
+                        "Observer did not settle after {MAX_RUNS} runs"
+                    )));
+                    return Ok(());
+                }
+                target.call_method0(intern!(py, "update")).map(drop)
+            }
         };
-        if !effect.active.get() {
-            continue;
-        }
-        let entry = runs.entry(key).or_insert_with(|| (weak.clone(), 0));
-        entry.1 += 1;
-        if entry.1 > MAX_RUNS_PER_EFFECT {
-            errors.push(PyRuntimeError::new_err(format!(
-                "Effect did not settle after {MAX_RUNS_PER_EFFECT} runs"
-            )));
-            return Ok(());
-        }
-        match run(py, &effect) {
+        match outcome {
             Ok(()) => {}
             Err(error) if error.is_instance_of::<PyException>(py) => errors.push(error),
             Err(error) => return Err(error),
@@ -125,42 +180,44 @@ fn raise_errors(py: Python<'_>, mut errors: Vec<PyErr>) -> PyResult<()> {
 }
 
 /// Run one effect if its dependencies changed since its last run.
-fn run(py: Python<'_>, effect: &Arc<Node>) -> PyResult<()> {
-    if effect.has_run.get() && !graph::dependencies_changed(py, effect)? {
+fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
+    let consumer = effect.consumer();
+    if consumer.has_run.get() && !graph::dependencies_changed(py, effect)? {
         return Ok(());
     }
     // Refreshing a dependency can dispose this effect through user code.
-    if !effect.active.get() {
+    if !consumer.active.get() {
         return Ok(());
     }
-    effect.has_run.set(true);
-    let compute = effect
+    consumer.has_run.set(true);
+    let function = consumer
         .compute
         .borrow()
         .as_ref()
         .map(|compute| match compute {
-            Compute::Function(f) => f.clone_ref(py),
-            Compute::Call { func, .. } => func.clone_ref(py),
+            Compute::Function(f) | Compute::Source(f) | Compute::Call { func: f, .. } => {
+                f.clone_ref(py)
+            }
         });
-    let Some(function) = compute else {
+    let Some(function) = function else {
         return Ok(());
     };
     graph::start_refresh(effect);
     graph::push_frame(Some(effect.clone()));
     let result = function.bind(py).call0();
     graph::pop_frame();
-    if effect.active.get() {
+    if consumer.active.get() {
         // Subscribe to what this run read, even if it raised, so a change to
         // any of it retries the callback.
-        graph::commit_refresh(py, effect, None);
+        graph::commit_refresh(effect);
     } else {
-        graph::detach_all_deps(py, effect, None);
+        graph::detach_all_deps(effect);
     }
     drop(function);
     drop(result?);
     // Also catches writes after a read during the first run, before the
     // subscriptions existed.
-    if effect.active.get() && graph::invalidated_since_read(effect) {
+    if consumer.active.get() && graph::invalidated_since_read(effect) {
         schedule(py, effect)?;
     }
     Ok(())

@@ -219,3 +219,19 @@ def test_access_tracker_preserves_computation_errors_and_recovery(access_tracker
     assert stats.read_count == 2
     assert stats.write_count == 2
     assert stats.last_value == 5
+
+
+def test_registering_a_plugin_turns_hooks_on_and_unregistering_turns_them_off(monkeypatch) -> None:
+    monkeypatch.setattr(_core.config, "hooks", None)
+    calls: list[tuple[str, str]] = []
+    plugin = Recorder("plugin", calls)
+    plugins.plugin_manager.register(plugin)
+    try:
+        assert _core.config.hooks is plugins.plugin_manager.hook
+        Signal(1)
+        assert calls == [("plugin", "created")]
+    finally:
+        plugins.plugin_manager.unregister(plugin)
+    assert _core.config.hooks is None
+    Signal(2)
+    assert calls == [("plugin", "created")]

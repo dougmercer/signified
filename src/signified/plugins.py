@@ -1,21 +1,19 @@
 """Plugin hooks for observing reactive values.
 
-Hooks only run when ``SIGNIFIED_ENABLE_HOOKS=1`` is set before importing Signified.
+Hooks run while at least one plugin is registered with ``plugin_manager``.
 """
 
 from __future__ import annotations
 
 import inspect
-import os
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from signified import Variable
 
-__all__ = ["HOOKS_ENABLED", "PluginManager", "hookimpl", "plugin_manager", "pm"]
+from . import _core
 
-_ENABLE_HOOKS = os.environ.get("SIGNIFIED_ENABLE_HOOKS")
-HOOKS_ENABLED = _ENABLE_HOOKS == "1"
+__all__ = ["PluginManager", "hookimpl", "plugin_manager", "pm"]
 
 _HOOK_NAMES = ("read", "created", "updated", "named")
 _HOOKIMPL_MARK = "_signified_hookimpl"
@@ -77,7 +75,8 @@ class PluginManager:
 
     Implementations run in reverse registration order, so the most recently
     registered plugin runs first. An exception raised by an implementation
-    propagates to the code that triggered the hook.
+    propagates to the code that triggered the hook. Reactive values call the
+    hooks of the module's ``plugin_manager`` while it has a plugin registered.
     """
 
     def __init__(self) -> None:
@@ -113,6 +112,8 @@ class PluginManager:
         for name in _HOOK_NAMES:
             caller: _HookCaller = getattr(self.hook, name)
             caller.impls = tuple(impls[name] for _, impls in reversed(self._plugins) if name in impls)
+        if self is plugin_manager:
+            _core.config.hooks = self.hook if self._plugins else None
 
 
 plugin_manager = PluginManager()

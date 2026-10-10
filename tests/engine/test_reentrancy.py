@@ -206,3 +206,44 @@ def test_unmatched_pop_untracked_keeps_the_computation_tracking():
     assert len(errors) == 1
     s.value = 2
     assert c.value == 2
+
+
+def test_observers_run_after_the_change_has_propagated():
+    from signified import batch
+
+    a = Signal(1)
+    b = a * 2
+    seen = []
+
+    class Reads:
+        def update(self) -> None:
+            seen.append((a.value, b.value))
+
+    observer = Reads()
+    a.subscribe(observer)
+    with batch():
+        a.value = 2
+        a.value = 3
+        assert seen == []
+    assert seen == [(3, 6)]
+
+
+def test_signal_written_twice_during_propagation_keeps_dependents_current():
+    a = Signal(0)
+    b = Signal(0)
+    c = b * 10
+    assert c.value == 0
+    seen = []
+
+    class WritesTwice:
+        def update(self) -> None:
+            b.value = 1
+            seen.append(c.value)
+            b.value = 2
+            seen.append(c.value)
+
+    observer = WritesTwice()
+    a.subscribe(observer)
+    a.value = 1
+    assert seen == [10, 20]
+    assert c.value == 20
