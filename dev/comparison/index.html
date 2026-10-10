@@ -2266,9 +2266,11 @@ inside a called async function does not receive the same transformation.
 <a href="https://vuejs.org/guide/essentials/watchers">Vue</a>, <a href="https://angular.dev/guide/signals">Angular</a>,
 <a href="https://svelte.dev/docs/svelte/$derived">Svelte derived tracking</a>, <a href="https://svelte.dev/docs/svelte/await-expressions">Svelte async expressions</a>.</p>
 <p>Async I/O support and concurrent graph access are separate capabilities.
-Signified's graph is synchronous and single-threaded, and neither <code>batch()</code> nor
-<code>untracked()</code> may span <code>await</code>. Reaktiv offers async facilities and opt-in
-thread-safety configuration; those have their own rules. Param supports async
+Signified's graph is synchronous, and neither <code>batch()</code> nor <code>untracked()</code> may
+span <code>await</code>. Each thread tracks and runs effects on its own, so separate graphs
+can run on separate threads, but a graph is used from one thread at a time.
+Reaktiv offers async facilities and locking for graphs shared across threads,
+enabled by default; those have their own rules. Param supports async
 watcher execution through an async executor. Neither feature should be reduced
 to a blanket “all computations are async/thread-safe” checkmark.
 <a href="../compute-contract/">Signified</a>, <a href="https://reaktiv.readthedocs.io/en/latest/advanced-features/">reaktiv advanced features</a>,

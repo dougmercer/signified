@@ -2203,10 +2203,33 @@
 <h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
 <ul>
+<li><strong>Breaking:</strong> Signified's reactive engine is now a compiled extension written
+  in Rust (<code>signified._core</code>). <code>Signal</code>, <code>Computed</code>, <code>Binding</code> and <code>Effect</code> keep
+  their API, and most graphs update several times faster. Behavior changes:</li>
+<li>Observers added with <code>subscribe()</code> run after a change has finished
+    propagating, in the same queue as effects (so <code>batch()</code> defers them too),
+    instead of in the middle of it. Repeated notifications to one subscription
+    before it runs are combined into one call, and <code>unsubscribe()</code> cancels a
+    call that has not run yet.</li>
+<li>A signal written twice while a change is propagating now notifies both
+    times. Previously the second write could leave a dependent computed stale.</li>
+<li>Subclasses can no longer override <code>notify()</code>, <code>update()</code> or <code>value</code>;
+    defining any of them raises <code>TypeError</code>. The engine reads values and sends
+    notifications natively, so it would not call the overrides. Derive a
+    <code>Computed</code> (for example with <code>signal.rx.map(fn)</code>) instead of overriding <code>value</code>.</li>
+<li><code>copy.copy()</code> and <code>copy.deepcopy()</code> of a <code>Signal</code>, <code>Computed</code> or <code>Binding</code>
+    raise <code>TypeError</code>. Deep-copying a <code>Computed</code> previously produced an object
+    that never updated. Instances using <code>tracked_fields</code> still copy and pickle.</li>
+<li>Reading or writing a <code>Signal</code> whose <code>__init__</code> was never called raises
+    <code>RuntimeError</code>.</li>
 <li><strong>Breaking:</strong> Reactive objects no longer overload <code>!=</code>. Comparisons between
   reactive objects use identity and return a plain <code>bool</code>, matching <code>==</code>.
   Replace <code>(x != y)</code> with <code>x.rx.ne(y)</code> for reactive value comparisons, alongside
   the existing <code>x.rx.eq(y)</code>.</li>
+<li><strong>Breaking:</strong> Removed the migration warnings added in 0.6:
+  <code>signified.migration</code> and <code>SIGNIFIED_MIGRATION_WARNINGS</code>. To check code
+  written for 0.5, run the warnings on 0.6 before upgrading; see
+  <a href="../migration/#optional-migration-diagnostics">Migrating to 0.6</a>.</li>
 </ul>
 <h3 id="runtime-improvements">Runtime improvements<a class="headerlink" href="#runtime-improvements" title="Permanent link">&para;</a></h3>
 <ul>
@@ -2230,17 +2253,32 @@
   previous object is kept and dependents are not invalidated.
   <code>x.rx.with_equal(equal)</code> sets it on an existing value and returns that value,
   including values built by operators, <code>computed</code>, <code>lift</code>, and <code>rx.map</code>.</li>
+<li>Each thread now tracks reads, batches, and runs effects on its own. Previously
+  any two threads using Signified at once, even with unrelated graphs, could
+  raise <code>RuntimeError: tracking frames are unbalanced</code>, count a read on one
+  thread as a dependency of a computation running on another, or have one
+  thread's <code>batch()</code> hold back another thread's effects. Separate graphs can now
+  run on separate threads, and a graph can be handed from one thread to
+  another. One graph should still be used by one thread at a time: reading a
+  <code>Computed</code> while another thread is computing it raises <code>RuntimeError</code>.</li>
 <li>Added <code>tracked_fields</code>, a class decorator that makes reassigning an attribute
   invalidate computations that read it. Reads return the stored value unchanged.
   It works with slotted and dict-based dataclasses, or named attributes of other classes.</li>
 </ul>
 <h3 id="packaging">Packaging<a class="headerlink" href="#packaging" title="Permanent link">&para;</a></h3>
 <ul>
+<li>Signified now ships a compiled extension, built with maturin. Wheels cover
+  CPython 3.12 and later on Linux (x86_64 and aarch64, glibc and musl), macOS
+  (Intel and Apple silicon), Windows x64, and Pyodide 314 (Python 3.14).
+  Installing on other platforms builds from source and needs a Rust toolchain.
+  Under Pyodide, a value more than 250 refreshes deep raises <code>RecursionError</code>,
+  because the browser's stack is much smaller than a native one.</li>
+<li>Plugin hooks run whenever a plugin is registered with <code>plugin_manager</code>;
+  <code>SIGNIFIED_ENABLE_HOOKS</code> and <code>signified.plugins.HOOKS_ENABLED</code> are removed.</li>
 <li>Removed the <code>ipython</code> extra. Notebook display works the same without it,
   because IPython calls the display hook only when IPython is running.</li>
 <li>Plugins no longer use pluggy, and the <code>plugins</code> extra is removed. Signified
-  now has its own small plugin manager, so <code>SIGNIFIED_ENABLE_HOOKS=1</code> is all
-  that is needed to enable hooks. <code>@hookimpl</code>, <code>plugin_manager.register</code>, and
+  now has its own small plugin manager. <code>@hookimpl</code>, <code>plugin_manager.register</code>, and
   <code>plugin_manager.unregister</code> work as before. <code>register</code> now rejects an
   <code>@hookimpl</code> method whose name is not a known hook, and no longer takes a
   <code>name</code> argument. pluggy's options such as <code>@hookimpl(tryfirst=True)</code> and

@@ -1473,7 +1473,7 @@ for every change.</p>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
 </span></code></pre></div>
 <p>Values change immediately inside the block; batching does not undo writes if
-an error occurs. Run reactive operations on one thread, and do not put <code>await</code>
+an error occurs. Use a graph from one thread at a time, and do not put <code>await</code>
 inside <code>batch()</code> or <code>untracked()</code>.</p>
 <p>Use <code>untracked()</code> when a read inside an effect or calculation should not make
 it run again when that value changes. See <a href="../compute-contract/">How updates work</a>

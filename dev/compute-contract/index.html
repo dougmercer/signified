@@ -1410,8 +1410,12 @@ inside a batch waits for the batch to exit even for its first run; if discarded
 before then, it may never run.</p>
 <p>Batching does not hide intermediate values or undo changes. If the batch body
 raises an error, applied writes remain and pending effects still run.</p>
-<p>Run all reactive operations on one thread. <code>batch()</code> and <code>untracked()</code> are
-synchronous blocks and must not contain <code>await</code>.</p>
+<p>Each thread tracks reads, batches, and runs effects on its own. Separate graphs
+can run on separate threads at the same time, and a graph built on one thread
+can be used on another afterwards. Use one graph from one thread at a time:
+reading a <code>Computed</code> while another thread is computing it raises
+<code>RuntimeError</code>. <code>batch()</code> and <code>untracked()</code> apply to the thread that enters
+them; they are synchronous blocks and must not contain <code>await</code>.</p>
 <h3 id="errors-and-recovery">Errors and recovery<a class="headerlink" href="#errors-and-recovery" title="Permanent link">&para;</a></h3>
 <p>A failed run still follows everything it read before the error. Inputs from
 an earlier run that were not read this time are dropped. A later change to

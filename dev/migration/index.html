@@ -1318,7 +1318,8 @@ lifetime, error recovery, and combined batch errors.</p>
 or <code>untracked()</code> to read without adding a dependency. <code>tap</code> saves its result
 and skips unread intermediate values; it is not an automatic effect.</p>
 <h2 id="optional-migration-diagnostics">Optional migration diagnostics<a class="headerlink" href="#optional-migration-diagnostics" title="Permanent link">&para;</a></h2>
-<p>Warnings are available in both 0.5.1 and 0.6:</p>
+<p>Warnings are available in 0.5.1 and 0.6, and removed in 0.7. Run them on one
+of those versions before upgrading further:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">migration</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">migration</span><span class="o">.</span><span class="n">enable_warnings</span><span class="p">()</span>
