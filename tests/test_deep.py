@@ -242,18 +242,12 @@ def test_custom_handler_cycles_reach_recursion_limit():
         resolve({"box": [Box()]})
 
 
-def test_scalar_signal_subclasses_still_use_their_value_property():
-    class CountingSignal(Signal):
-        reads = 0
+def test_signal_subclass_instances_resolve():
+    class NamedSignal(Signal):
+        __slots__ = ()
 
-        @property
-        def value(self):
-            self.reads += 1
-            return super().value
-
-    source = CountingSignal(1)
+    source = NamedSignal(1)
     assert deep_unref([source, source]) == [1, 1]
-    assert source.reads == 2
 
 
 def test_numpy_preserves_shape_dtype_and_resolves_repeated_objects_independently():

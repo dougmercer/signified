@@ -95,7 +95,7 @@ class Variable[T](_ReactiveMixIn[T]):
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        _reject_engine_overrides(cls)
+        _reject_engine_overrides(cls, ("notify", "update", "value"))
 
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
@@ -160,14 +160,20 @@ def _copy_error(value: object) -> TypeError:
     return TypeError(f"{name} objects cannot be copied; create a new {name} instead")
 
 
-def _reject_engine_overrides(cls: type) -> None:
-    """Fail at class creation if `cls` overrides a method the engine never calls."""
-    for name in ("notify", "update"):
-        if name in cls.__dict__:
+def _reject_engine_overrides(cls: type, names: tuple[str, ...]) -> None:
+    """Fail at class creation if `cls` overrides a member the engine never calls through Python."""
+    for name in names:
+        if name not in cls.__dict__:
+            continue
+        if name == "value":
             raise TypeError(
-                f"{cls.__name__} overrides {name}(), but signified never calls Python "
-                f"overrides of {name}(). Use an Effect or subscribe() to react to changes."
+                f"{cls.__name__} overrides value, but signified reads values natively and never "
+                "calls a Python value property. Derive a Computed instead, such as signal.rx.map(fn)."
             )
+        raise TypeError(
+            f"{cls.__name__} overrides {name}(), but signified never calls Python "
+            f"overrides of {name}(). Use an Effect or subscribe() to react to changes."
+        )
 
 
 def untracked() -> AbstractContextManager[None]:
@@ -664,7 +670,7 @@ class Effect(_core.Effect):
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        _reject_engine_overrides(cls)
+        _reject_engine_overrides(cls, ("update",))
 
     if TYPE_CHECKING:
         # Implemented by the Rust base class; declared here for type checkers
@@ -675,8 +681,3 @@ class Effect(_core.Effect):
         def dispose(self) -> None:
             """Stop this effect, including any pending run. Safe to repeat."""
             ...
-
-
-# Operators read instances of these classes natively; their `value` is the
-# engine's own getter.
-_core._register_standard_types([Signal, _BindingSource, Computed, Binding])

@@ -15,8 +15,10 @@ This page summarizes notable changes across releases.
     before it runs are combined into one call.
   - A signal written twice while a change is propagating now notifies both
     times. Previously the second write could leave a dependent computed stale.
-  - Subclasses can no longer override `notify()` or `update()`; defining either
-    raises `TypeError`. Signified never called these overrides reliably.
+  - Subclasses can no longer override `notify()`, `update()` or `value`;
+    defining any of them raises `TypeError`. The engine reads values and sends
+    notifications natively, so it would not call the overrides. Derive a
+    `Computed` (for example with `signal.rx.map(fn)`) instead of overriding `value`.
   - `copy.copy()` and `copy.deepcopy()` of a `Signal`, `Computed` or `Binding`
     raise `TypeError`. Deep-copying a `Computed` previously produced an object
     that never updated. Instances using `tracked_fields` still copy and pickle.

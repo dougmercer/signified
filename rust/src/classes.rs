@@ -570,15 +570,6 @@ pub fn flush(py: Python<'_>) -> PyResult<()> {
     effects::flush(py)
 }
 
-/// Register classes whose `value` is the engine's own getter, so operators
-/// read their instances natively.
-#[pyfunction]
-pub fn _register_standard_types(types: Vec<Bound<'_, PyType>>) {
-    for ty in types {
-        graph::register_standard_type(ty.into_any().unbind());
-    }
-}
-
 /// Unwrap exactly one reactive boundary: a Signal, Computed or Binding gives
 /// its value (a dependency read, inside a computation); anything else is
 /// returned unchanged.

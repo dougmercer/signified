@@ -334,8 +334,6 @@ pub(crate) struct Runtime {
     frames: RefCell<Vec<Option<Rc<Node>>>>,
     /// Nesting of notification walks; effects run when it returns to zero.
     pub(crate) wave_depth: Cell<u32>,
-    /// Classes whose `.value` is the engine's own getter (see `resolve_arg`).
-    standard_types: RefCell<Vec<Py<PyAny>>>,
     /// Effects and observers waiting to run, in the order they were queued.
     pub(crate) pending: RefCell<VecDeque<Job>>,
     pub(crate) pending_seq: Cell<u64>,
@@ -361,7 +359,6 @@ pub(crate) fn rt() -> &'static Runtime {
         clock: Cell::new(0),
         frames: RefCell::new(Vec::new()),
         wave_depth: Cell::new(0),
-        standard_types: RefCell::new(Vec::new()),
         pending: RefCell::new(VecDeque::new()),
         pending_seq: Cell::new(0),
         queued_observers: RefCell::new(HashSet::new()),
@@ -410,18 +407,6 @@ pub(crate) fn in_untracked_block() -> bool {
 /// Whether a read right now would register a dependency.
 pub(crate) fn is_tracking() -> bool {
     matches!(rt().frames.borrow().last(), Some(Some(_)))
-}
-
-pub(crate) fn register_standard_type(ty: Py<PyAny>) {
-    rt().standard_types.borrow_mut().push(ty);
-}
-
-pub(crate) fn is_standard_type(ty: &Bound<'_, PyAny>) -> bool {
-    let ptr = ty.as_ptr();
-    rt().standard_types
-        .borrow()
-        .iter()
-        .any(|standard| standard.as_ptr() == ptr)
 }
 
 /// Native stack to keep free for the Python code a refresh may call.
@@ -1046,9 +1031,8 @@ pub(crate) fn call_equal(
     result?.is_truthy()
 }
 
-/// Unwrap one reactive boundary, like `unref`. Instances of the registered
-/// classes are read natively; other subclasses of the engine's classes (which
-/// may override `value`) go through their Python `value` attribute.
+/// Unwrap one reactive boundary, like `unref`: a Signal, Computed or Binding
+/// (including subclasses) is read natively; anything else is returned as is.
 pub(crate) fn resolve_arg<'py>(
     py: Python<'py>,
     arg: &Bound<'py, PyAny>,
@@ -1061,18 +1045,11 @@ pub(crate) fn resolve_arg<'py>(
     {
         return Ok(arg.clone());
     }
-    let standard = is_standard_type(arg.get_type().as_any());
     if let Ok(signal) = arg.cast::<SignalCore>() {
-        if standard {
-            return read_signal(py, &signal.get().node, arg);
-        }
-        return arg.getattr(intern!(py, "value"));
+        return read_signal(py, &signal.get().node, arg);
     }
     if let Ok(computed) = arg.cast::<ComputedCore>() {
-        if standard {
-            return read_computed(py, &computed.get().node, arg);
-        }
-        return arg.getattr(intern!(py, "value"));
+        return read_computed(py, &computed.get().node, arg);
     }
     Ok(arg.clone())
 }

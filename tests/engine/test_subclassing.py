@@ -5,23 +5,14 @@ import pytest
 from signified import Computed, Effect, Signal
 
 
-def test_subclass_value_override_is_used_by_operators():
-    class CountingSignal(Signal):
-        reads = 0
+@pytest.mark.parametrize("base", [Signal, Computed])
+def test_overriding_value_raises(base):
+    with pytest.raises(TypeError, match="overrides value"):
 
-        @property
-        def value(self):
-            type(self).reads += 1
-            return super().value
-
-        @value.setter
-        def value(self, new):
-            super(CountingSignal, type(self)).value.__set__(self, new)
-
-    source = CountingSignal(1)
-    out = source + 1
-    assert out.value == 2
-    assert CountingSignal.reads >= 1
+        class Clamped(base):
+            @property
+            def value(self):
+                return 0
 
 
 def test_subclass_instances_keep_reactive_behavior():

@@ -43,7 +43,6 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(classes::begin_batch, m)?)?;
     m.add_function(wrap_pyfunction!(classes::end_batch, m)?)?;
     m.add_function(wrap_pyfunction!(classes::flush, m)?)?;
-    m.add_function(wrap_pyfunction!(classes::_register_standard_types, m)?)?;
     m.add_function(wrap_pyfunction!(classes::unref, m)?)?;
     m.add_function(wrap_pyfunction!(classes::is_reactive, m)?)?;
     Ok(())
