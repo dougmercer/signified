@@ -1,4 +1,4 @@
-const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js";
+const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js";
 
 let pyodide = null;
 let loadPromise = null;
