@@ -7,6 +7,26 @@
 - **key3d `moving` scene:** 40.4 → 32.5 ms per frame (−20%, same session), with byte-identical output in all four benchmark scenes. key3d's test suite passes unchanged (1004 passed, 1 skipped).
 - **Tests:** the suite passes on 3.12, 3.13 and 3.14 (also `-X dev` with unraisable exceptions as errors).
 
+## Part 4: review fixes (2026-10-10)
+
+A review of the whole branch against `main` found these. Each is fixed, with a test that failed first.
+
+- **`at()` kept the temporary value when entering raised.** If an effect or hook failed during the write, `Signal.at()` and `Binding.at()` left the temporary value in place (a `Binding` kept following the throwaway signal). Entering now assigns the previous value back before the error propagates, like the `finally` block on `main`. If that assignment raises too, its error propagates with the first one as its context.
+- **Re-entering an active `at()` context** lost the outer block's restore point. It now raises `RuntimeError`.
+- **An `untracked()` block left open** inside a computation, effect or custom `equal` left a frame on the tracking stack, so later reads at top level became dependencies of that computation. The run now removes the leftover frames and raises `RuntimeError`; `main` asserted.
+- **`unsubscribe()` did not cancel a queued `update()`.** It now does, as `Effect.dispose()` cancels a pending run.
+- **`Variable()` could be instantiated.** It and any subclass without an engine base class raise `TypeError` again.
+- **Observer lookups scanned the observer list.** `subscribe()`, `unsubscribe()` and dead-observer cleanup now use a per-node map of subscription slots. 40,000 subscriptions to one signal take 0.009 s instead of 0.59 s.
+- **Hooks ran for every registered plugin.** The engine now calls only the hooks some plugin implements (`_HookCaller` is false without implementations). It looks each hook up once, when `config.hooks` is set, rather than on every call.
+- **Migration warnings are removed** (the branch lands in 0.7): `signified.migration`, `SIGNIFIED_MIGRATION_WARNINGS`, and the engine's checks on signal values, computed results and function arguments. The review had found two switches for them and a container check that disagreed with `is_reactive`. `Binding`'s holder is a plain `Signal` again; its subclass only opted out of the warnings. Operators no longer read a switch on every call: building `s + 1` takes 373 ns.
+- **Cleanup.** Removed the unused native functions `push_untracked`, `pop_untracked`, `begin_batch`, `end_batch`, `flush` and `Signal._restore`. Effects match only plain functions, and the notification walk has no branch for signals as observers.
+
+Kept as is: `batch()`, `untracked()` and `Signal.at()` no longer work as decorators (on `main` they were `@contextmanager` objects).
+
+Timing against the unmodified branch, same session, alternating builds (`timeit`, best of 15): 64 effects × 32 writes 530 → 525 µs; a 24-node chain × 32 writes 131 → 131 µs; a 48-branch diamond × 250 writes 3.42 → 3.38 ms. `benchmarks/per_node.py` is unchanged within noise (179 ns per extra node, 500-leaf frame 257 µs).
+
+Tests: 468 passed on 3.12, 3.13 and 3.14 (the 16 migration tests are gone), also under `-X dev` with unraisable exceptions as errors. pyright, ruff, `cargo fmt` and clippy are clean.
+
 ## Part 3: Rust-native data structures, fewer compatibility quirks (2026-10-10)
 
 - **Commits:** `38a9896` (engine rework and behavior changes), `f3396c6` (native `unref`, `is_reactive`, `untracked`, `batch`, `Signal.at`), `1acd49b` (reactivity checked by class)
@@ -200,7 +220,8 @@ Geometric mean speedup: 3.39× over the 32 benchmarks. The smallest gains are `d
 
 ### Before a release
 
-- **Packaging.** `publish.yml` still runs `uv build`, which now produces one platform-specific wheel plus an sdist that needs a Rust toolchain to install. It needs `PyO3/maturin-action` builds of abi3-py312 wheels for Linux (x86_64 and aarch64, manylinux and musllinux), macOS (x86_64 and arm64) and Windows x64. Pyodide needs a decision: an emscripten build, or unsupported.
+- **Packaging.** `publish.yml` still runs `uv build`, which now produces one platform-specific wheel plus an sdist that needs a Rust toolchain to install. It needs `PyO3/maturin-action` builds of abi3-py312 wheels for Linux (x86_64 and aarch64, manylinux and musllinux), macOS (x86_64 and arm64) and Windows x64. Pyodide needs a decision; see the next item.
+- **Docs Playground.** `docs/assets/signified-playground-worker.js` loads Pyodide 0.27.2 and runs `micropip.install("signified")`. Without a pure-Python wheel, micropip quietly installs the newest release that has one (0.6.1), so the Playground would run the old engine. PEP 783 was accepted in April 2026: PyPI takes `pyemscripten_*` wheels, and micropip 0.11.1 (bundled with Pyodide 0.29.5 and 314.x) installs them; 0.27.2's micropip cannot. The fix is to move the worker to Pyodide 314.x (Python 3.14, `pyemscripten_2026_0`, Emscripten 5.0.3, stable Rust 1.93+) and add one wheel to the release, built with `maturin-action` (`target: wasm32-unknown-emscripten`, maturin 1.14+) or `cibuildwheel --platform pyodide`. Alternatively, build that wheel in the docs workflow and install it by URL from the same GitHub Pages origin.
 - **Other workflows.** `test`, `type checks` and CodSpeed build the extension on `ubuntu-latest`, which ships Rust. `docs` builds the package too, and should keep working for the same reason; it only runs on `main` and tags, so it has not run on this branch.
 - **Free-threaded Python.** The module declares `gil_used = true`, so a free-threaded interpreter turns the GIL back on when it imports signified.
 - **Tuning.** Done in Part 3, except `deep_unref`, which is still Python.
