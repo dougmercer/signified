@@ -1,8 +1,15 @@
 """User code running inside the engine: notify callbacks, computes, deep graphs."""
 
+import sys
+
 import pytest
 
 from signified import Computed, Signal, untracked
+
+# Longer than any graph the engine refreshes without RecursionError. Pyodide
+# aborts when it frees much longer chains, as it does for deeply nested
+# lists, so it gets a shorter one, still past its 250-level limit.
+DEEP = 1_000 if sys.platform == "emscripten" else 100_000
 
 
 def test_observer_writes_other_signal_during_notify():
@@ -101,8 +108,17 @@ def test_moderate_chain_works():
 def test_very_deep_chain_raises_recursion_error_instead_of_crashing():
     s = Signal(0)
     x = s
-    for _ in range(100_000):
+    for _ in range(DEEP):
         x = x + 1
+    with pytest.raises(RecursionError):
+        x.value
+
+
+def test_very_deep_chain_of_function_computeds_raises_recursion_error_instead_of_crashing():
+    # Each level also enters the Python interpreter, the costliest shape per level.
+    x = Signal(0)
+    for _ in range(min(DEEP, 10_000)):
+        x = Computed(lambda previous=x: previous.value + 1)
     with pytest.raises(RecursionError):
         x.value
 
