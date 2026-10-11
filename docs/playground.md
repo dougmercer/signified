@@ -4,12 +4,9 @@ hide:
 ---
 # Playground
 
-Run Python snippets directly in your browser with a Web Worker powered by Pyodide.
-
-!!! note
-    This page downloads Pyodide at runtime and attempts to install `signified` with `micropip`.
-
-Use the example dropdown to load snippets, then press `Ctrl+Enter` (or `Cmd+Enter` on macOS) to run.
+Try Signified in your browser. Pick an example, edit it, and press **Run**
+(or `Ctrl+Enter`, `Cmd+Enter` on macOS). The page downloads Python and
+Signified when it opens, so **Run** takes a few seconds to become available.
 
 <div class="signified-playground" data-signified-playground>
   <label for="signified-playground-code" class="signified-playground-label-code">Code</label>
@@ -17,12 +14,13 @@ Use the example dropdown to load snippets, then press `Ctrl+Enter` (or `Cmd+Ente
   <div class="signified-playground-editor">
     <textarea id="signified-playground-code" data-playground-code spellcheck="false">from signified import Signal
 
-x = Signal(2)
-double = 2 * x
+price = Signal(10)
+quantity = Signal(2)
+total = price * quantity
 
-print("double:", double.value)
-x.value = 5
-print("double:", double.value)
+print("total:", total.value)
+quantity.value = 3
+print("total:", total.value)
 </textarea>
   </div>
   <div class="signified-playground-output" data-playground-output aria-live="polite"></div>
@@ -35,13 +33,14 @@ print("double:", double.value)
   <div class="signified-playground-examples">
     <label for="signified-playground-example">Example</label>
     <select id="signified-playground-example" data-playground-example>
-      <option value="basic">Basic Signal</option>
-      <option value="decorator">Computed Decorator</option>
-      <option value="rx-tap">rx.tap() (lazy)</option>
-      <option value="rx-effect">rx.effect() (eager)</option>
-      <option value="collections">Collections and Mutation</option>
-      <option value="where">Conditional where()</option>
-      <option value="method-chain">Method Chaining</option>
+      <option value="basic">Signals and calculations</option>
+      <option value="decorator">@computed functions</option>
+      <option value="effect">Effects</option>
+      <option value="batch">Batching writes</option>
+      <option value="binding">Switching sources with Binding</option>
+      <option value="collections">Lists and update()</option>
+      <option value="where">Choosing values with rx.where</option>
+      <option value="method-chain">Method chaining</option>
     </select>
   </div>
 </div>

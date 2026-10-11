@@ -50,15 +50,16 @@ def _computed_call[R](func: Callable[..., R], *args: Any, **kwargs: Any) -> Comp
 
 
 def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
-    """Wrap a function so calls produce a reactive [Computed][signified.Computed] result.
+    """Make a function return a [Computed][signified.Computed] that follows its arguments.
 
-    Direct reactive arguments are shallowly unwrapped on each recomputation.
-    Plain values, including containers that contain reactive values, are passed
-    through unchanged. Call [deep_unref][signified.deep_unref] inside the function for explicit
-    recursive resolution.
+    Each time the result is calculated, every `Signal`, `Computed`, or
+    `Binding` argument is replaced by its current value, so `func` receives
+    plain values. Other arguments are passed as-is, including lists or dictionaries
+    that hold reactive values; call [deep_unref][signified.deep_unref] inside
+    `func` to read those.
 
-    Any reactive value read during evaluation becomes a dependency; the
-    [Computed][signified.Computed] updates automatically when any dependency changes.
+    The result recalculates when a reactive value it read changes, including
+    reads made inside `func`.
 
     Args:
         func: Function that computes a derived value from its inputs.
@@ -77,16 +78,15 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
 
 
 def effect(func: Callable[..., None]) -> Callable[..., Effect]:
-    """Wrap a function so calls produce a reactive [Effect][signified.Effect].
+    """Make a function start an [Effect][signified.Effect] each time it is called.
 
-    Direct reactive arguments are shallowly unwrapped on each re-run. Plain
-    values, including containers that contain reactive values, are passed
-    through unchanged. Call [deep_unref][signified.deep_unref] inside the function for explicit
-    recursive resolution.
+    Arguments are handled as in [computed][signified.computed]: each `Signal`,
+    `Computed`, or `Binding` argument is replaced by its current value, and
+    other arguments are passed as-is.
 
-    The effect runs synchronously (at outermost batch exit when batched), and
-    re-runs when reactive dependencies change. Pending notifications coalesce. It is active as long as the caller holds a reference to
-    the returned [Effect][signified.Effect].
+    The effect runs immediately, or when the enclosing [batch][signified.batch]
+    exits, and again whenever a reactive value it read changes. Keep the
+    returned `Effect` for as long as it should run.
 
     Args:
         func: Function run for its side effects.

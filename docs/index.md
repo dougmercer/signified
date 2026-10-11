@@ -2,8 +2,8 @@
 
 A fast, fully-typed Python library for reactive programming.
 
-```bash
-pip install signified
+```console
+$ uv add signified
 ```
 
 ## Values that *reactively* stay up to date
@@ -20,7 +20,7 @@ print(total)  # still 20
 ```
 
 `total` holds the number that `price * quantity` produced at that moment.
-If price or quanity change, you have to remember to recalculate `total`,
+If price or quantity change, you have to remember to recalculate `total`,
 along with anything calculated from `total`, and anything else calculated using
 *those* values. In a large program, that bookkeeping can easily miss something.
 
@@ -59,7 +59,7 @@ them with `.value`, and change a signal by assigning to its `.value`.
 | `Signal` | A value you can change | the price, the quantity |
 | `Computed` | A calculation that follows its inputs | the total |
 | `Effect` | An action that runs when the values it reads change | printing the total |
-| `Binding` | A reactive value whose source you can switch without rebuilding the calculations that use it | choosing which item's price to show |
+| `Binding` | Like a signal, but it can also follow another reactive value, and you can switch what it follows without rebuilding the calculations that use it | a shape's position: a fixed number now, an animation later |
 
 Python operators, attribute access, and method calls on reactive values create
 `Computed` values for you. For your own functions, use `@computed`:

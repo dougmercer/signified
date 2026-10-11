@@ -15,76 +15,91 @@
   const examples = {
     basic: `from signified import Signal
 
-x = Signal(2)
-double = 2 * x
+price = Signal(10)
+quantity = Signal(2)
+total = price * quantity
 
-print("double:", double.value)
-x.value = 5
-print("double:", double.value)`,
+print("total:", total.value)
+quantity.value = 3
+print("total:", total.value)`,
     decorator: `from signified import Signal, computed
 
-values = Signal([1, 2, 3, 4])
-
 @computed
-def stats(nums):
-    return {
-        "sum": sum(nums),
-        "mean": sum(nums) / len(nums),
-    }
+def stats(numbers):
+    return {"sum": sum(numbers), "mean": sum(numbers) / len(numbers)}
 
-summary = stats(values)
+numbers = Signal([1, 2, 3, 4])
+summary = stats(numbers)
 print(summary.value)
 
-values.value = [10, 20, 30]
+numbers.value = [10, 20, 30]
 print(summary.value)`,
-    "rx-tap": `from signified import Signal
+    effect: `from signified import Signal, effect
+
+@effect
+def show(total):
+    print(f"Total: \${total:.2f}")
 
 price = Signal(10)
-total = price.rx.map(lambda p: p * 1.2).rx.tap(lambda v: print("total:", v))
+quantity = Signal(2)
+watcher = show(price * quantity)  # runs right away
 
-price.value = 10
-price.value = 20
-price.value = 30
-price.value = 10
-total.value   # prints once: total: 12.0
-price.value = 20
-total.value   # prints: total: 24.0`,
-    "rx-effect": `from signified import Signal
+quantity.value = 3
+price.value = 12.5
 
-price = Signal(10)
-effect_handle = price.rx.map(lambda p: p * 1.2).rx.effect(
-    lambda v: print("total:", v)
-)
-
-# effect runs immediately and on each update
-price.value = 20
-price.value = 30
-
-effect_handle.dispose()
+watcher.dispose()
 price.value = 99  # no output after dispose`,
-    collections: `from signified import Signal
+    batch: `from signified import Effect, Signal, batch
 
-items = Signal({"theme": "dark", "count": 2})
-theme = items["theme"]
-count = items["count"]
+price = Signal(10)
+quantity = Signal(2)
+watcher = Effect(lambda: print("total:", price.value * quantity.value))
 
-print("theme:", theme.value)
-print("count:", count.value)
+print("Without batch:")
+price.value = 12
+quantity.value = 3
 
-items["theme"] = "light"
-items["count"] = 9
-print("theme:", theme.value)
-print("count:", count.value)`,
+print("With batch:")
+with batch():
+    price.value = 15
+    quantity.value = 4
+# The effect runs once, after the block.
+
+watcher.dispose()`,
+    binding: `from signified import Binding, Signal
+
+frame = Signal(0)
+x = Binding(0)    # a plain number for now
+label_x = x + 10  # a label that sits to the right of the shape
+
+x.value = 5
+print("label_x:", label_x.value)
+
+x.value = frame * 2  # now follow an animation
+for f in [10, 20, 30]:
+    frame.value = f
+    print("label_x:", label_x.value)`,
+    collections: `from signified import Signal, computed
+
+numbers = Signal([1, 2, 3])
+total = computed(sum)(numbers)
+print("total:", total.value)
+
+numbers[0] = 10  # item assignment sends an update
+print("total:", total.value)
+
+numbers.value.append(4)  # changing the raw list does not
+print("total:", total.value)
+numbers.update()  # so tell Signified about it
+print("total:", total.value)`,
     where: `from signified import Signal, computed
-
-username = Signal(None)
-is_logged_in = username.rx.is_not(None)
 
 @computed
 def welcome(name):
     return f"Welcome back, {name}!"
 
-message = is_logged_in.rx.where(welcome(username), "Please log in")
+username = Signal(None)
+message = username.rx.is_not(None).rx.where(welcome(username), "Please log in")
 print(message.value)
 
 username.value = "admin"

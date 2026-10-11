@@ -77,6 +77,12 @@ Signal assignments and calculated results use the same rules:
 - When a value is unchanged, the previously stored object is kept.
 
 A new dictionary therefore counts as a change even if it has the same contents.
+To compare by contents, pass an `equal(old, new)` function as `equal=` to
+`Signal` or `Computed`, or call `x.rx.with_equal(equal)` on a value built by an
+operator or `@computed`. It is called only when the rules above report a
+change, so it can make more values count as unchanged, never fewer. See
+[Skip updates for equal contents](usage.md#custom-equality).
+
 Changing an existing dictionary through `.value` does not send an update.
 Replace it, call `Signal.update()` after changing it, or assign through the
 signal with `state[key] = value`. The [container examples](usage.md#collections-and-item-assignment)
