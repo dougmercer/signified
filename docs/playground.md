@@ -1,6 +1,7 @@
 ---
 hide:
   - navigation
+  - toc
 ---
 # Playground
 
@@ -8,156 +9,49 @@ Try Signified in your browser. Pick an example, edit it, and press **Run**
 (or `Ctrl+Enter`, `Cmd+Enter` on macOS). The page downloads Python and
 Signified when it opens, so **Run** takes a few seconds to become available.
 
-<div class="signified-playground" data-signified-playground>
-  <label for="signified-playground-code" class="signified-playground-label-code">Code</label>
-  <label class="signified-playground-label-output">Output</label>
+<div class="signified-playground" data-signified-playground data-state="loading">
+  <div class="signified-playground-toolbar">
+    <label for="signified-playground-example" class="signified-playground-label">Example</label>
+    <select id="signified-playground-example" data-playground-example></select>
+    <span class="signified-playground-status" data-playground-status aria-live="polite">Loading Python…</span>
+    <button type="button" data-playground-reset title="Undo your edits to this example">Reset</button>
+    <button type="button" data-playground-share title="Copy a link to this code">Copy link</button>
+    <button type="button" class="signified-playground-run" data-playground-run disabled>Run</button>
+  </div>
   <div class="signified-playground-editor">
-    <textarea id="signified-playground-code" data-playground-code spellcheck="false">from signified import Signal
-
-price = Signal(10)
-quantity = Signal(2)
-total = price * quantity
-
-print("total:", total.value)
-quantity.value = 3
-print("total:", total.value)
-</textarea>
+    <textarea data-playground-code aria-label="Code" spellcheck="false"></textarea>
   </div>
-  <div class="signified-playground-output" data-playground-output aria-live="polite"></div>
-  <div class="signified-playground-controls">
-    <button type="button" class="md-button md-button--primary" data-playground-run disabled>Run</button>
-    <button type="button" class="md-button" data-playground-reset>Reset</button>
-    <button type="button" class="md-button" data-playground-clear>Clear</button>
-    <span class="signified-playground-status" data-playground-status aria-live="polite">Loading interpreter...</span>
-  </div>
-  <div class="signified-playground-examples">
-    <label for="signified-playground-example">Example</label>
-    <select id="signified-playground-example" data-playground-example>
-      <option value="basic">Signals and calculations</option>
-      <option value="decorator">@computed functions</option>
-      <option value="effect">Effects</option>
-      <option value="batch">Batching writes</option>
-      <option value="binding">Switching sources with Binding</option>
-      <option value="collections">Lists and update()</option>
-      <option value="where">Choosing values with rx.where</option>
-      <option value="method-chain">Method chaining</option>
-    </select>
-  </div>
+  <div class="signified-playground-output" data-playground-output role="log" aria-label="Output"></div>
 </div>
 
-<style>
-.signified-playground {
-  --playground-pane-height: 16rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto var(--playground-pane-height) auto;
-  grid-template-areas:
-    "label-code  label-output"
-    "editor      output"
-    "controls    examples";
-  column-gap: 0.75rem;
-  row-gap: 0.5rem;
-  margin-top: 1rem;
-}
+<script type="text/plain" data-playground-example="calculations" data-title="Signals and calculations">
+--8<-- "docs/playground/calculations.py"
+</script>
 
-.signified-playground-label-code   { grid-area: label-code; }
-.signified-playground-label-output { grid-area: label-output; }
-.signified-playground-editor       { grid-area: editor; overflow: hidden; align-self: stretch; min-height: 0; }
-.signified-playground-output       { grid-area: output; align-self: stretch; min-height: 0; }
-.signified-playground-controls     { grid-area: controls; align-self: center; }
-.signified-playground-examples     { grid-area: examples; align-self: center; }
+<script type="text/plain" data-playground-example="computed" data-title="@computed functions">
+--8<-- "docs/playground/computed.py"
+</script>
 
-.signified-playground-editor textarea {
-  width: 100%;
-  height: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  font-family: var(--md-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--md-code-fg-color);
-  background: var(--md-code-bg-color);
-  overflow-y: auto;
-}
+<script type="text/plain" data-playground-example="effects" data-title="Effects">
+--8<-- "docs/playground/effects.py"
+</script>
 
-.signified-playground .CodeMirror {
-  height: 100%;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  font-family: var(--md-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
+<script type="text/plain" data-playground-example="batch" data-title="Batching writes">
+--8<-- "docs/playground/batch.py"
+</script>
 
-.signified-playground-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
+<script type="text/plain" data-playground-example="binding" data-title="Switching sources with Binding">
+--8<-- "docs/playground/binding.py"
+</script>
 
-.signified-playground-status {
-  font-size: 0.75rem;
-  color: var(--md-default-fg-color--light);
-}
+<script type="text/plain" data-playground-example="lists" data-title="Lists and update()">
+--8<-- "docs/playground/lists.py"
+</script>
 
-.signified-playground-status.error {
-  color: var(--md-accent-fg-color);
-}
+<script type="text/plain" data-playground-example="where" data-title="Choosing values with rx.where">
+--8<-- "docs/playground/where.py"
+</script>
 
-.signified-playground-examples {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.signified-playground-examples label {
-  white-space: nowrap;
-}
-
-.signified-playground-examples select {
-  flex: 1 1 auto;
-  width: auto;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  font-size: 0.75rem;
-  color: var(--md-default-fg-color);
-  background: var(--md-default-bg-color);
-}
-
-.signified-playground-output {
-  height: 100%;
-  margin: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  overflow-y: auto;
-  font-family: var(--md-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.4;
-  color: var(--md-code-fg-color);
-  background: var(--md-code-bg-color);
-}
-
-@media (max-width: 600px) {
-  .signified-playground {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto var(--playground-pane-height) auto auto var(--playground-pane-height) auto;
-    grid-template-areas:
-      "label-code"
-      "editor"
-      "controls"
-      "label-output"
-      "output"
-      "examples";
-  }
-}
-</style>
+<script type="text/plain" data-playground-example="method_chaining" data-title="Method chaining">
+--8<-- "docs/playground/method_chaining.py"
+</script>

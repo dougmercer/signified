@@ -87,7 +87,8 @@ markdown_extensions:
   #     repo: keyed
   - pymdownx.mark
   - pymdownx.smartsymbols
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -142,13 +143,10 @@ nav:
       - Migrating to 0.6: migration.md
 
 extra_css:
-  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css
-  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css
+  - assets/playground/playground.css
 
 extra_javascript:
-  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js
-  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js
-  - assets/playground.js
+  - assets/playground/playground.js
 
 plugins:
   - search
