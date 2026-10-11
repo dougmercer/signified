@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="A fast, fully-typed Python library for reactive programming.">
+      
       
       
         <link rel="canonical" href="https://dougmercer.github.io/signified/dev/type-checkers/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>Type Checkers - Signified</title>
+        <title>Type checkers - Signified</title>
       
     
     
@@ -53,9 +55,7 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
-    
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+      <link rel="stylesheet" href="../assets/playground/playground.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -101,9 +101,8 @@
 <div class="announce-wrapper">
   <div id="announce-left">
     <div class="item">
-      <iframe style="display: inline-block; vertical-align: middle; border: none; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116" style="border: 0;"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
+      <iframe style="display: inline-block; vertical-align: middle; border: 0; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
     </div>
-  </div>
   </div>
 </div>
 
@@ -146,7 +145,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Type Checkers
+              Type checkers
             
           </span>
         </div>
@@ -249,7 +248,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
       </div>
@@ -415,7 +414,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
     </div>
@@ -543,6 +542,8 @@
       
         
       
+        
+      
     
     
     
@@ -604,6 +605,34 @@
     
   
     Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
   
 
     
@@ -696,7 +725,7 @@
   <span class="md-ellipsis">
     
   
-    Type Checkers
+    Type checkers
   
 
     
@@ -790,7 +819,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    API reference
   
 
     
@@ -818,7 +847,7 @@
   <span class="md-ellipsis">
     
   
-    How Updates Work
+    How updates work
   
 
     
@@ -964,7 +993,7 @@
   <span class="md-ellipsis">
     
   
-    Change Log
+    Changelog
   
 
     
@@ -1054,48 +1083,79 @@
 
 
   
+    <a href="https://github.com/dougmercer/signified/edit/main/docs/type-checkers.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
   
 
 
-<h1 id="type-checkers">Type Checkers<a class="headerlink" href="#type-checkers" title="Permanent link">&para;</a></h1>
+<h1 id="type-checkers">Type checkers<a class="headerlink" href="#type-checkers" title="Permanent link">&para;</a></h1>
 <p><strong>Use Pyright for the best type inference with Signified.</strong> Pyrefly is a usable
 alternative with caveats.</p>
-<p>Assessed on 2026-09-19 with Python <strong>3.12.12</strong> and Signified <strong>0.6.0</strong>
-(<a href="https://github.com/dougmercer/signified/tree/e55aaaac328fa3a98299afcb9343f2f6424e9bb4">revision e55aaaa</a>).</p>
+<p>Assessed on 2026-10-10 with Python <strong>3.14.3</strong> and Signified <strong>0.7.0</strong>
+(<a href="https://github.com/dougmercer/signified/tree/9de4e8be17d0c16236ea988af9868accf6319005">revision 9de4e8b</a>).
+The <a href="https://github.com/dougmercer/signified/blob/9de4e8be17d0c16236ea988af9868accf6319005/tests/type_inference.py">inference suite</a>
+checks 765 inferred types and 60 operations that should be rejected.</p>
 <table>
 <thead>
 <tr>
 <th>Checker</th>
-<th>Version assessed</th>
+<th>Version</th>
+<th style="text-align: right;">Wrong types (of 765)</th>
+<th style="text-align: right;">Invalid operations flagged (of 60)</th>
 <th>Recommendation</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Pyright</strong></td>
-<td><strong>1.1.414</strong></td>
-<td><strong>Recommended.</strong> Passes the full inference suite.</td>
+<td>1.1.414</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">60</td>
+<td><strong>Recommended</strong></td>
 </tr>
 <tr>
 <td><strong>Pyrefly</strong></td>
-<td><strong>1.3.1</strong></td>
-<td><strong>Usable with caveats.</strong> Core APIs infer well, but some <code>abs</code>, <code>round</code>, and <code>divmod</code> operations on signals infer incorrectly or fail checking. Wrapped callable objects also trigger errors.</td>
+<td>1.3.2</td>
+<td style="text-align: right;">33</td>
+<td style="text-align: right;">42</td>
+<td><strong>Usable with caveats</strong></td>
 </tr>
 <tr>
 <td><strong>ty</strong></td>
-<td><strong>0.0.82</strong></td>
-<td><strong>Not recommended yet.</strong> <code>unref</code>, <code>Binding</code>, and operators frequently infer incorrect unions, <code>Unknown</code>, or <code>Any</code>.</td>
+<td>0.0.86</td>
+<td style="text-align: right;">247</td>
+<td style="text-align: right;">56</td>
+<td>Not recommended yet</td>
 </tr>
 <tr>
 <td><strong>mypy</strong></td>
-<td><strong>2.3.1</strong></td>
-<td><strong>Not recommended for Signified inference.</strong> <code>unref</code>, <code>Binding</code>, and reactive operators frequently produce errors or lose type precision.</td>
+<td>2.4.0</td>
+<td style="text-align: right;">165</td>
+<td style="text-align: right;">34</td>
+<td>Not recommended</td>
 </tr>
 </tbody>
 </table>
-<p>The <a href="https://github.com/dougmercer/signified/blob/e55aaaac328fa3a98299afcb9343f2f6424e9bb4/tests/type_inference.py">264-assertion inference suite</a>, checked against an installed build, produced <strong>0 / 15 / 154 / 265 diagnostics</strong> respectively, including assertion mismatches and rejected calls. Mypy used <code>--check-untyped-defs</code> so test bodies were checked.</p>
-<p>Even with Pyright, arbitrary proxy attributes and <code>deep_unref</code> lose precision to
-<code>Any</code>, and <code>@computed</code> / <code>@effect</code> do not check argument types.</p>
+<ul>
+<li><strong>Pyrefly:</strong> <code>abs</code>, <code>math.trunc</code>, <code>math.floor</code>, and <code>math.ceil</code> on signals
+  infer <code>Unknown</code>, and <code>divmod</code> infers the wrong type for mixed, <code>Decimal</code>, or
+  reflected operands. It accepts <code>round</code> and the <code>math</code> functions on
+  unsupported values, and reports an error when calling a wrapped callable
+  object.</li>
+<li><strong>ty:</strong> <code>unref</code> and <code>Binding</code> rarely infer the right type, many operators
+  infer <code>Unknown</code>, and some valid operations are rejected, such as
+  <code>Signal(10.0) // Signal(2.0)</code>.</li>
+<li><strong>mypy:</strong> <code>unref</code> and <code>Binding</code> reject valid arguments and infer <code>Never</code>.
+  Operators on signals mostly infer correctly. Mypy ran with
+  <code>--check-untyped-defs</code> so test bodies were checked.</li>
+</ul>
+<p>Even with Pyright, attributes read through a signal, such as
+<code>Signal(person).name</code>, and <code>deep_unref</code> results are typed <code>Any</code>, so a misspelled
+attribute is not caught. Functions decorated with <code>@computed</code> or <code>@effect</code> keep
+their return type but do not check their arguments.</p>
 
 
 
@@ -1150,13 +1210,13 @@ alternative with caveats.</p>
         
         
           
-          <a href="../api/" class="md-footer__link md-footer__link--next" aria-label="Next: API Reference">
+          <a href="../api/" class="md-footer__link md-footer__link--next" aria-label="Next: API reference">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                API Reference
+                API reference
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1195,16 +1255,12 @@ alternative with caveats.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.action.edit", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
-      
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
-      
-        <script src="../assets/playground.js"></script>
+        <script src="../assets/playground/playground.js"></script>
       
     
   </body>

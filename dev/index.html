@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="A fast, fully-typed Python library for reactive programming.">
+      
       
       
         <link rel="canonical" href="https://dougmercer.github.io/signified/dev/">
@@ -51,9 +53,7 @@
     
       <link rel="stylesheet" href="assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
-    
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+      <link rel="stylesheet" href="assets/playground/playground.css">
     
     <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -99,9 +99,8 @@
 <div class="announce-wrapper">
   <div id="announce-left">
     <div class="item">
-      <iframe style="display: inline-block; vertical-align: middle; border: none; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116" style="border: 0;"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
+      <iframe style="display: inline-block; vertical-align: middle; border: 0; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
     </div>
-  </div>
   </div>
 </div>
 
@@ -247,7 +246,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
       </div>
@@ -413,7 +412,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
     </div>
@@ -544,6 +543,8 @@
       
         
       
+        
+      
     
     
     
@@ -602,6 +603,34 @@
     
   
     Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
   
 
     
@@ -685,7 +714,7 @@
   <span class="md-ellipsis">
     
   
-    Type Checkers
+    Type checkers
   
 
     
@@ -778,7 +807,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    API reference
   
 
     
@@ -806,7 +835,7 @@
   <span class="md-ellipsis">
     
   
-    How Updates Work
+    How updates work
   
 
     
@@ -952,7 +981,7 @@
   <span class="md-ellipsis">
     
   
-    Change Log
+    Changelog
   
 
     
@@ -1105,12 +1134,17 @@
 
 
   
+    <a href="https://github.com/dougmercer/signified/edit/main/docs/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
   
 
 
 <h1 id="signified">Signified<a class="headerlink" href="#signified" title="Permanent link">&para;</a></h1>
 <p>A fast, fully-typed Python library for reactive programming.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>signified
+<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">$ </span>uv<span class="w"> </span>add<span class="w"> </span>signified
 </span></code></pre></div>
 <h2 id="values-that-reactively-stay-up-to-date">Values that <em>reactively</em> stay up to date<a class="headerlink" href="#values-that-reactively-stay-up-to-date" title="Permanent link">&para;</a></h2>
 <p>Ordinary Python assignment takes a snapshot:</p>
@@ -1122,11 +1156,11 @@
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">total</span><span class="p">)</span>  <span class="c1"># still 20</span>
 </span></code></pre></div>
 <p><code>total</code> holds the number that <code>price * quantity</code> produced at that moment.
-If price or quanity change, you have to remember to recalculate <code>total</code>,
+If price or quantity change, you have to remember to recalculate <code>total</code>,
 along with anything calculated from <code>total</code>, and anything else calculated using
 <em>those</em> values. In a large program, that bookkeeping can easily miss something.</p>
 <p><strong>Reactive programming</strong> removes that bookkeeping. You describe how values
-depend on one another and <code>signified</code>
+depend on one another and Signified
 works out what needs to be recalculated when an input changes.</p>
 <h2 id="signals">Signals<a class="headerlink" href="#signals" title="Permanent link">&para;</a></h2>
 <p>In Signified, a value you plan to change goes in a <strong>signal</strong>. When a
@@ -1173,8 +1207,8 @@ them with <code>.value</code>, and change a signal by assigning to its <code>.va
 </tr>
 <tr>
 <td><code>Binding</code></td>
-<td>A reactive value whose source you can switch without rebuilding the calculations that use it</td>
-<td>choosing which item's price to show</td>
+<td>Like a signal, but it can also follow another reactive value, and you can switch what it follows without rebuilding the calculations that use it</td>
+<td>a shape's position: a fixed number now, an animation later</td>
 </tr>
 </tbody>
 </table>
@@ -1196,7 +1230,7 @@ them with <code>.value</code>, and change a signal by assigning to its <code>.va
 </span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">total</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 22.0</span>
 </span></code></pre></div>
 <p><code>@computed</code> makes it so the function receives ordinary values and returns a reactive result, but callers can pass signals, computed values, or plain values.</p>
-<p><code>Computed</code> objects answer <em>what a value is</em>, but when something should <em>happen</em> on a change, use an effect. Effects run once immediately, then again whenever the values it depends on have changed:</p>
+<p><code>Computed</code> objects answer <em>what a value is</em>, but when something should <em>happen</em> on a change, use an effect. Effects run once immediately, then again whenever the values they depend on have changed:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">effect</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nd">@effect</span>
@@ -1215,7 +1249,7 @@ them with <code>.value</code>, and change a signal by assigning to its <code>.va
 <li><strong>Effects are for actions.</strong> When something should <em>happen</em> on a change, such as updating a display or writing a log, use an <a href="usage/#run-actions-when-values-change">effect</a> instead of a calculation.</li>
 </ul>
 <p><a href="compute-contract/">How updates work</a> covers these rules in detail, including equality, batching, and errors.</p>
-<p>Signified also carries type hints through these expressions, so your editor knows that <code>total.value</code> is a <code>float</code>. For maximum compatibility use <code>pyright</code>. For more details on current limitations refer to the <a href="type-checkers/">type checker guide</a>.</p>
+<p>Signified also carries type hints through these expressions, so your editor knows that <code>total.value</code> is a <code>float</code>. For maximum compatibility, use Pyright. For more details on current limitations refer to the <a href="type-checkers/">type checker guide</a>.</p>
 <h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="usage/">Usage guide</a>: calculations, effects, containers, and switching inputs.</li>
@@ -1306,16 +1340,12 @@ them with <code>.value</code>, and change a signal by assigning to its <code>.va
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["announce.dismiss", "content.action.edit", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
       <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
-      
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
-      
-        <script src="assets/playground.js"></script>
+        <script src="assets/playground/playground.js"></script>
       
     
   </body>

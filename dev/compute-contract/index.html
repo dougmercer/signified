@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="A fast, fully-typed Python library for reactive programming.">
+      
       
       
         <link rel="canonical" href="https://dougmercer.github.io/signified/dev/compute-contract/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>How Updates Work - Signified</title>
+        <title>How updates work - Signified</title>
       
     
     
@@ -53,9 +55,7 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
-    
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+      <link rel="stylesheet" href="../assets/playground/playground.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -101,9 +101,8 @@
 <div class="announce-wrapper">
   <div id="announce-left">
     <div class="item">
-      <iframe style="display: inline-block; vertical-align: middle; border: none; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116" style="border: 0;"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
+      <iframe style="display: inline-block; vertical-align: middle; border: 0; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
     </div>
-  </div>
   </div>
 </div>
 
@@ -146,7 +145,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              How Updates Work
+              How updates work
             
           </span>
         </div>
@@ -249,7 +248,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
       </div>
@@ -415,7 +414,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
     </div>
@@ -541,6 +540,8 @@
       
         
       
+        
+      
     
     
     
@@ -599,6 +600,34 @@
     
   
     Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
   
 
     
@@ -682,7 +711,7 @@
   <span class="md-ellipsis">
     
   
-    Type Checkers
+    Type checkers
   
 
     
@@ -780,7 +809,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    API reference
   
 
     
@@ -817,7 +846,7 @@
   <span class="md-ellipsis">
     
   
-    How Updates Work
+    How updates work
   
 
     
@@ -835,7 +864,7 @@
   <span class="md-ellipsis">
     
   
-    How Updates Work
+    How updates work
   
 
     
@@ -859,17 +888,6 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#what-each-object-does" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What each object does
-      
-    </span>
-  </a>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#reads-and-equality" class="md-nav__link">
@@ -897,7 +915,7 @@
   <a href="#recursive-resolution-and-serialization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Nested values and serialization
+        Nested values
       
     </span>
   </a>
@@ -1084,7 +1102,7 @@
   <span class="md-ellipsis">
     
   
-    Change Log
+    Changelog
   
 
     
@@ -1160,17 +1178,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-each-object-does" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What each object does
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#reads-and-equality" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1196,7 +1203,7 @@
   <a href="#recursive-resolution-and-serialization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Nested values and serialization
+        Nested values
       
     </span>
   </a>
@@ -1265,55 +1272,17 @@
 
 
   
+    <a href="https://github.com/dougmercer/signified/edit/main/docs/compute-contract.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
   
 
 
 <h1 id="how-updates-work">How updates work<a class="headerlink" href="#how-updates-work" title="Permanent link">&para;</a></h1>
 <p>This page describes the rules behind Signified's updates. For an introduction
 with everyday examples, start with the <a href="../usage/">usage guide</a>.</p>
-<h2 id="what-each-object-does">What each object does<a class="headerlink" href="#what-each-object-does" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Object</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>Signal</code></td>
-<td>Stores a value you can change.</td>
-</tr>
-<tr>
-<td><code>Computed</code></td>
-<td>Calculates a value when needed and saves the result or error.</td>
-</tr>
-<tr>
-<td><code>Effect</code></td>
-<td>Runs an action when the reactive values it reads change.</td>
-</tr>
-<tr>
-<td><code>Binding</code></td>
-<td>Follows a source you can replace without replacing the binding itself.</td>
-</tr>
-</tbody>
-</table>
-<p>A signal can store another reactive object. A calculation can return one too.
-Neither reads that object's value automatically:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Binding</span><span class="p">,</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">unref</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">inner</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">outer</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">assert</span> <span class="n">outer</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">assert</span> <span class="n">unref</span><span class="p">(</span><span class="n">outer</span><span class="p">)</span> <span class="ow">is</span> <span class="n">inner</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">assert</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">assert</span> <span class="n">Binding</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">1</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">assert</span> <span class="n">Binding</span><span class="p">(</span><span class="n">outer</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
-</span></code></pre></div>
-<p><code>unref</code> reads one reactive object at a time. Operators and decorated functions
-follow the same rule. For example, <code>(outer + 1).value</code> is itself a <code>Computed</code>
-because <code>outer</code> stores a signal. Use <code>Binding(inner) + 1</code> to calculate from the
-number instead.</p>
 <h2 id="reads-and-equality">Which reads trigger updates<a class="headerlink" href="#reads-and-equality" title="Permanent link">&para;</a></h2>
 <p>A computation or effect follows the reactive values it reads while running.
 These inputs are called its <em>dependencies</em>. After each run, only the inputs
@@ -1321,19 +1290,19 @@ read during that run remain dependencies. In a conditional expression, that
 means the selected branch is tracked.</p>
 <p><code>computed</code> and <code>effect</code> read direct reactive arguments once per run. Other
 arguments, including lists and dictionaries, pass through unchanged:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">computed</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">}</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nd">@computed</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">double</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="k">return</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">result</span> <span class="o">=</span> <span class="n">double</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">4</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">6</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">computed</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">x</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">}</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nd">@computed</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">double</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">return</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">result</span> <span class="o">=</span> <span class="n">double</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">4</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">6</span>
 </span></code></pre></div>
 <p>Reading <code>x.value</code> makes <code>result</code> follow <code>x</code>. Simply returning <code>config</code> would not.</p>
 <p>Keep computed functions free of actions such as changing application state.
@@ -1351,7 +1320,12 @@ not prevent changes to a list or object returned by the function.</p>
 <li>When a value is unchanged, the previously stored object is kept.</li>
 </ul>
 <p>A new dictionary therefore counts as a change even if it has the same contents.
-Changing an existing dictionary through <code>.value</code> does not send an update.
+To compare by contents, pass an <code>equal(old, new)</code> function as <code>equal=</code> to
+<code>Signal</code> or <code>Computed</code>, or call <code>x.rx.with_equal(equal)</code> on a value built by an
+operator or <code>@computed</code>. It is called only when the rules above report a
+change, so it can make more values count as unchanged, never fewer. See
+<a href="../usage/#custom-equality">Skip updates for equal contents</a>.</p>
+<p>Changing an existing dictionary through <code>.value</code> does not send an update.
 Replace it, call <code>Signal.update()</code> after changing it, or assign through the
 signal with <code>state[key] = value</code>. The <a href="../usage/#collections-and-item-assignment">container examples</a>
 show all three approaches. Attribute assignment through a signal works the same
@@ -1360,11 +1334,26 @@ way; a <code>Computed</code> or <code>Binding</code> does not forward these writ
 unchanged results. Switching a binding to an equal-valued source follows this
 rule too. <code>Signal.update()</code> and <code>Computed.invalidate()</code> explicitly send a change
 notification from that object.</p>
-<h2 id="recursive-resolution-and-serialization">Nested values and serialization<a class="headerlink" href="#recursive-resolution-and-serialization" title="Permanent link">&para;</a></h2>
-<p>Call <code>deep_unref</code> inside a computation or effect to read reactive values inside
-supported containers. Calling it beforehand produces data but does not make
-that callback follow the original values. See <a href="../resolution/">Nested values</a>
-for supported types, JSON, custom handlers, and copying limits.</p>
+<h2 id="recursive-resolution-and-serialization">Nested values<a class="headerlink" href="#recursive-resolution-and-serialization" title="Permanent link">&para;</a></h2>
+<p>A signal can hold another reactive value, and a calculation can return one.
+Neither reads it for you:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Binding</span><span class="p">,</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">unref</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">inner</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">outer</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">assert</span> <span class="n">outer</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">assert</span> <span class="n">unref</span><span class="p">(</span><span class="n">outer</span><span class="p">)</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="k">assert</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">assert</span> <span class="n">Binding</span><span class="p">(</span><span class="n">inner</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="mi">1</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">assert</span> <span class="n">Binding</span><span class="p">(</span><span class="n">outer</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="n">inner</span>
+</span></code></pre></div>
+<p><code>unref</code>, <code>Binding</code>, operators, and decorated functions all read one level at a
+time. For example, <code>(outer + 1).value</code> is a <code>Computed</code>, because <code>outer</code> holds a
+signal. Use <code>Binding(inner) + 1</code> to calculate from the number instead.</p>
+<p>To read reactive values inside lists, dictionaries, and other containers, call
+<code>deep_unref</code> inside the computation or effect. Calling it beforehand gives you
+the data, but the callback will not follow the original values. See
+<a href="../resolution/">Nested values</a> for supported types, JSON, and custom handlers.</p>
 <h2 id="untracked-reads">Read without adding a dependency<a class="headerlink" href="#untracked-reads" title="Permanent link">&para;</a></h2>
 <p>Use <code>untracked()</code> for incidental reads that should not trigger the surrounding
 computation or effect:</p>
@@ -1388,8 +1377,7 @@ computation or effect:</p>
 </span></code></pre></div>
 <p>The effect follows <code>trigger</code>, but not <code>derived</code> or <code>other</code>. The nested
 calculation <code>derived</code> still tracks its own inputs and returns its current value.
-Reads, plugin hooks, errors, and writes work normally. Blocks can nest, and
-tracking is restored when a block exits, including after an error.</p>
+Blocks can nest, and tracking resumes when a block exits, even after an error.</p>
 <p><code>rx.tap(fn)</code> serves a different purpose: it calls <code>fn</code> when its calculated value
 is evaluated and passes the value through. Cached reads do not repeat the call,
 and unread intermediate values are skipped.</p>
@@ -1417,27 +1405,32 @@ reading a <code>Computed</code> while another thread is computing it raises
 <code>RuntimeError</code>. <code>batch()</code> and <code>untracked()</code> apply to the thread that enters
 them; they are synchronous blocks and must not contain <code>await</code>.</p>
 <h3 id="errors-and-recovery">Errors and recovery<a class="headerlink" href="#errors-and-recovery" title="Permanent link">&para;</a></h3>
-<p>A failed run still follows everything it read before the error. Inputs from
-an earlier run that were not read this time are dropped. A later change to
-one of the remaining inputs allows the computation or effect to try again.</p>
-<p>A <code>Computed</code> saves ordinary exceptions just as it saves values. Further reads
-raise the saved exception without rerunning the function. An input change or
-<code>.invalidate()</code> allows another evaluation. A computation or effect that reads
-the failed value still tracks that read, allowing recovery after the first
-evaluation fails.
-Each new failed evaluation counts as a change. Recovery also counts as a
-change, even if the result matches the last successful value.</p>
-<p>After an ordinary effect error, other pending effects still run. A single
-failure is raised directly; multiple failures from processing pending effects
-are raised together as an <code>ExceptionGroup</code>. These rules apply inside and
-outside batches. A batch body error alone is raised unchanged. If both the
-body and pending effects fail, the errors are grouped together, using
-<code>BaseExceptionGroup</code> when necessary.</p>
-<p>Control-flow exceptions such as <code>KeyboardInterrupt</code> are not saved. They stop
-processing pending effects and clear the remaining work. Active effects can
-still respond to future changes. If one effect runs more than 100 times while
-processing a round of pending effects, Signified reports a <code>RuntimeError</code>
-through the same error-handling mechanism and clears the remaining work.</p>
+<p>A <code>Computed</code> saves an ordinary exception the same way it saves a value:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">divisor</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">ratio</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="mi">10</span> <span class="o">/</span> <span class="n">divisor</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">ratio</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">except</span> <span class="ne">ZeroDivisionError</span><span class="p">:</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;failed&quot;</span><span class="p">)</span>  <span class="c1"># failed</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">divisor</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">ratio</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 5.0</span>
+</span></code></pre></div>
+<p>Reading <code>ratio</code> again raises the saved error without rerunning the function,
+until an input changes or you call <code>.invalidate()</code>. A failed run still follows
+the inputs it read before the error, which is how changing <code>divisor</code> lets
+<code>ratio</code> recover. For anything that reads <code>ratio</code>, each new failure counts as a
+change, and so does recovering, even to the last successful value.</p>
+<p>When an effect raises, the other pending effects still run. A single failure
+is raised as-is; several are raised together as an <code>ExceptionGroup</code>. This also
+applies inside a batch. If the batch body raises as well, its error is grouped
+with the effect errors, in a <code>BaseExceptionGroup</code> when needed.</p>
+<p>Exceptions that are not <code>Exception</code> subclasses, such as <code>KeyboardInterrupt</code>,
+are never saved. They stop and discard the pending effects, which still respond
+to later changes. If one effect runs more than 100 times in a single round of
+updates, usually because effects keep changing each other's inputs, Signified
+raises <code>RuntimeError</code> and discards the remaining work.</p>
 
 
 
@@ -1475,7 +1468,7 @@ through the same error-handling mechanism and clears the remaining work.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../api/" class="md-footer__link md-footer__link--prev" aria-label="Previous: API Reference">
+          <a href="../api/" class="md-footer__link md-footer__link--prev" aria-label="Previous: API reference">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1485,7 +1478,7 @@ through the same error-handling mechanism and clears the remaining work.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                API Reference
+                API reference
               </div>
             </div>
           </a>
@@ -1537,16 +1530,12 @@ through the same error-handling mechanism and clears the remaining work.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.action.edit", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
-      
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
-      
-        <script src="../assets/playground.js"></script>
+        <script src="../assets/playground/playground.js"></script>
       
     
   </body>

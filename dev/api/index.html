@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="A fast, fully-typed Python library for reactive programming.">
+      
       
       
         <link rel="canonical" href="https://dougmercer.github.io/signified/dev/api/">
@@ -25,7 +27,7 @@
     
     
       
-        <title>API Reference - Signified</title>
+        <title>API reference - Signified</title>
       
     
     
@@ -53,9 +55,7 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
-    
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+      <link rel="stylesheet" href="../assets/playground/playground.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -101,9 +101,8 @@
 <div class="announce-wrapper">
   <div id="announce-left">
     <div class="item">
-      <iframe style="display: inline-block; vertical-align: middle; border: none; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116" style="border: 0;"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
+      <iframe style="display: inline-block; vertical-align: middle; border: 0; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
     </div>
-  </div>
   </div>
 </div>
 
@@ -146,7 +145,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              API Reference
+              API reference
             
           </span>
         </div>
@@ -249,7 +248,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
       </div>
@@ -415,7 +414,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
     </div>
@@ -541,6 +540,8 @@
       
         
       
+        
+      
     
     
     
@@ -599,6 +600,34 @@
     
   
     Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
   
 
     
@@ -682,7 +711,7 @@
   <span class="md-ellipsis">
     
   
-    Type Checkers
+    Type checkers
   
 
     
@@ -789,7 +818,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    API reference
   
 
     
@@ -807,7 +836,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    API reference
   
 
     
@@ -1080,7 +1109,7 @@
   <a href="#reactive-namespace" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reactive Namespace
+        The rx namespace
       
     </span>
   </a>
@@ -1245,7 +1274,7 @@
   <a href="#magic-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Magic Methods
+        Operators
       
     </span>
   </a>
@@ -1847,43 +1876,21 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#nested-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nested values
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified.deep_unref" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Explicit deep resolution
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._resolve._DeepUnref" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;_DeepUnref
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._resolve._DeepUnref.__call__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__call__
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._resolve._DeepUnref.register" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;register
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;deep_unref
       
     </span>
   </a>
@@ -1898,23 +1905,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label=" ResolveContext">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#signified.ResolveContext.__call__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__call__
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1980,7 +1970,7 @@
   <span class="md-ellipsis">
     
   
-    How Updates Work
+    How updates work
   
 
     
@@ -2126,7 +2116,7 @@
   <span class="md-ellipsis">
     
   
-    Change Log
+    Changelog
   
 
     
@@ -2449,7 +2439,7 @@
   <a href="#reactive-namespace" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reactive Namespace
+        The rx namespace
       
     </span>
   </a>
@@ -2614,7 +2604,7 @@
   <a href="#magic-methods" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Magic Methods
+        Operators
       
     </span>
   </a>
@@ -3216,43 +3206,21 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#nested-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nested values
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified.deep_unref" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Explicit deep resolution
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._resolve._DeepUnref" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;_DeepUnref
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._resolve._DeepUnref.__call__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__call__
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#signified._resolve._DeepUnref.register" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;register
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;deep_unref
       
     </span>
   </a>
@@ -3267,23 +3235,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label=" ResolveContext">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#signified.ResolveContext.__call__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__call__
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -3349,10 +3300,15 @@
 
 
   
+    <a href="https://github.com/dougmercer/signified/edit/main/docs/api.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
   
 
 
-<h1 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
+<h1 id="api-reference">API reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
 <h2 id="classes">Classes<a class="headerlink" href="#classes" title="Permanent link">&para;</a></h2>
 
 
@@ -4127,16 +4083,11 @@ standard change-detection path.</p>
 
 
 
-        <p>A stable reactive handle whose current source can be replaced.</p>
-<p>Use a <code>Binding</code> when an object must keep the same public reactive identity
-while changing which <code>Signal</code>, <code>Computed</code>, or <code>Binding</code> supplies its value.
-Assigning a reactive object follows it, while assigning a plain value
-selects a private <code>Signal</code>.</p>
-<p>A <code>Binding</code> is an ordinary <code>Computed</code> over a <code>Signal</code> that holds the
-current source: it reads that signal, then reads the source's value.
-Rebinding therefore follows the normal contract. The switch invalidates
-the binding, and dependents recompute only if the resolved value changed
-under the usual equality policy.</p>
+        <p>A reactive value whose source you can switch.</p>
+<p>A <code>Binding</code> either holds a plain value or follows a <code>Signal</code>, <code>Computed</code>,
+or another <code>Binding</code>. Assign to <code>value</code> to switch: a reactive value is
+followed, and a plain value is held. Calculations built from the binding
+keep working across switches, and recalculate only if its value changes.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4159,8 +4110,7 @@ under the usual equality policy.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A reactive source to follow, or an initial plain value managed
-by a private <code>Signal</code>.</p>
+                <p>A reactive value to follow, or a plain value to hold.</p>
               </div>
             </td>
             <td>
@@ -4362,32 +4312,26 @@ recompute.</p>
 
 
 
-        <p>Run a function (for its side effects) and re-run it whenever its reactive dependencies change.</p>
-<p>Any reactive value read inside <code>fn</code> — via <code>.value</code> or <a class="autorefs autorefs-internal" href="#signified.unref">unref</a> — is
-automatically tracked as a dependency. The function runs once immediately on
-construction (or at batch exit), then again when dependencies change.
-Pending notifications coalesce; cascading writes may cause further runs.
-If computed dependencies refresh to unchanged outcomes, the callback is
-skipped. A new failed evaluation and recovery both count as changes.</p>
+        <p>Run a function now, and again whenever the reactive values it read change.</p>
+<p>Each run records the reactive values <code>fn</code> reads, through <code>.value</code> or
+<a class="autorefs autorefs-internal" href="#signified.unref">unref</a>. A change to any of them runs <code>fn</code> again. Only
+reads from the latest run count: in
+<code>Effect(lambda: x.value if flag.value else y.value)</code>, while <code>flag</code> is true,
+changing <code>y</code> does nothing.</p>
+<p>The first run happens immediately, or when the enclosing
+<a class="autorefs autorefs-internal" href="#signified.batch">batch</a> exits. Several changes before a run share one
+run, and a run is skipped if nothing it read actually changed, such as a
+calculation that recalculated to the same result.</p>
 
 
 <details class="warning" open>
   <summary>Warning</summary>
-  <p>Dependencies are tracked dynamically on each run. Only values that are read on the branch executed in the last run are tracked.</p>
-<p>This means that if a reactive value within the function is not read, then updates to that value will not trigger the effect.</p>
-<p>For example: in <code>Effect(lambda: x.value if y.value else z.value)</code>, if <code>y.value</code> was truthy then only <code>x</code> and <code>y</code> will be tracked.</p>
-</details>        <p>The effect stays active as long as you hold a reference to this object.
-Call <a class="autorefs autorefs-internal" href="#signified.Effect.dispose">Effect.dispose</a> to stop it explicitly.</p>
-
-
-<details class="warning" open>
-  <summary>Warning</summary>
-  <p>The <code>Effect</code> instance <strong>must be assigned to a variable</strong>. If the result
-is discarded, it is immediately eligible for garbage collection and the
-effect will silently stop running:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>   <span class="c1"># GC&#39;d immediately — never re-runs!</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>  <span class="c1"># kept alive — runs on every change</span>
+  <p>Keep a reference to the effect for as long as it should run. A
+discarded effect is garbage collected and stops:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>      <span class="c1"># runs once, then never again</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>  <span class="c1"># runs on every change</span>
 </span></code></pre></div>
+<p>Call <a class="autorefs autorefs-internal" href="#signified.Effect.dispose">dispose</a> to stop it explicitly.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4410,7 +4354,7 @@ effect will silently stop running:</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Zero-argument callable run for its side effects.</p>
+                <p>Zero-argument function to run for its side effects.</p>
               </div>
             </td>
             <td>
@@ -4536,10 +4480,10 @@ effect will silently stop running:</p>
 
     </div>
 
-</div><h2 id="reactive-namespace">Reactive Namespace<a class="headerlink" href="#reactive-namespace" title="Permanent link">&para;</a></h2>
-<p>The <code>rx</code> property on any reactive value exposes a namespace of additional
-operations — reactive equivalents of things Python's dunder protocol cannot
-return as reactive values (identity checks, containment, ternary, etc.):</p>
+</div><h2 id="reactive-namespace">The <code>rx</code> namespace<a class="headerlink" href="#reactive-namespace" title="Permanent link">&para;</a></h2>
+<p>Every signal, computed value, and binding has an <code>rx</code> property. It holds
+reactive versions of operations that Python syntax can't make reactive, such
+as identity checks, membership, and choosing between two values:</p>
 
 
 <div class="doc doc-object doc-class">
@@ -4675,15 +4619,11 @@ helpers that return the source keep it as <code>Signal</code>, <code>Computed</c
 
     <div class="doc doc-contents ">
 
-        <p>Eagerly run <code>fn</code> for side effects whenever the source changes.</p>
-<p><code>fn</code> runs synchronously on creation and after updates, without a
-<code>.value</code> read. Inside batch(), initial and subsequent runs are deferred
-and pending notifications coalesce.</p>
-<p>This is a convenience wrapper around <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a>. The source value is
-passed as the single argument to <code>fn</code> on each run. For effects that need
-to read multiple reactive values, use <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a> directly.</p>
-<p>The effect is active as long as the caller holds the returned <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a>
-instance. Call <a class="autorefs autorefs-internal" href="#signified.Effect.dispose">Effect.dispose</a> to stop it explicitly.</p>
+        <p>Call <code>fn</code> with the source's value now, and again whenever it changes.</p>
+<p>A shortcut for <code>Effect(lambda: fn(source.value))</code>. Inside
+<a class="autorefs autorefs-internal" href="#signified.batch">batch</a>, calls wait until the batch exits.</p>
+<p>Keep the returned <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a> for as long as <code>fn</code> should
+run, and call <a class="autorefs autorefs-internal" href="#signified.Effect.dispose">dispose</a> to stop it.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4706,7 +4646,7 @@ instance. Call <a class="autorefs autorefs-internal" href="#signified.Effect.dis
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Callback that receives the current source value on each change.</p>
+                <p>Called with the source's current value.</p>
               </div>
             </td>
             <td>
@@ -4732,7 +4672,7 @@ instance. Call <a class="autorefs autorefs-internal" href="#signified.Effect.dis
             </td>
             <td>
               <div class="doc-md-description">
-                <p>An <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a> instance whose lifetime controls the subscription.</p>
+                <p>The <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a> that calls <code>fn</code>.</p>
               </div>
             </td>
           </tr>
@@ -4819,7 +4759,7 @@ side effects, or <code>untracked()</code> to inspect a value without subscribing
 unchanged: the previous object is kept and dependents are not
 invalidated. This is the same as passing <code>equal=</code> to
 <a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a> or <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a>, and also
-reaches values built by operators, <code>computed</code>, <code>lift</code>, and <code>rx.map</code>.
+works on values built by operators, <code>computed</code>, and <code>rx.map</code>.
 It applies to later changes only. Pass <code>None</code> to restore the default
 (built-in scalars by value, other objects by identity).</p>
 <p>The source is changed in place and returned, so the call can end an
@@ -5609,10 +5549,10 @@ selected branch. An ordinary <code>Signal[bool]</code> retains both branch types
 
     </div>
 
-</div><h2 id="magic-methods">Magic Methods<a class="headerlink" href="#magic-methods" title="Permanent link">&para;</a></h2>
-<p>Reactive values support Python's operator protocol. Arithmetic, comparison,
-subscript, and attribute-access operations all return reactive
-<a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> values derived from their operands.</p>
+</div><h2 id="magic-methods">Operators<a class="headerlink" href="#magic-methods" title="Permanent link">&para;</a></h2>
+<p>Arithmetic, comparisons, item access, attribute access, and calls on a reactive
+value return a <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> that follows its operands. The
+<a href="../magic-methods/">Operators</a> page gives an overview.</p>
 
 
 <div class="doc doc-object doc-class">
@@ -9569,13 +9509,14 @@ opt out of NumPy's ufunc dispatch. The result is a single <code>Computed</code>.
 
     <div class="doc doc-contents first">
 
-        <p>Wrap a function so calls produce a reactive <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> result.</p>
-<p>Direct reactive arguments are shallowly unwrapped on each recomputation.
-Plain values, including containers that contain reactive values, are passed
-through unchanged. Call <a class="autorefs autorefs-internal" href="#signified.deep_unref">deep_unref</a> inside the function for explicit
-recursive resolution.</p>
-<p>Any reactive value read during evaluation becomes a dependency; the
-<a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> updates automatically when any dependency changes.</p>
+        <p>Make a function return a <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> that follows its arguments.</p>
+<p>Each time the result is calculated, every <code>Signal</code>, <code>Computed</code>, or
+<code>Binding</code> argument is replaced by its current value, so <code>func</code> receives
+plain values. Other arguments are passed as-is, including lists or dictionaries
+that hold reactive values; call <a class="autorefs autorefs-internal" href="#signified.deep_unref">deep_unref</a> inside
+<code>func</code> to read those.</p>
+<p>The result recalculates when a reactive value it read changes, including
+reads made inside <code>func</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9649,14 +9590,13 @@ recursive resolution.</p>
 
     <div class="doc doc-contents first">
 
-        <p>Wrap a function so calls produce a reactive <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a>.</p>
-<p>Direct reactive arguments are shallowly unwrapped on each re-run. Plain
-values, including containers that contain reactive values, are passed
-through unchanged. Call <a class="autorefs autorefs-internal" href="#signified.deep_unref">deep_unref</a> inside the function for explicit
-recursive resolution.</p>
-<p>The effect runs synchronously (at outermost batch exit when batched), and
-re-runs when reactive dependencies change. Pending notifications coalesce. It is active as long as the caller holds a reference to
-the returned <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a>.</p>
+        <p>Make a function start an <a class="autorefs autorefs-internal" href="#signified.Effect">Effect</a> each time it is called.</p>
+<p>Arguments are handled as in <a class="autorefs autorefs-internal" href="#signified.computed">computed</a>: each <code>Signal</code>,
+<code>Computed</code>, or <code>Binding</code> argument is replaced by its current value, and
+other arguments are passed as-is.</p>
+<p>The effect runs immediately, or when the enclosing <a class="autorefs autorefs-internal" href="#signified.batch">batch</a>
+exits, and again whenever a reactive value it read changes. Keep the
+returned <code>Effect</code> for as long as it should run.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10122,7 +10062,7 @@ the wrapped value or creating a dependency.</p>
 
     <div class="doc doc-contents first">
 
-        <p>Defer effects and <code>subscribe()</code> observers until the outermost synchronous batch exits.</p>
+        <p>Defer effects until the outermost synchronous batch exits.</p>
 <p>Writes are immediate and computed reads remain current. Newly created
 effects are deferred too. Nested batches combine; cascading writes may run
 an effect more than once. This is not a transaction: errors do not roll back
@@ -10217,97 +10157,41 @@ descriptor call. In-place mutation of a stored object is not observed.</p>
 
     </div>
 
-</div><h2 id="signified.deep_unref">Explicit deep resolution<a class="headerlink" href="#signified.deep_unref" title="Permanent link">&para;</a></h2>
-<p>Use <code>deep_unref(value)</code> to replace reactive values inside supported containers.
-For example, <code>deep_unref({"x": Signal(1)})</code> returns <code>{"x": 1}</code>. To support a
-custom object, register a handler with <code>@deep_unref.register(MyType)</code>.</p>
+</div><h2 id="nested-values">Nested values<a class="headerlink" href="#nested-values" title="Permanent link">&para;</a></h2>
 
 
-<div class="doc doc-object doc-class">
+<div class="doc doc-object doc-attribute">
 
 
 
-<a id="signified._resolve._DeepUnref"></a>
+<h2 id="signified.deep_unref" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">signified.deep_unref</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#signified.deep_unref" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">deep_unref</span>
+</span></code></pre></div>
+
     <div class="doc doc-contents first">
 
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="signified._resolve._DeepUnref.__call__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__call__</span>
-
-
-<a href="#signified._resolve._DeepUnref.__call__" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__call__</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Return value with reactive contents replaced by their current values.</p>
-<p>Supported containers are rebuilt; unknown objects pass through unchanged.
-Repeated references are resolved independently. Cyclic inputs eventually
-raise RecursionError. Dictionary keys or set members that become duplicates
-after unwrapping raise ValueError; unhashable keys or members raise TypeError.</p>
-<p>Reads inside a computation or effect create dependencies. Use untracked()
-around the call if you want to read without subscribing.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="signified._resolve._DeepUnref.register" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">register</span>
-
-
-<a href="#signified._resolve._DeepUnref.register" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">register</span><span class="p">(</span><span class="n">container_type</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Teach deep_unref how to rebuild one application or container type.</p>
-<p>The decorated function receives <code>(value, resolve)</code> and returns the
-replacement object. Call <code>resolve</code> on each child that should be
-unwrapped. Leave unrelated metadata alone, and avoid changing the input.</p>
-<p>Only this exact type uses the handler; subclasses need registration
-too. Registering the type again replaces its handler. See the module
-example and the built-in handler implementations for working patterns.</p>
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
+        <p>Replace reactive values inside nested containers with their current values.</p>
+<p>For example, <code>deep_unref({"x": Signal(1)})</code> returns <code>{"x": 1}</code>. Lists,
+tuples, dictionaries (keys and values), sets, frozensets, deques, and NumPy
+object arrays are rebuilt with their reactive contents replaced. Other objects
+are returned unchanged.</p>
+<p>To support your own type, register a handler with
+<code>@deep_unref.register(MyType)</code>. The handler receives the object and a
+<code>resolve</code> function (<a class="autorefs autorefs-internal" href="#signified.ResolveContext">ResolveContext</a>); call
+<code>resolve</code> on each field to read and return the rebuilt object. Only that
+exact type uses the handler, and registering the type again replaces it.</p>
+<p>Called inside a computation or effect, every reactive value it reads becomes a
+dependency. Repeated references are resolved separately, cycles eventually
+raise <code>RecursionError</code>, and keys or set members that collide after resolving
+raise <code>ValueError</code>.</p>
 
     </div>
 
@@ -10353,39 +10237,21 @@ The supplied context recursively resolves values with the current handlers.</p>
 
 
 
-<div class="doc doc-object doc-function">
-
-
-<h3 id="signified.ResolveContext.__call__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__call__</span>
-
-
-<a href="#signified.ResolveContext.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__call__</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-
-    </div>
-
-</div>
-
 
 
   </div>
 
     </div>
 
-</div><p>See <a href="../resolution/">Resolving nested values</a> for custom-handler examples.</p>
+</div><p><a href="../resolution/">Resolving nested values</a> has examples of custom handlers.</p>
 <h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
 <h3 id="signified.HasValue">HasValue<a class="headerlink" href="#signified.HasValue" title="Permanent link">&para;</a></h3>
-<p><strong><code>HasValue[T]</code></strong> — <code>T | Computed[T] | Signal[T] | Binding[T]</code></p>
-<p>A plain or reactive value that resolves to <code>T</code>. Use as a type hint when a
-parameter accepts either a raw value or a reactive wrapper.</p>
+<p><code>HasValue[T]</code> is <code>T | Computed[T] | Signal[T] | Binding[T]</code>: a plain or
+reactive value that resolves to <code>T</code>. Use it to annotate a parameter that
+accepts either.</p>
 <h3 id="signified.ReactiveValue">ReactiveValue<a class="headerlink" href="#signified.ReactiveValue" title="Permanent link">&para;</a></h3>
-<p><strong><code>ReactiveValue[T]</code></strong> — <code>Computed[T] | Signal[T] | Binding[T]</code></p>
-<p>A reactive wrapper that resolves to <code>T</code>.</p>
+<p><code>ReactiveValue[T]</code> is <code>Computed[T] | Signal[T] | Binding[T]</code>: a reactive value
+that resolves to <code>T</code>.</p>
 
 
 
@@ -10423,7 +10289,7 @@ parameter accepts either a raw value or a reactive wrapper.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../type-checkers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Type Checkers">
+          <a href="../type-checkers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Type checkers">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -10433,20 +10299,20 @@ parameter accepts either a raw value or a reactive wrapper.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Type Checkers
+                Type checkers
               </div>
             </div>
           </a>
         
         
           
-          <a href="../compute-contract/" class="md-footer__link md-footer__link--next" aria-label="Next: How Updates Work">
+          <a href="../compute-contract/" class="md-footer__link md-footer__link--next" aria-label="Next: How updates work">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                How Updates Work
+                How updates work
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -10485,16 +10351,12 @@ parameter accepts either a raw value or a reactive wrapper.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.action.edit", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
-      
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
-      
-        <script src="../assets/playground.js"></script>
+        <script src="../assets/playground/playground.js"></script>
       
     
   </body>

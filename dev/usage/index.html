@@ -6,6 +6,8 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="A fast, fully-typed Python library for reactive programming.">
+      
       
       
         <link rel="canonical" href="https://dougmercer.github.io/signified/dev/usage/">
@@ -14,7 +16,7 @@
         <link rel="prev" href="../comparison/">
       
       
-        <link rel="next" href="../resolution/">
+        <link rel="next" href="../examples/">
       
       
         
@@ -53,9 +55,7 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
-    
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+      <link rel="stylesheet" href="../assets/playground/playground.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -101,9 +101,8 @@
 <div class="announce-wrapper">
   <div id="announce-left">
     <div class="item">
-      <iframe style="display: inline-block; vertical-align: middle; border: none; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116" style="border: 0;"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
+      <iframe style="display: inline-block; vertical-align: middle; border: 0; margin-right: 0.5rem;" src="https://github.com/sponsors/dougmercer/button" title="Sponsor Doug" height="35" width="116"></iframe> <a class="announce-link" target="_blank" href="https://github.com/sponsors/dougmercer">Want to support the project? Consider sponsoring <strong>Signified</strong> 🚀</a>
     </div>
-  </div>
   </div>
 </div>
 
@@ -249,7 +248,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
       </div>
@@ -415,7 +414,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    dougmercer/signified
   </div>
 </a>
     </div>
@@ -534,6 +533,8 @@
   
     
     
+      
+        
       
         
       
@@ -734,6 +735,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#custom-equality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skip updates for equal contents
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -769,6 +781,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Switch inputs with Binding">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-not-a-signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why not a Signal?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-on-the-current-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build on the current source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -809,6 +849,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -884,7 +952,7 @@
   <span class="md-ellipsis">
     
   
-    Type Checkers
+    Type checkers
   
 
     
@@ -977,7 +1045,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    API reference
   
 
     
@@ -1005,7 +1073,7 @@
   <span class="md-ellipsis">
     
   
-    How Updates Work
+    How updates work
   
 
     
@@ -1151,7 +1219,7 @@
   <span class="md-ellipsis">
     
   
-    Change Log
+    Changelog
   
 
     
@@ -1305,6 +1373,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#custom-equality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skip updates for equal contents
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1340,6 +1419,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Switch inputs with Binding">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-not-a-signal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why not a Signal?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-on-the-current-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build on the current source
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1399,6 +1506,11 @@
 
 
   
+    <a href="https://github.com/dougmercer/signified/edit/main/docs/usage.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
   
 
 
@@ -1456,10 +1568,11 @@ Keep the returned object while the effect should stay active, then call
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">quantity</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">4</span>                     <span class="c1"># No output</span>
 </span></code></pre></div>
-<p>If a calculation produces the same result, an effect watching only that result
-can skip running. Use <a href="../api/#signified._mixin._ReactiveNamespace.tap"><code>rx.tap</code></a>
-for debugging a calculation when it is read; it does not run automatically
-for every change.</p>
+<p>An effect that reads only a calculation skips running when that calculation
+recalculates to the same result. The
+<a href="../examples/#effects">effect examples</a>
+show effects that refresh a display, autosave settings, and rebuild an index
+when files change.</p>
 <h3 id="scheduling-and-untracked-reads">Group related changes<a class="headerlink" href="#scheduling-and-untracked-reads" title="Permanent link">&para;</a></h3>
 <p>Use <code>batch()</code> to delay effects until a group of writes is finished:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Effect</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">batch</span>
@@ -1517,19 +1630,39 @@ use <code>deep_unref</code> to read all of them:</p>
 <p>Keep <code>deep_unref</code> <strong>inside</strong> the function so its reads are tracked. The
 <a href="../resolution/">nested values guide</a> covers supported containers, JSON, and
 custom objects.</p>
+<h3 id="custom-equality">Skip updates for equal contents<a class="headerlink" href="#custom-equality" title="Permanent link">&para;</a></h3>
+<p>A new list counts as a change even if its contents match the old one, because
+Signified compares lists, dictionaries, arrays, and your own objects by
+identity. Pass <code>equal=</code> to compare them your way:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">effect</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nd">@effect</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">show</span><span class="p">(</span><span class="n">point</span><span class="p">):</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Point:&quot;</span><span class="p">,</span> <span class="n">point</span><span class="p">)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">point</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">equal</span><span class="o">=</span><span class="k">lambda</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="n">old</span> <span class="o">==</span> <span class="n">new</span><span class="p">)</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">watcher</span> <span class="o">=</span> <span class="n">show</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>  <span class="c1"># Point: [0, 0]</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">point</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>   <span class="c1"># Same contents: no update</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">point</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>   <span class="c1"># Point: [1, 0]</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">watcher</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+</span></code></pre></div>
+<p>When <code>equal(old, new)</code> returns <code>True</code>, the signal keeps the old object and
+nothing that depends on it updates. <code>Computed</code> accepts <code>equal=</code> too. For a value
+built with operators or <code>@computed</code>, set it afterwards with <code>.rx.with_equal()</code>,
+for example <code>transform = (rotation @ scale).rx.with_equal(np.array_equal)</code>.</p>
 <h2 id="attribute-access-method-calls-and-assignment">Attributes and methods<a class="headerlink" href="#attribute-access-method-calls-and-assignment" title="Permanent link">&para;</a></h2>
 <p>You can read attributes and call methods through a signal:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">person</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Alice&quot;</span><span class="p">))</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">name</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">name</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">person</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Bob&quot;</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Bob</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">text</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="s2">&quot;  Hello, World!  &quot;</span><span class="p">)</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">message</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># hello, world!</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">person</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Alice&quot;</span><span class="p">))</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">name</span> <span class="o">=</span> <span class="n">person</span><span class="o">.</span><span class="n">name</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">person</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Bob&quot;</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Bob</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">text</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="s2">&quot;  Hello, World!  &quot;</span><span class="p">)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">message</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># hello, world!</span>
 </span></code></pre></div>
 <p>Only <code>Signal</code> forwards attribute and item writes to the object it holds.
 An attribute must already exist on that object. Method calls produce calculated
@@ -1538,80 +1671,97 @@ send an update. For example, use <code>numbers.value.append(4)</code> followed b
 <code>numbers.update()</code> to change a list.</p>
 <h2 id="conditional-logic-with-where">Choose between values<a class="headerlink" href="#conditional-logic-with-where" title="Permanent link">&para;</a></h2>
 <p>Use <code>.rx</code> for operations that need a reactive alternative to Python syntax:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">username</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">message</span> <span class="o">=</span> <span class="n">username</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">is_not</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="s2">&quot;Signed in&quot;</span><span class="p">,</span> <span class="s2">&quot;Please log in&quot;</span><span class="p">)</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Please log in</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">username</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;admin&quot;</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Signed in</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Signal</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">username</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">message</span> <span class="o">=</span> <span class="n">username</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">is_not</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">rx</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="s2">&quot;Signed in&quot;</span><span class="p">,</span> <span class="s2">&quot;Please log in&quot;</span><span class="p">)</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Please log in</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">username</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;admin&quot;</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># Signed in</span>
 </span></code></pre></div>
 <p>For a reactive equality check, use <code>x.rx.eq(y)</code>. For reactive truthiness, use
 <code>x.rx.as_bool()</code>. The <a href="../magic-methods/">operator cheatsheet</a> lists the other
 operations and their Python counterparts.</p>
 <h2 id="replacing-a-reactive-source-with-binding">Switch inputs with Binding<a class="headerlink" href="#replacing-a-reactive-source-with-binding" title="Permanent link">&para;</a></h2>
-<p>Use <code>Binding</code> when existing calculations should switch to a different source:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Binding</span><span class="p">,</span> <span class="n">Signal</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">selected</span> <span class="o">=</span> <span class="n">Binding</span><span class="p">(</span><span class="n">left</span><span class="p">)</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">selected</span> <span class="o">*</span> <span class="mi">2</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 2</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">selected</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">right</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 20</span>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">right</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">12</span>
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 24</span>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="n">selected</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">5</span>    <span class="c1"># Use a plain value as the new source.</span>
-</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
-</span></code></pre></div>
-<p><code>selected.source</code> returns the current source. A binding can also follow another
-binding. To build a new calculation from the previous source, use <code>.derive()</code>:</p>
+<p>A <code>Signal</code> holds a value. A <code>Binding</code> can hold a value <em>or</em> follow another
+reactive value, and you can change which at any time. Calculations built from
+the binding keep working through every switch.</p>
+<p>This suits an object's properties. A shape's <code>x</code> position might be a fixed
+number at first, then follow an animation later:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Binding</span><span class="p">,</span> <span class="n">Signal</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">value</span> <span class="o">=</span> <span class="n">Binding</span><span class="p">(</span><span class="n">Signal</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">value</span><span class="o">.</span><span class="n">derive</span><span class="p">(</span><span class="k">lambda</span> <span class="n">previous</span><span class="p">:</span> <span class="n">previous</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 6</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">frame</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">x</span> <span class="o">=</span> <span class="n">Binding</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>        <span class="c1"># a plain number for now</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">label_x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">10</span>      <span class="c1"># e.g. a label that sits to the right of the shape</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">5</span>           <span class="c1"># set a number, like a Signal</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">label_x</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 15</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">x</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">frame</span> <span class="o">*</span> <span class="mi">2</span>   <span class="c1"># now follow an animation</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="n">frame</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">30</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">label_x</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 70</span>
 </span></code></pre></div>
-<p>Use <code>previous</code> inside that function. Referring to <code>value</code> would make the binding
+<h3 id="why-not-a-signal">Why not a Signal?<a class="headerlink" href="#why-not-a-signal" title="Permanent link">&para;</a></h3>
+<p>With <code>x = Signal(0)</code>, there is no good way to make <code>x</code> follow <code>frame * 2</code>:</p>
+<ul>
+<li><code>x.value = frame * 2</code> stores the <code>Computed</code> object itself. <code>label_x.value</code>
+  becomes a <code>Computed</code>, not a number.</li>
+<li><code>x.value = (frame * 2).value</code> copies the current number once. <code>x</code> does not
+  change again when <code>frame</code> does.</li>
+<li>Rebuilding <code>label_x</code> from <code>frame * 2</code> works, but anything still holding the
+  old <code>label_x</code>, such as an effect or another object, is left behind.</li>
+</ul>
+<p>A <code>Binding</code> gives the object one handle for its whole life, while you choose
+what drives it.</p>
+<h3 id="build-on-the-current-source">Build on the current source<a class="headerlink" href="#build-on-the-current-source" title="Permanent link">&para;</a></h3>
+<p><code>x.source</code> returns whatever <code>x</code> currently follows. A binding can also follow
+another binding. To layer a new calculation on top of the current source, use
+<code>.derive()</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">x</span><span class="o">.</span><span class="n">derive</span><span class="p">(</span><span class="k">lambda</span> <span class="n">previous</span><span class="p">:</span> <span class="n">previous</span> <span class="o">+</span> <span class="mi">100</span><span class="p">)</span>  <span class="c1"># shift whatever x was following</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">label_x</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 170</span>
+</span></code></pre></div>
+<p>Use <code>previous</code> inside that function. Referring to <code>x</code> would make the binding
 depend on itself. Direct self-binding is rejected; indirect loops raise when read.</p>
-<p><code>Signal(other_signal)</code> stores the signal object itself. Use <code>Binding(other_signal)</code>
-when you want to follow its current value.</p>
 <h2 id="tracked-fields">Track attribute reassignment<a class="headerlink" href="#tracked-fields" title="Permanent link">&para;</a></h2>
 <p>A calculation that reads <code>unref(material.roughness)</code> follows a signal stored in
 that attribute, but it cannot see the attribute itself being replaced.
 <code>tracked_fields</code> makes reassignment visible:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">HasValue</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">tracked_fields</span><span class="p">,</span> <span class="n">unref</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nd">@tracked_fields</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">Material</span><span class="p">:</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">roughness</span><span class="p">:</span> <span class="n">HasValue</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="n">material</span> <span class="o">=</span> <span class="n">Material</span><span class="p">()</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">unref</span><span class="p">(</span><span class="n">material</span><span class="o">.</span><span class="n">roughness</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="n">material</span><span class="o">.</span><span class="n">roughness</span> <span class="o">=</span> <span class="mf">0.25</span>
-</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 0.5</span>
-</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="n">material</span><span class="o">.</span><span class="n">roughness</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
-</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 0.2</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">HasValue</span><span class="p">,</span> <span class="n">Signal</span><span class="p">,</span> <span class="n">tracked_fields</span><span class="p">,</span> <span class="n">unref</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="nd">@tracked_fields</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">Material</span><span class="p">:</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">roughness</span><span class="p">:</span> <span class="n">HasValue</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">material</span> <span class="o">=</span> <span class="n">Material</span><span class="p">()</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">unref</span><span class="p">(</span><span class="n">material</span><span class="o">.</span><span class="n">roughness</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="n">material</span><span class="o">.</span><span class="n">roughness</span> <span class="o">=</span> <span class="mf">0.25</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 0.5</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="n">material</span><span class="o">.</span><span class="n">roughness</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 0.2</span>
 </span></code></pre></div>
 <p>Reading the attribute returns exactly what was stored; it never unwraps.
 Assigning a signal replaces the stored one instead of writing into it. Pass
 names, as in <code>@tracked_fields("roughness")</code>, to track only some attributes, or
-to track attributes of a class that is not a dataclass.</p>
+to track attributes of a class that is not a dataclass. The
+<a href="../examples/#dashboard">dashboard example</a>
+drives an effect from a tracked dataclass, with batching.</p>
 <h2 id="manual-invalidation">Force a calculation to refresh<a class="headerlink" href="#manual-invalidation" title="Permanent link">&para;</a></h2>
-<p>If you replace an input through an ordinary Python object, Signified may not
-see the change. Call <code>.invalidate()</code> to recalculate on the next read:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">holder</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">Signal</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">holder</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">holder</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">doubled</span><span class="o">.</span><span class="n">invalidate</span><span class="p">()</span>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 40</span>
+<p>If a calculation reads through an ordinary Python object, Signified cannot see
+that object's attributes being replaced. For classes you control, use
+<a href="#tracked-fields"><code>tracked_fields</code></a>. Otherwise, call <code>.invalidate()</code> to
+recalculate on the next read:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">signified</span><span class="w"> </span><span class="kn">import</span> <span class="n">Computed</span><span class="p">,</span> <span class="n">Signal</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">holder</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">Signal</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">doubled</span> <span class="o">=</span> <span class="n">Computed</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">holder</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="n">holder</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 10</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="n">doubled</span><span class="o">.</span><span class="n">invalidate</span><span class="p">()</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">doubled</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># 40</span>
 </span></code></pre></div>
 <h2 id="utility-helpers">More helpers<a class="headerlink" href="#utility-helpers" title="Permanent link">&para;</a></h2>
 <p>See the <a href="../api/">API reference</a> for:</p>
@@ -1620,6 +1770,7 @@ see the change. Call <code>.invalidate()</code> to recalculate on the next read:
 <li><code>as_rx(value)</code>: wrap a plain value in a signal; leave reactive values unchanged.</li>
 <li><code>has_value</code> and <code>is_reactive</code>: check and narrow types.</li>
 <li><code>Signal.at(value)</code>: temporarily change a value inside a <code>with</code> block.</li>
+<li><code>x.rx.tap(fn)</code>: call <code>fn</code> with each newly calculated value (runs only when something reads the result).</li>
 </ul>
 <p>For editor and type-checking support, see <a href="../type-checkers/">Type checkers</a>.</p>
 
@@ -1676,13 +1827,13 @@ see the change. Call <code>.invalidate()</code> to recalculate on the next read:
         
         
           
-          <a href="../resolution/" class="md-footer__link md-footer__link--next" aria-label="Next: Resolving nested values">
+          <a href="../examples/" class="md-footer__link md-footer__link--next" aria-label="Next: Examples">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Resolving nested values
+                Examples
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1721,16 +1872,12 @@ see the change. Call <code>.invalidate()</code> to recalculate on the next read:
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["announce.dismiss", "content.action.edit", "content.code.annotate", "content.code.copy", "content.code.select", "content.footnote.tooltips", "content.tabs.link", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
-      
-        <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
-      
-        <script src="../assets/playground.js"></script>
+        <script src="../assets/playground/playground.js"></script>
       
     
   </body>
