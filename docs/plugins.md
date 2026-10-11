@@ -52,7 +52,7 @@ plugin_manager.unregister(plugin)
 
 Use `logging` in place of `print` if your application already has logging set
 up. Unregister the plugin when you no longer need it. For a larger example,
-see the [access tracker](https://github.com/dougmercer/signified/blob/main/examples/plugins/access_tracker.py),
+see the [access tracker](examples.md#access-tracker),
 which counts reads and writes for each reactive value.
 
 When several plugins implement the same hook, the most recently registered one

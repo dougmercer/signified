@@ -70,7 +70,7 @@ quantity.value = 4                     # No output
 
 An effect that reads only a calculation skips running when that calculation
 recalculates to the same result. The
-[effect examples](https://github.com/dougmercer/signified/tree/main/examples/effects)
+[effect examples](examples.md#effects)
 show effects that refresh a display, autosave settings, and rebuild an index
 when files change.
 
@@ -293,7 +293,7 @@ Reading the attribute returns exactly what was stored; it never unwraps.
 Assigning a signal replaces the stored one instead of writing into it. Pass
 names, as in `@tracked_fields("roughness")`, to track only some attributes, or
 to track attributes of a class that is not a dataclass. The
-[dashboard example](https://github.com/dougmercer/signified/blob/main/examples/effects/dashboard.py)
+[dashboard example](examples.md#dashboard)
 drives an effect from a tracked dataclass, with batching.
 
 ## Force a calculation to refresh {#manual-invalidation}

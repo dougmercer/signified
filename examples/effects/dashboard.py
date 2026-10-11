@@ -16,7 +16,7 @@ Expected output:
 
     Temperature: 20 C
 
-    Batch several writes into one display update:
+    Batch writes into one display update:
     Temperature: 22 C
 
     Rename the display:

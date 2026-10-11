@@ -16,7 +16,7 @@ def log_count(value: int, label: str) -> None:
 def example() -> None:
     count = Signal(0)
 
-    print("1. Create an Effect object directly:")
+    print("1: Create an Effect object directly:")
     observer = Effect(lambda: print(f"Effect: {count.value}"))
     try:
         count.value = 1
@@ -37,7 +37,6 @@ def example() -> None:
         count.value = 3
     finally:
         display.dispose()
-
 
 
 if __name__ == "__main__":

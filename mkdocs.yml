@@ -130,6 +130,7 @@ nav:
       - Comparison: comparison.md
   - Guides:
       - Usage: usage.md
+      - Examples: examples.md
       - Resolving nested values: resolution.md
       - Plugins: plugins.md
       - Type checkers: type-checkers.md
