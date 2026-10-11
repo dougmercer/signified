@@ -500,9 +500,9 @@ def test_bench_subscription_churn_v1(benchmark):
         checksum = 0
         for _ in range(125):
             for observer in observers:
-                source.unsubscribe(observer)
+                source._unsubscribe(observer)
             for observer in observers:
-                source.subscribe(observer)
+                source._subscribe(observer)
             source.value = source.value + 1
             checksum += sink.value
         return checksum

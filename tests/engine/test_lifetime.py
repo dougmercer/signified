@@ -66,7 +66,7 @@ def test_python_observers_are_held_weakly():
 
     appender = Appender()
     ref = weakref.ref(appender)
-    s.subscribe(appender)
+    s._subscribe(appender)
     del appender
     gc.collect()
     assert ref() is None
@@ -118,7 +118,7 @@ def test_dead_observers_release_their_subscription():
             pass
 
     observer = Observer()
-    s.subscribe(observer)
+    s._subscribe(observer)
     (reference,) = weakref.getweakrefs(observer)
     held = sys.getrefcount(reference)
     del observer
@@ -140,13 +140,13 @@ def test_subscriptions_stay_findable_after_the_observer_list_compacts():
 
     observers = [Observer(k) for k in range(40)]
     for observer in observers:
-        s.subscribe(observer)
+        s._subscribe(observer)
     for observer in observers[:30]:  # enough removals to compact the list
-        s.unsubscribe(observer)
+        s._unsubscribe(observer)
     for observer in observers[30:35]:
-        s.subscribe(observer)  # already subscribed: no second entry
+        s._subscribe(observer)  # already subscribed: no second entry
     for observer in observers[30:33]:
-        s.unsubscribe(observer)
+        s._unsubscribe(observer)
     del observer, observers[35:]  # the rest die and unsubscribe themselves
     gc.collect()
 

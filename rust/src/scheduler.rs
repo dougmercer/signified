@@ -1,4 +1,4 @@
-//! The queue of effects and `subscribe()` observers waiting to run, and
+//! The queue of effects and `_subscribe()` observers waiting to run, and
 //! `batch()`. Both kinds of work are queued during a notification walk and
 //! run, in the order they were queued, once the outermost walk or batch ends.
 
@@ -22,7 +22,7 @@ const MAX_RUNS: u32 = 100;
 enum Job {
     /// An effect, valid while its `queued` number is still `seq`.
     Effect { node: Weak<Node>, seq: NonZeroU64 },
-    /// A `subscribe()` observer's weak reference; its `update()` is called.
+    /// A `_subscribe()` observer's weak reference; its `update()` is called.
     Observer(Py<PyWeakrefReference>),
 }
 
@@ -96,7 +96,7 @@ pub(crate) fn enqueue_effect(effect: &Rc<Node>) {
     });
 }
 
-/// Queue a `subscribe()` observer unless it is already queued.
+/// Queue a `_subscribe()` observer unless it is already queued.
 pub(crate) fn enqueue_observer(reference: Py<PyWeakrefReference>) {
     with_queue(|queue| {
         let fresh = queue

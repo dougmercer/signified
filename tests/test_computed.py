@@ -208,7 +208,7 @@ def test_binding_source_change_invalidates_computed_once():
 
     derived = Computed(lambda: outer.value + 1)
     counter = Counter()
-    derived.subscribe(counter)
+    derived._subscribe(counter)
     inner.value = 2
 
     assert calls == 1

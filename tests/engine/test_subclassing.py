@@ -45,7 +45,7 @@ def test_attribute_proxy_and_forwarded_writes():
 
 @pytest.mark.parametrize(
     ("base", "name"),
-    [(Signal, "notify"), (Signal, "update"), (Computed, "notify"), (Computed, "update"), (Effect, "update")],
+    [(Signal, "update"), (Computed, "update"), (Effect, "update")],
 )
 def test_overriding_methods_the_engine_never_calls_raises(base, name):
     with pytest.raises(TypeError, match=f"overrides {name}"):
@@ -62,7 +62,7 @@ def test_reading_an_uninitialized_signal_raises():
     assert s.value == 2
 
 
-@pytest.mark.parametrize("name", ["value", "update", "notify"])
+@pytest.mark.parametrize("name", ["value", "update"])
 def test_override_inherited_from_a_mixin_raises(name):
     member = property(lambda self: 99) if name == "value" else (lambda self: None)
     mixin = type("Mixin", (), {name: member})

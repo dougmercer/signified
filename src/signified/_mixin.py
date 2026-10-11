@@ -436,7 +436,7 @@ class _ReactiveMixIn[T]:
         """The current value of the reactive object."""
         ...
 
-    def notify(self) -> None:
+    def _notify(self) -> None:
         """Notify all observers by calling their ``update`` method."""
         ...
 

@@ -88,8 +88,8 @@ class Variable[T](_ReactiveMixIn[T]):
     if TYPE_CHECKING:
         _name: str
 
-        def subscribe(self, observer: _Observer) -> None: ...
-        def unsubscribe(self, observer: _Observer) -> None: ...
+        def _subscribe(self, observer: _Observer) -> None: ...
+        def _unsubscribe(self, observer: _Observer) -> None: ...
         def update(self) -> None: ...
         def invalidate(self) -> None: ...
 
@@ -100,7 +100,7 @@ class Variable[T](_ReactiveMixIn[T]):
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        _reject_engine_overrides(cls, ("notify", "update", "value"))
+        _reject_engine_overrides(cls, ("update", "value"))
 
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
@@ -189,7 +189,7 @@ def _reject_engine_overrides(cls: type, names: tuple[str, ...]) -> None:
             )
         raise TypeError(
             f"{cls.__name__} overrides {name}(){where}, but signified never calls Python "
-            f"overrides of {name}(). Use an Effect or subscribe() to react to changes."
+            f"overrides of {name}(). Use an Effect to react to changes."
         )
 
 

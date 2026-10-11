@@ -9,21 +9,19 @@ This page summarizes notable changes across releases.
 - **Breaking:** Signified's reactive engine is now a compiled extension written
   in Rust (`signified._core`). `Signal`, `Computed`, `Binding` and `Effect` keep
   their API, and most graphs update several times faster. Behavior changes:
-  - Observers added with `subscribe()` run after a change has finished
-    propagating, in the same queue as effects (so `batch()` defers them too),
-    instead of in the middle of it. Repeated notifications to one subscription
-    before it runs are combined into one call, and `unsubscribe()` cancels a
-    call that has not run yet.
   - A signal written twice while a change is propagating now notifies both
     times. Previously the second write could leave a dependent computed stale.
-  - Subclasses can no longer override `notify()`, `update()` or `value`;
-    defining any of them raises `TypeError`. Derive a `Computed` (for example
+  - Subclasses can no longer override `update()` or `value`; defining either
+    raises `TypeError`. Derive a `Computed` (for example
     with `signal.rx.map(fn)`) instead of overriding `value`.
   - `copy.copy()` and `copy.deepcopy()` of a `Signal`, `Computed` or `Binding`
     raise `TypeError`. Deep-copying a `Computed` previously produced an object
     that never updated. Instances using `tracked_fields` still copy and pickle.
   - Reading or writing a `Signal` whose `__init__` was never called raises
     `RuntimeError`.
+- **Breaking:** `subscribe()`, `unsubscribe()`, and `notify()` on `Signal`,
+  `Computed`, and `Binding` are now private. Use an `Effect` to react to
+  changes.
 - **Breaking:** Removed `signified.plugins.pm`; use `plugin_manager`.
 - **Breaking:** Removed the migration warnings added in 0.6:
   `signified.migration` and `SIGNIFIED_MIGRATION_WARNINGS`. To check code
