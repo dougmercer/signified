@@ -1,4 +1,4 @@
-# Type Checkers
+# Type checkers
 
 **Use Pyright for the best type inference with Signified.** Pyrefly is a usable
 alternative with caveats.

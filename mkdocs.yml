@@ -132,14 +132,14 @@ nav:
       - Usage: usage.md
       - Resolving nested values: resolution.md
       - Plugins: plugins.md
-      - Type Checkers: type-checkers.md
+      - Type checkers: type-checkers.md
   - Reference:
-      - API Reference: api.md
-      - How Updates Work: compute-contract.md
+      - API reference: api.md
+      - How updates work: compute-contract.md
       - Operators: magic-methods.md
   - Playground: playground.md
   - Releases:
-      - Change Log: changes.md
+      - Changelog: changes.md
       - Migrating to 0.6: migration.md
 
 extra_css:

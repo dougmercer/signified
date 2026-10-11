@@ -1,4 +1,4 @@
-# Change Log
+# Changelog
 
 This page summarizes notable changes across releases.
 
