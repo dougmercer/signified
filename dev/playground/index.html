@@ -1113,7 +1113,7 @@ Signified when it opens, so <strong>Run</strong> takes a few seconds to become a
   <div class="signified-playground-output" data-playground-output role="log" aria-label="Output"></div>
 </div>
 
-<script type="text/plain" data-playground-example="calculations" data-title="Signals and calculations">
+<textarea hidden data-playground-example="calculations" data-title="Signals and calculations">
 from signified import Signal
 
 price = Signal(10)
@@ -1124,9 +1124,9 @@ print("total:", total.value)
 quantity.value = 3
 print("total:", total.value)
 
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="computed" data-title="@computed functions">
+<textarea hidden data-playground-example="computed" data-title="@computed functions">
 from signified import Signal, computed
 
 @computed
@@ -1140,9 +1140,9 @@ print(summary.value)
 numbers.value = [10, 20, 30]
 print(summary.value)
 
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="effects" data-title="Effects">
+<textarea hidden data-playground-example="effects" data-title="Effects">
 from signified import Signal, effect
 
 @effect
@@ -1159,9 +1159,9 @@ price.value = 12.5
 watcher.dispose()
 price.value = 99  # no output after dispose
 
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="batch" data-title="Batching writes">
+<textarea hidden data-playground-example="batch" data-title="Batching writes">
 from signified import Effect, Signal, batch
 
 price = Signal(10)
@@ -1180,9 +1180,9 @@ with batch():
 
 watcher.dispose()
 
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="binding" data-title="Switching sources with Binding">
+<textarea hidden data-playground-example="binding" data-title="Switching sources with Binding">
 from signified import Binding, Signal
 
 frame = Signal(0)
@@ -1197,9 +1197,9 @@ for f in [10, 20, 30]:
     frame.value = f
     print("label_x:", label_x.value)
 
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="lists" data-title="Lists and update()">
+<textarea hidden data-playground-example="lists" data-title="Lists and update()">
 from signified import Signal, computed
 
 numbers = Signal([1, 2, 3])
@@ -1214,9 +1214,9 @@ print("total:", total.value)
 numbers.update()  # so tell Signified about it
 print("total:", total.value)
 
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="where" data-title="Choosing values with rx.where">
+<textarea hidden data-playground-example="where" data-title="Choosing values with rx.where">
 from signified import Signal, computed
 
 @computed
@@ -1230,9 +1230,9 @@ print(message.value)
 username.value = "admin"
 print(message.value)
 
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="method_chaining" data-title="Method chaining">
+<textarea hidden data-playground-example="method_chaining" data-title="Method chaining">
 from signified import Signal
 
 text = Signal("  Hello, World!  ")
@@ -1242,7 +1242,7 @@ print(processed.value)
 text.value = "  Goodbye, World!  "
 print(processed.value)
 
-</script>
+</textarea>
 
 
 
