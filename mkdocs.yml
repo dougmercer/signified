@@ -1,6 +1,10 @@
 site_name: Signified
+site_description: A fast, fully-typed Python library for reactive programming.
 site_url: https://dougmercer.github.io/signified/
 repo_url: https://github.com/dougmercer/signified
+repo_name: dougmercer/signified
+# "Edit this page" opens the page's source on main in GitHub's editor.
+edit_uri: edit/main/docs/
 
 extra:
   version:
@@ -32,6 +36,7 @@ theme:
       name: Switch to system preference
   features:
     - announce.dismiss
+    - content.action.edit
     - content.code.annotate
     - content.code.copy
     - content.code.select
