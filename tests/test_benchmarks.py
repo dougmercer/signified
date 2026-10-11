@@ -1,8 +1,10 @@
 """Performance benchmarks for signified reactive primitives."""
 
+from dataclasses import dataclass
+
 import pytest
 
-from signified import Binding, Computed, Effect, Signal, computed, deep_unref, effect, unref
+from signified import Binding, Computed, Effect, Signal, computed, deep_unref, effect, tracked_fields, unref
 
 pytestmark = pytest.mark.benchmark
 slow_benchmark = pytest.mark.slow_benchmark
@@ -508,6 +510,58 @@ def test_bench_subscription_churn_v1(benchmark):
         return checksum
 
     benchmark(churn)
+
+
+# ---------------------------------------------------------------------------
+# Tracked fields
+# ---------------------------------------------------------------------------
+
+
+@tracked_fields
+@dataclass(slots=True)
+class TrackedMaterial:
+    roughness: float = 0.5
+    metallic: float = 0.0
+
+
+def test_bench_tracked_field_read_v1(benchmark):
+    """Benchmark reading a tracked field outside a computation after one has read it."""
+    material = TrackedMaterial()
+    _ = Computed(lambda: material.roughness).value  # the field now holds its hidden source
+    benchmark(lambda: material.roughness)
+
+
+def test_bench_tracked_field_recompute_v1(benchmark):
+    """Benchmark recomputing a Computed that reads 40 tracked fields."""
+    materials = [TrackedMaterial(roughness=i * 0.01) for i in range(20)]
+    trigger = Signal(0)
+    total = Computed(lambda: trigger.value + sum(m.roughness + m.metallic for m in materials))
+    _ = total.value
+    i = 0
+
+    def recompute():
+        nonlocal i
+        i += 1
+        trigger.value = i
+        return total.value
+
+    benchmark(recompute)
+
+
+def test_bench_tracked_field_write_propagation_v1(benchmark):
+    """Benchmark assigning a tracked field that a Computed reads."""
+    material = TrackedMaterial()
+    doubled = Computed(lambda: material.roughness * 2)
+    _ = doubled.value
+    i = 0
+
+    def propagate():
+        nonlocal i
+        i += 1
+        material.roughness = i
+        return doubled.value
+
+    benchmark(propagate)
 
 
 # ---------------------------------------------------------------------------
