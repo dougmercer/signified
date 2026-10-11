@@ -24,18 +24,20 @@ $ uv add signified
 `signified` is a reactive programming library built around four reactive data structures:
 
 - `Signal` stores a mutable value.
-- `Computed` calculates a read-only value
-- `Effect` runs an action when the values it reads change
-- `Binding` is a stable handle that lets you switch between reactive values without rebuilding calculations that use it
+- `Computed` calculates a read-only value.
+- `Effect` runs an action when the values it reads change.
+- `Binding` is a stable handle that lets you switch between reactive values without rebuilding calculations that use it.
 
 This allows us to create a network of computation, where one value being modified can trigger other objects to update.
 
 We can write more declarative code, like:
 
 ```python
+from signified import Signal
+
 x = Signal(3)
 x_squared = x ** 2  # currently equal to 9
-x.value = 10  # Will immediately notify x_squared, whose value will become 100.
+x.value = 10  # x_squared.value is now 100
 ```
 
 Here, `x_squared` is a `Computed` object whose value is always equal to `x ** 2`. Neat!
@@ -87,4 +89,5 @@ Together, these data structures allow us to implement a wide variety of capabili
 
 ## Ready to learn more?
 
-Check out the docs at [https://dougmercer.github.io/signified](https://dougmercer.github.io/signified).
+Check out the docs at [https://dougmercer.github.io/signified](https://dougmercer.github.io/signified),
+or try it in the [Playground](https://dougmercer.github.io/signified/latest/playground/).

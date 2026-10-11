@@ -12,8 +12,10 @@ import pytest
 
 DOCS = Path(__file__).parent.parent / "docs"
 BLOCK = re.compile(r"^(<!-- skip-test -->\n)?```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
-# The change log shows fragments of old APIs, so it is not run.
+# The change log shows fragments of old APIs, so it is not run. The README is
+# the PyPI page, so it is checked too.
 PAGES = sorted(page for page in DOCS.glob("*.md") if page.name != "changes.md" and "```python" in page.read_text())
+PAGES.append(DOCS.parent / "README.md")
 PLAYGROUND_EXAMPLES = sorted((DOCS / "playground").glob("*.py"))
 
 
