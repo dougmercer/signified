@@ -86,12 +86,14 @@
   };
 
   // The examples live in docs/playground/*.py and are included in the page as
-  // <script type="text/plain"> blocks, in the order they appear in the menu.
+  // hidden <textarea> elements, in the order they appear in the menu. Not
+  // <script> elements: Material's instant navigation re-runs every <script> in
+  // the new page as JavaScript.
   const readExamples = () =>
-    Array.from(document.querySelectorAll("script[data-playground-example]"), (script) => ({
-      name: script.dataset.playgroundExample,
-      title: script.dataset.title,
-      code: script.textContent.trim(),
+    Array.from(document.querySelectorAll("textarea[data-playground-example]"), (textarea) => ({
+      name: textarea.dataset.playgroundExample,
+      title: textarea.dataset.title,
+      code: textarea.value.trim(),
     }));
 
   const toBase64Url = (text) => {

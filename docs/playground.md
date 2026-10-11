@@ -24,34 +24,34 @@ Signified when it opens, so **Run** takes a few seconds to become available.
   <div class="signified-playground-output" data-playground-output role="log" aria-label="Output"></div>
 </div>
 
-<script type="text/plain" data-playground-example="calculations" data-title="Signals and calculations">
+<textarea hidden data-playground-example="calculations" data-title="Signals and calculations">
 --8<-- "docs/playground/calculations.py"
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="computed" data-title="@computed functions">
+<textarea hidden data-playground-example="computed" data-title="@computed functions">
 --8<-- "docs/playground/computed.py"
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="effects" data-title="Effects">
+<textarea hidden data-playground-example="effects" data-title="Effects">
 --8<-- "docs/playground/effects.py"
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="batch" data-title="Batching writes">
+<textarea hidden data-playground-example="batch" data-title="Batching writes">
 --8<-- "docs/playground/batch.py"
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="binding" data-title="Switching sources with Binding">
+<textarea hidden data-playground-example="binding" data-title="Switching sources with Binding">
 --8<-- "docs/playground/binding.py"
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="lists" data-title="Lists and update()">
+<textarea hidden data-playground-example="lists" data-title="Lists and update()">
 --8<-- "docs/playground/lists.py"
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="where" data-title="Choosing values with rx.where">
+<textarea hidden data-playground-example="where" data-title="Choosing values with rx.where">
 --8<-- "docs/playground/where.py"
-</script>
+</textarea>
 
-<script type="text/plain" data-playground-example="method_chaining" data-title="Method chaining">
+<textarea hidden data-playground-example="method_chaining" data-title="Method chaining">
 --8<-- "docs/playground/method_chaining.py"
-</script>
+</textarea>
