@@ -22,6 +22,7 @@
 
 mod computed;
 mod effect;
+mod fields;
 mod hooks;
 mod invalidation;
 mod node;
@@ -48,6 +49,8 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<tracking::Untracked>()?;
     m.add_class::<scheduler::Batch>()?;
     m.add_class::<signal::SignalAt>()?;
+    m.add_class::<fields::FieldSource>()?;
+    m.add_class::<fields::TrackedField>()?;
     m.add("config", Bound::new(m.py(), hooks::Config)?)?;
     m.add_function(wrap_pyfunction!(tracking::is_tracking, m)?)?;
     m.add_function(wrap_pyfunction!(values::has_changed, m)?)?;

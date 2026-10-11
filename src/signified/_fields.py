@@ -6,7 +6,7 @@ import dataclasses
 from types import MemberDescriptorType
 from typing import Any, Callable, overload
 
-from ._core import is_tracking
+from ._core import FieldSource, TrackedField
 from ._reactive import Signal
 
 __all__ = ["tracked_fields"]
@@ -19,20 +19,16 @@ def _stored_value(value: Any) -> Any:
     return value
 
 
-class _FieldSource(Signal[Any]):
+class _FieldSource(FieldSource, Signal[Any]):
     """Hidden per-instance signal holding one tracked field's stored value.
 
     It is created on the first tracked read, so objects that are never read
-    inside a computation carry no extra nodes. `_owner_id` identifies the
+    inside a computation carry no extra nodes. The native base records the
     instance it belongs to: a shallow copy of an instance dict shares the
     source object, and the copy must not write through it.
     """
 
-    __slots__ = ("_owner_id",)
-
-    def __init__(self, value: Any, owner: object) -> None:
-        super().__init__(value)
-        self._owner_id = id(owner)
+    __slots__ = ()
 
     # Copies and pickles of an instance carry the stored value, not the node.
     def __copy__(self) -> Any:
@@ -45,64 +41,6 @@ class _FieldSource(Signal[Any]):
 
     def __reduce__(self) -> tuple[Callable[[Any], Any], tuple[Any]]:
         return _stored_value, (self._value,)
-
-
-class _TrackedField:
-    """Data descriptor that tracks reads and reassignment of one attribute.
-
-    The stored value lives where it would without the descriptor: in the
-    class's slot, or in the instance dict. Until a computation reads the field,
-    that storage holds the plain stored value. The first tracked read replaces
-    it with a `_FieldSource` holding the same value.
-    """
-
-    __slots__ = ("_name", "_get", "_set", "_default")
-
-    def __init__(self, name: str, slot: MemberDescriptorType | None, default: Any) -> None:
-        self._name = name
-        self._default = default
-        if slot is not None:
-            self._get = slot.__get__
-            self._set = slot.__set__
-        else:
-            self._get = self._get_from_dict
-            self._set = self._set_in_dict
-
-    def _get_from_dict(self, obj: Any) -> Any:
-        try:
-            return obj.__dict__[self._name]
-        except KeyError:
-            if self._default is _MISSING:
-                raise AttributeError(f"'{type(obj).__name__}' object has no attribute '{self._name}'") from None
-            return self._default
-
-    def _set_in_dict(self, obj: Any, value: Any) -> None:
-        obj.__dict__[self._name] = value
-
-    def __get__(self, obj: Any, owner: type | None = None) -> Any:
-        if obj is None:
-            return self
-        stored = self._get(obj)
-        if not is_tracking():
-            return stored._value if type(stored) is _FieldSource else stored
-        if type(stored) is not _FieldSource or stored._owner_id != id(obj):
-            value = stored._value if type(stored) is _FieldSource else stored
-            stored = _FieldSource(value, obj)
-            self._set(obj, stored)
-        return stored.value
-
-    def __set__(self, obj: Any, value: Any) -> None:
-        try:
-            stored = self._get(obj)
-        except AttributeError:
-            stored = None
-        if type(stored) is _FieldSource and stored._owner_id == id(obj):
-            stored.value = value
-        else:
-            self._set(obj, value)
-
-    def __delete__(self, obj: Any) -> None:
-        raise AttributeError(f"tracked field '{self._name}' cannot be deleted")
 
 
 @overload
@@ -131,8 +69,8 @@ def tracked_fields(*args: Any) -> Any:
     slotted and dict-based classes work; frozen dataclasses are rejected.
     Copies and pickles store plain values and get their own tracking.
 
-    Reads outside a computation skip the graph, but still cost a Python
-    descriptor call. In-place mutation of a stored object is not observed.
+    Reads outside a computation skip the graph, but still cost a descriptor
+    call. In-place mutation of a stored object is not observed.
 
     Example:
         ```py
@@ -176,13 +114,13 @@ def _install[C: type](cls: C, names: tuple[str, ...] | None) -> C:
 
     for name in names:
         existing = _lookup(cls, name)
-        if isinstance(existing, _TrackedField):
+        if isinstance(existing, TrackedField):
             continue
         slot = existing if type(existing) is MemberDescriptorType else None
         if slot is None and existing is not _MISSING and hasattr(type(existing), "__get__"):
             raise TypeError(f"'{cls.__name__}.{name}' is already a descriptor and cannot be tracked")
-        default = _MISSING if slot is not None else existing
-        setattr(cls, name, _TrackedField(name, slot, default))
+        default = () if slot is not None or existing is _MISSING else (existing,)
+        setattr(cls, name, TrackedField(name, slot, _FieldSource, *default))
     return cls
 
 

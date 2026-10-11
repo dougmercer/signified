@@ -43,9 +43,7 @@ impl SignalCore {
     #[new]
     #[pyo3(signature = (*_args, **_kwargs))]
     fn new(_args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>) -> Self {
-        SignalCore {
-            node: Shared::new(Role::Signal),
-        }
+        SignalCore::empty()
     }
 
     #[pyo3(signature = (value, *, equal = None))]
@@ -54,12 +52,7 @@ impl SignalCore {
         value: Bound<'_, PyAny>,
         equal: Option<Py<PyAny>>,
     ) -> PyResult<()> {
-        let py = slf.py();
-        let node = &slf.get().node;
-        let old = node.value.replace(Some(value.unbind()));
-        drop(old);
-        node.set_equal(py, equal.unwrap_or_else(|| py.None()));
-        hooks::call(py, Hook::Created, slf.as_any())
+        init_signal(slf, value, equal.unwrap_or_else(|| slf.py().None()))
     }
 
     #[classmethod]
@@ -184,6 +177,29 @@ impl SignalCore {
     }
 }
 
+impl SignalCore {
+    /// A signal with no value yet; `init_signal` gives it one.
+    pub(crate) fn empty() -> Self {
+        SignalCore {
+            node: Shared::new(Role::Signal),
+        }
+    }
+}
+
+/// Store a new signal's first value and equality, then report its creation.
+pub(crate) fn init_signal(
+    slf: &Bound<'_, SignalCore>,
+    value: Bound<'_, PyAny>,
+    equal: Py<PyAny>,
+) -> PyResult<()> {
+    let py = slf.py();
+    let node = &slf.get().node;
+    let old = node.value.replace(Some(value.unbind()));
+    drop(old);
+    node.set_equal(py, equal);
+    hooks::call(py, Hook::Created, slf.as_any())
+}
+
 fn uninitialized() -> PyErr {
     PyRuntimeError::new_err("Signal.__init__() was not called")
 }
@@ -205,7 +221,7 @@ pub(crate) fn read_signal<'py>(
 }
 
 /// Assign a signal's value; observers hear about it only if it changed.
-fn write_signal(
+pub(crate) fn write_signal(
     py: Python<'_>,
     node: &Rc<Node>,
     handle: &Bound<'_, PyAny>,
