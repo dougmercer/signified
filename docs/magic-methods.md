@@ -13,7 +13,7 @@ x.value = 20
 print(result.value)  # 23
 ```
 
-## Unary methods
+## Unary operators
 
 | Operation | Examples |
 | --- | --- |
@@ -22,7 +22,7 @@ print(result.value)  # 23
 | Rounding | `round(x)`, `round(x, 2)` |
 | Integer rounding with `math` | `math.floor(x)`, `math.ceil(x)`, `math.trunc(x)` |
 
-## Arithmetic and bitwise methods
+## Arithmetic and bitwise operators
 
 Operands can be plain or reactive values. The values they hold must support
 the operation, just as in ordinary Python.
@@ -34,7 +34,7 @@ the operation, just as in ordinary Python.
 | Matrix multiplication | `x @ y` |
 | Bitwise operations | `x & y`, `x \| y`, `x ^ y`, `x << y`, `x >> y` |
 
-## Reverse arithmetic and bitwise methods
+## Plain values on the left
 
 Plain values can also appear on the left: `3 + x`, `50 / x`, `2 ** x`,
 `divmod(50, x)`, `3 & x`, `3 | x`, `3 ^ x`, `1 << x`, `32 >> x`, and `matrix @ x`.

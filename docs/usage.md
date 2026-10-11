@@ -68,10 +68,11 @@ watcher.dispose()
 quantity.value = 4                     # No output
 ```
 
-If a calculation produces the same result, an effect watching only that result
-can skip running. Use [`rx.tap`](api.md#signified._mixin._ReactiveNamespace.tap)
-for debugging a calculation when it is read; it does not run automatically
-for every change.
+An effect that reads only a calculation skips running when that calculation
+recalculates to the same result. The
+[effect examples](https://github.com/dougmercer/signified/tree/main/examples/effects)
+show effects that refresh a display, autosave settings, and rebuild an index
+when files change.
 
 ### Group related changes {#scheduling-and-untracked-reads}
 
@@ -291,12 +292,16 @@ print(doubled.value)  # 0.2
 Reading the attribute returns exactly what was stored; it never unwraps.
 Assigning a signal replaces the stored one instead of writing into it. Pass
 names, as in `@tracked_fields("roughness")`, to track only some attributes, or
-to track attributes of a class that is not a dataclass.
+to track attributes of a class that is not a dataclass. The
+[dashboard example](https://github.com/dougmercer/signified/blob/main/examples/effects/dashboard.py)
+drives an effect from a tracked dataclass, with batching.
 
 ## Force a calculation to refresh {#manual-invalidation}
 
-If you replace an input through an ordinary Python object, Signified may not
-see the change. Call `.invalidate()` to recalculate on the next read:
+If a calculation reads through an ordinary Python object, Signified cannot see
+that object's attributes being replaced. For classes you control, use
+[`tracked_fields`](#tracked-fields). Otherwise, call `.invalidate()` to
+recalculate on the next read:
 
 ```python
 from types import SimpleNamespace
@@ -319,5 +324,6 @@ See the [API reference](api.md) for:
 - `as_rx(value)`: wrap a plain value in a signal; leave reactive values unchanged.
 - `has_value` and `is_reactive`: check and narrow types.
 - `Signal.at(value)`: temporarily change a value inside a `with` block.
+- `x.rx.tap(fn)`: call `fn` with each newly calculated value (runs only when something reads the result).
 
 For editor and type-checking support, see [Type checkers](type-checkers.md).

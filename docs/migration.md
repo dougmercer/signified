@@ -1,7 +1,9 @@
 # Migrating to 0.6
 
-Version 0.6 makes you choose when to read nested reactive values. Check both
-results and what happens after inputs change when upgrading.
+Version 0.6 no longer reads reactive values stored inside other values, such
+as a signal held by a signal or a list of signals; your code reads them
+explicitly. It also changes how equality, effects, and errors work. After
+upgrading, check both your results and how they update when inputs change.
 
 ## Prepare on 0.5.1 first
 
@@ -15,9 +17,9 @@ You can make these changes before upgrading:
 - Replace `rx.peek(fn)` with `rx.tap(fn)`.
 - Make changes through the `Signal` that owns the value.
 
-`Binding`, `batch()`, and `untracked()` require 0.6. Version 0.5.1 still uses
-the earlier following, equality, and effect timing rules. Test those behaviors
-again after upgrading, even if no migration warnings appear.
+`Binding`, `batch()`, and `untracked()` require 0.6. Version 0.5.1 still reads
+nested values for you and keeps the old equality and effect timing rules, so
+test those behaviors again after upgrading, even if no warnings appear.
 
 ## Following versus storing
 
@@ -111,6 +113,7 @@ and skips unread intermediate values; it is not an automatic effect.
 Warnings are available in 0.5.1 and 0.6, and removed in 0.7. Run them on one
 of those versions before upgrading further:
 
+<!-- skip-test -->
 ```python
 from signified import migration
 
@@ -125,12 +128,12 @@ fail your tests:
 SIGNIFIED_MIGRATION_WARNINGS=1 pytest -W error::signified.migration.SignifiedMigrationWarning
 ```
 
-Warnings look for nested reactive values stored in signals, returned from
-computations, or passed in containers to decorated functions. They do not
-read reactive values or consume arbitrary iterables. Normal binding creation
-and source changes do not warn simply because they select a reactive source.
+Warnings flag reactive values stored in signals, returned from computations,
+or passed inside containers to decorated functions. Checking does not read
+reactive values or consume iterators, and a `Binding` following a reactive
+source does not warn.
 
-Warnings cannot find every affected case: unknown objects can hide reactive
-values, and intentionally storing a signal can still trigger a warning.
-Ordinary mutable containers alone do not warn. Review equality, effect timing,
-and forwarded writes separately, and disable warnings once the review is done.
+Warnings can miss reactive values hidden inside your own objects, and they also
+flag signals you store on purpose. They say nothing about equality, effect
+timing, or forwarded writes, so review those separately. Turn warnings off once
+you are done.
