@@ -36,4 +36,7 @@ def test_doc_examples(page: Path) -> None:
 def test_playground_examples(example: Path) -> None:
     # An example file the page doesn't include would never show up in the menu.
     assert f'"docs/playground/{example.name}"' in (DOCS / "playground.md").read_text()
-    exec(compile(example.read_text(), str(example), "exec"), {"__name__": "__main__"})
+    code = example.read_text()
+    # The page holds each example in a <textarea>, where "&name;" would be decoded.
+    assert not re.search(r"&#?\w+;", code)
+    exec(compile(code, str(example), "exec"), {"__name__": "__main__"})
