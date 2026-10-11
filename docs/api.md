@@ -1,4 +1,4 @@
-# API Reference
+# API reference
 
 ## Classes
 
@@ -43,11 +43,11 @@
     options:
       members: false
 
-## Reactive Namespace
+## The `rx` namespace {#reactive-namespace}
 
-The `rx` property on any reactive value exposes a namespace of additional
-operations — reactive equivalents of things Python's dunder protocol cannot
-return as reactive values (identity checks, containment, ternary, etc.):
+Every signal, computed value, and binding has an `rx` property. It holds
+reactive versions of operations that Python syntax can't make reactive, such
+as identity checks, membership, and choosing between two values:
 
 ::: signified._mixin._ReactiveNamespace
     options:
@@ -67,11 +67,11 @@ return as reactive values (identity checks, containment, ternary, etc.):
         - where
         - as_bool
 
-## Magic Methods
+## Operators {#magic-methods}
 
-Reactive values support Python's operator protocol. Arithmetic, comparison,
-subscript, and attribute-access operations all return reactive
-[Computed][signified.Computed] values derived from their operands.
+Arithmetic, comparisons, item access, attribute access, and calls on a reactive
+value return a [Computed][signified.Computed] that follows its operands. The
+[Operators](magic-methods.md) page gives an overview.
 
 ::: signified._mixin._ReactiveMixIn
     options:
@@ -133,37 +133,27 @@ subscript, and attribute-access operations all return reactive
 ::: signified.untracked
 ::: signified.tracked_fields
 
-## Explicit deep resolution {#signified.deep_unref}
+## Nested values
 
-Use `deep_unref(value)` to replace reactive values inside supported containers.
-For example, `deep_unref({"x": Signal(1)})` returns `{"x": 1}`. To support a
-custom object, register a handler with `@deep_unref.register(MyType)`.
-
-::: signified._resolve._DeepUnref
+::: signified.deep_unref
     options:
-      show_root_heading: false
-      members:
-        - __call__
-        - register
+      show_attribute_values: false
 
 ::: signified.ResolveContext
     options:
-      members:
-        - __call__
+      members: false
 
-See [Resolving nested values](resolution.md) for custom-handler examples.
+[Resolving nested values](resolution.md) has examples of custom handlers.
 
 ## Types
 
 ### HasValue {#signified.HasValue}
 
-**`HasValue[T]`** — `T | Computed[T] | Signal[T] | Binding[T]`
-
-A plain or reactive value that resolves to `T`. Use as a type hint when a
-parameter accepts either a raw value or a reactive wrapper.
+`HasValue[T]` is `T | Computed[T] | Signal[T] | Binding[T]`: a plain or
+reactive value that resolves to `T`. Use it to annotate a parameter that
+accepts either.
 
 ### ReactiveValue {#signified.ReactiveValue}
 
-**`ReactiveValue[T]`** — `Computed[T] | Signal[T] | Binding[T]`
-
-A reactive wrapper that resolves to `T`.
+`ReactiveValue[T]` is `Computed[T] | Signal[T] | Binding[T]`: a reactive value
+that resolves to `T`.
