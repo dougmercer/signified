@@ -1,11 +1,14 @@
-from __future__ import annotations
+"""Count reads and writes of each reactive value with a plugin.
+
+Run with: uv run examples/plugins/access_tracker.py
+"""
 
 import datetime
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Dict, List
+from typing import Any
 from weakref import WeakValueDictionary
 
 from signified import Signal, Variable
@@ -33,7 +36,7 @@ class AccessStats:
     write_count: int = 0
     creation_time: datetime.datetime = field(default_factory=datetime.datetime.now)
     last_access_time: datetime.datetime = field(default_factory=datetime.datetime.now)
-    value_history: List[AccessEvent] = field(default_factory=list, repr=False)  # Rename to be clearer
+    value_history: list[AccessEvent] = field(default_factory=list, repr=False)
 
     def add_event(self, event_type: EventType, value: Any = None) -> None:
         now = datetime.datetime.now()
@@ -69,7 +72,7 @@ class AccessTracker:
     """
 
     def __init__(self):
-        self.stats: Dict[int, AccessStats] = defaultdict(AccessStats)
+        self.stats: dict[int, AccessStats] = defaultdict(AccessStats)
         self._variables: WeakValueDictionary[int, Variable[Any]] = WeakValueDictionary()
 
     def cleanup(self) -> None:
@@ -113,39 +116,26 @@ class AccessTracker:
             print()
 
 
-# Create global tracker instance
 tracker = AccessTracker()
-
-# Register it
 plugin_manager.register(tracker)
 
 if __name__ == "__main__":
-    # Create some reactive values and use them
     x = Signal(1).with_name("x")
     y = Signal(2).with_name("y")
+    time.sleep(0.1)
 
-    time.sleep(1)
+    x.value = 10
+    y.value = 20
+    x.value = 30
 
-    # Some modifications
-    x.value = 10  # x write
-    y.value = 20  # y write
-    x.value = 30  # x write
-
-    # More reads
     z = (x + y).with_name("z")
-    _ = z.value  # z, x, and y read; z computes lazily
+    _ = z.value  # Reads z, which reads x and y as it calculates.
+    time.sleep(0.1)
 
-    # Wait a bit to get some time differences
-    time.sleep(1)
-
-    # Print stats
     tracker.print_summary()
-
-    # Get specific stats
     print(f"Value history for x: {[v.value for v in tracker.get_stats(x).value_history]}")
     print(f"Value history for y: {[v.value for v in tracker.get_stats(y).value_history]}")
     print(f"Value history for z: {[v.value for v in tracker.get_stats(z).value_history]}")
 
-    # Cleanup
     plugin_manager.unregister(tracker)
     tracker.cleanup()

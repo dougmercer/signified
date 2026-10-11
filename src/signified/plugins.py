@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from . import _core
 
-__all__ = ["PluginManager", "hookimpl", "plugin_manager", "pm"]
+__all__ = ["PluginManager", "hookimpl", "plugin_manager"]
 
 _HOOK_NAMES = ("read", "created", "updated", "named")
 _HOOKIMPL_MARK = "_signified_hookimpl"
@@ -121,6 +121,3 @@ class PluginManager:
 
 
 plugin_manager = PluginManager()
-
-# Backwards-compatible alias.
-pm = plugin_manager

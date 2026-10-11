@@ -45,14 +45,15 @@ plugin_manager.register(plugin)
 
 x = Signal(1)
 y = x + 1
-print(plugin.count)  # 2 when hooks are enabled
+print(plugin.count)  # 2
 
 plugin_manager.unregister(plugin)
 ```
 
 Use `logging` in place of `print` if your application already has logging set
-up. Unregister the plugin when you no longer need it. The older `pm` name is
-an alias for `plugin_manager`.
+up. Unregister the plugin when you no longer need it. For a larger example,
+see the [access tracker](https://github.com/dougmercer/signified/blob/main/examples/plugins/access_tracker.py),
+which counts reads and writes for each reactive value.
 
 When several plugins implement the same hook, the most recently registered one
 runs first. `register` raises an error if the plugin is already registered, if

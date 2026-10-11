@@ -24,6 +24,7 @@ This page summarizes notable changes across releases.
     that never updated. Instances using `tracked_fields` still copy and pickle.
   - Reading or writing a `Signal` whose `__init__` was never called raises
     `RuntimeError`.
+- **Breaking:** Removed `signified.plugins.pm`; use `plugin_manager`.
 - **Breaking:** Removed the migration warnings added in 0.6:
   `signified.migration` and `SIGNIFIED_MIGRATION_WARNINGS`. To check code
   written for 0.5, run the warnings on 0.6 before upgrading; see
