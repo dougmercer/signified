@@ -226,7 +226,7 @@ print(processed.value)`,
       }
     };
 
-    const worker = new Worker(workerUrl);
+    const worker = new Worker(workerUrl, { type: "module" });
     workers.add(worker);
 
     worker.addEventListener("message", (event) => {

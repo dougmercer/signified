@@ -1,4 +1,5 @@
-const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js";
+// Pyodide 314+ only loads in module workers, so this is the .mjs build.
+const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.mjs";
 
 let pyodide = null;
 let loadPromise = null;
@@ -32,7 +33,7 @@ async function ensurePyodide() {
 
   if (!loadPromise) {
     loadPromise = (async () => {
-      importScripts(PYODIDE_URL);
+      const { loadPyodide } = await import(PYODIDE_URL);
       pyodide = await loadPyodide();
 
       pyodide.setStdout({
