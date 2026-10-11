@@ -9,16 +9,17 @@ This page summarizes notable changes across releases.
 - **Breaking:** Signified's reactive engine is now a compiled extension written
   in Rust (`signified._core`). `Signal`, `Computed`, `Binding` and `Effect` keep
   their API, and most graphs update several times faster. Behavior changes:
-  - A signal written twice while a change is propagating now notifies both
-    times. Previously the second write could leave a dependent computed stale.
-  - Subclasses can no longer override `update()` or `value`; defining either
-    raises `TypeError`. Derive a `Computed` (for example
-    with `signal.rx.map(fn)`) instead of overriding `value`.
-  - `copy.copy()` and `copy.deepcopy()` of a `Signal`, `Computed` or `Binding`
-    raise `TypeError`. Deep-copying a `Computed` previously produced an object
-    that never updated. Instances using `tracked_fields` still copy and pickle.
-  - Reading or writing a `Signal` whose `__init__` was never called raises
-    `RuntimeError`.
+
+    - A signal written twice while a change is propagating now notifies both
+      times. Previously the second write could leave a dependent computed stale.
+    - Subclasses can no longer override `update()` or `value`; defining either
+      raises `TypeError`. Derive a `Computed` (for example
+      with `signal.rx.map(fn)`) instead of overriding `value`.
+    - `copy.copy()` and `copy.deepcopy()` of a `Signal`, `Computed` or `Binding`
+      raise `TypeError`. Deep-copying a `Computed` previously produced an object
+      that never updated. Instances using `tracked_fields` still copy and pickle.
+    - Reading or writing a `Signal` whose `__init__` was never called raises
+      `RuntimeError`.
 - **Breaking:** `subscribe()`, `unsubscribe()`, and `notify()` on `Signal`,
   `Computed`, and `Binding` are now private. Use an `Effect` to react to
   changes.
