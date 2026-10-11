@@ -2149,19 +2149,21 @@
 <h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <h3 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Breaking:</strong> Signified's reactive engine is now a compiled extension written
+<li>
+<p><strong>Breaking:</strong> Signified's reactive engine is now a compiled extension written
   in Rust (<code>signified._core</code>). <code>Signal</code>, <code>Computed</code>, <code>Binding</code> and <code>Effect</code> keep
-  their API, and most graphs update several times faster. Behavior changes:</li>
+  their API, and most graphs update several times faster. Behavior changes:</p>
+<ul>
 <li>A signal written twice while a change is propagating now notifies both
-    times. Previously the second write could leave a dependent computed stale.</li>
+  times. Previously the second write could leave a dependent computed stale.</li>
 <li>Subclasses can no longer override <code>update()</code> or <code>value</code>; defining either
-    raises <code>TypeError</code>. Derive a <code>Computed</code> (for example
-    with <code>signal.rx.map(fn)</code>) instead of overriding <code>value</code>.</li>
+  raises <code>TypeError</code>. Derive a <code>Computed</code> (for example
+  with <code>signal.rx.map(fn)</code>) instead of overriding <code>value</code>.</li>
 <li><code>copy.copy()</code> and <code>copy.deepcopy()</code> of a <code>Signal</code>, <code>Computed</code> or <code>Binding</code>
-    raise <code>TypeError</code>. Deep-copying a <code>Computed</code> previously produced an object
-    that never updated. Instances using <code>tracked_fields</code> still copy and pickle.</li>
+  raise <code>TypeError</code>. Deep-copying a <code>Computed</code> previously produced an object
+  that never updated. Instances using <code>tracked_fields</code> still copy and pickle.</li>
 <li>Reading or writing a <code>Signal</code> whose <code>__init__</code> was never called raises
-    <code>RuntimeError</code>.</li>
+  <code>RuntimeError</code>.</li>
 <li><strong>Breaking:</strong> <code>subscribe()</code>, <code>unsubscribe()</code>, and <code>notify()</code> on <code>Signal</code>,
   <code>Computed</code>, and <code>Binding</code> are now private. Use an <code>Effect</code> to react to
   changes.</li>
@@ -2170,6 +2172,8 @@
   <code>signified.migration</code> and <code>SIGNIFIED_MIGRATION_WARNINGS</code>. To check code
   written for 0.5, run the warnings on 0.6 before upgrading; see
   <a href="../migration/#optional-migration-diagnostics">Migrating to 0.6</a>.</li>
+</ul>
+</li>
 </ul>
 <h3 id="runtime-improvements">Runtime improvements<a class="headerlink" href="#runtime-improvements" title="Permanent link">&para;</a></h3>
 <ul>
