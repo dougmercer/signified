@@ -1,6 +1,6 @@
 # Signified
 
-[![PyPI - Downloads](https://img.shields.io/pypi/dw/signified)](https://pypi.org/project/signified/)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/signified?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/signified)
 [![PyPI - Version](https://img.shields.io/pypi/v/signified)](https://pypi.org/project/signified/)
 [![Tests Status](https://github.com/dougmercer/signified/actions/workflows/test.yml/badge.svg)](https://github.com/dougmercer/signified/actions/workflows/test.yml?query=branch%3Amain)
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/dougmercer/signified?utm_source=badge)
@@ -15,33 +15,34 @@
 
 A fast, fully-typed Python library for reactive programming.
 
-## Getting started
-
 ```console
-pip install signified
+$ uv add signified
 ```
 
 ## Why care?
 
-`signified` is a reactive programming library built around three data structures:
+`signified` is a reactive programming library built around four reactive data structures:
 
-- `Signal[T]` stores a mutable value of any Python type `T`.
-- `Computed[T]` calculates a read-only value of any Python type `T`.
-- `Binding` is a stable handle that can switch between reactive sources.
+- `Signal` stores a mutable value.
+- `Computed` calculates a read-only value.
+- `Effect` runs an action when the values it reads change.
+- `Binding` is a stable handle that lets you switch between reactive values without rebuilding calculations that use it.
 
 This allows us to create a network of computation, where one value being modified can trigger other objects to update.
 
-This allows us to write more declarative code, like,
+We can write more declarative code, like:
 
 ```python
+from signified import Signal
+
 x = Signal(3)
 x_squared = x ** 2  # currently equal to 9
-x.value = 10  # Will immediately notify x_squared, whose value will become 100.
+x.value = 10  # x_squared.value is now 100
 ```
 
-Here, `x_squared` became a reactive expression (more specifically, a `Computed` object) whose value is always equal to `x ** 2`. Neat!
+Here, `x_squared` is a `Computed` object whose value is always equal to `x ** 2`. Neat!
 
-`signified`'s `Signal` object gives us a container which stores a value, and `Computed` stores the current value of a function. In the above example, we generated the Computed object on-the-fly using overloaded Python operators like `**`, but we could have just as easily done,
+In the above example, we generated the `Computed` object on-the-fly using overloaded Python operators like `**`, but we could have also written it using the `computed` decorator,
 
 ```python
 from signified import computed
@@ -53,31 +54,40 @@ def power(x, n):
 x_squared = power(x, 2)  # equivalent to the above
 ```
 
-Together, these data structures allow us to implement a wide variety of capabilities. In particular, I wrote this library to make my to-be-released animation library easier to maintain and more fun to work with.
-
-Dependencies come from reactive reads, not containment. Normal `computed` and
-`effect` calls unwrap direct reactive arguments, while ordinary containers are
-opaque. Call `deep_unref` inside a computation when recursive resolution is intended.
-Use `batch()` to group writes and `untracked()` for reads without subscribing.
-
-## ... what do you mean by "kind-of working type narrowing"?
-
-Other reactive Python libraries don't really attempt to implement type hints (e.g., [param](https://param.holoviz.org/)).
-
-``signified`` is type hinted, including rebindable values.
+To make something *happen* when a value changes, we can use an effect:
 
 ```python
-from signified import Binding, Signal
+from signified import effect
 
-a = Signal(1.0)
-b = Binding(Signal(2))
-reveal_type(a + b)  # Computed[float]
+@effect
+def show(n):
+    print(n)
+
+watcher = show(x_squared)  # prints 100
+x.value = 4                # prints 16
+watcher.dispose()
 ```
 
-We recommend **Pyright** for type inference; **Pyrefly** is usable with caveats.
-See [Type Checkers](docs/type-checkers.md) for assessed versions and compatibility
-with ty and mypy.
+Effects run once right away, then again whenever something they read changes until they are explicitly disposed or the effect is garbage collected.
+
+In the above example, `x_squared` is wired to `x`. To swap what feeds a calculation without rebuilding it, use a `Binding` instead of Signal:
+
+```python
+from signified import Binding
+
+y = Signal(5)
+base = Binding(x)       # follows x, for now
+cubed = power(base, 3)  # currently equal to 64
+
+base.value = y  # cubed now follows y, and becomes 125
+x.value = 10    # cubed ignores x now
+```
+
+A `Signal` can't do this. `signal.value = y` stores the `y` object itself, not its value.
+
+Together, these data structures allow us to implement a wide variety of capabilities. In particular, I wrote this library to make my animation library `keyed` easier to maintain and more fun to work with.
 
 ## Ready to learn more?
 
-Checkout the docs at [https://dougmercer.github.io/signified](https://dougmercer.github.io/signified) or watch [my YouTube video about the library](https://youtu.be/nkuXqx-6Xwc).
+Check out the docs at [https://dougmercer.github.io/signified](https://dougmercer.github.io/signified),
+or try it in the [Playground](https://dougmercer.github.io/signified/latest/playground/).

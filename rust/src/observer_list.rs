@@ -1,5 +1,5 @@
 //! A node's observer list: the computeds and effects that read it, and the
-//! objects passed to its `subscribe()`, in the order they subscribed.
+//! objects passed to its `_subscribe()`, in the order they subscribed.
 //!
 //! A removed entry leaves a vacant slot, so positions stay put during a
 //! notification walk. The list compacts once it gets sparse, and the slots
@@ -24,7 +24,7 @@ pub(crate) enum Observer {
     Vacant,
     /// A computed or effect; `link` is the position of its link to this node.
     Consumer { node: Weak<Node>, link: u32 },
-    /// An object passed to `subscribe()`, held weakly. `id` is its address,
+    /// An object passed to `_subscribe()`, held weakly. `id` is its address,
     /// compared before the weak reference is resolved.
     Python {
         reference: Py<PyWeakrefReference>,
@@ -39,7 +39,7 @@ pub(crate) struct ObserverList(RefCell<Slots>);
 struct Slots {
     entries: Vec<Observer>,
     vacant: u32,
-    /// The slot of each `subscribe()` observer, by the observer's address;
+    /// The slot of each `_subscribe()` observer, by the observer's address;
     /// created on first use. Boxed so nodes without such observers stay small.
     #[allow(clippy::box_collection)]
     subscribers: Option<Box<HashMap<usize, u32>>>,
@@ -71,7 +71,7 @@ impl ObserverList {
         (slots.entries.len() - 1) as u32
     }
 
-    /// Add the `subscribe()` observer at address `id`, held by `reference`.
+    /// Add the `_subscribe()` observer at address `id`, held by `reference`.
     pub(crate) fn push_subscriber(&self, reference: Py<PyWeakrefReference>, id: usize) {
         let mut slots = self.0.borrow_mut();
         slots.entries.push(Observer::Python { reference, id });
@@ -82,7 +82,7 @@ impl ObserverList {
             .insert(id, slot);
     }
 
-    /// The slot recorded for the `subscribe()` observer at address `id`.
+    /// The slot recorded for the `_subscribe()` observer at address `id`.
     pub(crate) fn subscriber_slot(&self, id: usize) -> Option<u32> {
         self.0.borrow().subscribers.as_ref()?.get(&id).copied()
     }
@@ -139,7 +139,7 @@ impl ObserverList {
     }
 
     /// Drop vacant slots once they make up half of a long list. Consumers and
-    /// `subscribe()` observers whose entries move get their slots updated. Not
+    /// `_subscribe()` observers whose entries move get their slots updated. Not
     /// during a notification walk, which iterates the list by position.
     pub(crate) fn compact_if_sparse(&self) {
         let mut slots = self.0.borrow_mut();

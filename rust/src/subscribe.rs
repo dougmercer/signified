@@ -1,4 +1,4 @@
-//! `subscribe()` observers: objects whose `update()` runs after a value they
+//! `_subscribe()` observers: objects whose `update()` runs after a value they
 //! subscribed to changes, like an effect. Each is held weakly and removed
 //! from the node's observer list once it dies.
 
@@ -11,7 +11,7 @@ use crate::node::{Node, WeakShared};
 use crate::observer_list::Observer;
 use crate::scheduler;
 
-/// A `subscribe()` observer's weak-reference callback: removes the
+/// A `_subscribe()` observer's weak-reference callback: removes the
 /// observer, whose address was `id`, from its node once it dies.
 #[pyclass(frozen, module = "signified._core", name = "ObserverCleanup")]
 pub struct ObserverCleanup {
@@ -67,7 +67,7 @@ pub(crate) fn add_python_observer(node: &Rc<Node>, observer: &Bound<'_, PyAny>) 
     Ok(())
 }
 
-/// Remove the `subscribe()` observer whose weak reference is `reference`
+/// Remove the `_subscribe()` observer whose weak reference is `reference`
 /// and whose address was `id` (called from that reference's callback, once
 /// the observer has died).
 fn forget_observer(node: &Node, id: usize, reference: *mut pyo3::ffi::PyObject) {
@@ -101,7 +101,7 @@ pub(crate) fn remove_python_observer(node: &Node, observer: &Bound<'_, PyAny>) {
     drop(removed);
 }
 
-/// Live observers of `node`; dead `subscribe()` observers are removed.
+/// Live observers of `node`; dead `_subscribe()` observers are removed.
 pub(crate) fn live_observer_count(py: Python<'_>, node: &Node) -> usize {
     let mut count = 0;
     let mut dead = Vec::new();

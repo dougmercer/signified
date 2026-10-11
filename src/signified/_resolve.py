@@ -138,7 +138,7 @@ class _DeepUnref:
         after unwrapping raise ValueError; unhashable keys or members raise TypeError.
 
         Reads inside a computation or effect create dependencies. Use untracked()
-        around the call if you want to read without subscribing.
+        around the call to read without adding them.
         """
         return self._resolve(value)
 
@@ -146,10 +146,21 @@ class _DeepUnref:
 deep_unref = _DeepUnref()
 """Replace reactive values inside nested containers with their current values.
 
-For example, ``deep_unref({"x": Signal(1)})`` returns ``{"x": 1}``. Supported
-containers are rebuilt; other objects are returned unchanged. Register a custom
-handler with ``@deep_unref.register(MyType)`` to visit fields of an application
-object. See the module example and built-in implementations for guidance.
+For example, ``deep_unref({"x": Signal(1)})`` returns ``{"x": 1}``. Lists,
+tuples, dictionaries (keys and values), sets, frozensets, deques, and NumPy
+object arrays are rebuilt with their reactive contents replaced. Other objects
+are returned unchanged.
+
+To support your own type, register a handler with
+``@deep_unref.register(MyType)``. The handler receives the object and a
+``resolve`` function ([ResolveContext][signified.ResolveContext]); call
+``resolve`` on each field to read and return the rebuilt object. Only that
+exact type uses the handler, and registering the type again replaces it.
+
+Called inside a computation or effect, every reactive value it reads becomes a
+dependency. Repeated references are resolved separately, cycles eventually
+raise ``RecursionError``, and keys or set members that collide after resolving
+raise ``ValueError``.
 """
 
 

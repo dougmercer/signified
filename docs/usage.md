@@ -68,10 +68,11 @@ watcher.dispose()
 quantity.value = 4                     # No output
 ```
 
-If a calculation produces the same result, an effect watching only that result
-can skip running. Use [`rx.tap`](api.md#signified._mixin._ReactiveNamespace.tap)
-for debugging a calculation when it is read; it does not run automatically
-for every change.
+An effect that reads only a calculation skips running when that calculation
+recalculates to the same result. The
+[effect examples](examples.md#effects)
+show effects that refresh a display, autosave settings, and rebuild an index
+when files change.
 
 ### Group related changes {#scheduling-and-untracked-reads}
 
@@ -146,6 +147,31 @@ Keep `deep_unref` **inside** the function so its reads are tracked. The
 [nested values guide](resolution.md) covers supported containers, JSON, and
 custom objects.
 
+### Skip updates for equal contents {#custom-equality}
+
+A new list counts as a change even if its contents match the old one, because
+Signified compares lists, dictionaries, arrays, and your own objects by
+identity. Pass `equal=` to compare them your way:
+
+```python
+from signified import Signal, effect
+
+@effect
+def show(point):
+    print("Point:", point)
+
+point = Signal([0, 0], equal=lambda old, new: old == new)
+watcher = show(point)  # Point: [0, 0]
+point.value = [0, 0]   # Same contents: no update
+point.value = [1, 0]   # Point: [1, 0]
+watcher.dispose()
+```
+
+When `equal(old, new)` returns `True`, the signal keeps the old object and
+nothing that depends on it updates. `Computed` accepts `equal=` too. For a value
+built with operators or `@computed`, set it afterwards with `.rx.with_equal()`,
+for example `transform = (rotation @ scale).rx.with_equal(np.array_equal)`.
+
 ## Attributes and methods {#attribute-access-method-calls-and-assignment}
 
 You can read attributes and call methods through a signal:
@@ -190,39 +216,55 @@ operations and their Python counterparts.
 
 ## Switch inputs with Binding {#replacing-a-reactive-source-with-binding}
 
-Use `Binding` when existing calculations should switch to a different source:
+A `Signal` holds a value. A `Binding` can hold a value *or* follow another
+reactive value, and you can change which at any time. Calculations built from
+the binding keep working through every switch.
+
+This suits an object's properties. A shape's `x` position might be a fixed
+number at first, then follow an animation later:
 
 ```python
 from signified import Binding, Signal
 
-left, right = Signal(1), Signal(10)
-selected = Binding(left)
-doubled = selected * 2
-print(doubled.value)  # 2
-selected.value = right
-print(doubled.value)  # 20
-right.value = 12
-print(doubled.value)  # 24
-selected.value = 5    # Use a plain value as the new source.
-print(doubled.value)  # 10
+frame = Signal(0)
+x = Binding(0)        # a plain number for now
+label_x = x + 10      # e.g. a label that sits to the right of the shape
+
+x.value = 5           # set a number, like a Signal
+print(label_x.value)  # 15
+
+x.value = frame * 2   # now follow an animation
+frame.value = 30
+print(label_x.value)  # 70
 ```
 
-`selected.source` returns the current source. A binding can also follow another
-binding. To build a new calculation from the previous source, use `.derive()`:
+### Why not a Signal?
+
+With `x = Signal(0)`, there is no good way to make `x` follow `frame * 2`:
+
+- `x.value = frame * 2` stores the `Computed` object itself. `label_x.value`
+  becomes a `Computed`, not a number.
+- `x.value = (frame * 2).value` copies the current number once. `x` does not
+  change again when `frame` does.
+- Rebuilding `label_x` from `frame * 2` works, but anything still holding the
+  old `label_x`, such as an effect or another object, is left behind.
+
+A `Binding` gives the object one handle for its whole life, while you choose
+what drives it.
+
+### Build on the current source
+
+`x.source` returns whatever `x` currently follows. A binding can also follow
+another binding. To layer a new calculation on top of the current source, use
+`.derive()`:
 
 ```python
-from signified import Binding, Signal
-
-value = Binding(Signal(2))
-value.derive(lambda previous: previous * 3)
-print(value.value)  # 6
+x.derive(lambda previous: previous + 100)  # shift whatever x was following
+print(label_x.value)  # 170
 ```
 
-Use `previous` inside that function. Referring to `value` would make the binding
+Use `previous` inside that function. Referring to `x` would make the binding
 depend on itself. Direct self-binding is rejected; indirect loops raise when read.
-
-`Signal(other_signal)` stores the signal object itself. Use `Binding(other_signal)`
-when you want to follow its current value.
 
 ## Track attribute reassignment {#tracked-fields}
 
@@ -250,12 +292,16 @@ print(doubled.value)  # 0.2
 Reading the attribute returns exactly what was stored; it never unwraps.
 Assigning a signal replaces the stored one instead of writing into it. Pass
 names, as in `@tracked_fields("roughness")`, to track only some attributes, or
-to track attributes of a class that is not a dataclass.
+to track attributes of a class that is not a dataclass. The
+[dashboard example](examples.md#dashboard)
+drives an effect from a tracked dataclass, with batching.
 
 ## Force a calculation to refresh {#manual-invalidation}
 
-If you replace an input through an ordinary Python object, Signified may not
-see the change. Call `.invalidate()` to recalculate on the next read:
+If a calculation reads through an ordinary Python object, Signified cannot see
+that object's attributes being replaced. For classes you control, use
+[`tracked_fields`](#tracked-fields). Otherwise, call `.invalidate()` to
+recalculate on the next read:
 
 ```python
 from types import SimpleNamespace
@@ -278,5 +324,6 @@ See the [API reference](api.md) for:
 - `as_rx(value)`: wrap a plain value in a signal; leave reactive values unchanged.
 - `has_value` and `is_reactive`: check and narrow types.
 - `Signal.at(value)`: temporarily change a value inside a `with` block.
+- `x.rx.tap(fn)`: call `fn` with each newly calculated value (runs only when something reads the result).
 
 For editor and type-checking support, see [Type checkers](type-checkers.md).

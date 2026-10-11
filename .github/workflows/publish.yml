@@ -149,10 +149,31 @@ jobs:
           name: wheels-sdist
           path: dist
 
+  # Catches a release whose notes are still under "Unreleased".
+  changelog:
+    name: Check the changelog
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Require a heading for this version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION="${TAG#v}"
+          if ! grep -qxF "## ${VERSION}" docs/changes.md; then
+            echo "::error file=docs/changes.md::No '## ${VERSION}' heading. Rename '## Unreleased' to '## ${VERSION}' before releasing."
+            exit 1
+          fi
+          if grep -qiE '^## .*unreleased' docs/changes.md; then
+            echo "::error file=docs/changes.md::A heading still says Unreleased. Move its notes under '## ${VERSION}'."
+            exit 1
+          fi
+
   pypi-publish:
     name: Publish to PyPI
     if: ${{ github.event_name == 'release' }}
-    needs: [linux, macos, windows, pyodide, sdist]
+    needs: [linux, macos, windows, pyodide, sdist, changelog]
     runs-on: ubuntu-latest
     environment:
       name: pypi

@@ -88,8 +88,8 @@ class Variable[T](_ReactiveMixIn[T]):
     if TYPE_CHECKING:
         _name: str
 
-        def subscribe(self, observer: _Observer) -> None: ...
-        def unsubscribe(self, observer: _Observer) -> None: ...
+        def _subscribe(self, observer: _Observer) -> None: ...
+        def _unsubscribe(self, observer: _Observer) -> None: ...
         def update(self) -> None: ...
         def invalidate(self) -> None: ...
 
@@ -100,7 +100,7 @@ class Variable[T](_ReactiveMixIn[T]):
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        _reject_engine_overrides(cls, ("notify", "update", "value"))
+        _reject_engine_overrides(cls, ("update", "value"))
 
     def __repr__(self) -> str:
         """Represent the object in a way that shows the inner value."""
@@ -189,7 +189,7 @@ def _reject_engine_overrides(cls: type, names: tuple[str, ...]) -> None:
             )
         raise TypeError(
             f"{cls.__name__} overrides {name}(){where}, but signified never calls Python "
-            f"overrides of {name}(). Use an Effect or subscribe() to react to changes."
+            f"overrides of {name}(). Use an Effect to react to changes."
         )
 
 
@@ -510,22 +510,15 @@ class Computed(_core.Computed[T], Variable[T]):
 
 
 class Binding(Computed[T]):
-    """A stable reactive handle whose current source can be replaced.
+    """A reactive value whose source you can switch.
 
-    Use a `Binding` when an object must keep the same public reactive identity
-    while changing which `Signal`, `Computed`, or `Binding` supplies its value.
-    Assigning a reactive object follows it, while assigning a plain value
-    selects a private `Signal`.
-
-    A `Binding` is an ordinary `Computed` over a `Signal` that holds the
-    current source: it reads that signal, then reads the source's value.
-    Rebinding therefore follows the normal contract. The switch invalidates
-    the binding, and dependents recompute only if the resolved value changed
-    under the usual equality policy.
+    A `Binding` either holds a plain value or follows a `Signal`, `Computed`,
+    or another `Binding`. Assign to `value` to switch: a reactive value is
+    followed, and a plain value is held. Calculations built from the binding
+    keep working across switches, and recalculate only if its value changes.
 
     Args:
-        source: A reactive source to follow, or an initial plain value managed
-            by a private `Signal`.
+        source: A reactive value to follow, or a plain value to hold.
     """
 
     __slots__ = ("_owned", "_holder")
@@ -624,37 +617,32 @@ class Binding(Computed[T]):
 
 
 class Effect(_core.Effect):
-    """Run a function (for its side effects) and re-run it whenever its reactive dependencies change.
+    """Run a function now, and again whenever the reactive values it read change.
 
-    Any reactive value read inside `fn` — via `.value` or [unref][signified.unref] — is
-    automatically tracked as a dependency. The function runs once immediately on
-    construction (or at batch exit), then again when dependencies change.
-    Pending notifications coalesce; cascading writes may cause further runs.
-    If computed dependencies refresh to unchanged outcomes, the callback is
-    skipped. A new failed evaluation and recovery both count as changes.
+    Each run records the reactive values `fn` reads, through `.value` or
+    [unref][signified.unref]. A change to any of them runs `fn` again. Only
+    reads from the latest run count: in
+    `Effect(lambda: x.value if flag.value else y.value)`, while `flag` is true,
+    changing `y` does nothing.
 
-    Warning:
-        Dependencies are tracked dynamically on each run. Only values that are read on the branch executed in the last run are tracked.
-
-        This means that if a reactive value within the function is not read, then updates to that value will not trigger the effect.
-
-        For example: in `Effect(lambda: x.value if y.value else z.value)`, if `y.value` was truthy then only `x` and `y` will be tracked.
-
-    The effect stays active as long as you hold a reference to this object.
-    Call [Effect.dispose][signified.Effect.dispose] to stop it explicitly.
+    The first run happens immediately, or when the enclosing
+    [batch][signified.batch] exits. Several changes before a run share one
+    run, and a run is skipped if nothing it read actually changed, such as a
+    calculation that recalculated to the same result.
 
     Warning:
-        The `Effect` instance **must be assigned to a variable**. If the result
-        is discarded, it is immediately eligible for garbage collection and the
-        effect will silently stop running:
+        Keep a reference to the effect for as long as it should run. A
+        discarded effect is garbage collected and stops:
 
         ```python
-        Effect(lambda: print(s.value))   # GC'd immediately — never re-runs!
-        e = Effect(lambda: print(s.value))  # kept alive — runs on every change
+        Effect(lambda: print(s.value))      # runs once, then never again
+        e = Effect(lambda: print(s.value))  # runs on every change
         ```
 
+        Call [dispose][signified.Effect.dispose] to stop it explicitly.
+
     Args:
-        fn: Zero-argument callable run for its side effects.
+        fn: Zero-argument function to run for its side effects.
 
     Example:
         ```py

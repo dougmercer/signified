@@ -6,7 +6,7 @@ from . import _core
 
 
 def batch() -> AbstractContextManager[None]:
-    """Defer effects and `subscribe()` observers until the outermost synchronous batch exits.
+    """Defer effects until the outermost synchronous batch exits.
 
     Writes are immediate and computed reads remain current. Newly created
     effects are deferred too. Nested batches combine; cascading writes may run

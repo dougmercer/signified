@@ -150,21 +150,21 @@ impl ComputedCore {
     }
 
     /// Notify all observers without marking a change.
-    fn notify(&self, py: Python<'_>) -> PyResult<()> {
+    fn _notify(&self, py: Python<'_>) -> PyResult<()> {
         invalidation::notify(py, &self.node)
     }
 
     /// Subscribe an observer after evaluating, so the observer sees every
     /// later upstream change. The observer is held weakly, and its `update()`
     /// runs after each change, like an effect.
-    fn subscribe(slf: &Bound<'_, Self>, observer: &Bound<'_, PyAny>) -> PyResult<()> {
+    fn _subscribe(slf: &Bound<'_, Self>, observer: &Bound<'_, PyAny>) -> PyResult<()> {
         let node = &slf.get().node;
         refresh::ensure_uptodate(slf.py(), node, slf.as_any())?;
         subscribe::add_python_observer(node, observer)
     }
 
     /// Unsubscribe an observer.
-    fn unsubscribe(&self, observer: &Bound<'_, PyAny>) {
+    fn _unsubscribe(&self, observer: &Bound<'_, PyAny>) {
         subscribe::remove_python_observer(&self.node, observer);
     }
 

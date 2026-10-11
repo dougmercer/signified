@@ -124,18 +124,18 @@ impl SignalCore {
     }
 
     /// Notify all observers without marking a change.
-    fn notify(&self, py: Python<'_>) -> PyResult<()> {
+    fn _notify(&self, py: Python<'_>) -> PyResult<()> {
         invalidation::notify(py, &self.node)
     }
 
     /// Subscribe an observer (any object with an `update()` method). It is
     /// held weakly, and its `update()` runs after each change, like an effect.
-    fn subscribe(&self, observer: &Bound<'_, PyAny>) -> PyResult<()> {
+    fn _subscribe(&self, observer: &Bound<'_, PyAny>) -> PyResult<()> {
         subscribe::add_python_observer(&self.node, observer)
     }
 
     /// Unsubscribe an observer.
-    fn unsubscribe(&self, observer: &Bound<'_, PyAny>) {
+    fn _unsubscribe(&self, observer: &Bound<'_, PyAny>) {
         subscribe::remove_python_observer(&self.node, observer);
     }
 

@@ -72,24 +72,19 @@ class _ReactiveNamespace[T, Source]:
         return _computed_call(fn, self._source)
 
     def effect(self, fn: Callable[[T], None]) -> "Effect":
-        """Eagerly run `fn` for side effects whenever the source changes.
+        """Call `fn` with the source's value now, and again whenever it changes.
 
-        `fn` runs synchronously on creation and after updates, without a
-        `.value` read. Inside batch(), initial and subsequent runs are deferred
-        and pending notifications coalesce.
+        A shortcut for `Effect(lambda: fn(source.value))`. Inside
+        [batch][signified.batch], calls wait until the batch exits.
 
-        This is a convenience wrapper around [Effect][signified.Effect]. The source value is
-        passed as the single argument to `fn` on each run. For effects that need
-        to read multiple reactive values, use [Effect][signified.Effect] directly.
-
-        The effect is active as long as the caller holds the returned [Effect][signified.Effect]
-        instance. Call [Effect.dispose][signified.Effect.dispose] to stop it explicitly.
+        Keep the returned [Effect][signified.Effect] for as long as `fn` should
+        run, and call [dispose][signified.Effect.dispose] to stop it.
 
         Args:
-            fn: Callback that receives the current source value on each change.
+            fn: Called with the source's current value.
 
         Returns:
-            An [Effect][signified.Effect] instance whose lifetime controls the subscription.
+            The [Effect][signified.Effect] that calls `fn`.
 
         Example:
             ```py
@@ -149,7 +144,7 @@ class _ReactiveNamespace[T, Source]:
         unchanged: the previous object is kept and dependents are not
         invalidated. This is the same as passing `equal=` to
         [Signal][signified.Signal] or [Computed][signified.Computed], and also
-        reaches values built by operators, `computed`, `lift`, and `rx.map`.
+        works on values built by operators, `computed`, and `rx.map`.
         It applies to later changes only. Pass `None` to restore the default
         (built-in scalars by value, other objects by identity).
 
@@ -441,7 +436,7 @@ class _ReactiveMixIn[T]:
         """The current value of the reactive object."""
         ...
 
-    def notify(self) -> None:
+    def _notify(self) -> None:
         """Notify all observers by calling their ``update`` method."""
         ...
 

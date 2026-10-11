@@ -1,5 +1,5 @@
 //! Push: when a value changes, mark the computeds that depend on it stale
-//! and queue the effects and `subscribe()` observers that depend on it.
+//! and queue the effects and `_subscribe()` observers that depend on it.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -49,7 +49,7 @@ impl Drop for Walking<'_> {
 }
 
 /// Tell `start`'s observers it changed: mark dependent computeds stale,
-/// depth-first, and queue dependent effects and `subscribe()` observers.
+/// depth-first, and queue dependent effects and `_subscribe()` observers.
 /// No Python code runs during the walk. Queued work runs once the outermost
 /// walk ends, unless a batch or flush is in progress.
 pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {

@@ -47,10 +47,10 @@ def test_random_dependency_churn_keeps_values_and_observers_consistent():
         else:
             o, v = rng.randrange(30), rng.randrange(40)
             if (o, v) in subscribed:
-                values[v].unsubscribe(observers[o])
+                values[v]._unsubscribe(observers[o])
                 subscribed.discard((o, v))
             else:
-                values[v].subscribe(observers[o])
+                values[v]._subscribe(observers[o])
                 subscribed.add((o, v))
         if rng.random() < 0.3:
             for k in rng.sample(range(120), 20):

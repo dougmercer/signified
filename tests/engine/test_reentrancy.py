@@ -23,7 +23,7 @@ def test_observer_writes_other_signal_during_notify():
             b.value = 20
 
     observer = WritesB()
-    a.subscribe(observer)
+    a._subscribe(observer)
     a.value = 2
     assert total.value == 22
 
@@ -41,7 +41,7 @@ def test_observer_writes_the_signal_it_observes():
                 a.value = a.value + 100
 
     observer = BumpsOnce()
-    a.subscribe(observer)
+    a._subscribe(observer)
     a.value = 2
     assert a.value == 102
     assert doubled.value == 204
@@ -57,7 +57,7 @@ def test_observer_reads_during_notify():
             seen.append(doubled.value)
 
     observer = Reads()
-    a.subscribe(observer)
+    a._subscribe(observer)
     a.value = 3
     assert seen == [6]
 
@@ -136,7 +136,7 @@ def test_observer_error_leaves_engine_usable():
                 raise ValueError("observer failed")
 
     observer = FailsOnce()
-    a.subscribe(observer)
+    a._subscribe(observer)
     with pytest.raises(ValueError, match="observer failed"):
         a.value = 2
     assert doubled.value == 4
@@ -155,7 +155,7 @@ def test_observer_subscribing_during_notify_is_kept():
                 created[0].value  # subscribes to `a` while `a` is notifying
 
     observer = Spawns()
-    a.subscribe(observer)
+    a._subscribe(observer)
     a.value = 2
     assert created[0].value == 102
     a.value = 3
@@ -176,7 +176,7 @@ def test_signal_rewritten_in_one_wave_reaches_observers_added_between_writes():
             seen.append(doubled.value)
 
     observer = WritesBTwice()
-    a.subscribe(observer)
+    a._subscribe(observer)
     a.value = 2
     assert seen == [2, 4]
 
@@ -281,10 +281,10 @@ def test_unsubscribing_cancels_a_pending_observer_call():
             calls.append(s.value)
 
     observer = Records()
-    s.subscribe(observer)
+    s._subscribe(observer)
     with batch():
         s.value = 1
-        s.unsubscribe(observer)
+        s._unsubscribe(observer)
 
     assert calls == []
 
@@ -301,7 +301,7 @@ def test_observers_run_after_the_change_has_propagated():
             seen.append((a.value, b.value))
 
     observer = Reads()
-    a.subscribe(observer)
+    a._subscribe(observer)
     with batch():
         a.value = 2
         a.value = 3
@@ -324,7 +324,7 @@ def test_signal_written_twice_during_propagation_keeps_dependents_current():
             seen.append(c.value)
 
     observer = WritesTwice()
-    a.subscribe(observer)
+    a._subscribe(observer)
     a.value = 1
     assert seen == [10, 20]
     assert c.value == 20
@@ -340,12 +340,12 @@ def test_observer_that_resubscribes_itself_still_hits_the_run_limit():
             self.runs += 1
             if self.runs >= 500:  # bound the loop if the limit is missed
                 return
-            source.unsubscribe(self)
-            source.subscribe(self)
+            source._unsubscribe(self)
+            source._subscribe(self)
             source.value += 1
 
     observer = Resubscribes()
-    source.subscribe(observer)
+    source._subscribe(observer)
     with pytest.raises(RuntimeError, match="did not settle"):
         source.value = 1
     assert observer.runs == 100

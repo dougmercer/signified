@@ -3,35 +3,6 @@
 This page describes the rules behind Signified's updates. For an introduction
 with everyday examples, start with the [usage guide](usage.md).
 
-## What each object does
-
-| Object | Purpose |
-| --- | --- |
-| `Signal` | Stores a value you can change. |
-| `Computed` | Calculates a value when needed and saves the result or error. |
-| `Effect` | Runs an action when the reactive values it reads change. |
-| `Binding` | Follows a source you can replace without replacing the binding itself. |
-
-A signal can store another reactive object. A calculation can return one too.
-Neither reads that object's value automatically:
-
-```python
-from signified import Binding, Computed, Signal, unref
-
-inner = Signal(1)
-outer = Signal(inner)
-assert outer.value is inner
-assert unref(outer) is inner
-assert Computed(lambda: inner).value is inner
-assert Binding(inner).value == 1
-assert Binding(outer).value is inner
-```
-
-`unref` reads one reactive object at a time. Operators and decorated functions
-follow the same rule. For example, `(outer + 1).value` is itself a `Computed`
-because `outer` stores a signal. Use `Binding(inner) + 1` to calculate from the
-number instead.
-
 ## Which reads trigger updates {#reads-and-equality}
 
 A computation or effect follows the reactive values it reads while running.
@@ -77,6 +48,12 @@ Signal assignments and calculated results use the same rules:
 - When a value is unchanged, the previously stored object is kept.
 
 A new dictionary therefore counts as a change even if it has the same contents.
+To compare by contents, pass an `equal(old, new)` function as `equal=` to
+`Signal` or `Computed`, or call `x.rx.with_equal(equal)` on a value built by an
+operator or `@computed`. It is called only when the rules above report a
+change, so it can make more values count as unchanged, never fewer. See
+[Skip updates for equal contents](usage.md#custom-equality).
+
 Changing an existing dictionary through `.value` does not send an update.
 Replace it, call `Signal.update()` after changing it, or assign through the
 signal with `state[key] = value`. The [container examples](usage.md#collections-and-item-assignment)
@@ -88,12 +65,31 @@ unchanged results. Switching a binding to an equal-valued source follows this
 rule too. `Signal.update()` and `Computed.invalidate()` explicitly send a change
 notification from that object.
 
-## Nested values and serialization {#recursive-resolution-and-serialization}
+## Nested values {#recursive-resolution-and-serialization}
 
-Call `deep_unref` inside a computation or effect to read reactive values inside
-supported containers. Calling it beforehand produces data but does not make
-that callback follow the original values. See [Nested values](resolution.md)
-for supported types, JSON, custom handlers, and copying limits.
+A signal can hold another reactive value, and a calculation can return one.
+Neither reads it for you:
+
+```python
+from signified import Binding, Computed, Signal, unref
+
+inner = Signal(1)
+outer = Signal(inner)
+assert outer.value is inner
+assert unref(outer) is inner
+assert Computed(lambda: inner).value is inner
+assert Binding(inner).value == 1
+assert Binding(outer).value is inner
+```
+
+`unref`, `Binding`, operators, and decorated functions all read one level at a
+time. For example, `(outer + 1).value` is a `Computed`, because `outer` holds a
+signal. Use `Binding(inner) + 1` to calculate from the number instead.
+
+To read reactive values inside lists, dictionaries, and other containers, call
+`deep_unref` inside the computation or effect. Calling it beforehand gives you
+the data, but the callback will not follow the original values. See
+[Nested values](resolution.md) for supported types, JSON, and custom handlers.
 
 ## Read without adding a dependency {#untracked-reads}
 
@@ -122,8 +118,7 @@ watcher.dispose()
 
 The effect follows `trigger`, but not `derived` or `other`. The nested
 calculation `derived` still tracks its own inputs and returns its current value.
-Reads, plugin hooks, errors, and writes work normally. Blocks can nest, and
-tracking is restored when a block exits, including after an error.
+Blocks can nest, and tracking resumes when a block exits, even after an error.
 
 `rx.tap(fn)` serves a different purpose: it calls `fn` when its calculated value
 is evaluated and passes the value through. Cached reads do not repeat the call,
@@ -160,27 +155,34 @@ them; they are synchronous blocks and must not contain `await`.
 
 ### Errors and recovery
 
-A failed run still follows everything it read before the error. Inputs from
-an earlier run that were not read this time are dropped. A later change to
-one of the remaining inputs allows the computation or effect to try again.
+A `Computed` saves an ordinary exception the same way it saves a value:
 
-A `Computed` saves ordinary exceptions just as it saves values. Further reads
-raise the saved exception without rerunning the function. An input change or
-`.invalidate()` allows another evaluation. A computation or effect that reads
-the failed value still tracks that read, allowing recovery after the first
-evaluation fails.
-Each new failed evaluation counts as a change. Recovery also counts as a
-change, even if the result matches the last successful value.
+```python
+from signified import Computed, Signal
 
-After an ordinary effect error, other pending effects still run. A single
-failure is raised directly; multiple failures from processing pending effects
-are raised together as an `ExceptionGroup`. These rules apply inside and
-outside batches. A batch body error alone is raised unchanged. If both the
-body and pending effects fail, the errors are grouped together, using
-`BaseExceptionGroup` when necessary.
+divisor = Signal(0)
+ratio = Computed(lambda: 10 / divisor.value)
+try:
+    ratio.value
+except ZeroDivisionError:
+    print("failed")  # failed
+divisor.value = 2
+print(ratio.value)  # 5.0
+```
 
-Control-flow exceptions such as `KeyboardInterrupt` are not saved. They stop
-processing pending effects and clear the remaining work. Active effects can
-still respond to future changes. If one effect runs more than 100 times while
-processing a round of pending effects, Signified reports a `RuntimeError`
-through the same error-handling mechanism and clears the remaining work.
+Reading `ratio` again raises the saved error without rerunning the function,
+until an input changes or you call `.invalidate()`. A failed run still follows
+the inputs it read before the error, which is how changing `divisor` lets
+`ratio` recover. For anything that reads `ratio`, each new failure counts as a
+change, and so does recovering, even to the last successful value.
+
+When an effect raises, the other pending effects still run. A single failure
+is raised as-is; several are raised together as an `ExceptionGroup`. This also
+applies inside a batch. If the batch body raises as well, its error is grouped
+with the effect errors, in a `BaseExceptionGroup` when needed.
+
+Exceptions that are not `Exception` subclasses, such as `KeyboardInterrupt`,
+are never saved. They stop and discard the pending effects, which still respond
+to later changes. If one effect runs more than 100 times in a single round of
+updates, usually because effects keep changing each other's inputs, Signified
+raises `RuntimeError` and discards the remaining work.

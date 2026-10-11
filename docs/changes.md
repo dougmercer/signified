@@ -1,4 +1,4 @@
-# Change Log
+# Changelog
 
 This page summarizes notable changes across releases.
 
@@ -9,26 +9,20 @@ This page summarizes notable changes across releases.
 - **Breaking:** Signified's reactive engine is now a compiled extension written
   in Rust (`signified._core`). `Signal`, `Computed`, `Binding` and `Effect` keep
   their API, and most graphs update several times faster. Behavior changes:
-  - Observers added with `subscribe()` run after a change has finished
-    propagating, in the same queue as effects (so `batch()` defers them too),
-    instead of in the middle of it. Repeated notifications to one subscription
-    before it runs are combined into one call, and `unsubscribe()` cancels a
-    call that has not run yet.
   - A signal written twice while a change is propagating now notifies both
     times. Previously the second write could leave a dependent computed stale.
-  - Subclasses can no longer override `notify()`, `update()` or `value`;
-    defining any of them raises `TypeError`. The engine reads values and sends
-    notifications natively, so it would not call the overrides. Derive a
-    `Computed` (for example with `signal.rx.map(fn)`) instead of overriding `value`.
+  - Subclasses can no longer override `update()` or `value`; defining either
+    raises `TypeError`. Derive a `Computed` (for example
+    with `signal.rx.map(fn)`) instead of overriding `value`.
   - `copy.copy()` and `copy.deepcopy()` of a `Signal`, `Computed` or `Binding`
     raise `TypeError`. Deep-copying a `Computed` previously produced an object
     that never updated. Instances using `tracked_fields` still copy and pickle.
   - Reading or writing a `Signal` whose `__init__` was never called raises
     `RuntimeError`.
-- **Breaking:** Reactive objects no longer overload `!=`. Comparisons between
-  reactive objects use identity and return a plain `bool`, matching `==`.
-  Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
-  the existing `x.rx.eq(y)`.
+- **Breaking:** `subscribe()`, `unsubscribe()`, and `notify()` on `Signal`,
+  `Computed`, and `Binding` are now private. Use an `Effect` to react to
+  changes.
+- **Breaking:** Removed `signified.plugins.pm`; use `plugin_manager`.
 - **Breaking:** Removed the migration warnings added in 0.6:
   `signified.migration` and `SIGNIFIED_MIGRATION_WARNINGS`. To check code
   written for 0.5, run the warnings on 0.6 before upgrading; see
@@ -36,37 +30,14 @@ This page summarizes notable changes across releases.
 
 ### Runtime improvements
 
-- Added the missing reflected operators `__rmatmul__`, `__rlshift__`, and
-  `__rrshift__`, so `other @ reactive`, `other << reactive`, and
-  `other >> reactive` produce reactive values instead of raising `TypeError`.
-- Reactive values opt out of NumPy's ufunc dispatch (`__array_ufunc__ = None`).
-  Previously `array + reactive` returned an object-dtype `ndarray` of `Computed`
-  values instead of a single reactive result, because `ndarray` handled the
-  operation rather than deferring; it now returns a `Computed`, as do other
-  reflected arithmetic/bitwise operators and ordering comparisons. Passing a
-  reactive value straight to a ufunc (`np.sin(reactive)`) now raises `TypeError`;
-  use `reactive.rx.map(np.sin)`.
-- `Signal` forwards item deletion (`del signal[key]`) to the wrapped `list` or
-  `dict` and notifies observers, mirroring `signal[key] = value`.
-- `Signal.at()` and `Binding.at()` restore the previous version as well as the
-  previous value on exit. Dependents that were not read inside the `with` block
-  no longer recompute afterwards; dependents read inside it still do.
-- `Signal` and `Computed` accept `equal=`, a custom equality such as
-  `np.array_equal`. When it reports a new value equal to the previous one, the
-  previous object is kept and dependents are not invalidated.
-  `x.rx.with_equal(equal)` sets it on an existing value and returns that value,
-  including values built by operators, `computed`, `lift`, and `rx.map`.
-- Each thread now tracks reads, batches, and runs effects on its own. Previously
-  any two threads using Signified at once, even with unrelated graphs, could
-  raise `RuntimeError: tracking frames are unbalanced`, count a read on one
-  thread as a dependency of a computation running on another, or have one
-  thread's `batch()` hold back another thread's effects. Separate graphs can now
-  run on separate threads, and a graph can be handed from one thread to
-  another. One graph should still be used by one thread at a time: reading a
-  `Computed` while another thread is computing it raises `RuntimeError`.
-- Added `tracked_fields`, a class decorator that makes reassigning an attribute
-  invalidate computations that read it. Reads return the stored value unchanged.
-  It works with slotted and dict-based dataclasses, or named attributes of other classes.
+- Each thread now tracks reads, batches, and effects on its own. Previously two
+  threads using Signified at once, even with unrelated graphs, could raise
+  `RuntimeError: tracking frames are unbalanced`, record a read on one thread
+  as a dependency of a computation on another, or hold back each other's
+  effects. Separate graphs can now run on separate threads, and a graph can be
+  handed from one thread to another. Use one graph from one thread at a time:
+  reading a `Computed` while another thread is computing it raises
+  `RuntimeError`.
 
 ### Packaging
 
@@ -78,107 +49,68 @@ This page summarizes notable changes across releases.
   because the browser's stack is much smaller than a native one.
 - Plugin hooks run whenever a plugin is registered with `plugin_manager`;
   `SIGNIFIED_ENABLE_HOOKS` and `signified.plugins.HOOKS_ENABLED` are removed.
-- Removed the `ipython` extra. Notebook display works the same without it,
-  because IPython calls the display hook only when IPython is running.
-- Plugins no longer use pluggy, and the `plugins` extra is removed. Signified
-  now has its own small plugin manager. `@hookimpl`, `plugin_manager.register`, and
-  `plugin_manager.unregister` work as before. `register` now rejects an
-  `@hookimpl` method whose name is not a known hook, and no longer takes a
-  `name` argument. pluggy's options such as `@hookimpl(tryfirst=True)` and
-  hook wrappers are not supported.
+- Plugins no longer use pluggy, and the `plugins` extra is removed.
+  `@hookimpl`, `plugin_manager.register`, and `plugin_manager.unregister` work
+  as before. `register` now rejects an `@hookimpl` method whose name is not a
+  known hook, and no longer takes a `name` argument. pluggy options such as
+  `@hookimpl(tryfirst=True)` and hook wrappers are not supported.
+- Removed the `ipython` extra. Notebook display works the same without it.
+
+## 0.6.1
+
+### Breaking changes
+
+- **Breaking:** Reactive objects no longer overload `!=`. Comparisons between
+  reactive objects use identity and return a plain `bool`, matching `==`.
+  Replace `(x != y)` with `x.rx.ne(y)` for reactive value comparisons, alongside
+  the existing `x.rx.eq(y)`.
+
+### Runtime improvements
+
+- Added `tracked_fields`, a class decorator that makes reassigning an attribute
+  invalidate computations that read it. Reads return the stored value unchanged.
+  It works with slotted and dict-based dataclasses, or named attributes of other
+  classes.
+- `Signal` and `Computed` accept `equal=`, a custom equality such as
+  `np.array_equal`. When it reports a new value equal to the previous one, the
+  previous object is kept and dependents are not invalidated.
+  `x.rx.with_equal(equal)` sets it on an existing value, including values built
+  by operators, `computed`, and `rx.map`, and returns that value.
+- `Signal` forwards item deletion (`del signal[key]`) to the wrapped `list` or
+  `dict` and notifies observers, like `signal[key] = value`.
+- `Signal.at()` and `Binding.at()` restore the previous version as well as the
+  previous value on exit. Dependents that were not read inside the `with` block
+  no longer recompute afterwards.
+- `other @ reactive`, `other << reactive`, and `other >> reactive` now produce
+  reactive values instead of raising `TypeError`.
+- Operators with a NumPy array on the left, such as `array + reactive` or
+  `array < reactive`, now return one `Computed` instead of an array of
+  `Computed` objects. Passing a reactive value straight to a ufunc, as in
+  `np.sin(reactive)`, now raises `TypeError`; use `reactive.rx.map(np.sin)`.
 
 ### Type inference
 
-#### Operator protocols and reflected methods
+Type checkers infer more precise results for reactive operators and helpers,
+and reject operations the wrapped type does not support.
 
-- Arithmetic, matrix multiplication, shifts, and bitwise operators infer results
-  from right-hand reflected methods as well as left-hand methods, including when
-  both operands are reactive. These operators and ordering comparisons now reject
-  statically unsupported operand combinations instead of accepting them through
-  catch-all annotations.
-- Multiplication, matrix multiplication, true and floor division, modulo,
-  exponentiation, and shifts now report a user type's declared operator return
-  type instead of a union of the operand types, in both operand directions.
-- Bitwise AND, OR, XOR, and ordering comparisons preserve custom operator return
-  types, including non-boolean comparison results.
-- `divmod` infers the promoted numeric result and honours a declared `__divmod__`
-  return type; it no longer claims `tuple[float, float]` for operands it cannot
-  otherwise resolve, and now accepts float operands in the reflected direction.
-- `divmod` preserves reflected-only return types, including with two reactive
-  operands, and rejects unsupported operand combinations. A remaining checker
-  limitation affects reactive-left/plain-right reflected-only calls; wrapping
-  the right operand in `Signal` preserves inference.
-
-#### Numeric and date/time results
-
-- Addition keeps integer results for plain integer operands and infers promoted
-  numeric results for boolean and complex operands, including reflected operations.
-- Subtraction infers promoted numeric results and declared operator return types;
-  date and datetime differences return `Computed[timedelta]`, while subtracting
-  a duration preserves the date or datetime type.
-- Adding a duration to a reactive date or datetime preserves the date or datetime
-  type in the reflected direction, matching subtraction.
-- Multiplication infers promoted `int`, `float`, or `complex` results, including
-  reflected operations and boolean operands.
-- True division infers `float` for real operands and `complex` when either operand
-  is complex, including reflected operations and boolean operands.
-- Floor division infers `float` when either operand is a float and `int` for
-  integer/boolean operands, including reflected operations.
-- Modulo infers the promoted numeric result instead of a union of operand types,
-  including reflected operations and boolean operands.
-- Exponentiation infers promoted numeric results for integer, boolean, float, and
-  complex operands, including reflected operations.
-- Bitwise AND, OR, and XOR infer `int` for mixed boolean/integer operands while
-  preserving `bool` for boolean-only operations, in both operand directions.
-- Left and right shifts infer `int` for mixed boolean/integer operands instead of a
-  union of operand types.
-
-#### Rounding and unary operators
-
-- `ceil` and `floor` infer the declared rounding result, preserve custom integral
-  subclasses, and reject unsupported operands. Values with only `__float__` or
-  `__index__` retain the numeric conversion fallback and infer `Computed[int]`.
-- `round` uses `SupportsRound` to infer `Computed[int]` when digits are omitted
-  or `None`, and the declared result type when digits are provided, including
-  `Computed[Decimal]` for decimals. Unsupported operands are rejected statically.
-- `trunc` infers the wrapped type's declared `__trunc__` result, including
-  `Computed[int]` for decimals, and rejects operands without `__trunc__`.
-- Unary `-`, `+`, and `~` infer the wrapped type's declared operator result and
-  reject statically known operands that do not support the operation.
-- Absolute value infers a custom type's declared `__abs__` return type, including
-  through `Signal`, `Computed`, and `Binding`.
-
-#### Comparisons and conditional narrowing
-
-- `rx.eq` and `rx.ne` preserve the source type's declared comparison result,
-  including custom masks and literal booleans that can narrow `rx.where`.
-  Wrapper `==` and `!=` retain their existing identity semantics.
-- `rx.where` narrows its result type when the condition is a literal boolean,
-  `None`, or has `__bool__` annotated to return a literal boolean. Ordinary boolean
-  signals retain the union of both branch types.
-- `rx.as_bool` preserves literal boolean result types for conditions with statically
-  known truthiness, including `None`, so subsequent `rx.where` calls can still narrow.
-
-#### Indexing and membership
-
-- Indexing accepts reactive custom `__index__` values and keys that satisfy a
-  custom lookup's declared key type, preserving the result through all wrappers.
-  Statically unsupported containers and key types are rejected.
-- Indexing lists, tuples, and strings with reactive slices preserves the sliced
-  container's result type.
-- `rx.contains` and `rx.in_` reject statically unsupported containers while
-  accepting `__contains__`, iteration, and legacy integer-indexing protocols.
-
-#### Reactive conversion
-
-- `as_rx` preserves the concrete `Signal`, `Computed`, or `Binding` type when
-  passed an existing reactive value.
-
-#### Reactive namespace
-
-- `x.rx` records the exact type of `x` as well as its value type, so helpers
-  that return the source keep it as `Signal`, `Computed`, or `Binding`.
-  `rx.with_equal` returns the source, typed exactly.
+- Operators report the wrapped type's declared result, with the plain or
+  reactive value on either side, instead of a union of the operand types.
+  Built-in numbers follow Python's promotion rules, so `Signal(1) / 2` is
+  `Computed[float]`. Dates and datetimes subtract to `timedelta`, and adding or
+  subtracting a `timedelta` keeps the date type.
+- `abs`, `round`, `divmod`, `math.floor`, `math.ceil`, `math.trunc`, and unary
+  `-`, `+`, and `~` infer the declared result, such as `Computed[int]` for
+  `round(x)` and `Computed[Decimal]` for `round(decimal, 2)`.
+- Indexing keeps the item type, and slicing a list, tuple, or string with a
+  reactive slice keeps the container type. `rx.contains` and `rx.in_` reject
+  containers that do not support membership.
+- `rx.eq`, `rx.ne`, and `rx.as_bool` keep custom and literal result types, so
+  `rx.where` can narrow its result when the condition is known to be true or
+  false.
+- `as_rx`, and `rx` helpers that return the source, such as `rx.with_equal`,
+  keep the exact `Signal`, `Computed`, or `Binding` type.
+- Known gap: `divmod(reactive, plain)` loses its type when only the plain
+  value's type defines `__rdivmod__`. Wrapping it in `Signal` restores inference.
 
 ## 0.6.0
 
@@ -224,7 +156,7 @@ Add `rx.tap(fn)` for the lazy cached callback helper. `rx.peek(fn)` remains a
 deprecated alias until its removal in 0.6.0. Repeated cached reads do not rerun
 the callback; unread intermediate updates are skipped.
 
-See [Preparing for 0.6](migration.md) for changes you can make on 0.5.1 and
+See [Migrating to 0.6](migration.md) for changes you can make on 0.5.1 and
 changes that require upgrading the runtime.
 
 ## 0.5.0

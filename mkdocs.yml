@@ -1,6 +1,10 @@
 site_name: Signified
+site_description: A fast, fully-typed Python library for reactive programming.
 site_url: https://dougmercer.github.io/signified/
 repo_url: https://github.com/dougmercer/signified
+repo_name: dougmercer/signified
+# "Edit this page" opens the page's source on main in GitHub's editor.
+edit_uri: edit/main/docs/
 
 extra:
   version:
@@ -32,6 +36,7 @@ theme:
       name: Switch to system preference
   features:
     - announce.dismiss
+    - content.action.edit
     - content.code.annotate
     - content.code.copy
     - content.code.select
@@ -87,7 +92,8 @@ markdown_extensions:
   #     repo: keyed
   - pymdownx.mark
   - pymdownx.smartsymbols
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -129,26 +135,24 @@ nav:
       - Comparison: comparison.md
   - Guides:
       - Usage: usage.md
+      - Examples: examples.md
       - Resolving nested values: resolution.md
       - Plugins: plugins.md
-      - Type Checkers: type-checkers.md
+      - Type checkers: type-checkers.md
   - Reference:
-      - API Reference: api.md
-      - How Updates Work: compute-contract.md
+      - API reference: api.md
+      - How updates work: compute-contract.md
       - Operators: magic-methods.md
   - Playground: playground.md
   - Releases:
-      - Change Log: changes.md
+      - Changelog: changes.md
       - Migrating to 0.6: migration.md
 
 extra_css:
-  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css
-  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css
+  - assets/playground/playground.css
 
 extra_javascript:
-  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js
-  - https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js
-  - assets/playground.js
+  - assets/playground/playground.js
 
 plugins:
   - search

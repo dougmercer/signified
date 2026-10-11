@@ -114,7 +114,7 @@ def test_signal_observer():
             self.values.append(self.s.value)
 
     appender = Appender(s)
-    s.subscribe(appender)
+    s._subscribe(appender)
 
     s.value = 10
     s.value = 15
@@ -134,8 +134,8 @@ def test_signal_unsubscribe_stops_notifications():
             self.values.append(self.signal.value)
 
     appender = Appender(s)
-    s.subscribe(appender)
-    s.unsubscribe(appender)
+    s._subscribe(appender)
+    s._unsubscribe(appender)
 
     s.value = 10
     assert appender.values == []
@@ -150,7 +150,7 @@ def test_signal_drops_garbage_collected_observers():
 
     appender = Appender()
     observer_ref = weakref.ref(appender)
-    s.subscribe(appender)
+    s._subscribe(appender)
 
     del appender
     gc.collect()

@@ -23,7 +23,7 @@ class IPythonObserver:
         _ACTIVE_OBSERVERS.setdefault(me, []).append(self)
         self.me_ref = weakref.ref(me)
         self.handle = handle
-        me.subscribe(self)
+        me._subscribe(self)
 
     def update(self) -> None:
         me = self.me_ref()

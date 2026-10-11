@@ -29,11 +29,11 @@ class Signal(Generic[T]):
         """Force a notification to all observers unconditionally."""
     def invalidate(self) -> None:
         """Force downstream recomputation; for a Signal, equivalent to `update`."""
-    def notify(self) -> None:
+    def _notify(self) -> None:
         """Notify all observers by calling their update method."""
-    def subscribe(self, observer: _Observer) -> None:
+    def _subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer to this signal. The observer is held weakly."""
-    def unsubscribe(self, observer: _Observer) -> None:
+    def _unsubscribe(self, observer: _Observer) -> None:
         """Unsubscribe an observer from this signal."""
     def _observer_count(self) -> int: ...
 
@@ -53,11 +53,11 @@ class Computed(Generic[T]):
     def update(self) -> None:
         """Mark this computed stale when notified by an upstream dependency."""
     def _invalidate(self) -> None: ...
-    def notify(self) -> None:
+    def _notify(self) -> None:
         """Notify all observers by calling their update method."""
-    def subscribe(self, observer: _Observer) -> None:
+    def _subscribe(self, observer: _Observer) -> None:
         """Subscribe an observer, evaluating first so it sees every later change."""
-    def unsubscribe(self, observer: _Observer) -> None:
+    def _unsubscribe(self, observer: _Observer) -> None:
         """Unsubscribe an observer from this computed."""
     def _observer_count(self) -> int: ...
     def _restorable(self) -> bool: ...
