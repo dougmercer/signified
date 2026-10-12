@@ -1,9 +1,10 @@
 # signified against Rust reactive libraries
 
 The same graphs and operations in [reactive_graph](https://docs.rs/reactive_graph) (Leptos),
-[sycamore-reactive](https://docs.rs/sycamore-reactive) and [salsa](https://docs.rs/salsa)
-(`src/main.rs`), and in signified driven from Python (`signified_graphs.py`). It measures the
-frameworks' own overhead: every node's function is trivial.
+[sycamore-reactive](https://docs.rs/sycamore-reactive), [salsa](https://docs.rs/salsa) and
+signified's Rust API (`rust/signified`), all in `src/main.rs`, and in signified driven from
+Python (`signified_graphs.py`). It measures the frameworks' own overhead: every node's function
+is trivial.
 
 | Workload | Graph (N = 1000) | Operation |
 |----------|------------------|-----------|
@@ -21,7 +22,7 @@ checked against the expected result before it is timed. Times are the best of 5 
 
 ```console
 cd benchmarks/rust_comparison
-cargo run --release                                  # all three, or name some: reactive_graph sycamore salsa
+cargo run --release                                  # all, or name some: signified reactive_graph sycamore salsa
 cargo run --release --bin reactive_graph_scaling     # chain update cost against chain length
 
 cd ../..                                             # signified, from the repository root
@@ -36,19 +37,25 @@ uv run --no-sync python benchmarks/rust_comparison/signified_graphs.py --node-ki
 ## Results
 
 Microseconds per operation, best of two runs; Apple M1 Max, Rust 1.93 (release, fat LTO),
-CPython 3.14.7, 2026-10-12. Run-to-run differences were 1% (median) to 4%.
+CPython 3.14.7 (the extension built with the default release profile), 2026-10-12. Run-to-run
+differences were 1% (median) to 4%.
 
-| µs per operation           | chain  | fan   | layers | cutoff | create |
-|----------------------------|-------:|------:|-------:|-------:|-------:|
-| sycamore-reactive 0.9.3    | 48     | 500   | 82     | 16     | 105    |
-| salsa 0.28.5               | 231    | 198   | 250    | 77     | 348    |
-| signified, Python functions | 191   | 203   | 212    | 50     | 1,860  |
-| signified, native kernels  | 270    | 293   | 302    | 51     | 1,192  |
-| reactive_graph 0.2.15      | 38,138 | 1,787 | 15,931 | 154    | 458    |
+| µs per operation            | chain  | fan   | layers | cutoff | create |
+|-----------------------------|-------:|------:|-------:|-------:|-------:|
+| signified, Rust API         | 78     | 67    | 95     | 43     | 220    |
+| sycamore-reactive 0.9.3     | 48     | 500   | 82     | 16     | 105    |
+| salsa 0.28.5                | 231    | 198   | 250    | 77     | 348    |
+| signified, Python functions | 187    | 204   | 235    | 41     | 1,806  |
+| signified, native kernels   | 266    | 300   | 302    | 42     | 1,199  |
+| reactive_graph 0.2.15       | 38,138 | 1,787 | 15,931 | 154    | 458    |
 
-- signified's graph bookkeeping costs about 175 ns per node: a chain of identity functions takes
-  176 µs per update (`--node-kinds`), so the functions themselves add little. That is on par with
-  salsa, while every value is a Python object.
+- signified's Rust API runs the same engine as the Python library, with Rust values and closures:
+  about 80 ns per node on a chain, within 2x of sycamore on deep graphs and faster on wide ones.
+  The gap to the Python rows (about 110 ns per node) is the cost of Python objects and calls, not
+  of the graph algorithm.
+- From Python, signified's graph bookkeeping costs about 175 ns per node: a chain of identity
+  functions takes 176 µs per update (`--node-kinds`), so the functions themselves add little.
+  That is on par with salsa, while every value is a Python object.
 - sycamore propagates eagerly when a signal is set: fastest on deep chains, and it stops at the
   unchanged node in `cutoff`, where the lazy libraries (signified, salsa, reactive_graph) check the
   chain when it is read. With 1000 dependents of one signal (`fan`) it is slower than salsa and

@@ -8,6 +8,7 @@ publish = false
 reactive_graph = "0.2"
 sycamore-reactive = "0.9"
 salsa = "0.28"
+signified = { path = "../../rust/signified" }
 
 [profile.release]
 codegen-units = 1

@@ -1,5 +1,6 @@
-//! Same graphs, same operations, in reactive_graph, sycamore-reactive and salsa
-//! (`signified_graphs.py` runs them on signified). See README.md.
+//! Same graphs, same operations, in signified's Rust API, reactive_graph,
+//! sycamore-reactive and salsa (`signified_graphs.py` runs them on signified
+//! from Python). See README.md.
 //!
 //! Workloads (N = 1000; layers: 10 deep x 100 wide):
 //!   chain   source -> c1 -> ... -> cN (each +1); update the source, read cN
@@ -46,6 +47,103 @@ fn expected_fan(src: i64) -> i64 {
 }
 fn expected_layers(src: i64) -> i64 {
     (1i64 << (D - 1)) * (W as i64 * src + (W as i64 * (W as i64 - 1)) / 2)
+}
+
+mod sg {
+    use super::*;
+    use signified::{Computed, Signal};
+
+    fn chain_on(base: Computed<i64>) -> Computed<i64> {
+        let mut prev = base;
+        for _ in 1..N {
+            let p = prev.clone();
+            prev = Computed::new(move || p.get() + 1);
+        }
+        prev
+    }
+
+    pub fn run() {
+        let lib = "signified (Rust)";
+        {
+            let src = Signal::new(0i64);
+            let s = src.clone();
+            let out = chain_on(Computed::new(move || s.get() + 1));
+            src.set(7);
+            assert_eq!(out.get(), 7 + N as i64);
+            let mut v = 0;
+            bench(lib, "chain", || {
+                v += 1;
+                src.set(v);
+                black_box(out.get());
+            });
+        }
+        {
+            let src = Signal::new(0i64);
+            let leaves: Vec<Computed<i64>> = (0..N)
+                .map(|i| {
+                    let s = src.clone();
+                    Computed::new(move || s.get() + i as i64)
+                })
+                .collect();
+            let sum = Computed::new(move || leaves.iter().map(|m| m.get()).sum::<i64>());
+            src.set(7);
+            assert_eq!(sum.get(), expected_fan(7));
+            let mut v = 0;
+            bench(lib, "fan", || {
+                v += 1;
+                src.set(v);
+                black_box(sum.get());
+            });
+        }
+        {
+            let src = Signal::new(0i64);
+            let mut layer: Vec<Computed<i64>> = (0..W)
+                .map(|j| {
+                    let s = src.clone();
+                    Computed::new(move || s.get() + j as i64)
+                })
+                .collect();
+            for _ in 1..D {
+                let prev = layer.clone();
+                layer = (0..W)
+                    .map(|j| {
+                        let (a, b) = (prev[j].clone(), prev[(j + 1) % W].clone());
+                        Computed::new(move || a.get() + b.get())
+                    })
+                    .collect();
+            }
+            let last = layer;
+            let sum = Computed::new(move || last.iter().map(|m| m.get()).sum::<i64>());
+            src.set(7);
+            assert_eq!(sum.get(), expected_layers(7));
+            let mut v = 0;
+            bench(lib, "layers", || {
+                v += 1;
+                src.set(v);
+                black_box(sum.get());
+            });
+        }
+        {
+            let src = Signal::new(0i64);
+            let s = src.clone();
+            let zero = Computed::new(move || s.get() * 0);
+            let out = chain_on(Computed::new(move || zero.get() + 1));
+            src.set(7);
+            assert_eq!(out.get(), N as i64);
+            let mut v = 0;
+            bench(lib, "cutoff", || {
+                v += 1;
+                src.set(v);
+                black_box(out.get());
+            });
+        }
+        bench(lib, "create", || {
+            let src = Signal::new(1i64);
+            let s = src.clone();
+            let out = chain_on(Computed::new(move || s.get() + 1));
+            black_box(out.get());
+        });
+    }
 }
 
 mod rg {
@@ -352,6 +450,9 @@ fn main() {
     std::thread::Builder::new()
         .stack_size(512 << 20)
         .spawn(move || {
+            if all || which.iter().any(|w| w == "signified") {
+                sg::run();
+            }
             if all || which.iter().any(|w| w == "reactive_graph") {
                 rg::run();
             }
