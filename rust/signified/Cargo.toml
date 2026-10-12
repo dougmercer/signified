@@ -1,0 +1,14 @@
+[package]
+name = "signified"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.86"
+description = "Reactive signals, computeds and effects for Rust, on the engine of the Python library signified"
+license = "BSD-3-Clause"
+repository = "https://github.com/dougmercer/signified"
+keywords = ["reactive", "signals"]
+publish = false
+
+[dependencies]
+signified-engine = { path = "../engine" }
+stacker = "0.1"

@@ -152,12 +152,18 @@ pub fn begin_batch<H: Host>() {
 
 /// End a batch; the outermost one runs the queue.
 pub fn end_batch<H: Host>(cx: H::Cx<'_>) -> Result<(), H::Error> {
+    leave_batch::<H>();
+    flush::<H>(cx)
+}
+
+/// End a batch without running the queue; what it deferred runs at the next
+/// flush.
+pub fn leave_batch<H: Host>() {
     with_queue::<H, _>(|queue| {
         queue
             .batch_depth
             .set(queue.batch_depth.get().saturating_sub(1))
     });
-    flush::<H>(cx)
 }
 
 /// Run queued work in order. Errors are collected and reported together by

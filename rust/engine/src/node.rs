@@ -7,8 +7,8 @@ use std::num::NonZeroU64;
 use std::rc::Rc;
 
 use crate::observers::ObserverList;
-use crate::tracking;
 use crate::Host;
+use crate::{runtime, tracking};
 
 /// Staleness of a computed node, ordered by invalidation priority.
 /// `Uninitialized` sits above `MustRefresh` so invalidation never downgrades a
@@ -219,6 +219,13 @@ impl<H: Host, P: ?Sized> Drop for Node<H, P> {
         tracking::unlink(key, &links);
         // Dropping the links can free dependencies and run host code;
         // nothing is borrowed here.
-        drop(links);
+        if H::DEFER_DROPS {
+            for DepLink { node, handle, .. } in links {
+                runtime::release(node);
+                drop(handle);
+            }
+        } else {
+            drop(links);
+        }
     }
 }

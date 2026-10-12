@@ -16,6 +16,25 @@ jobs:
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets --release -- -D warnings
 
+  # The engine (rust/engine) and the Rust API on it (rust/signified).
+  engine:
+    name: signified-engine and signified
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test
+        run: cargo test -p signified-engine -p signified
+      - name: Test in release
+        run: cargo test -p signified --release
+      - name: Build the docs
+        run: cargo doc -p signified-engine -p signified --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+
   # The signified-api crate (rust/api), published to crates.io by publish-crate.yml.
   api:
     name: signified-api

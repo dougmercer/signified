@@ -160,7 +160,9 @@ impl<H: Host> ObserverList<H> {
         let len = entries.len();
         let all_vacant = *vacant as usize == len;
         let sparse = len >= COMPACT_MIN_LEN && *vacant as usize * 2 > len;
-        if !(all_vacant || sparse) || H::with_runtime(|rt| rt.wave_depth.get() > 0) {
+        if !(all_vacant || sparse)
+            || H::try_with_runtime(|rt| rt.wave_depth.get() > 0).unwrap_or(false)
+        {
             return;
         }
         let mut write = 0;

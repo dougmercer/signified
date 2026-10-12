@@ -26,6 +26,7 @@
 use std::fmt;
 use std::rc::Rc;
 
+pub mod effect;
 pub mod invalidation;
 pub mod node;
 pub mod observers;
@@ -63,8 +64,21 @@ pub trait Host: Sized + 'static {
     /// State a host keeps for the length of one flush of the queue.
     type FlushState: Default;
 
+    /// Free a node's dependencies through [`runtime::release`] rather than
+    /// from inside its destructor, so that freeing a long chain does not
+    /// recurse. A host that sets it releases its own node references the same
+    /// way.
+    const DEFER_DROPS: bool = false;
+
     /// Run `f` with the calling thread's engine state.
     fn with_runtime<R>(f: impl FnOnce(&Runtime<Self>) -> R) -> R;
+
+    /// Like `with_runtime`, or `None` once the thread's engine state has been
+    /// destroyed (while thread-locals are torn down at thread exit). Only
+    /// paths that free nodes use it.
+    fn try_with_runtime<R>(f: impl FnOnce(&Runtime<Self>) -> R) -> Option<R> {
+        Some(Self::with_runtime(f))
+    }
 
     /// The version clock. By default each thread has its own; a host whose
     /// nodes can move between threads keeps one shared clock instead.
@@ -100,8 +114,7 @@ pub trait Host: Sized + 'static {
         handle: &Self::Handle,
     ) -> Result<(), Self::Error>;
 
-    /// Run a queued effect; see [`refresh::dependencies_changed`] and
-    /// [`tracking`] for the steps the engine provides.
+    /// Run a queued effect, usually with [`effect::run`].
     fn run_effect(cx: Self::Cx<'_>, effect: &Rc<Node<Self>>) -> Result<(), Self::Error>;
 
     /// A copy of a subscriber, queued during a notification walk.

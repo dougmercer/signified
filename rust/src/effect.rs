@@ -7,7 +7,6 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyTuple};
 use pyo3::PyTraverseError;
 
-use signified_engine::refresh::{dependencies_changed, invalidated_since_read};
 use signified_engine::{scheduler, tracking, Role};
 
 use crate::node::{Node, NodeExt, PyEffect, Shared};
@@ -74,43 +73,17 @@ impl EffectCore {
 
 /// Run one effect if its dependencies changed since its last run.
 pub(crate) fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
-    let state = effect.effect_state();
-    if state.has_run.get() && !dependencies_changed(py, effect)? {
-        return Ok(());
-    }
-    // Refreshing a dependency can dispose this effect through user code.
-    if !state.active.get() {
-        return Ok(());
-    }
-    state.has_run.set(true);
-    let function = state
-        .data
-        .function
-        .borrow()
-        .as_ref()
-        .map(|function| function.clone_ref(py));
-    let Some(function) = function else {
-        return Ok(());
-    };
-    tracking::start_refresh(effect);
-    let depth = tracking::push_frame(Some(effect.clone()));
-    let mut result = function.bind(py).call0().map(drop);
-    if let Err(error) = crate::tracking::end_frame(depth) {
-        result = Err(error);
-    }
-    if state.active.get() {
-        // Subscribe to what this run read, even if it raised, so a change to
-        // any of it retries the callback.
-        tracking::commit_refresh(effect);
-    } else {
-        tracking::detach_all_deps(effect);
-    }
-    drop(function);
-    result?;
-    // Also catches writes after a read during the first run, before the
-    // subscriptions existed.
-    if state.active.get() && invalidated_since_read(effect) {
-        scheduler::schedule(py, effect)?;
-    }
-    Ok(())
+    signified_engine::effect::run(
+        py,
+        effect,
+        || {
+            effect
+                .effect_data()
+                .function
+                .borrow()
+                .as_ref()
+                .map(|function| function.clone_ref(py))
+        },
+        |function| function.bind(py).call0().map(drop),
+    )
 }

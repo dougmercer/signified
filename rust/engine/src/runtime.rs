@@ -1,6 +1,8 @@
 //! Each thread's engine state, and versions.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::marker::PhantomData;
+use std::rc::Rc;
 
 use crate::node::Node;
 use crate::scheduler::Queue;
@@ -23,6 +25,10 @@ pub struct Runtime<H: Host> {
     /// The version clock, for hosts that keep one per thread (the default
     /// [`Host::clock`]).
     pub clock: Cell<u64>,
+    /// Nodes released while another release was freeing ([`release`]), and
+    /// whether one further up this thread's stack is freeing them.
+    pub(crate) freeing: RefCell<Vec<Rc<Node<H>>>>,
+    pub(crate) draining: Cell<bool>,
 }
 
 impl<H: Host> Default for Runtime<H> {
@@ -32,6 +38,8 @@ impl<H: Host> Default for Runtime<H> {
             frames: Frames::default(),
             queue: Queue::default(),
             clock: Cell::new(0),
+            freeing: RefCell::new(Vec::new()),
+            draining: Cell::new(false),
         }
     }
 }
@@ -42,4 +50,40 @@ pub fn bump_version<H: Host, P: ?Sized>(node: &Node<H, P>) -> u64 {
     let version = H::bump_clock();
     node.version.set(version);
     version
+}
+
+/// Let go of `node`, for [`Host::DEFER_DROPS`]. If that frees it, nodes it
+/// releases in turn (its dependencies, and whatever its payload held) are
+/// queued and freed one at a time by the outermost call, so freeing a chain
+/// takes constant stack.
+pub fn release<H: Host>(node: Rc<Node<H>>) {
+    let mut node = Some(node);
+    let outermost = H::try_with_runtime(|rt| {
+        if rt.draining.get() {
+            rt.freeing.borrow_mut().extend(node.take());
+            return false;
+        }
+        rt.draining.set(true);
+        true
+    });
+    // Without engine state (thread exit), it is freed here.
+    drop(node);
+    if outermost != Some(true) {
+        return;
+    }
+
+    /// Clears `draining` even if a destructor panics; what is left is freed
+    /// by the next outermost call.
+    struct Draining<H: Host>(PhantomData<H>);
+
+    impl<H: Host> Drop for Draining<H> {
+        fn drop(&mut self) {
+            H::try_with_runtime(|rt| rt.draining.set(false));
+        }
+    }
+
+    let _draining = Draining::<H>(PhantomData);
+    while let Some(next) = H::try_with_runtime(|rt| rt.freeing.borrow_mut().pop()).flatten() {
+        drop(next);
+    }
 }
