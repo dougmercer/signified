@@ -30,7 +30,7 @@ const RED_ZONE: usize = 64 * 1024;
 const NEW_SEGMENT: usize = 1024 * 1024;
 
 thread_local! {
-    static RUNTIME: Runtime<Native> = Runtime::default();
+    static RUNTIME: Runtime<Native> = const { Runtime::new() };
 }
 
 /// What the engine reaches through a node's payload.

@@ -1,12 +1,13 @@
 //! The engine's Python host: values, handles and errors are Python objects.
 
+use std::num::NonZeroU64;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use pyo3::exceptions::{PyException, PyRuntimeError};
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
-use signified_engine::{EngineError, Host, Runtime, Step};
+use signified_engine::{Counter, EngineError, Host, Runtime, Step};
 
 use crate::effect;
 use crate::node::{Node, PyComputed, PyEffect, PySlot};
@@ -16,13 +17,16 @@ use crate::scheduler::{self, ObserverRuns};
 pub(crate) struct PyHost;
 
 thread_local! {
-    static RUNTIME: Runtime<PyHost> = Runtime::default();
+    static RUNTIME: Runtime<PyHost> = const { Runtime::new() };
 }
 
 /// Shared by all threads, so versions stay unique when a graph moves from one
 /// thread to another. The GIL serializes access, so a plain load and store
 /// suffice.
 static CLOCK: AtomicU64 = AtomicU64::new(0);
+
+/// The engine's other counters (`Counter`), shared for the same reason.
+static NUMBERS: [AtomicU64; 2] = [AtomicU64::new(0), AtomicU64::new(0)];
 
 impl Host for PyHost {
     type Cx<'py> = Python<'py>;
@@ -51,6 +55,14 @@ impl Host for PyHost {
         let version = CLOCK.load(Ordering::Relaxed) + 1;
         CLOCK.store(version, Ordering::Relaxed);
         version
+    }
+
+    #[inline]
+    fn next_number(counter: Counter) -> NonZeroU64 {
+        let counter = &NUMBERS[counter as usize];
+        let number = NonZeroU64::MIN.saturating_add(counter.load(Ordering::Relaxed));
+        counter.store(number.get(), Ordering::Relaxed);
+        number
     }
 
     #[inline]

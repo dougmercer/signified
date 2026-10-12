@@ -4,12 +4,12 @@
 
 use std::cell::{Cell, RefCell};
 use std::collections::{HashSet, VecDeque};
+use std::hash::{BuildHasherDefault, DefaultHasher};
 use std::num::NonZeroU64;
 use std::rc::{Rc, Weak};
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::node::Node;
-use crate::{EngineError, Host};
+use crate::{Counter, EngineError, Host};
 
 /// Runs allowed per effect (and, for hosts that count them, per subscriber)
 /// in one flush.
@@ -42,17 +42,18 @@ pub(crate) struct Queue<H: Host> {
     /// Effects and subscribers waiting to run, in the order they were queued.
     pending: RefCell<VecDeque<Job<H>>>,
     /// Keys of subscribers waiting in `pending`. A queued subscriber whose
-    /// key is missing was unsubscribed and is skipped.
-    queued_subscribers: RefCell<HashSet<usize>>,
+    /// key is missing was unsubscribed and is skipped. (A fixed hasher, so
+    /// the queue can be built in a `const fn`.)
+    queued_subscribers: RefCell<HashSet<usize, BuildHasherDefault<DefaultHasher>>>,
     batch_depth: Cell<u32>,
     flushing: Cell<bool>,
 }
 
-impl<H: Host> Default for Queue<H> {
-    fn default() -> Self {
+impl<H: Host> Queue<H> {
+    pub(crate) const fn new() -> Self {
         Queue {
             pending: RefCell::new(VecDeque::new()),
-            queued_subscribers: RefCell::new(HashSet::new()),
+            queued_subscribers: RefCell::new(HashSet::with_hasher(BuildHasherDefault::new())),
             batch_depth: Cell::new(0),
             flushing: Cell::new(false),
         }
@@ -70,15 +71,6 @@ impl<H: Host> Drop for Queue<H> {
 
 fn with_queue<H: Host, R>(f: impl FnOnce(&Queue<H>) -> R) -> R {
     H::with_runtime(|rt| f(&rt.queue))
-}
-
-/// Numbers queued effects and flushes. Shared by all threads, so a number is
-/// never reused for another queuing or flush, wherever it happens.
-static PENDING_SEQ: AtomicU64 = AtomicU64::new(1);
-static FLUSH_EPOCH: AtomicU64 = AtomicU64::new(1);
-
-fn next_number(counter: &AtomicU64) -> NonZeroU64 {
-    NonZeroU64::new(counter.fetch_add(1, Ordering::Relaxed)).unwrap_or(NonZeroU64::MAX)
 }
 
 /// Marks a flush in progress while it lives, so a panic that unwinds through
@@ -104,7 +96,7 @@ pub fn enqueue_effect<H: Host>(effect: &Rc<Node<H>>) {
     if !state.active.get() || state.queued.get().is_some() {
         return;
     }
-    let seq = next_number(&PENDING_SEQ);
+    let seq = H::next_number(Counter::Queued);
     state.queued.set(Some(seq));
     with_queue::<H, _>(|queue| {
         queue.pending.borrow_mut().push_back(Job::Effect {
@@ -180,7 +172,7 @@ pub fn flush<H: Host>(cx: H::Cx<'_>) -> Result<(), H::Error> {
             return Ok(());
         }
         let flushing = Flushing::start(queue);
-        let epoch = next_number(&FLUSH_EPOCH).get();
+        let epoch = H::next_number(Counter::Flush).get();
         let mut errors = Vec::new();
         let mut state = H::FlushState::default();
         let outcome = run_pending(cx, queue, epoch, &mut state, &mut errors);

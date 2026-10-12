@@ -24,8 +24,8 @@ type FrameStack<H> = RefCell<Vec<Option<Rc<Node<H>>>>>;
 /// untracked block. Part of the runtime.
 pub(crate) struct Frames<H: Host>(FrameStack<H>);
 
-impl<H: Host> Default for Frames<H> {
-    fn default() -> Self {
+impl<H: Host> Frames<H> {
+    pub(crate) const fn new() -> Self {
         Frames(RefCell::new(Vec::new()))
     }
 }

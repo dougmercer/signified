@@ -24,6 +24,7 @@
 #![forbid(unsafe_code)]
 
 use std::fmt;
+use std::num::NonZeroU64;
 use std::rc::Rc;
 
 pub mod effect;
@@ -95,6 +96,19 @@ pub trait Host: Sized + 'static {
         })
     }
 
+    /// The next number of `counter`, which numbers queued effects and
+    /// flushes so that a stale queue entry is recognized. By default each
+    /// thread has its own; a host whose nodes can move between threads keeps
+    /// shared ones, so a number is never reused wherever it is taken.
+    fn next_number(counter: Counter) -> NonZeroU64 {
+        Self::with_runtime(|rt| {
+            let cell = &rt.numbers[counter as usize];
+            let number = NonZeroU64::MIN.saturating_add(cell.get());
+            cell.set(number.get());
+            number
+        })
+    }
+
     /// A copy of a dependency link's handle, taken out of the link before the
     /// dependency refreshes.
     fn clone_handle(cx: Self::Cx<'_>, handle: &Self::Handle) -> Self::Handle;
@@ -139,6 +153,15 @@ pub trait Host: Sized + 'static {
 
     /// Convert an error the engine itself detected.
     fn engine_error(error: EngineError) -> Self::Error;
+}
+
+/// What [`Host::next_number`] numbers.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Counter {
+    /// Each queuing of an effect.
+    Queued,
+    /// Each flush of the queue.
+    Flush,
 }
 
 /// An error the engine itself detects.

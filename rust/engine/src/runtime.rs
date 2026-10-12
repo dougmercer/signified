@@ -25,22 +25,35 @@ pub struct Runtime<H: Host> {
     /// The version clock, for hosts that keep one per thread (the default
     /// [`Host::clock`]).
     pub clock: Cell<u64>,
+    /// The last number of each [`Counter`](crate::Counter), for hosts that
+    /// keep them per thread (the default [`Host::next_number`]).
+    pub numbers: [Cell<u64>; 2],
     /// Nodes released while another release was freeing ([`release`]), and
     /// whether one further up this thread's stack is freeing them.
     pub(crate) freeing: RefCell<Vec<Rc<Node<H>>>>,
     pub(crate) draining: Cell<bool>,
 }
 
-impl<H: Host> Default for Runtime<H> {
-    fn default() -> Self {
+impl<H: Host> Runtime<H> {
+    /// Empty engine state. A `const fn`, so a host can declare its
+    /// thread-local as `const { Runtime::new() }`, which skips a lazy
+    /// initialization check on every access.
+    pub const fn new() -> Self {
         Runtime {
             wave_depth: Cell::new(0),
-            frames: Frames::default(),
-            queue: Queue::default(),
+            frames: Frames::new(),
+            queue: Queue::new(),
             clock: Cell::new(0),
+            numbers: [Cell::new(0), Cell::new(0)],
             freeing: RefCell::new(Vec::new()),
             draining: Cell::new(false),
         }
+    }
+}
+
+impl<H: Host> Default for Runtime<H> {
+    fn default() -> Self {
+        Runtime::new()
     }
 }
 

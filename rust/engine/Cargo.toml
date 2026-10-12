@@ -2,7 +2,6 @@
 name = "signified-engine"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.86"
 description = "The reactive graph engine behind signified, independent of any language binding"
 license = "BSD-3-Clause"
 repository = "https://github.com/dougmercer/signified"
