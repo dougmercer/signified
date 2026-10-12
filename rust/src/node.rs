@@ -10,6 +10,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyString;
 use pyo3::PyTraverseError;
 
+use crate::native::NativeKernel;
 use crate::observer_list::ObserverList;
 use crate::tracking;
 
@@ -74,6 +75,11 @@ pub(crate) enum Compute {
     },
     /// A `Binding`: read the holder signal, then the source it holds.
     Source(Py<PyAny>),
+    /// A kernel from another extension (see `native`) over resolved arguments.
+    Native {
+        kernel: Rc<NativeKernel>,
+        args: Vec<Py<PyAny>>,
+    },
 }
 
 impl Compute {
@@ -85,6 +91,10 @@ impl Compute {
                 args: args.iter().map(|arg| arg.clone_ref(py)).collect(),
             },
             Compute::Source(holder) => Compute::Source(holder.clone_ref(py)),
+            Compute::Native { kernel, args } => Compute::Native {
+                kernel: Rc::clone(kernel),
+                args: args.iter().map(|arg| arg.clone_ref(py)).collect(),
+            },
         }
     }
 
@@ -99,6 +109,12 @@ impl Compute {
                 Ok(())
             }
             Compute::Source(holder) => visit.call(holder),
+            Compute::Native { args, .. } => {
+                for arg in args {
+                    visit.call(arg)?;
+                }
+                Ok(())
+            }
         }
     }
 }

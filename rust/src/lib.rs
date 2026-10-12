@@ -25,6 +25,7 @@ mod effect;
 mod fields;
 mod hooks;
 mod invalidation;
+mod native;
 mod node;
 mod observer_list;
 mod refresh;
@@ -57,6 +58,9 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(computed::computed_call, m)?)?;
     m.add_function(wrap_pyfunction!(values::unref, m)?)?;
     m.add_function(wrap_pyfunction!(values::is_reactive, m)?)?;
+    native::add_capsule(m)?;
+    m.add_function(wrap_pyfunction!(native::_native_test_sum, m)?)?;
+    m.add_function(wrap_pyfunction!(native::_native_test_counts, m)?)?;
     Ok(())
 }
 

@@ -32,7 +32,7 @@ pub struct ComputedCore {
     pub(crate) node: Shared,
 }
 
-fn init_computed(
+pub(crate) fn init_computed(
     obj: &Bound<'_, PyAny>,
     node: &Node,
     compute: Compute,

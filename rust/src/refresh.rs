@@ -9,6 +9,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyTuple;
 
 use crate::hooks::{self, Hook};
+use crate::native;
 use crate::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
 use crate::runtime::{bump_version, clock};
 use crate::stack;
@@ -159,11 +160,21 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
         ));
     };
 
+    // A native kernel sees the current value, so it can report an unchanged one.
+    let current = match &compute {
+        Compute::Native { .. } if had_outcome && !had_error => node
+            .value
+            .borrow()
+            .as_ref()
+            .map(|value| value.clone_ref(py)),
+        _ => None,
+    };
+
     // 1) Evaluate with dependency tracking enabled.
     computed.computing.set(true);
     start_refresh(node);
     let depth = push_frame(Some(node.clone()));
-    let mut result = run_compute(py, &compute);
+    let mut result = run_compute(py, &compute, current.as_ref());
     if let Err(error) = end_frame(depth) {
         result = Err(error);
     }
@@ -278,8 +289,13 @@ fn restore(py: Python<'_>, node: &Node, point: &RestorePoint) -> PyResult<()> {
     Ok(())
 }
 
-fn run_compute(py: Python<'_>, compute: &Compute) -> PyResult<Py<PyAny>> {
+fn run_compute(
+    py: Python<'_>,
+    compute: &Compute,
+    current: Option<&Py<PyAny>>,
+) -> PyResult<Py<PyAny>> {
     match compute {
+        Compute::Native { kernel, args } => native::run(py, kernel, args, current),
         Compute::Function(f) => Ok(f.bind(py).call0()?.unbind()),
         Compute::Call { func, args } => {
             let func = func.bind(py);

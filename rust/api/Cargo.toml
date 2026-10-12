@@ -1,0 +1,9 @@
+[package]
+name = "signified-api"
+version = "0.1.0"
+edition = "2021"
+description = "The C API of signified's reactive engine, for extension modules that compute values natively."
+license = "BSD-3-Clause"
+publish = false
+
+[dependencies]
