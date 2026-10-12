@@ -92,6 +92,9 @@ signified_capi *api = PyCapsule_Import("signified._core._C_API", 0);
   interpreter is finalizing, when only reference counting is safe.
 - **Garbage collection.** Python objects a context owns are invisible to the cyclic garbage
   collector, so they must not refer back to the computed.
+- **Errors.** Kernels and release functions report errors by setting a Python exception; they
+  must not unwind (in Rust, catch panics: one leaving an `extern "C"` function aborts the
+  process).
 
 ## Compatibility
 

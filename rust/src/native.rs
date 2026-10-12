@@ -184,7 +184,9 @@ pub fn _native_test_sum<'py>(
     let api = unsafe { ffi::PyCapsule_Import(CAPSULE_NAME.as_ptr(), 0) } as *const CApi;
     let api = unsafe { api.as_ref() }.ok_or_else(|| PyErr::fetch(py))?;
     if !api.is_compatible() {
-        return Err(PyTypeError::new_err("the engine's C API is older than signified-api"));
+        return Err(PyTypeError::new_err(
+            "the engine's C API is older than signified-api",
+        ));
     }
     let kernel = Kernel {
         call: test_sum,

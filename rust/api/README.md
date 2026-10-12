@@ -45,7 +45,12 @@ complete extension with safe wrappers, tested in CI.
 | later releases     | 1           | 0.1                 |
 
 New API versions only append fields to `CApi`, so an extension built against version `n` works
-with every signified that exports version `n` or later. `CApi::is_compatible()` checks this.
+with every signified that exports version `n` or later. `CApi::is_compatible()` checks this. Each
+new API version is a new `0.x` release of this crate (an added public field is a breaking change
+for Cargo), while the ABI stays compatible.
+
+The minimum supported Rust version is 1.77. signified supports GIL builds of CPython 3.12 and
+later.
 
 ## License
 

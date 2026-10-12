@@ -72,6 +72,11 @@
 //! - **Garbage collection.** Python objects a context owns are invisible to the cyclic garbage
 //!   collector. They must not refer back to the computed, or to anything that refers to it, or
 //!   the cycle is never collected.
+//! - **Panics.** Kernels and release functions must not unwind: a panic leaving an `extern "C"`
+//!   function aborts the process. Catch panics (`std::panic::catch_unwind`) and set a Python
+//!   exception instead.
+//! - **Builds.** signified ships abi3 wheels for GIL builds of CPython 3.12 and later; the
+//!   free-threaded build is not supported yet.
 //!
 //! # Versioning
 //!
@@ -79,8 +84,12 @@
 //! describes. A new API version only appends fields to [`CApi`] and never changes or removes
 //! existing ones, so an extension built against version `n` works with every engine that
 //! exports version `n` or later; [`CApi::is_compatible`] checks exactly that. Changing an existing
-//! function would need a new capsule name. The crate follows semver separately: a release that
-//! appends fields is a minor release.
+//! function would need a new capsule name.
+//!
+//! The crate's version is separate from the API version. Adding a field to a struct whose fields
+//! are all public is a breaking change for Cargo, so each new API version is a new `0.x` release
+//! of this crate; the ABI stays compatible either way. The minimum supported Rust version is
+//! 1.77; raising it is not considered breaking.
 
 #![cfg_attr(not(test), no_std)]
 #![deny(missing_docs)]
@@ -102,6 +111,12 @@ pub type Object = *mut c_void;
 /// raises to its readers, as it would an exception from a Python function). Returning `previous`
 /// itself (a new reference to it) reports an unchanged value: the computed's version does not
 /// change, so values computed from it are not recomputed.
+///
+/// # Safety
+///
+/// The engine calls it with an attached thread state, a `ctx` it was given, `nargs` valid
+/// borrowed references at `args`, and `previous` valid or null. The function must not unwind
+/// and must not keep the borrowed references past the call without taking new ones.
 pub type KernelFn = unsafe extern "C" fn(
     ctx: *mut c_void,
     args: *const Object,
@@ -110,6 +125,11 @@ pub type KernelFn = unsafe extern "C" fn(
 ) -> Object;
 
 /// Frees a kernel's context. See the crate's [contract](crate#contract) for when it runs.
+///
+/// # Safety
+///
+/// The engine calls it once, with an attached thread state (possibly while the interpreter is
+/// finalizing), and the kernel's `ctx`. The function must not unwind.
 pub type ReleaseFn = unsafe extern "C" fn(ctx: *mut c_void);
 
 /// A native function and the data it was made with.
@@ -142,6 +162,11 @@ pub struct CApi {
     /// Takes ownership of `kernel.ctx` even when it fails. Returns a new reference, or null with
     /// an exception set (a `TypeError` if `cls` is not a `Computed` class or `args` is not a
     /// tuple). Available from version 1.
+    ///
+    /// # Safety
+    ///
+    /// Call it with an attached thread state, with `cls` and `args` valid borrowed references,
+    /// and a `kernel` whose functions follow [`KernelFn`] and [`ReleaseFn`].
     pub new_computed: unsafe extern "C" fn(cls: Object, kernel: Kernel, args: Object) -> Object,
 }
 
