@@ -1,5 +1,5 @@
 //! A node's observer list: the computeds and effects that read it, and the
-//! objects passed to its `_subscribe()`, in the order they subscribed.
+//! host's subscribers, in the order they subscribed.
 //!
 //! A removed entry leaves a vacant slot, so positions stay put during a
 //! notification walk. The list compacts once it gets sparse, and the slots
@@ -9,72 +9,81 @@ use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::rc::Weak;
 
-use pyo3::prelude::*;
-use pyo3::types::PyWeakrefReference;
-
 use crate::node::Node;
-use crate::runtime::with_rt;
+use crate::Host;
 
 /// Observer lists at least this long compact once half their slots are vacant.
 const COMPACT_MIN_LEN: usize = 16;
 
 /// An entry in a node's observer list.
-pub(crate) enum Observer {
+pub enum Observer<H: Host> {
     /// A removed entry, dropped when the list compacts.
     Vacant,
     /// A computed or effect; `link` is the position of its link to this node.
-    Consumer { node: Weak<Node>, link: u32 },
-    /// An object passed to `_subscribe()`, held weakly. `id` is its address,
-    /// compared before the weak reference is resolved.
-    Python {
-        reference: Py<PyWeakrefReference>,
+    Consumer { node: Weak<Node<H>>, link: u32 },
+    /// A host subscriber. `id` identifies it (the Python host uses the
+    /// object's address), and is compared before the subscriber is used.
+    Subscriber {
+        subscriber: H::Subscriber,
         id: usize,
     },
 }
 
-#[derive(Default)]
-pub(crate) struct ObserverList(RefCell<Slots>);
+pub struct ObserverList<H: Host>(RefCell<Slots<H>>);
 
-#[derive(Default)]
-struct Slots {
-    entries: Vec<Observer>,
+impl<H: Host> Default for ObserverList<H> {
+    fn default() -> Self {
+        ObserverList(RefCell::new(Slots {
+            entries: Vec::new(),
+            vacant: 0,
+            subscribers: None,
+        }))
+    }
+}
+
+struct Slots<H: Host> {
+    entries: Vec<Observer<H>>,
     vacant: u32,
-    /// The slot of each `_subscribe()` observer, by the observer's address;
-    /// created on first use. Boxed so nodes without such observers stay small.
+    /// The slot of each subscriber, by its id; created on first use. Boxed so
+    /// nodes without subscribers stay small.
     #[allow(clippy::box_collection)]
     subscribers: Option<Box<HashMap<usize, u32>>>,
 }
 
-impl ObserverList {
+fn weak_key<H: Host>(node: &Weak<Node<H>>) -> usize {
+    node.as_ptr() as *const () as usize
+}
+
+impl<H: Host> ObserverList<H> {
     /// Whether every slot is vacant.
-    pub(crate) fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         let slots = self.0.borrow();
         slots.entries.len() <= slots.vacant as usize
     }
 
     /// Slots in the list, vacant ones included.
-    pub(crate) fn slot_count(&self) -> usize {
+    pub fn slot_count(&self) -> usize {
         self.0.borrow().entries.len()
     }
 
-    /// The entry in `slot`. It borrows the list, so no Python code may run
+    /// The entry in `slot`. It borrows the list, so no host code may run
     /// while it is held.
-    pub(crate) fn get(&self, slot: usize) -> Option<Ref<'_, Observer>> {
+    pub fn get(&self, slot: usize) -> Option<Ref<'_, Observer<H>>> {
         Ref::filter_map(self.0.borrow(), |slots| slots.entries.get(slot)).ok()
     }
 
     /// Add a computed or effect whose link to this node is at `link`, and
     /// return its slot.
-    pub(crate) fn push_consumer(&self, node: Weak<Node>, link: u32) -> u32 {
+    pub(crate) fn push_consumer(&self, node: Weak<Node<H>>, link: u32) -> u32 {
         let mut slots = self.0.borrow_mut();
         slots.entries.push(Observer::Consumer { node, link });
         (slots.entries.len() - 1) as u32
     }
 
-    /// Add the `_subscribe()` observer at address `id`, held by `reference`.
-    pub(crate) fn push_subscriber(&self, reference: Py<PyWeakrefReference>, id: usize) {
+    /// Add the subscriber identified by `id`.
+    pub fn push_subscriber(&self, subscriber: H::Subscriber, id: usize) {
         let mut slots = self.0.borrow_mut();
-        slots.entries.push(Observer::Python { reference, id });
+        slots.entries.push(Observer::Subscriber { subscriber, id });
         let slot = (slots.entries.len() - 1) as u32;
         slots
             .subscribers
@@ -82,8 +91,8 @@ impl ObserverList {
             .insert(id, slot);
     }
 
-    /// The slot recorded for the `_subscribe()` observer at address `id`.
-    pub(crate) fn subscriber_slot(&self, id: usize) -> Option<u32> {
+    /// The slot recorded for the subscriber identified by `id`.
+    pub fn subscriber_slot(&self, id: usize) -> Option<u32> {
         self.0.borrow().subscribers.as_ref()?.get(&id).copied()
     }
 
@@ -101,7 +110,7 @@ impl ObserverList {
     pub(crate) fn remove_consumer(&self, slot: u32, key: usize) {
         let owned = matches!(
             self.0.borrow().entries.get(slot as usize),
-            Some(Observer::Consumer { node, .. }) if node.as_ptr() as usize == key
+            Some(Observer::Consumer { node, .. }) if weak_key(node) == key
         );
         if owned {
             drop(self.vacate(slot));
@@ -110,7 +119,7 @@ impl ObserverList {
 
     /// Remove the observer in `slot` without compacting, and return it so the
     /// caller drops it with nothing borrowed.
-    pub(crate) fn take(&self, slot: u32) -> Observer {
+    pub fn take(&self, slot: u32) -> Observer<H> {
         let mut slots = self.0.borrow_mut();
         let removed = match slots.entries.get_mut(slot as usize) {
             Some(entry) => std::mem::replace(entry, Observer::Vacant),
@@ -118,7 +127,7 @@ impl ObserverList {
         };
         match &removed {
             Observer::Vacant => return removed,
-            Observer::Python { id, .. } => {
+            Observer::Subscriber { id, .. } => {
                 if let Some(subscribers) = slots.subscribers.as_mut() {
                     if subscribers.get(id) == Some(&slot) {
                         subscribers.remove(id);
@@ -132,16 +141,16 @@ impl ObserverList {
     }
 
     /// Remove the observer in `slot`, compacting the list if it got sparse.
-    pub(crate) fn vacate(&self, slot: u32) -> Observer {
+    pub fn vacate(&self, slot: u32) -> Observer<H> {
         let removed = self.take(slot);
         self.compact_if_sparse();
         removed
     }
 
     /// Drop vacant slots once they make up half of a long list. Consumers and
-    /// `_subscribe()` observers whose entries move get their slots updated. Not
-    /// during a notification walk, which iterates the list by position.
-    pub(crate) fn compact_if_sparse(&self) {
+    /// subscribers whose entries move get their slots updated. Not during a
+    /// notification walk, which iterates the list by position.
+    pub fn compact_if_sparse(&self) {
         let mut slots = self.0.borrow_mut();
         let Slots {
             entries,
@@ -151,7 +160,7 @@ impl ObserverList {
         let len = entries.len();
         let all_vacant = *vacant as usize == len;
         let sparse = len >= COMPACT_MIN_LEN && *vacant as usize * 2 > len;
-        if !(all_vacant || sparse) || with_rt(|rt| rt.wave_depth.get() > 0) {
+        if !(all_vacant || sparse) || H::with_runtime(|rt| rt.wave_depth.get() > 0) {
             return;
         }
         let mut write = 0;
@@ -174,7 +183,7 @@ impl ObserverList {
                             }
                         }
                     }
-                    Observer::Python { id, .. } => {
+                    Observer::Subscriber { id, .. } => {
                         if let Some(slot) = subscribers.as_mut().and_then(|map| map.get_mut(id)) {
                             if *slot == read as u32 {
                                 *slot = write as u32;
@@ -186,7 +195,7 @@ impl ObserverList {
             }
             write += 1;
         }
-        // Only vacant entries are truncated, so nothing Python is dropped here.
+        // Only vacant entries are truncated, so no host value is dropped here.
         entries.truncate(write);
         *vacant = 0;
     }

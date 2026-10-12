@@ -19,7 +19,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString, PyTuple, PyType};
 use pyo3::PyTraverseError;
 
-use crate::node::Node;
+use crate::node::{Node, NodeExt};
 use crate::signal::{init_signal, read_signal, write_signal, SignalCore};
 use crate::tracking::is_tracking;
 

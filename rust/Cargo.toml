@@ -9,11 +9,12 @@ name = "_core"
 crate-type = ["cdylib"]
 
 [workspace]
-members = [".", "api"]
+members = [".", "api", "engine"]
 
 [dependencies]
 pyo3 = { version = "0.29.3", features = ["abi3-py312"] }
 signified-api = { path = "api" }
+signified-engine = { path = "engine" }
 stacker = "0.1"
 
 [target.'cfg(all(target_os = "linux", target_env = "musl"))'.dependencies]

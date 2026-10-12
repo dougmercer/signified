@@ -7,10 +7,10 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyTuple};
 use pyo3::PyTraverseError;
 
-use crate::node::{Node, Role, Shared};
-use crate::refresh;
-use crate::scheduler;
-use crate::tracking;
+use signified_engine::refresh::{dependencies_changed, invalidated_since_read};
+use signified_engine::{scheduler, tracking, Role};
+
+use crate::node::{Node, NodeExt, PyEffect, Shared};
 
 /// Base class of `signified.Effect`: a callback re-run when what it read changes.
 #[pyclass(subclass, weakref, frozen, module = "signified._core", name = "Effect")]
@@ -24,36 +24,36 @@ impl EffectCore {
     #[pyo3(signature = (*_args, **_kwargs))]
     fn new(_args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>) -> Self {
         EffectCore {
-            node: Shared::new(Role::Effect(Default::default())),
+            node: Shared::new(Role::effect(PyEffect::default())),
         }
     }
 
     fn __init__(slf: &Bound<'_, Self>, r#fn: Py<PyAny>) -> PyResult<()> {
         let node = &slf.get().node;
         let state = node.effect_state();
-        let old = state.function.replace(Some(r#fn));
+        let old = node.effect_data().function.replace(Some(r#fn));
         drop(old);
         state.active.set(true);
         state.has_run.set(false);
-        scheduler::schedule(slf.py(), node)
+        scheduler::schedule(slf.py(), &node.0)
     }
 
     /// Schedule a run after dependency invalidation has finished.
     fn update(&self, py: Python<'_>) -> PyResult<()> {
-        scheduler::schedule(py, &self.node)
+        scheduler::schedule(py, &self.node.0)
     }
 
     /// Stop this effect, including any pending run. Safe to repeat.
     fn dispose(&self) {
         self.node.effect_state().active.set(false);
-        scheduler::discard(&self.node);
-        tracking::detach_all_deps(&self.node);
+        scheduler::discard(&self.node.0);
+        tracking::detach_all_deps(&self.node.0);
     }
 
     /// The reactive values the last run read, in the order they were first read.
     #[getter]
     fn _deps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyTuple>> {
-        tracking::dependency_handles(py, &self.node)
+        crate::tracking::dependency_handles(py, &self.node)
     }
 
     #[getter]
@@ -67,7 +67,7 @@ impl EffectCore {
 
     fn __clear__(&self) {
         self.node.effect_state().active.set(false);
-        scheduler::discard(&self.node);
+        scheduler::discard(&self.node.0);
         self.node.clear();
     }
 }
@@ -75,7 +75,7 @@ impl EffectCore {
 /// Run one effect if its dependencies changed since its last run.
 pub(crate) fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
     let state = effect.effect_state();
-    if state.has_run.get() && !refresh::dependencies_changed(py, effect)? {
+    if state.has_run.get() && !dependencies_changed(py, effect)? {
         return Ok(());
     }
     // Refreshing a dependency can dispose this effect through user code.
@@ -84,6 +84,7 @@ pub(crate) fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
     }
     state.has_run.set(true);
     let function = state
+        .data
         .function
         .borrow()
         .as_ref()
@@ -94,7 +95,7 @@ pub(crate) fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
     tracking::start_refresh(effect);
     let depth = tracking::push_frame(Some(effect.clone()));
     let mut result = function.bind(py).call0().map(drop);
-    if let Err(error) = tracking::end_frame(depth) {
+    if let Err(error) = crate::tracking::end_frame(depth) {
         result = Err(error);
     }
     if state.active.get() {
@@ -108,7 +109,7 @@ pub(crate) fn run(py: Python<'_>, effect: &Rc<Node>) -> PyResult<()> {
     result?;
     // Also catches writes after a read during the first run, before the
     // subscriptions existed.
-    if state.active.get() && refresh::invalidated_since_read(effect) {
+    if state.active.get() && invalidated_since_read(effect) {
         scheduler::schedule(py, effect)?;
     }
     Ok(())

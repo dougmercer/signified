@@ -10,12 +10,13 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyTuple, PyType};
 use pyo3::PyTraverseError;
 
+use signified_engine::{invalidation, Host, Role, State};
+
 use crate::class_getitem;
 use crate::hooks::{self, Hook};
-use crate::invalidation;
-use crate::node::{Compute, Node, RestorePoint, Role, Shared, State};
+use crate::host::PyHost;
+use crate::node::{Compute, Node, NodeExt, PyComputed, RestorePoint, Shared};
 use crate::refresh;
-use crate::runtime;
 use crate::subscribe;
 use crate::tracking;
 use crate::values;
@@ -39,7 +40,7 @@ pub(crate) fn init_computed(
     equal: Option<Py<PyAny>>,
 ) -> PyResult<()> {
     let py = obj.py();
-    let old = node.computed_state().compute.replace(Some(compute));
+    let old = node.computed_data().compute.replace(Some(compute));
     drop(old);
     node.set_equal(py, equal.unwrap_or_else(|| py.None()));
     hooks::call(py, Hook::Created, obj)
@@ -51,7 +52,7 @@ impl ComputedCore {
     #[pyo3(signature = (*_args, **_kwargs))]
     fn new(_args: &Bound<'_, PyTuple>, _kwargs: Option<&Bound<'_, PyDict>>) -> Self {
         ComputedCore {
-            node: Shared::new(Role::Computed(Default::default())),
+            node: Shared::new(Role::computed(PyComputed::default())),
         }
     }
 
@@ -134,7 +135,7 @@ impl ComputedCore {
     /// Mark this computed stale and notify its observers.
     fn update(&self, py: Python<'_>) -> PyResult<()> {
         if invalidation::invalidate(self.node.computed_state(), false) {
-            invalidation::notify(py, &self.node)?;
+            invalidation::notify(py, &self.node.0)?;
         }
         Ok(())
     }
@@ -145,13 +146,13 @@ impl ComputedCore {
         if !invalidation::invalidate(self.node.computed_state(), true) {
             return Ok(());
         }
-        runtime::bump_clock();
-        invalidation::notify(py, &self.node)
+        PyHost::bump_clock();
+        invalidation::notify(py, &self.node.0)
     }
 
     /// Notify all observers without marking a change.
     fn _notify(&self, py: Python<'_>) -> PyResult<()> {
-        invalidation::notify(py, &self.node)
+        invalidation::notify(py, &self.node.0)
     }
 
     /// Subscribe an observer after evaluating, so the observer sees every
@@ -175,7 +176,7 @@ impl ComputedCore {
     /// Whether the current outcome is a fresh value a `Binding` can return to.
     fn _restorable(&self) -> bool {
         let computed = self.node.computed_state();
-        computed.state.get() == State::Fresh && computed.error.borrow().is_none()
+        computed.state.get() == State::Fresh && computed.data.error.borrow().is_none()
     }
 
     /// After `Binding.at()`: return to `value` at `version` on the next
@@ -196,7 +197,7 @@ impl ComputedCore {
             source_node: values::node_of(source)?,
             source_version,
         };
-        let old = self.node.computed_state().restore.replace(Some(point));
+        let old = self.node.computed_data().restore.replace(Some(point));
         drop(old);
         Ok(())
     }
@@ -243,7 +244,7 @@ pub(crate) fn read_computed<'py>(
     // Register the read even when the refresh raises, so the reader retries.
     tracking::track_read(node, handle);
     refreshed?;
-    let cached = node.computed_state().error.borrow().as_ref().map(|cached| {
+    let cached = node.computed_data().error.borrow().as_ref().map(|cached| {
         (
             cached.exception.clone_ref(py),
             cached.traceback.as_ref().map(|tb| tb.clone_ref(py)),

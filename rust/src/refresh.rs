@@ -1,19 +1,18 @@
-//! Pull: bring a computed up to date when it is read. A stale computed first
-//! brings its computed dependencies up to date and compares versions, and
-//! runs its function again only if one of them changed.
+//! Evaluating a Python computed (the host's half of a refresh; the engine
+//! decides when one is needed), and the recursion guard around each nested
+//! refresh.
 
 use std::rc::Rc;
 
 use pyo3::exceptions::{PyException, PyRecursionError, PyRuntimeError};
 use pyo3::prelude::*;
 use pyo3::types::PyTuple;
+use signified_engine::refresh::{check_cycle, evaluate, must_refresh, settle};
+use signified_engine::State;
 
 use crate::hooks::{self, Hook};
 use crate::native;
-use crate::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
-use crate::runtime::{bump_version, clock};
-use crate::stack;
-use crate::tracking::{commit_refresh, end_frame, is_evaluating, push_frame, start_refresh};
+use crate::node::{CachedError, Compute, Node, NodeExt, RestorePoint};
 use crate::values::{call_equal, has_changed, unref};
 
 /// Native stack to keep free for the Python code a refresh may call.
@@ -39,11 +38,11 @@ fn too_deep() -> PyErr {
 /// `RecursionError` instead of overflowing the native stack. Python 3.12 and
 /// 3.13 count calls rather than measuring the stack, and worker threads have
 /// small stacks, so the remaining stack is checked directly as well.
-struct RecursionGuard;
+pub(crate) struct RecursionGuard;
 
 impl RecursionGuard {
-    fn enter(py: Python<'_>) -> PyResult<RecursionGuard> {
-        if stack::remaining().is_some_and(|free| free < MIN_FREE_STACK) {
+    pub(crate) fn enter(py: Python<'_>) -> PyResult<RecursionGuard> {
+        if crate::stack::remaining().is_some_and(|free| free < MIN_FREE_STACK) {
             return Err(too_deep());
         }
         #[cfg(target_os = "emscripten")]
@@ -70,86 +69,25 @@ impl Drop for RecursionGuard {
     }
 }
 
+/// Bring a computed up to date (see the engine's `ensure_uptodate`).
+#[inline]
 pub(crate) fn ensure_uptodate(
     py: Python<'_>,
     node: &Rc<Node>,
     handle: &Bound<'_, PyAny>,
 ) -> PyResult<()> {
+    signified_engine::refresh::ensure_uptodate(py, node, handle.as_unbound())
+}
+
+pub(crate) fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
     let computed = node.computed_state();
-    if computed.state.get() == State::Fresh {
-        return Ok(());
-    }
-    let _guard = RecursionGuard::enter(py)?;
-    // Any refresh attempt means observers must be told about the next change.
-    computed.notified.set(false);
-    let state = computed.state.get();
-    // The graph has not changed since this node was last current.
-    if state == State::Stale && computed.clock_seen.get() == clock() {
-        computed.state.set(State::Fresh);
-        return Ok(());
-    }
-    if state == State::Stale && !dependencies_changed(py, node)? {
-        computed.state.set(State::Fresh);
-        computed.clock_seen.set(clock());
-        return Ok(());
-    }
-    refresh(py, node, handle)
-}
-
-/// Bring computed dependencies up to date, then report whether any
-/// dependency's version differs from the one this consumer last saw.
-pub(crate) fn dependencies_changed(py: Python<'_>, node: &Rc<Node>) -> PyResult<bool> {
-    let deps = &node.reader_state().deps;
-    let mut position = 0;
-    loop {
-        // Signals are compared in place; a computed may run Python code to
-        // refresh, so it is copied out first.
-        let computed = {
-            let deps = deps.borrow();
-            let Some(link) = deps.get(position) else {
-                return Ok(false);
-            };
-            if !matches!(link.node.role, Role::Computed(_)) {
-                if link.version != link.node.version.get() {
-                    return Ok(true);
-                }
-                position += 1;
-                continue;
-            }
-            (link.node.clone(), link.handle.clone_ref(py), link.version)
-        };
-        let (dep, handle, seen_version) = computed;
-        ensure_uptodate(py, &dep, handle.bind(py))?;
-        if seen_version != dep.version.get() {
-            return Ok(true);
-        }
-        position += 1;
-    }
-}
-
-/// Effects only: a dependency changed after this run read it.
-pub(crate) fn invalidated_since_read(node: &Node) -> bool {
-    node.reader_state().deps.borrow().iter().any(|link| {
-        link.version != link.node.version.get()
-            || matches!(&link.node.role, Role::Computed(computed) if computed.notified.get())
-    })
-}
-
-fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
-    let computed = node.computed_state();
-    let restore_point = computed.restore.take();
-    if computed.computing.get() {
-        // On this thread it is a cycle; otherwise another thread is running it.
-        return Err(PyRuntimeError::new_err(if is_evaluating(node) {
-            "Cycle detected while evaluating Computed"
-        } else {
-            "Computed is being evaluated on another thread"
-        }));
-    }
+    let data = &computed.data;
+    let restore_point = data.restore.take();
+    check_cycle(node)?;
     let forced = computed.state.get() == State::MustRefresh;
     let had_outcome = computed.state.get() != State::Uninitialized;
-    let had_error = computed.error.borrow().is_some();
-    let compute = computed
+    let had_error = data.error.borrow().is_some();
+    let compute = data
         .compute
         .borrow()
         .as_ref()
@@ -163,6 +101,7 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     // A native kernel sees the current value, so it can report an unchanged one.
     let current = match &compute {
         Compute::Native { .. } if had_outcome && !had_error => node
+            .payload
             .value
             .borrow()
             .as_ref()
@@ -170,34 +109,28 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
         _ => None,
     };
 
-    // 1) Evaluate with dependency tracking enabled.
-    computed.computing.set(true);
-    start_refresh(node);
-    let depth = push_frame(Some(node.clone()));
-    let mut result = run_compute(py, &compute, current.as_ref());
-    if let Err(error) = end_frame(depth) {
-        result = Err(error);
-    }
-    computed.computing.set(false);
-    // 2) Subscribe to what this run read, even if it raised.
-    commit_refresh(node);
+    // 1) Evaluate with dependency tracking enabled, and 2) subscribe to what
+    // this run read, even if it raised.
+    let result = evaluate(node, || run_compute(py, &compute, current.as_ref()));
     drop(compute);
 
     let (mut next_value, mut next_error) = match result {
         Ok(value) => (Some(value), None),
         Err(error) if error.is_instance_of::<PyException>(py) => (None, Some(error)),
-        Err(error) => return Err(escalate(computed, error)),
+        Err(error) => return Err(escalate(node, error)),
     };
 
     // 3) A custom equality can declare a new value unchanged, which keeps the
     // previous object. Its reads are untracked and its errors are cached.
     let previous = node
+        .payload
         .value
         .borrow()
         .as_ref()
         .map(|value| value.clone_ref(py));
     if had_outcome && !had_error {
         let equal = node
+            .payload
             .equal
             .borrow()
             .as_ref()
@@ -211,7 +144,7 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
                         next_value = None;
                         next_error = Some(error);
                     }
-                    Err(error) => return Err(escalate(computed, error)),
+                    Err(error) => return Err(escalate(node, error)),
                 }
             }
         }
@@ -234,17 +167,12 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
         exception: error.into_value(py).into_any(),
     });
     let has_error = cached.is_some();
-    let old_error = computed.error.replace(cached);
-    computed.state.set(State::Fresh);
+    let old_error = data.error.replace(cached);
     let mut old_value = None;
     if changed {
-        old_value = node.value.replace(next_value);
-        computed.clock_seen.set(bump_version(node));
-    } else if forced {
-        computed.clock_seen.set(bump_version(node));
-    } else {
-        computed.clock_seen.set(clock());
+        old_value = node.payload.value.replace(next_value);
     }
+    settle(node, changed || forced);
     drop((old_value, old_error, previous));
     if changed || forced {
         hooks::call(py, Hook::Updated, handle)?;
@@ -262,16 +190,15 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
 
 /// A control-flow exception aborts evaluation instead of being cached; the
 /// next read must retry even though dependencies were committed.
-fn escalate(computed: &ComputedState, error: PyErr) -> PyErr {
-    if computed.state.get() < State::MustRefresh {
-        computed.state.set(State::MustRefresh);
-    }
+fn escalate(node: &Node, error: PyErr) -> PyErr {
+    must_refresh(node);
     error
 }
 
 fn restore(py: Python<'_>, node: &Node, point: &RestorePoint) -> PyResult<()> {
     let same_source = point
         .holder
+        .payload
         .value
         .borrow()
         .as_ref()
@@ -283,7 +210,7 @@ fn restore(py: Python<'_>, node: &Node, point: &RestorePoint) -> PyResult<()> {
     if has_changed(point.value.bind(py), &current)? {
         return Ok(());
     }
-    let old = node.value.replace(Some(point.value.clone_ref(py)));
+    let old = node.payload.value.replace(Some(point.value.clone_ref(py)));
     node.version.set(point.version);
     drop(old);
     Ok(())

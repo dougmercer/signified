@@ -174,8 +174,13 @@ dependencies = [
  "libc",
  "pyo3",
  "signified-api",
+ "signified-engine",
  "stacker",
 ]
+
+[[package]]
+name = "signified-engine"
+version = "0.1.0"
 
 [[package]]
 name = "stacker"

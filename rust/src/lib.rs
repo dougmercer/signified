@@ -1,8 +1,9 @@
-//! `signified._core`: the reactive graph engine behind `signified.Signal`,
-//! `Computed`, `Binding` and `Effect`.
+//! `signified._core`: the Python classes behind `signified.Signal`,
+//! `Computed`, `Binding` and `Effect`, over the `signified-engine` graph.
 //!
-//! Push invalidation, pull refresh with version checks, and mark-and-sweep
-//! dependency tracking. Python sees base classes; the public classes in
+//! The engine does push invalidation, pull refresh with version checks, and
+//! mark-and-sweep dependency tracking; `host` makes Python objects its values,
+//! handles and errors. Python sees base classes; the public classes in
 //! `signified/_reactive.py` subclass them together with the operator mixin.
 //!
 //! Rules that keep this sound while Python code runs inside the engine:
@@ -11,12 +12,12 @@
 //!   release the borrow, then call, allocate or drop. Allocating can run the
 //!   garbage collector, and dropping can run `__del__` and weakref callbacks.
 //! - `__traverse__` only uses `try_borrow`; a busy cell is skipped.
-//! - Each thread has its own tracking frames, queue and walk depth
-//!   (`runtime`); the version clock and plugin hooks are shared. State is only
-//!   touched while attached to an interpreter that holds the GIL, which
-//!   serializes all access; see the `Send`/`Sync` impls in `node`. The module
-//!   declares `gil_used = true`, so a free-threaded interpreter re-enables the
-//!   GIL when it is imported.
+//! - Each thread has its own tracking frames, queue and walk depth (the
+//!   engine's runtime); the version clock and plugin hooks are shared. State
+//!   is only touched while attached to an interpreter that holds the GIL,
+//!   which serializes all access; see the `Send`/`Sync` impls in `node`. The
+//!   module declares `gil_used = true`, so a free-threaded interpreter
+//!   re-enables the GIL when it is imported.
 //! - Every nested refresh holds a level of Python's recursion budget and
 //!   checks native stack headroom, so deep graphs raise `RecursionError`.
 
@@ -24,12 +25,10 @@ mod computed;
 mod effect;
 mod fields;
 mod hooks;
-mod invalidation;
+mod host;
 mod native;
 mod node;
-mod observer_list;
 mod refresh;
-mod runtime;
 mod scheduler;
 mod signal;
 mod stack;
