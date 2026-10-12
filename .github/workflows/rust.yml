@@ -12,6 +12,62 @@ jobs:
         with:
           components: rustfmt, clippy
       - name: Check formatting
-        run: cargo fmt --check
+        run: cargo fmt --all --check
       - name: Run Clippy
-        run: cargo clippy --release -- -D warnings
+        run: cargo clippy --workspace --all-targets --release -- -D warnings
+
+  # The signified-api crate (rust/api), published to crates.io by publish-crate.yml.
+  api:
+    name: signified-api
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test
+        run: cargo test -p signified-api
+      - name: Build the docs as docs.rs would
+        run: cargo doc -p signified-api --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - name: Package
+        run: cargo publish -p signified-api --dry-run
+
+  # The crate's rust-version, checked on the packaged crate outside the workspace (whose
+  # lockfile format is newer than that toolchain).
+  api-msrv:
+    name: signified-api on Rust 1.77
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Package
+        working-directory: rust
+        run: cargo package -p signified-api --no-verify
+      - uses: dtolnay/rust-toolchain@1.77
+      - name: Check and test the packaged crate
+        run: |
+          tar -xzf rust/target/package/signified-api-*.crate -C "$RUNNER_TEMP"
+          cd "$RUNNER_TEMP"/signified-api-*/
+          rm -f Cargo.lock
+          cargo +1.77 test
+
+  # An extension built separately from signified that uses the C API through the capsule.
+  api-example:
+    name: signified-api example extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install signified
+        run: uv sync --group test
+      - name: Build the example
+        run: uv pip install --no-deps ./rust/api-example
+      - name: Test the example
+        run: uv run --no-sync pytest rust/api-example/tests -o addopts="" -p no:cacheprovider

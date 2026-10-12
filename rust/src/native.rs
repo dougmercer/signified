@@ -179,6 +179,13 @@ pub fn _native_test_sum<'py>(
     args: &Bound<'py, PyTuple>,
 ) -> PyResult<Bound<'py, PyAny>> {
     let py = cls.py();
+    // Through the capsule, as another extension gets the table.
+    // SAFETY: attached; the capsule's pointer is the static table.
+    let api = unsafe { ffi::PyCapsule_Import(CAPSULE_NAME.as_ptr(), 0) } as *const CApi;
+    let api = unsafe { api.as_ref() }.ok_or_else(|| PyErr::fetch(py))?;
+    if !api.is_compatible() {
+        return Err(PyTypeError::new_err("the engine's C API is older than signified-api"));
+    }
     let kernel = Kernel {
         call: test_sum,
         ctx: Box::into_raw(Box::new(0u8)) as *mut c_void,
@@ -186,7 +193,7 @@ pub fn _native_test_sum<'py>(
     };
     // SAFETY: called with the GIL held, with live references.
     let obj =
-        unsafe { (API.new_computed)(cls.as_ptr() as Object, kernel, args.as_ptr() as Object) };
+        unsafe { (api.new_computed)(cls.as_ptr() as Object, kernel, args.as_ptr() as Object) };
     unsafe { Bound::from_owned_ptr_or_err(py, obj as *mut ffi::PyObject) }
 }
 

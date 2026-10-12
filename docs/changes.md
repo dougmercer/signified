@@ -2,6 +2,16 @@
 
 This page summarizes notable changes across releases.
 
+## Unreleased
+
+### Added
+
+- Compiled extensions can create `Computed` values evaluated by native code: `signified._core`
+  exports a C API in the `signified._core._C_API` capsule, and the new
+  [`signified-api`](https://crates.io/crates/signified-api) Rust crate describes it. Signified
+  tracks and refreshes such a computed like any other, but evaluating it runs no Python. See
+  [Native kernels (C API)](native-api.md).
+
 ## 0.7.0
 
 ### Breaking changes
