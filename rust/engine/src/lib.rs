@@ -122,6 +122,13 @@ pub trait Host: Sized + 'static {
 
     /// Evaluate a stale computed whose dependencies changed, and record the
     /// outcome; see [`refresh`] for the steps the engine provides.
+    ///
+    /// A refresh that reads a stale computed refreshes it in a nested call
+    /// (the read inlines [`refresh::ensure_uptodate`], which calls this), so
+    /// each level of a deep graph costs the stack frames from this method to
+    /// the read. Keep that path short (inline what it calls on the way):
+    /// once nested calls overflow the CPU's return-address predictor, every
+    /// return on the way back up stalls instruction fetch.
     fn refresh(
         cx: Self::Cx<'_>,
         node: &Rc<Node<Self>>,

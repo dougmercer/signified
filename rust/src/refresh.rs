@@ -79,6 +79,14 @@ pub(crate) fn ensure_uptodate(
     signified_engine::refresh::ensure_uptodate(py, node, handle.as_unbound())
 }
 
+/// Evaluate a stale computed (the Python host's `Host::refresh`).
+///
+/// A refresh that reads a stale computed refreshes it in a nested call, so a
+/// deep graph recurses `read_computed` -> this -> `unref` -> `read_computed`:
+/// three stack frames per level, with the engine's `ensure_uptodate` inlined
+/// into `read_computed` and `run_compute` inlined here. Keep it at three: at
+/// four, a graph ten levels deep overflowed the CPU's return-address
+/// predictor and refreshed 9% slower on an M1.
 pub(crate) fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
     let computed = node.computed_state();
     let data = &computed.data;
@@ -216,6 +224,8 @@ fn restore(py: Python<'_>, node: &Node, point: &RestorePoint) -> PyResult<()> {
     Ok(())
 }
 
+/// Inlined into `refresh` to keep nested refreshes shallow; see there.
+#[inline(always)]
 fn run_compute(
     py: Python<'_>,
     compute: &Compute,

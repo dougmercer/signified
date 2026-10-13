@@ -16,6 +16,13 @@ use crate::runtime::bump_version;
 use crate::tracking::{self, is_evaluating};
 use crate::{EngineError, Host};
 
+/// Bring a computed up to date: nothing if it is fresh, a version check if
+/// it is stale, and [`Host::refresh`] if a dependency changed.
+///
+/// Always inlined, so it adds no stack frame to the recursion through it: a
+/// read refreshes in the reader's frame, and [`dependencies_changed`] checks
+/// a chain one frame per level. See [`Host::refresh`] for why that matters.
+#[inline(always)]
 pub fn ensure_uptodate<H: Host>(
     cx: H::Cx<'_>,
     node: &Rc<Node<H>>,
