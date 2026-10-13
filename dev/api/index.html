@@ -10130,8 +10130,8 @@ one; it never writes into the previously stored signal.</p>
 only those. Names are required for a class that is not a dataclass. Both
 slotted and dict-based classes work; frozen dataclasses are rejected.
 Copies and pickles store plain values and get their own tracking.</p>
-<p>Reads outside a computation skip the graph, but still cost a Python
-descriptor call. In-place mutation of a stored object is not observed.</p>
+<p>Reads outside a computation skip the graph, but still cost a descriptor
+call. In-place mutation of a stored object is not observed.</p>
 
 
 <details class="example" open>
