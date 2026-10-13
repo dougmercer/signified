@@ -15,11 +15,8 @@ permissions:
 
 jobs:
   codspeed:
-    name: Run fast benchmarks
+    name: Run benchmarks
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
@@ -31,11 +28,12 @@ jobs:
       - name: Install dependencies
         run: uv sync --group test --group dev
 
-      - name: Show selected benchmark tier
-        run: echo "Running fast CodSpeed benchmarks"
-
-      - name: Run fast benchmarks
+      # One process for all benchmarks. Each is measured on a single call,
+      # and the first ones in a process also pay the harness's first-use
+      # costs; splitting across jobs made adding a benchmark move others in
+      # and out of those first places.
+      - name: Run benchmarks
         uses: CodSpeedHQ/action@v4
         with:
           mode: simulation
-          run: uv run pytest tests/test_benchmarks.py --codspeed -o "addopts=" --group=${{ matrix.shard }} --splits=4
+          run: uv run pytest tests/test_benchmarks.py --codspeed -o "addopts="
