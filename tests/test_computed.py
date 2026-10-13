@@ -458,6 +458,16 @@ def test_computed_equal_is_not_called_for_first_value_or_identical_results():
     assert comparisons == []
 
 
+def test_computed_equal_is_not_called_for_equal_builtin_scalars():
+    comparisons = []
+    source = Signal(10_000)
+    half = Computed(lambda: source.value // 2, equal=lambda a, b: comparisons.append((a, b)) or False)
+    first = half.value
+    source.value = 10_001
+    assert half.value is first
+    assert comparisons == []
+
+
 def test_computed_equal_error_is_cached_then_recovers():
     source = Signal(1)
     fail = Signal(True)
