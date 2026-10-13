@@ -42,15 +42,15 @@ differences were 1% (median) to 4%.
 
 | µs per operation            | chain  | fan   | layers | cutoff | create |
 |-----------------------------|-------:|------:|-------:|-------:|-------:|
-| signified, Rust API         | 78     | 67    | 95     | 43     | 220    |
+| signified, Rust API         | 74     | 66    | 71     | 42     | 205    |
 | sycamore-reactive 0.9.3     | 48     | 500   | 82     | 16     | 105    |
 | salsa 0.28.5                | 231    | 198   | 250    | 77     | 348    |
-| signified, Python functions | 187    | 204   | 235    | 41     | 1,806  |
-| signified, native kernels   | 266    | 300   | 302    | 42     | 1,199  |
+| signified, Python functions | 182    | 205   | 212    | 37     | 1,833  |
+| signified, native kernels   | 257    | 291   | 296    | 37     | 1,192  |
 | reactive_graph 0.2.15       | 38,138 | 1,787 | 15,931 | 154    | 458    |
 
 - signified's Rust API runs the same engine as the Python library, with Rust values and closures:
-  about 80 ns per node on a chain, within 2x of sycamore on deep graphs and faster on wide ones.
+  about 75 ns per node on a chain, within 2x of sycamore on deep graphs and faster on wide ones.
   The gap to the Python rows (about 110 ns per node) is the cost of Python objects and calls, not
   of the graph algorithm.
 - From Python, signified's graph bookkeeping costs about 175 ns per node: a chain of identity
