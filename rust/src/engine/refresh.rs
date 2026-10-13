@@ -114,11 +114,7 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     let forced = computed.state.get() == State::MustRefresh;
     let had_outcome = computed.state.get() != State::Uninitialized;
     let had_error = computed.error.borrow().is_some();
-    let compute = computed
-        .compute
-        .borrow()
-        .as_ref()
-        .map(|compute| compute.clone_ref(py));
+    let compute = computed.compute.borrow().clone();
     let Some(compute) = compute else {
         return Err(PyRuntimeError::new_err(
             "Computed has no function: it was cleared by the garbage collector or never initialized",
@@ -126,7 +122,7 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     };
 
     // A native kernel sees the current value, so it can report an unchanged one.
-    let current = match &compute {
+    let current = match &*compute {
         Compute::Native { .. } if had_outcome && !had_error => node
             .value
             .borrow()

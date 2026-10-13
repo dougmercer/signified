@@ -37,7 +37,10 @@ pub(crate) fn init_computed(
     equal: Option<Py<PyAny>>,
 ) -> PyResult<()> {
     let py = obj.py();
-    let old = node.computed_state().compute.replace(Some(compute));
+    let old = node
+        .computed_state()
+        .compute
+        .replace(Some(Rc::new(compute)));
     drop(old);
     node.set_equal(py, equal.unwrap_or_else(|| py.None()));
     hooks::call(py, Hook::Created, obj)
