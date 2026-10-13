@@ -14,6 +14,9 @@
 //! with `signified._core` anyway) and depends on no Python binding crate, so it works with pyo3,
 //! raw `pyo3-ffi` or C. Signified releases after 0.7.0 export version 1 of the API.
 //!
+//! The API is internal and undocumented outside this crate, which is not published: an extension
+//! that uses it copies this file. key3d vendors it as `rust/src/signified_api.rs`.
+//!
 //! # Getting the API
 //!
 //! Import the capsule once, with an attached thread state, and check that the engine provides
@@ -86,10 +89,9 @@
 //! exports version `n` or later; [`CApi::is_compatible`] checks exactly that. Changing an existing
 //! function would need a new capsule name.
 //!
-//! The crate's version is separate from the API version. Adding a field to a struct whose fields
-//! are all public is a breaking change for Cargo, so each new API version is a new `0.x` release
-//! of this crate; the ABI stays compatible either way. The minimum supported Rust version is
-//! 1.77; raising it is not considered breaking.
+//! Copies of this file elsewhere (key3d's `rust/src/signified_api.rs`) rely on the layout that
+//! the tests below pin. Keep changes append-only, bump [`VERSION`] when appending, and update the
+//! copies.
 
 #![cfg_attr(not(test), no_std)]
 #![deny(missing_docs)]

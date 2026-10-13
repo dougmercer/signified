@@ -35,7 +35,7 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
 
-  # The signified-api crate (rust/api), published to crates.io by publish-crate.yml.
+  # The signified-api crate (rust/api): the C API's declarations, which key3d vendors.
   api:
     name: signified-api
     runs-on: ubuntu-latest
@@ -47,31 +47,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Test
         run: cargo test -p signified-api
-      - name: Build the docs as docs.rs would
+      - name: Build the docs
         run: cargo doc -p signified-api --no-deps
         env:
           RUSTDOCFLAGS: -D warnings
-      - name: Package
-        run: cargo publish -p signified-api --dry-run
-
-  # The crate's rust-version, checked on the packaged crate outside the workspace (whose
-  # lockfile format is newer than that toolchain).
-  api-msrv:
-    name: signified-api on Rust 1.77
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Package
-        working-directory: rust
-        run: cargo package -p signified-api --no-verify
-      - uses: dtolnay/rust-toolchain@1.77
-      - name: Check and test the packaged crate
-        run: |
-          tar -xzf rust/target/package/signified-api-*.crate -C "$RUNNER_TEMP"
-          cd "$RUNNER_TEMP"/signified-api-*/
-          rm -f Cargo.lock
-          cargo +1.77 test
 
   # An extension built separately from signified that uses the C API through the capsule.
   api-example:

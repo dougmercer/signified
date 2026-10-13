@@ -138,7 +138,6 @@ nav:
       - Examples: examples.md
       - Resolving nested values: resolution.md
       - Plugins: plugins.md
-      - Native kernels (C API): native-api.md
       - Type checkers: type-checkers.md
   - Reference:
       - API reference: api.md
