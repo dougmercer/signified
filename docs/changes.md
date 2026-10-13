@@ -2,6 +2,36 @@
 
 This page summarizes notable changes across releases.
 
+## 0.7.1
+
+### Fixes
+
+- A plugin's `updated` hook that raises no longer leaves dependents stale. The
+  change is still sent, and effects still run, before the hook's error
+  propagates. Previously, when the hook raised during an assignment,
+  `Signal.update()`, or the end of a `Signal.at()` block, the signal kept its
+  new value but the calculations that read it kept their old results. If an
+  effect also raises, its error propagates with the hook's error as its
+  `__context__`.
+- `copy.copy()` of a `tracked_fields` instance that keeps its fields in the
+  instance dict now holds the values it was copied with. Previously, once a
+  calculation had read a field of the original, the copy could pick up later
+  assignments to the original. For such classes, `tracked_fields` now wraps
+  `__getstate__` so the state it returns holds plain values.
+- A `Computed` with `equal=` no longer calls `equal` for a new result that the
+  built-in rules already count as unchanged, such as a newly created `int`
+  equal to the previous one. `Signal` already worked this way, as described
+  in [What counts as a change](compute-contract.md#what-counts-as-a-change).
+
+### Runtime improvements
+
+- `tracked_fields` attributes are now read and written by a compiled
+  descriptor. Reading a field outside a calculation is about three times
+  faster, and assigning one about twice as fast.
+- Refreshing a computed value no longer copies its function and arguments
+  first, which saves an allocation and reference-count updates on every
+  refresh.
+
 ## 0.7.0
 
 ### Breaking changes
