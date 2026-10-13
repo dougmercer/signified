@@ -44,7 +44,7 @@ struct Hooks {
 }
 
 // SAFETY: only touched while attached to an interpreter that holds the GIL,
-// which serializes access; see `Shared` in `node`.
+// which serializes access; see `Shared` in `shared`.
 unsafe impl Sync for Hooks {}
 
 static HOOKS: Hooks = Hooks {

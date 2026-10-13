@@ -7,11 +7,10 @@ use std::rc::Rc;
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
-use signified_engine::observers::Observer;
-
-use crate::host::PyHost;
-use crate::node::{Node, WeakShared};
-use crate::scheduler;
+use crate::engine::node::Node;
+use crate::engine::observer_list::Observer;
+use crate::engine::scheduler;
+use crate::shared::WeakShared;
 
 /// A `_subscribe()` observer's weak-reference callback: removes the
 /// observer, whose address was `id`, from its node once it dies.
@@ -36,8 +35,8 @@ fn find_python_observer(node: &Node, observer: &Bound<'_, PyAny>) -> Option<u32>
     let id = observer.as_ptr() as usize;
     let slot = node.observers.subscriber_slot(id)?;
     let reference = match node.observers.get(slot as usize).as_deref() {
-        Some(Observer::Subscriber {
-            subscriber: reference,
+        Some(Observer::Python {
+            reference,
             id: other,
         }) if *other == id => reference.clone_ref(py),
         _ => return None,
@@ -76,7 +75,7 @@ fn forget_observer(node: &Node, id: usize, reference: *mut pyo3::ffi::PyObject) 
     let holds_reference = |slot: usize| {
         matches!(
             node.observers.get(slot).as_deref(),
-            Some(Observer::Subscriber { subscriber: entry, .. }) if entry.as_ptr() == reference
+            Some(Observer::Python { reference: entry, .. }) if entry.as_ptr() == reference
         )
     };
     let slot = match node.observers.subscriber_slot(id) {
@@ -97,11 +96,7 @@ pub(crate) fn remove_python_observer(node: &Node, observer: &Bound<'_, PyAny>) {
         return;
     };
     let removed = node.observers.vacate(slot);
-    if let Observer::Subscriber {
-        subscriber: reference,
-        ..
-    } = &removed
-    {
+    if let Observer::Python { reference, .. } = &removed {
         scheduler::cancel_observer(reference.as_ptr() as usize);
     }
     drop(removed);
@@ -117,8 +112,8 @@ pub(crate) fn live_observer_count(py: Python<'_>, node: &Node) -> usize {
             None => break,
             Some(Observer::Vacant) => None,
             Some(Observer::Consumer { node, .. }) => Some(node.strong_count() > 0),
-            Some(Observer::Subscriber { subscriber, .. }) => {
-                Some(subscriber.bind(py).upgrade().is_some())
+            Some(Observer::Python { reference, .. }) => {
+                Some(reference.bind(py).upgrade().is_some())
             }
         };
         match alive {
@@ -128,7 +123,7 @@ pub(crate) fn live_observer_count(py: Python<'_>, node: &Node) -> usize {
         }
         slot += 1;
     }
-    let removed: Vec<Observer<PyHost>> = dead
+    let removed: Vec<Observer> = dead
         .into_iter()
         .map(|slot| node.observers.take(slot))
         .collect();

@@ -17,7 +17,7 @@ use pyo3::types::{PyFloat, PyTuple, PyType};
 use signified_api::{CApi, Kernel, Object, CAPSULE_NAME, VERSION};
 
 use crate::computed::{init_computed, ComputedCore};
-use crate::node::Compute;
+use crate::engine::node::Compute;
 use crate::values::unref;
 
 /// A kernel owned by a computed; its context is released when the last copy is dropped.

@@ -19,9 +19,9 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString, PyTuple, PyType};
 use pyo3::PyTraverseError;
 
-use crate::node::{Node, NodeExt};
+use crate::engine::node::Node;
+use crate::engine::tracking::is_tracking;
 use crate::signal::{init_signal, read_signal, write_signal, SignalCore};
-use crate::tracking::is_tracking;
 
 /// Base class of the hidden signal that holds one tracked field's value.
 #[pyclass(extends = SignalCore, subclass, frozen, module = "signified._core", name = "FieldSource")]

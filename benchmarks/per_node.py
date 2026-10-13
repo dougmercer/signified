@@ -58,7 +58,7 @@ def frame_step(leaves=500):
 
 def layers_step(depth=10, width=100):
     """Each node the sum of two in the layer before, so refreshing the last
-    layer nests one refresh per layer (see `Host::refresh` in rust/engine)."""
+    layer nests one refresh per layer (see `refresh` in rust/src/engine/refresh.rs)."""
     t = Signal(0.0)
     layer = [t + float(j) for j in range(width)]
     for _ in range(depth - 1):

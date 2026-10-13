@@ -8,9 +8,9 @@ use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyBytes, PyComplex, PyFloat, PyInt, PyString};
 
 use crate::computed::{read_computed, ComputedCore};
-use crate::node::Node;
+use crate::engine::node::Node;
+use crate::engine::tracking::{end_frame, push_frame};
 use crate::signal::{read_signal, SignalCore};
-use crate::tracking::{end_frame, push_frame};
 
 /// Whether `obj` is a reactive value (a Signal, Computed or Binding).
 #[pyfunction]

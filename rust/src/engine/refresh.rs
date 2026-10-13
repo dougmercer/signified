@@ -1,101 +1,120 @@
-//! Evaluating a Python computed (the host's half of a refresh; the engine
-//! decides when one is needed), and the recursion guard around each nested
-//! refresh.
+//! Pull: bring a computed up to date when it is read. A stale computed first
+//! brings its computed dependencies up to date and compares versions, and
+//! runs its function again only if one of them changed.
 
 use std::rc::Rc;
 
-use pyo3::exceptions::{PyException, PyRecursionError, PyRuntimeError};
+use pyo3::exceptions::{PyException, PyRuntimeError};
 use pyo3::prelude::*;
 use pyo3::types::PyTuple;
-use signified_engine::refresh::{check_cycle, evaluate, must_refresh, settle};
-use signified_engine::State;
 
+use crate::engine::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
+use crate::engine::runtime::{bump_version, clock};
+use crate::engine::tracking::{
+    commit_refresh, end_frame, is_evaluating, push_frame, start_refresh,
+};
 use crate::hooks::{self, Hook};
 use crate::native;
-use crate::node::{CachedError, Compute, Node, NodeExt, RestorePoint};
+use crate::stack::RecursionGuard;
 use crate::values::{call_equal, has_changed, unref};
 
-/// Native stack to keep free for the Python code a refresh may call.
-const MIN_FREE_STACK: usize = 256 * 1024;
-
-/// Refreshes allowed to nest under Emscripten (Pyodide). There, native frames
-/// also use the JavaScript engine's stack, about 1 MB in Node and Chrome,
-/// which neither check in `RecursionGuard` sees, and overflowing it aborts the
-/// interpreter. A chain of computeds that each call a Python function
-/// overflowed it at about 520 levels in Node 25; this leaves room for smaller
-/// worker stacks.
-#[cfg(target_os = "emscripten")]
-const MAX_NESTED_REFRESHES: u32 = 250;
-
-#[cfg(target_os = "emscripten")]
-static NESTED_REFRESHES: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-
-fn too_deep() -> PyErr {
-    PyRecursionError::new_err("maximum recursion depth exceeded while refreshing a reactive value")
-}
-
-/// Holds one level of Python's recursion budget, so a very deep graph raises
-/// `RecursionError` instead of overflowing the native stack. Python 3.12 and
-/// 3.13 count calls rather than measuring the stack, and worker threads have
-/// small stacks, so the remaining stack is checked directly as well.
-pub(crate) struct RecursionGuard;
-
-impl RecursionGuard {
-    pub(crate) fn enter(py: Python<'_>) -> PyResult<RecursionGuard> {
-        if crate::stack::remaining().is_some_and(|free| free < MIN_FREE_STACK) {
-            return Err(too_deep());
-        }
-        #[cfg(target_os = "emscripten")]
-        if NESTED_REFRESHES.load(std::sync::atomic::Ordering::Relaxed) >= MAX_NESTED_REFRESHES {
-            return Err(too_deep());
-        }
-        let failed = unsafe {
-            pyo3::ffi::Py_EnterRecursiveCall(c" while refreshing a reactive value".as_ptr())
-        };
-        if failed != 0 {
-            return Err(PyErr::fetch(py));
-        }
-        #[cfg(target_os = "emscripten")]
-        NESTED_REFRESHES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        Ok(RecursionGuard)
-    }
-}
-
-impl Drop for RecursionGuard {
-    fn drop(&mut self) {
-        #[cfg(target_os = "emscripten")]
-        NESTED_REFRESHES.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
-        unsafe { pyo3::ffi::Py_LeaveRecursiveCall() };
-    }
-}
-
-/// Bring a computed up to date (see the engine's `ensure_uptodate`).
-#[inline]
+/// Bring a computed up to date: nothing if it is fresh, a version check if it
+/// is stale, and `refresh` if a dependency changed.
+///
+/// Always inlined, so it adds no stack frame to the recursion through it: a
+/// read refreshes from the reader's frame, and `dependencies_changed` checks a
+/// chain one frame per level. See `refresh` for why that matters.
+#[inline(always)]
 pub(crate) fn ensure_uptodate(
     py: Python<'_>,
     node: &Rc<Node>,
     handle: &Bound<'_, PyAny>,
 ) -> PyResult<()> {
-    signified_engine::refresh::ensure_uptodate(py, node, handle.as_unbound())
+    let computed = node.computed_state();
+    if computed.state.get() == State::Fresh {
+        return Ok(());
+    }
+    let _guard = RecursionGuard::enter(py)?;
+    // Any refresh attempt means observers must be told about the next change.
+    computed.notified.set(false);
+    let state = computed.state.get();
+    // The graph has not changed since this node was last current.
+    if state == State::Stale && computed.clock_seen.get() == clock() {
+        computed.state.set(State::Fresh);
+        return Ok(());
+    }
+    if state == State::Stale && !dependencies_changed(py, node)? {
+        computed.state.set(State::Fresh);
+        computed.clock_seen.set(clock());
+        return Ok(());
+    }
+    refresh(py, node, handle)
 }
 
-/// Evaluate a stale computed (the Python host's `Host::refresh`).
+/// Bring computed dependencies up to date, then report whether any
+/// dependency's version differs from the one this consumer last saw.
+pub(crate) fn dependencies_changed(py: Python<'_>, node: &Rc<Node>) -> PyResult<bool> {
+    let deps = &node.reader_state().deps;
+    let mut position = 0;
+    loop {
+        // Signals are compared in place; a computed may run Python code to
+        // refresh, so it is copied out first.
+        let computed = {
+            let deps = deps.borrow();
+            let Some(link) = deps.get(position) else {
+                return Ok(false);
+            };
+            if !matches!(link.node.role, Role::Computed(_)) {
+                if link.version != link.node.version.get() {
+                    return Ok(true);
+                }
+                position += 1;
+                continue;
+            }
+            (link.node.clone(), link.handle.clone_ref(py), link.version)
+        };
+        let (dep, handle, seen_version) = computed;
+        ensure_uptodate(py, &dep, handle.bind(py))?;
+        if seen_version != dep.version.get() {
+            return Ok(true);
+        }
+        position += 1;
+    }
+}
+
+/// Effects only: a dependency changed after this run read it.
+pub(crate) fn invalidated_since_read(node: &Node) -> bool {
+    node.reader_state().deps.borrow().iter().any(|link| {
+        link.version != link.node.version.get()
+            || matches!(&link.node.role, Role::Computed(computed) if computed.notified.get())
+    })
+}
+
+/// Evaluate a stale computed whose dependencies changed.
 ///
 /// A refresh that reads a stale computed refreshes it in a nested call, so a
 /// deep graph recurses `read_computed` -> this -> `unref` -> `read_computed`:
-/// three stack frames per level, with the engine's `ensure_uptodate` inlined
-/// into `read_computed` and `run_compute` inlined here. Keep it at three: at
-/// four, a graph ten levels deep overflowed the CPU's return-address
-/// predictor and refreshed 9% slower on an M1.
-pub(crate) fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
+/// three stack frames per level, with `ensure_uptodate` inlined into
+/// `read_computed` and `run_compute` inlined here. Keep it at three: at four,
+/// a graph ten levels deep overflowed the CPU's return-address predictor and
+/// refreshed 9% slower on an M1. Never inlined, so callers of
+/// `ensure_uptodate` stay small.
+#[inline(never)]
+fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
     let computed = node.computed_state();
-    let data = &computed.data;
-    let restore_point = data.restore.take();
-    check_cycle(node)?;
+    let restore_point = computed.restore.take();
+    if computed.computing.get() {
+        // On this thread it is a cycle; otherwise another thread is running it.
+        return Err(PyRuntimeError::new_err(if is_evaluating(node) {
+            "Cycle detected while evaluating Computed"
+        } else {
+            "Computed is being evaluated on another thread"
+        }));
+    }
     let forced = computed.state.get() == State::MustRefresh;
     let had_outcome = computed.state.get() != State::Uninitialized;
-    let had_error = data.error.borrow().is_some();
-    let compute = data
+    let had_error = computed.error.borrow().is_some();
+    let compute = computed
         .compute
         .borrow()
         .as_ref()
@@ -109,7 +128,6 @@ pub(crate) fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>
     // A native kernel sees the current value, so it can report an unchanged one.
     let current = match &compute {
         Compute::Native { .. } if had_outcome && !had_error => node
-            .payload
             .value
             .borrow()
             .as_ref()
@@ -117,28 +135,34 @@ pub(crate) fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>
         _ => None,
     };
 
-    // 1) Evaluate with dependency tracking enabled, and 2) subscribe to what
-    // this run read, even if it raised.
-    let result = evaluate(node, || run_compute(py, &compute, current.as_ref()));
+    // 1) Evaluate with dependency tracking enabled.
+    computed.computing.set(true);
+    start_refresh(node);
+    let depth = push_frame(Some(node.clone()));
+    let mut result = run_compute(py, &compute, current.as_ref());
+    if let Err(error) = end_frame(depth) {
+        result = Err(error);
+    }
+    computed.computing.set(false);
+    // 2) Subscribe to what this run read, even if it raised.
+    commit_refresh(node);
     drop(compute);
 
     let (mut next_value, mut next_error) = match result {
         Ok(value) => (Some(value), None),
         Err(error) if error.is_instance_of::<PyException>(py) => (None, Some(error)),
-        Err(error) => return Err(escalate(node, error)),
+        Err(error) => return Err(escalate(computed, error)),
     };
 
     // 3) A custom equality can declare a new value unchanged, which keeps the
     // previous object. Its reads are untracked and its errors are cached.
     let previous = node
-        .payload
         .value
         .borrow()
         .as_ref()
         .map(|value| value.clone_ref(py));
     if had_outcome && !had_error {
         let equal = node
-            .payload
             .equal
             .borrow()
             .as_ref()
@@ -152,7 +176,7 @@ pub(crate) fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>
                         next_value = None;
                         next_error = Some(error);
                     }
-                    Err(error) => return Err(escalate(node, error)),
+                    Err(error) => return Err(escalate(computed, error)),
                 }
             }
         }
@@ -175,12 +199,17 @@ pub(crate) fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>
         exception: error.into_value(py).into_any(),
     });
     let has_error = cached.is_some();
-    let old_error = data.error.replace(cached);
+    let old_error = computed.error.replace(cached);
+    computed.state.set(State::Fresh);
     let mut old_value = None;
     if changed {
-        old_value = node.payload.value.replace(next_value);
+        old_value = node.value.replace(next_value);
+        computed.clock_seen.set(bump_version(node));
+    } else if forced {
+        computed.clock_seen.set(bump_version(node));
+    } else {
+        computed.clock_seen.set(clock());
     }
-    settle(node, changed || forced);
     drop((old_value, old_error, previous));
     if changed || forced {
         hooks::call(py, Hook::Updated, handle)?;
@@ -198,15 +227,16 @@ pub(crate) fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>
 
 /// A control-flow exception aborts evaluation instead of being cached; the
 /// next read must retry even though dependencies were committed.
-fn escalate(node: &Node, error: PyErr) -> PyErr {
-    must_refresh(node);
+fn escalate(computed: &ComputedState, error: PyErr) -> PyErr {
+    if computed.state.get() < State::MustRefresh {
+        computed.state.set(State::MustRefresh);
+    }
     error
 }
 
 fn restore(py: Python<'_>, node: &Node, point: &RestorePoint) -> PyResult<()> {
     let same_source = point
         .holder
-        .payload
         .value
         .borrow()
         .as_ref()
@@ -218,7 +248,7 @@ fn restore(py: Python<'_>, node: &Node, point: &RestorePoint) -> PyResult<()> {
     if has_changed(point.value.bind(py), &current)? {
         return Ok(());
     }
-    let old = node.payload.value.replace(Some(point.value.clone_ref(py)));
+    let old = node.value.replace(Some(point.value.clone_ref(py)));
     node.version.set(point.version);
     drop(old);
     Ok(())

@@ -10,15 +10,14 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString, PyTuple, PyType};
 use pyo3::PyTraverseError;
 
-use signified_engine::runtime::bump_version;
-use signified_engine::{invalidation, Host, Role};
-
 use crate::class_getitem;
+use crate::engine::invalidation;
+use crate::engine::node::{Node, Role};
+use crate::engine::runtime::{bump_clock, bump_version};
+use crate::engine::tracking::track_read;
 use crate::hooks::{self, Hook};
-use crate::host::PyHost;
-use crate::node::{Node, NodeExt, Shared};
+use crate::shared::Shared;
 use crate::subscribe;
-use crate::tracking::track_read;
 use crate::values::{self, call_equal, has_changed};
 
 fn generic_setattr(
@@ -120,7 +119,7 @@ impl SignalCore {
 
     /// Notify all observers without marking a change.
     fn _notify(&self, py: Python<'_>) -> PyResult<()> {
-        invalidation::notify(py, &self.node.0)
+        invalidation::notify(py, &self.node)
     }
 
     /// Subscribe an observer (any object with an `update()` method). It is
@@ -196,7 +195,7 @@ pub(crate) fn init_signal(
 ) -> PyResult<()> {
     let py = slf.py();
     let node = &slf.get().node;
-    let old = node.payload.value.replace(Some(value.unbind()));
+    let old = node.value.replace(Some(value.unbind()));
     drop(old);
     node.set_equal(py, equal);
     hooks::call(py, Hook::Created, slf.as_any())
@@ -214,7 +213,7 @@ pub(crate) fn read_signal<'py>(
     // The hook runs first and may write this signal; the value and the
     // version the read registers are both taken after it.
     hooks::call(py, Hook::Read, handle)?;
-    let value = match node.payload.value.borrow().as_ref() {
+    let value = match node.value.borrow().as_ref() {
         Some(value) => value.bind(py).clone(),
         None => return Err(uninitialized()),
     };
@@ -229,12 +228,7 @@ pub(crate) fn write_signal(
     handle: &Bound<'_, PyAny>,
     value: Bound<'_, PyAny>,
 ) -> PyResult<()> {
-    let old = node
-        .payload
-        .value
-        .borrow()
-        .as_ref()
-        .map(|old| old.clone_ref(py));
+    let old = node.value.borrow().as_ref().map(|old| old.clone_ref(py));
     let Some(old) = old else {
         return Err(uninitialized());
     };
@@ -242,7 +236,6 @@ pub(crate) fn write_signal(
         return Ok(());
     }
     let equal = node
-        .payload
         .equal
         .borrow()
         .as_ref()
@@ -252,8 +245,8 @@ pub(crate) fn write_signal(
             return Ok(());
         }
     }
-    let previous = node.payload.value.replace(Some(value.unbind()));
-    bump_version(&**node);
+    let previous = node.value.replace(Some(value.unbind()));
+    bump_version(node);
     drop(previous);
     drop(old);
     hooks::call(py, Hook::Updated, handle)?;
@@ -262,7 +255,7 @@ pub(crate) fn write_signal(
 
 /// Notify a signal's observers unconditionally (after an in-place mutation).
 fn update_signal(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
-    bump_version(&**node);
+    bump_version(node);
     hooks::call(py, Hook::Updated, handle)?;
     invalidation::notify(py, node)
 }
@@ -277,9 +270,9 @@ fn restore_signal(
     value: Bound<'_, PyAny>,
     version: u64,
 ) -> PyResult<()> {
-    let previous = node.payload.value.replace(Some(value.unbind()));
+    let previous = node.value.replace(Some(value.unbind()));
     node.version.set(version);
-    PyHost::bump_clock();
+    bump_clock();
     drop(previous);
     hooks::call(py, Hook::Updated, handle)?;
     invalidation::notify(py, node)

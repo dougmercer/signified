@@ -1,17 +1,20 @@
 //! Push: when a value changes, mark the computeds that depend on it stale
-//! and queue the effects and subscribers that depend on it.
+//! and queue the effects and `_subscribe()` observers that depend on it.
 
 use std::cell::Cell;
 use std::rc::Rc;
 
-use crate::node::{ComputedState, Node, Role, State};
-use crate::observers::Observer;
-use crate::scheduler;
-use crate::Host;
+use pyo3::prelude::*;
+use pyo3::types::PyWeakrefReference;
+
+use crate::engine::node::{ComputedState, Node, Role, State};
+use crate::engine::observer_list::Observer;
+use crate::engine::runtime::with_rt;
+use crate::engine::scheduler;
 
 /// Mark stale and return whether observers still need to hear about it.
 /// `force` upgrades to `MustRefresh`, bypassing the dependency check.
-pub fn invalidate<H: Host>(computed: &ComputedState<H>, force: bool) -> bool {
+pub(crate) fn invalidate(computed: &ComputedState, force: bool) -> bool {
     let target = if force {
         State::MustRefresh
     } else {
@@ -46,35 +49,35 @@ impl Drop for Walking<'_> {
 }
 
 /// Tell `start`'s observers it changed: mark dependent computeds stale,
-/// depth-first, and queue dependent effects and subscribers. No host code
-/// runs during the walk. Queued work runs once the outermost walk ends,
-/// unless a batch or flush is in progress.
-pub fn notify<H: Host>(cx: H::Cx<'_>, start: &Rc<Node<H>>) -> Result<(), H::Error> {
+/// depth-first, and queue dependent effects and `_subscribe()` observers.
+/// No Python code runs during the walk. Queued work runs once the outermost
+/// walk ends, unless a batch or flush is in progress.
+pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
     if start.observers.is_empty() {
         return Ok(());
     }
-    let outermost = H::with_runtime(|rt| {
+    let outermost = with_rt(|rt| {
         let walking = Walking::enter(&rt.wave_depth);
-        walk(cx, start);
+        walk(py, start);
         drop(walking);
         rt.wave_depth.get() == 0
     });
     if outermost {
-        scheduler::flush::<H>(cx)?;
+        scheduler::flush(py)?;
     }
     Ok(())
 }
 
-enum Step<H: Host> {
+enum Step {
     Done,
     Skip,
-    Consumer(Rc<Node<H>>),
-    Subscriber(H::Subscriber),
+    Consumer(Rc<Node>),
+    Python(Py<PyWeakrefReference>),
 }
 
 /// Depth-first, with an explicit stack so long chains cannot overflow.
-fn walk<H: Host>(cx: H::Cx<'_>, start: &Rc<Node<H>>) {
-    let mut stack: Vec<(Rc<Node<H>>, usize)> = vec![(start.clone(), 0)];
+fn walk(py: Python<'_>, start: &Rc<Node>) {
+    let mut stack: Vec<(Rc<Node>, usize)> = vec![(start.clone(), 0)];
     while let Some((node, index)) = stack.last_mut() {
         let step = match node.observers.get(*index).as_deref() {
             None => Step::Done,
@@ -82,9 +85,7 @@ fn walk<H: Host>(cx: H::Cx<'_>, start: &Rc<Node<H>>) {
             Some(Observer::Consumer { node, .. }) => {
                 node.upgrade().map_or(Step::Skip, Step::Consumer)
             }
-            Some(Observer::Subscriber { subscriber, .. }) => {
-                Step::Subscriber(H::clone_subscriber(cx, subscriber))
-            }
+            Some(Observer::Python { reference, .. }) => Step::Python(reference.clone_ref(py)),
         };
         *index += 1;
         match step {
@@ -101,7 +102,7 @@ fn walk<H: Host>(cx: H::Cx<'_>, start: &Rc<Node<H>>) {
                 }
                 Role::Signal => unreachable!("signals do not read other nodes"),
             },
-            Step::Subscriber(subscriber) => scheduler::enqueue_subscriber::<H>(subscriber),
+            Step::Python(reference) => scheduler::enqueue_observer(reference),
         }
     }
 }
