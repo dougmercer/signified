@@ -1,0 +1,16 @@
+[build-system]
+requires = ["maturin>=1.15,<2"]
+build-backend = "maturin"
+
+[project]
+name = "signified-api-example"
+version = "0.1.0"
+description = "An example extension whose signified Computeds are evaluated by Rust kernels."
+requires-python = ">=3.12"
+# A real extension would depend on a signified release with the C API; this one is installed with
+# --no-deps next to the signified it is tested against.
+dependencies = []
+
+[tool.maturin]
+module-name = "signified_api_example"
+features = ["pyo3/extension-module"]

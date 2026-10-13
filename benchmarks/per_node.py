@@ -56,6 +56,25 @@ def frame_step(leaves=500):
     return step
 
 
+def layers_step(depth=10, width=100):
+    """Each node the sum of two in the layer before, so refreshing the last
+    layer nests one refresh per layer (see `refresh` in rust/src/engine/refresh.rs)."""
+    t = Signal(0.0)
+    layer = [t + float(j) for j in range(width)]
+    for _ in range(depth - 1):
+        layer = [layer[j] + layer[(j + 1) % width] for j in range(width)]
+    for node in layer:
+        node.value
+    state = {"f": 0}
+
+    def step():
+        state["f"] += 1
+        t.value = float(state["f"])
+        return [node.value for node in layer]
+
+    return step
+
+
 def cached_read():
     s = Signal(1)
     c = Computed(lambda: s.value + 1)
@@ -82,6 +101,7 @@ def measure():
     rows["per extra node"] = (best_ns(chain_step(64)) - best_ns(chain_step(0))) / 64
     rows["build+read, chain 64"] = best_ns(build_chain(), number=200)
     rows["500-leaf frame"] = best_ns(frame_step(), number=50)
+    rows["10x100 layers frame"] = best_ns(layers_step(), number=50)
     return rows
 
 

@@ -3,15 +3,16 @@
 
 use std::cell::{Cell, RefCell};
 use std::num::NonZeroU64;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 use pyo3::gc::PyVisit;
 use pyo3::prelude::*;
 use pyo3::types::PyString;
 use pyo3::PyTraverseError;
 
-use crate::observer_list::ObserverList;
-use crate::tracking;
+use crate::engine::observer_list::ObserverList;
+use crate::engine::tracking;
+use crate::native::NativeKernel;
 
 /// Staleness of a computed node, ordered by invalidation priority.
 /// `Uninitialized` sits above `MustRefresh` so invalidation never downgrades a
@@ -27,42 +28,6 @@ pub(crate) enum State {
 pub(crate) const NEVER: u64 = u64::MAX;
 pub(crate) const NO_SLOT: u32 = u32::MAX;
 
-/// `Rc<Node>` made `Send` and `Sync` so a Python object can own one.
-///
-/// SAFETY: nodes are only touched while attached to an interpreter that holds
-/// the GIL, which lets one thread run at a time (the module is
-/// `gil_used = true`), so the non-atomic reference counts and the cells are
-/// never accessed concurrently. No borrow is held across a call into Python,
-/// so a thread switch inside such a call never observes a cell mid-update.
-/// Each thread tracks and schedules on its own; using one graph from several
-/// threads at the same time is unsupported, but it cannot cause a data race.
-/// Thread-exit cleanup runs without the GIL, so work a thread leaves queued is
-/// leaked rather than dropped; see `Queue`.
-pub(crate) struct Shared(pub(crate) Rc<Node>);
-
-unsafe impl Send for Shared {}
-unsafe impl Sync for Shared {}
-
-impl Shared {
-    pub(crate) fn new(role: Role) -> Shared {
-        Shared(Rc::new(Node::new(role)))
-    }
-}
-
-impl std::ops::Deref for Shared {
-    type Target = Rc<Node>;
-
-    fn deref(&self) -> &Rc<Node> {
-        &self.0
-    }
-}
-
-/// `Weak<Node>` made `Send` and `Sync`, for the same reason as `Shared`.
-pub(crate) struct WeakShared(pub(crate) Weak<Node>);
-
-unsafe impl Send for WeakShared {}
-unsafe impl Sync for WeakShared {}
-
 /// How a computed produces its value.
 pub(crate) enum Compute {
     /// A zero-argument Python callable.
@@ -74,6 +39,11 @@ pub(crate) enum Compute {
     },
     /// A `Binding`: read the holder signal, then the source it holds.
     Source(Py<PyAny>),
+    /// A kernel from another extension (see `native`) over resolved arguments.
+    Native {
+        kernel: Rc<NativeKernel>,
+        args: Vec<Py<PyAny>>,
+    },
 }
 
 impl Compute {
@@ -85,6 +55,10 @@ impl Compute {
                 args: args.iter().map(|arg| arg.clone_ref(py)).collect(),
             },
             Compute::Source(holder) => Compute::Source(holder.clone_ref(py)),
+            Compute::Native { kernel, args } => Compute::Native {
+                kernel: Rc::clone(kernel),
+                args: args.iter().map(|arg| arg.clone_ref(py)).collect(),
+            },
         }
     }
 
@@ -99,6 +73,12 @@ impl Compute {
                 Ok(())
             }
             Compute::Source(holder) => visit.call(holder),
+            Compute::Native { args, .. } => {
+                for arg in args {
+                    visit.call(arg)?;
+                }
+                Ok(())
+            }
         }
     }
 }

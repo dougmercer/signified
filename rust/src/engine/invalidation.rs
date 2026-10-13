@@ -7,10 +7,10 @@ use std::rc::Rc;
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
-use crate::node::{ComputedState, Node, Role, State};
-use crate::observer_list::Observer;
-use crate::runtime::with_rt;
-use crate::scheduler;
+use crate::engine::node::{ComputedState, Node, Role, State};
+use crate::engine::observer_list::Observer;
+use crate::engine::runtime::with_rt;
+use crate::engine::scheduler;
 
 /// Mark stale and return whether observers still need to hear about it.
 /// `force` upgrades to `MustRefresh`, bypassing the dependency check.

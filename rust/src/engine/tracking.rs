@@ -15,8 +15,8 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyTuple;
 
-use crate::node::{DepLink, Node, ReaderLink, NEVER, NO_SLOT};
-use crate::runtime::with_rt;
+use crate::engine::node::{DepLink, Node, ReaderLink, NEVER, NO_SLOT};
+use crate::engine::runtime::with_rt;
 
 // ---------------------------------------------------------------------------
 // Tracking frames
@@ -26,8 +26,13 @@ type FrameStack = RefCell<Vec<Option<Rc<Node>>>>;
 
 /// The consumers this thread is evaluating, innermost last; `None` marks an
 /// untracked block. Part of the runtime.
-#[derive(Default)]
 pub(crate) struct Frames(FrameStack);
+
+impl Frames {
+    pub(crate) const fn new() -> Frames {
+        Frames(RefCell::new(Vec::new()))
+    }
+}
 
 fn with_frames<R>(f: impl FnOnce(&FrameStack) -> R) -> R {
     with_rt(|rt| f(&rt.frames.0))
@@ -42,7 +47,7 @@ pub(crate) fn push_frame(frame: Option<Rc<Node>>) -> usize {
     })
 }
 
-fn pop_frame() -> Option<Option<Rc<Node>>> {
+pub(crate) fn pop_frame() -> Option<Option<Rc<Node>>> {
     with_frames(|frames| frames.borrow_mut().pop())
 }
 
@@ -80,7 +85,7 @@ fn unbalanced_frames(depth: usize) -> PyResult<()> {
 }
 
 /// Whether the innermost frame is an untracked block.
-fn in_untracked_block() -> bool {
+pub(crate) fn in_untracked_block() -> bool {
     with_frames(|frames| matches!(frames.borrow().last(), Some(None)))
 }
 
@@ -96,38 +101,8 @@ pub(crate) fn is_evaluating(node: &Rc<Node>) -> bool {
 }
 
 /// Whether a reactive read right now would register a dependency.
-#[pyfunction]
-pub fn is_tracking() -> bool {
+pub(crate) fn is_tracking() -> bool {
     with_frames(|frames| matches!(frames.borrow().last(), Some(Some(_))))
-}
-
-/// `with untracked():` reads inside do not subscribe the enclosing
-/// computation or effect.
-#[pyclass(frozen, module = "signified._core", name = "Untracked")]
-pub struct Untracked;
-
-#[pymethods]
-impl Untracked {
-    #[new]
-    fn new() -> Self {
-        Untracked
-    }
-
-    fn __enter__(&self) {
-        push_frame(None);
-    }
-
-    #[pyo3(signature = (*_exc))]
-    fn __exit__(&self, _exc: &Bound<'_, PyTuple>) -> PyResult<bool> {
-        // Check before popping, so a mismatch cannot remove a computation's frame.
-        if !in_untracked_block() {
-            return Err(PyRuntimeError::new_err(
-                "untracked() exited without a matching enter",
-            ));
-        }
-        drop(pop_frame());
-        Ok(false)
-    }
 }
 
 // ---------------------------------------------------------------------------

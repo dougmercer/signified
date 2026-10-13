@@ -7,9 +7,10 @@ use std::rc::Rc;
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
-use crate::node::{Node, WeakShared};
-use crate::observer_list::Observer;
-use crate::scheduler;
+use crate::engine::node::Node;
+use crate::engine::observer_list::Observer;
+use crate::engine::scheduler;
+use crate::shared::WeakShared;
 
 /// A `_subscribe()` observer's weak-reference callback: removes the
 /// observer, whose address was `id`, from its node once it dies.

@@ -1,38 +1,28 @@
-//! `signified._core`: the reactive graph engine behind `signified.Signal`,
-//! `Computed`, `Binding` and `Effect`.
+//! `signified._core`: the Python classes behind `signified.Signal`,
+//! `Computed`, `Binding` and `Effect`, over the reactive graph in `engine`.
 //!
-//! Push invalidation, pull refresh with version checks, and mark-and-sweep
-//! dependency tracking. Python sees base classes; the public classes in
-//! `signified/_reactive.py` subclass them together with the operator mixin.
-//!
-//! Rules that keep this sound while Python code runs inside the engine:
-//! - Never call Python, allocate a Python object, or drop a `Py` while a
-//!   `RefCell` in a `Node` or the runtime is borrowed. Copy what you need out,
-//!   release the borrow, then call, allocate or drop. Allocating can run the
-//!   garbage collector, and dropping can run `__del__` and weakref callbacks.
-//! - `__traverse__` only uses `try_borrow`; a busy cell is skipped.
-//! - Each thread has its own tracking frames, queue and walk depth
-//!   (`runtime`); the version clock and plugin hooks are shared. State is only
-//!   touched while attached to an interpreter that holds the GIL, which
-//!   serializes all access; see the `Send`/`Sync` impls in `node`. The module
-//!   declares `gil_used = true`, so a free-threaded interpreter re-enables the
-//!   GIL when it is imported.
+//! Python sees base classes; the public classes in `signified/_reactive.py`
+//! subclass them together with the operator mixin. The engine is free of
+//! `unsafe` code (see `engine`); everything else here meets Python:
+//! - State is only touched while attached to an interpreter that holds the
+//!   GIL, which serializes all access; see `shared`. The module declares
+//!   `gil_used = true`, so a free-threaded interpreter re-enables the GIL
+//!   when it is imported.
 //! - Every nested refresh holds a level of Python's recursion budget and
-//!   checks native stack headroom, so deep graphs raise `RecursionError`.
+//!   checks native stack headroom, so deep graphs raise `RecursionError`
+//!   (`stack`).
 
 mod computed;
+mod contexts;
 mod effect;
+mod engine;
+mod fields;
 mod hooks;
-mod invalidation;
-mod node;
-mod observer_list;
-mod refresh;
-mod runtime;
-mod scheduler;
+mod native;
+mod shared;
 mod signal;
 mod stack;
 mod subscribe;
-mod tracking;
 mod values;
 
 use pyo3::intern;
@@ -45,15 +35,20 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<computed::ComputedCore>()?;
     m.add_class::<effect::EffectCore>()?;
     m.add_class::<hooks::Config>()?;
-    m.add_class::<tracking::Untracked>()?;
-    m.add_class::<scheduler::Batch>()?;
+    m.add_class::<contexts::Untracked>()?;
+    m.add_class::<contexts::Batch>()?;
     m.add_class::<signal::SignalAt>()?;
+    m.add_class::<fields::FieldSource>()?;
+    m.add_class::<fields::TrackedField>()?;
     m.add("config", Bound::new(m.py(), hooks::Config)?)?;
-    m.add_function(wrap_pyfunction!(tracking::is_tracking, m)?)?;
+    m.add_function(wrap_pyfunction!(contexts::is_tracking, m)?)?;
     m.add_function(wrap_pyfunction!(values::has_changed, m)?)?;
     m.add_function(wrap_pyfunction!(computed::computed_call, m)?)?;
     m.add_function(wrap_pyfunction!(values::unref, m)?)?;
     m.add_function(wrap_pyfunction!(values::is_reactive, m)?)?;
+    native::add_capsule(m)?;
+    m.add_function(wrap_pyfunction!(native::_native_test_sum, m)?)?;
+    m.add_function(wrap_pyfunction!(native::_native_test_counts, m)?)?;
     Ok(())
 }
 

@@ -11,13 +11,11 @@ use pyo3::types::{PyDict, PyTuple, PyType};
 use pyo3::PyTraverseError;
 
 use crate::class_getitem;
+use crate::engine::node::{Compute, Node, RestorePoint, Role, State};
+use crate::engine::{invalidation, refresh, runtime, tracking};
 use crate::hooks::{self, Hook};
-use crate::invalidation;
-use crate::node::{Compute, Node, RestorePoint, Role, Shared, State};
-use crate::refresh;
-use crate::runtime;
+use crate::shared::Shared;
 use crate::subscribe;
-use crate::tracking;
 use crate::values;
 
 /// Base class of `signified.Computed`: a lazily refreshed derived value.
@@ -32,7 +30,7 @@ pub struct ComputedCore {
     pub(crate) node: Shared,
 }
 
-fn init_computed(
+pub(crate) fn init_computed(
     obj: &Bound<'_, PyAny>,
     node: &Node,
     compute: Compute,

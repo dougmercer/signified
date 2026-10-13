@@ -3,15 +3,14 @@
 use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::node::Node;
-use crate::scheduler::Queue;
-use crate::tracking::Frames;
+use crate::engine::node::Node;
+use crate::engine::scheduler::Queue;
+use crate::engine::tracking::Frames;
 
 /// One thread's engine state. The tracking frames and the queue each belong
 /// to one module, which alone can see inside them. Threads track, batch and
 /// run effects independently, so graphs used on different threads do not see
 /// each other's evaluations or batches.
-#[derive(Default)]
 pub(crate) struct Runtime {
     /// Nesting of this thread's notification walks; its effects run when it
     /// returns to zero.
@@ -21,7 +20,14 @@ pub(crate) struct Runtime {
 }
 
 thread_local! {
-    static RUNTIME: Runtime = Runtime::default();
+    // Initialized in a `const`, so each access skips a lazy-initialization check.
+    static RUNTIME: Runtime = const {
+        Runtime {
+            wave_depth: Cell::new(0),
+            frames: Frames::new(),
+            queue: Queue::new(),
+        }
+    };
 }
 
 /// Run `f` with the calling thread's engine state.

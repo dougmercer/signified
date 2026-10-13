@@ -4,71 +4,27 @@
 
 use std::rc::Rc;
 
-use pyo3::exceptions::{PyException, PyRecursionError, PyRuntimeError};
+use pyo3::exceptions::{PyException, PyRuntimeError};
 use pyo3::prelude::*;
 use pyo3::types::PyTuple;
 
+use crate::engine::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
+use crate::engine::runtime::{bump_version, clock};
+use crate::engine::tracking::{
+    commit_refresh, end_frame, is_evaluating, push_frame, start_refresh,
+};
 use crate::hooks::{self, Hook};
-use crate::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
-use crate::runtime::{bump_version, clock};
-use crate::stack;
-use crate::tracking::{commit_refresh, end_frame, is_evaluating, push_frame, start_refresh};
+use crate::native;
+use crate::stack::RecursionGuard;
 use crate::values::{call_equal, has_changed, unref};
 
-/// Native stack to keep free for the Python code a refresh may call.
-const MIN_FREE_STACK: usize = 256 * 1024;
-
-/// Refreshes allowed to nest under Emscripten (Pyodide). There, native frames
-/// also use the JavaScript engine's stack, about 1 MB in Node and Chrome,
-/// which neither check in `RecursionGuard` sees, and overflowing it aborts the
-/// interpreter. A chain of computeds that each call a Python function
-/// overflowed it at about 520 levels in Node 25; this leaves room for smaller
-/// worker stacks.
-#[cfg(target_os = "emscripten")]
-const MAX_NESTED_REFRESHES: u32 = 250;
-
-#[cfg(target_os = "emscripten")]
-static NESTED_REFRESHES: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-
-fn too_deep() -> PyErr {
-    PyRecursionError::new_err("maximum recursion depth exceeded while refreshing a reactive value")
-}
-
-/// Holds one level of Python's recursion budget, so a very deep graph raises
-/// `RecursionError` instead of overflowing the native stack. Python 3.12 and
-/// 3.13 count calls rather than measuring the stack, and worker threads have
-/// small stacks, so the remaining stack is checked directly as well.
-struct RecursionGuard;
-
-impl RecursionGuard {
-    fn enter(py: Python<'_>) -> PyResult<RecursionGuard> {
-        if stack::remaining().is_some_and(|free| free < MIN_FREE_STACK) {
-            return Err(too_deep());
-        }
-        #[cfg(target_os = "emscripten")]
-        if NESTED_REFRESHES.load(std::sync::atomic::Ordering::Relaxed) >= MAX_NESTED_REFRESHES {
-            return Err(too_deep());
-        }
-        let failed = unsafe {
-            pyo3::ffi::Py_EnterRecursiveCall(c" while refreshing a reactive value".as_ptr())
-        };
-        if failed != 0 {
-            return Err(PyErr::fetch(py));
-        }
-        #[cfg(target_os = "emscripten")]
-        NESTED_REFRESHES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        Ok(RecursionGuard)
-    }
-}
-
-impl Drop for RecursionGuard {
-    fn drop(&mut self) {
-        #[cfg(target_os = "emscripten")]
-        NESTED_REFRESHES.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
-        unsafe { pyo3::ffi::Py_LeaveRecursiveCall() };
-    }
-}
-
+/// Bring a computed up to date: nothing if it is fresh, a version check if it
+/// is stale, and `refresh` if a dependency changed.
+///
+/// Always inlined, so it adds no stack frame to the recursion through it: a
+/// read refreshes from the reader's frame, and `dependencies_changed` checks a
+/// chain one frame per level. See `refresh` for why that matters.
+#[inline(always)]
 pub(crate) fn ensure_uptodate(
     py: Python<'_>,
     node: &Rc<Node>,
@@ -134,6 +90,16 @@ pub(crate) fn invalidated_since_read(node: &Node) -> bool {
     })
 }
 
+/// Evaluate a stale computed whose dependencies changed.
+///
+/// A refresh that reads a stale computed refreshes it in a nested call, so a
+/// deep graph recurses `read_computed` -> this -> `unref` -> `read_computed`:
+/// three stack frames per level, with `ensure_uptodate` inlined into
+/// `read_computed` and `run_compute` inlined here. Keep it at three: at four,
+/// a graph ten levels deep overflowed the CPU's return-address predictor and
+/// refreshed 9% slower on an M1. Never inlined, so callers of
+/// `ensure_uptodate` stay small.
+#[inline(never)]
 fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
     let computed = node.computed_state();
     let restore_point = computed.restore.take();
@@ -159,11 +125,21 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
         ));
     };
 
+    // A native kernel sees the current value, so it can report an unchanged one.
+    let current = match &compute {
+        Compute::Native { .. } if had_outcome && !had_error => node
+            .value
+            .borrow()
+            .as_ref()
+            .map(|value| value.clone_ref(py)),
+        _ => None,
+    };
+
     // 1) Evaluate with dependency tracking enabled.
     computed.computing.set(true);
     start_refresh(node);
     let depth = push_frame(Some(node.clone()));
-    let mut result = run_compute(py, &compute);
+    let mut result = run_compute(py, &compute, current.as_ref());
     if let Err(error) = end_frame(depth) {
         result = Err(error);
     }
@@ -278,8 +254,15 @@ fn restore(py: Python<'_>, node: &Node, point: &RestorePoint) -> PyResult<()> {
     Ok(())
 }
 
-fn run_compute(py: Python<'_>, compute: &Compute) -> PyResult<Py<PyAny>> {
+/// Inlined into `refresh` to keep nested refreshes shallow; see there.
+#[inline(always)]
+fn run_compute(
+    py: Python<'_>,
+    compute: &Compute,
+    current: Option<&Py<PyAny>>,
+) -> PyResult<Py<PyAny>> {
     match compute {
+        Compute::Native { kernel, args } => native::run(py, kernel, args, current),
         Compute::Function(f) => Ok(f.bind(py).call0()?.unbind()),
         Compute::Call { func, args } => {
             let func = func.bind(py);

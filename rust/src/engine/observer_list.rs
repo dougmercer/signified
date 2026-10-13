@@ -12,8 +12,8 @@ use std::rc::Weak;
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
-use crate::node::Node;
-use crate::runtime::with_rt;
+use crate::engine::node::Node;
+use crate::engine::runtime::with_rt;
 
 /// Observer lists at least this long compact once half their slots are vacant.
 const COMPACT_MIN_LEN: usize = 16;

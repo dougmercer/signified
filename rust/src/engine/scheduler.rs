@@ -1,9 +1,10 @@
 //! The queue of effects and `_subscribe()` observers waiting to run, and
-//! `batch()`. Both kinds of work are queued during a notification walk and
-//! run, in the order they were queued, once the outermost walk or batch ends.
+//! batches. Both kinds of work are queued during a notification walk and run,
+//! in the order they were queued, once the outermost walk or batch ends.
 
 use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::hash::{BuildHasherDefault, DefaultHasher};
 use std::num::NonZeroU64;
 use std::rc::{Rc, Weak};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -13,8 +14,8 @@ use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyWeakrefReference};
 
-use crate::node::Node;
-use crate::runtime::with_rt;
+use crate::engine::node::Node;
+use crate::engine::runtime::with_rt;
 
 const MAX_RUNS: u32 = 100;
 
@@ -28,15 +29,26 @@ enum Job {
 
 /// The work a thread has waiting to run, and the state of the flush that
 /// runs it. Part of the runtime.
-#[derive(Default)]
 pub(crate) struct Queue {
     /// Effects and observers waiting to run, in the order they were queued.
     pending: RefCell<VecDeque<Job>>,
     /// Weak references of observers waiting in `pending`. A queued observer
-    /// whose reference is missing was unsubscribed and is skipped.
-    queued_observers: RefCell<HashSet<usize>>,
+    /// whose reference is missing was unsubscribed and is skipped. (A fixed
+    /// hasher, so the queue can be built in a `const fn`.)
+    queued_observers: RefCell<HashSet<usize, BuildHasherDefault<DefaultHasher>>>,
     batch_depth: Cell<u32>,
     flushing: Cell<bool>,
+}
+
+impl Queue {
+    pub(crate) const fn new() -> Queue {
+        Queue {
+            pending: RefCell::new(VecDeque::new()),
+            queued_observers: RefCell::new(HashSet::with_hasher(BuildHasherDefault::new())),
+            batch_depth: Cell::new(0),
+            flushing: Cell::new(false),
+        }
+    }
 }
 
 /// A thread can exit inside a `batch()` it never closed. Its queued work is
@@ -206,7 +218,7 @@ fn run_pending(
                     )));
                     return Ok(());
                 }
-                crate::effect::run(py, &effect)
+                crate::engine::effect::run(py, &effect)
             }
             Job::Observer(reference) => {
                 let key = reference.as_ptr() as usize;
@@ -265,53 +277,17 @@ fn raise_errors(py: Python<'_>, mut errors: Vec<PyErr>) -> PyResult<()> {
     }
 }
 
-/// `with batch():` defers effects and observers until the outermost batch
-/// exits. A body exception together with flush failures is raised as a
-/// `BaseExceptionGroup`.
-#[pyclass(frozen, module = "signified._core", name = "Batch")]
-pub struct Batch;
+/// Defer effects and observers until the matching `end_batch`.
+pub(crate) fn begin_batch() {
+    with_queue(|queue| queue.batch_depth.set(queue.batch_depth.get() + 1));
+}
 
-#[pymethods]
-impl Batch {
-    #[new]
-    fn new() -> Self {
-        Batch
-    }
-
-    fn __enter__(&self) {
-        with_queue(|queue| queue.batch_depth.set(queue.batch_depth.get() + 1));
-    }
-
-    fn __exit__(
-        &self,
-        py: Python<'_>,
-        _exc_type: &Bound<'_, PyAny>,
-        exc: &Bound<'_, PyAny>,
-        _traceback: &Bound<'_, PyAny>,
-    ) -> PyResult<bool> {
-        with_queue(|queue| {
-            queue
-                .batch_depth
-                .set(queue.batch_depth.get().saturating_sub(1))
-        });
-        let flushed = flush(py);
-        if exc.is_none() {
-            flushed?;
-            return Ok(false);
-        }
-        let Err(flush_error) = flushed else {
-            // Re-raise the body's exception unchanged.
-            return Ok(false);
-        };
-        let group = py
-            .import(intern!(py, "builtins"))?
-            .getattr(intern!(py, "BaseExceptionGroup"))?
-            .call1((
-                "Signified batch body and effect failures",
-                (exc, flush_error.into_value(py)),
-            ))?;
-        // Like `raise ... from None`.
-        group.setattr(intern!(py, "__suppress_context__"), true)?;
-        Err(PyErr::from_value(group))
-    }
+/// End a batch; the outermost one runs the queue.
+pub(crate) fn end_batch(py: Python<'_>) -> PyResult<()> {
+    with_queue(|queue| {
+        queue
+            .batch_depth
+            .set(queue.batch_depth.get().saturating_sub(1))
+    });
+    flush(py)
 }
