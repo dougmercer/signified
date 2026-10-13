@@ -112,6 +112,7 @@ def _install[C: type](cls: C, names: tuple[str, ...] | None) -> C:
     elif names is None:
         raise TypeError("tracked_fields() needs attribute names for a class that is not a dataclass")
 
+    in_dict = False
     for name in names:
         existing = _lookup(cls, name)
         if isinstance(existing, TrackedField):
@@ -121,7 +122,33 @@ def _install[C: type](cls: C, names: tuple[str, ...] | None) -> C:
             raise TypeError(f"'{cls.__name__}.{name}' is already a descriptor and cannot be tracked")
         default = () if slot is not None or existing is _MISSING else (existing,)
         setattr(cls, name, TrackedField(name, slot, _FieldSource, *default))
+        in_dict = in_dict or slot is None
+    if in_dict:
+        _copy_stored_values(cls)
     return cls
+
+
+def _copy_stored_values(cls: type) -> None:
+    """Make copies and pickles of `cls` instances hold plain values, not sources.
+
+    By default an instance's state is its dict itself, so a shallow copy would
+    share each field's source and keep following the original.
+    """
+    getstate: Callable[[Any], Any] = getattr(cls, "__getstate__")
+
+    def __getstate__(self: Any) -> Any:
+        return _without_sources(getstate(self))
+
+    setattr(cls, "__getstate__", __getstate__)
+
+
+def _without_sources(state: Any) -> Any:
+    """Replace sources in an instance's state, its dict or a `(dict, slots)` pair, with their values."""
+    if isinstance(state, dict):
+        return {name: value._value if type(value) is _FieldSource else value for name, value in state.items()}
+    if isinstance(state, tuple) and len(state) == 2 and isinstance(state[0], dict):
+        return (_without_sources(state[0]), state[1])
+    return state
 
 
 def _lookup(cls: type, name: str) -> Any:
