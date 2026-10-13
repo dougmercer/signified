@@ -41,27 +41,12 @@ pub(crate) enum Compute {
     Source(Py<PyAny>),
     /// A kernel from another extension (see `native`) over resolved arguments.
     Native {
-        kernel: Rc<NativeKernel>,
+        kernel: NativeKernel,
         args: Vec<Py<PyAny>>,
     },
 }
 
 impl Compute {
-    pub(crate) fn clone_ref(&self, py: Python<'_>) -> Compute {
-        match self {
-            Compute::Function(f) => Compute::Function(f.clone_ref(py)),
-            Compute::Call { func, args } => Compute::Call {
-                func: func.clone_ref(py),
-                args: args.iter().map(|arg| arg.clone_ref(py)).collect(),
-            },
-            Compute::Source(holder) => Compute::Source(holder.clone_ref(py)),
-            Compute::Native { kernel, args } => Compute::Native {
-                kernel: Rc::clone(kernel),
-                args: args.iter().map(|arg| arg.clone_ref(py)).collect(),
-            },
-        }
-    }
-
     fn traverse(&self, visit: &PyVisit<'_>) -> Result<(), PyTraverseError> {
         match self {
             Compute::Function(f) => visit.call(f),
@@ -164,7 +149,8 @@ pub(crate) struct ReaderState {
 
 pub(crate) struct ComputedState {
     pub(crate) reader: ReaderState,
-    pub(crate) compute: RefCell<Option<Compute>>,
+    /// Shared so a refresh can hold it while Python code runs, without copying it.
+    pub(crate) compute: RefCell<Option<Rc<Compute>>>,
     pub(crate) state: Cell<State>,
     pub(crate) computing: Cell<bool>,
     pub(crate) notified: Cell<bool>,

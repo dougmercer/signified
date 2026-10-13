@@ -6,7 +6,6 @@
 
 use std::ffi::c_void;
 use std::ptr::null_mut;
-use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use pyo3::exceptions::PyTypeError;
@@ -20,7 +19,7 @@ use crate::computed::{init_computed, ComputedCore};
 use crate::engine::node::Compute;
 use crate::values::unref;
 
-/// A kernel owned by a computed; its context is released when the last copy is dropped.
+/// A kernel owned by a computed; its context is released when the computed's `Compute` is dropped.
 pub(crate) struct NativeKernel(Kernel);
 
 impl Drop for NativeKernel {
@@ -33,6 +32,9 @@ impl Drop for NativeKernel {
     }
 }
 
+/// Kernels with up to this many arguments resolve them on the stack, without allocating.
+const INLINE_ARGS: usize = 8;
+
 /// Evaluate *kernel* over *args* (reactive ones resolved and tracked), given the node's
 /// current value *previous*.
 pub(crate) fn run(
@@ -41,25 +43,39 @@ pub(crate) fn run(
     args: &[Py<PyAny>],
     previous: Option<&Py<PyAny>>,
 ) -> PyResult<Py<PyAny>> {
-    let mut resolved = Vec::with_capacity(args.len());
-    for arg in args {
-        resolved.push(unref(py, arg.bind(py))?);
+    if args.len() > INLINE_ARGS {
+        let resolved = args
+            .iter()
+            .map(|arg| unref(py, arg.bind(py)))
+            .collect::<PyResult<Vec<_>>>()?;
+        let pointers: Vec<Object> = resolved
+            .iter()
+            .map(|value| value.as_ptr() as Object)
+            .collect();
+        return call(py, kernel, &pointers, previous);
     }
-    let pointers: Vec<Object> = resolved
-        .iter()
-        .map(|value| value.as_ptr() as Object)
-        .collect();
+    // `resolved` owns the references `pointers` borrows until the call returns.
+    let mut resolved: [Option<Bound<'_, PyAny>>; INLINE_ARGS] = Default::default();
+    let mut pointers: [Object; INLINE_ARGS] = [null_mut(); INLINE_ARGS];
+    for (index, arg) in args.iter().enumerate() {
+        let value = unref(py, arg.bind(py))?;
+        pointers[index] = value.as_ptr() as Object;
+        resolved[index] = Some(value);
+    }
+    call(py, kernel, &pointers[..args.len()], previous)
+}
+
+fn call(
+    py: Python<'_>,
+    kernel: &NativeKernel,
+    args: &[Object],
+    previous: Option<&Py<PyAny>>,
+) -> PyResult<Py<PyAny>> {
     let previous = previous.map_or(null_mut(), |value| value.as_ptr() as Object);
-    // SAFETY: the pointers are live borrowed references for the duration of the call; the
+    // SAFETY: the arguments are live borrowed references for the duration of the call; the
     // kernel returns a new reference or null with an exception set.
-    let result = unsafe {
-        (kernel.0.call)(
-            kernel.0.ctx,
-            pointers.as_ptr(),
-            pointers.len() as isize,
-            previous,
-        )
-    };
+    let result =
+        unsafe { (kernel.0.call)(kernel.0.ctx, args.as_ptr(), args.len() as isize, previous) };
     unsafe { Bound::from_owned_ptr_or_err(py, result as *mut ffi::PyObject) }.map(Bound::unbind)
 }
 
@@ -79,7 +95,7 @@ fn new_native_computed<'py>(
     let obj = cls.call_method1(intern!(py, "__new__"), (cls,))?;
     let node = &obj.cast::<ComputedCore>()?.get().node;
     let compute = Compute::Native {
-        kernel: Rc::new(kernel),
+        kernel,
         args: args.iter().map(|arg| arg.unbind()).collect(),
     };
     init_computed(&obj, node, compute, None)?;
