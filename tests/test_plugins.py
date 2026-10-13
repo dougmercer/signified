@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from signified import Binding, Computed, Signal, Variable, _core, plugins
+from signified import Binding, Computed, Effect, Signal, Variable, _core, plugins
 from signified.plugins import PluginManager, hookimpl
 
 
@@ -289,3 +289,64 @@ def test_read_hook_that_writes_the_signal_leaves_readers_current(monkeypatch) ->
     scaled = Computed(lambda: source.value * 10)
     assert scaled.value == 20
     assert scaled.value == 20
+
+
+class FailingUpdatedHook(RecordingHook):
+    """Raises from the first `updated` call after being armed."""
+
+    armed = False
+
+    def updated(self, *, value: Variable[Any]) -> None:
+        if self.armed:
+            self.armed = False
+            raise RuntimeError("updated hook failed")
+
+
+def assign(source: Signal[list[int]], hook: FailingUpdatedHook) -> None:
+    hook.armed = True
+    source.value = [1, 2]
+
+
+def update_in_place(source: Signal[list[int]], hook: FailingUpdatedHook) -> None:
+    source.value.append(2)
+    hook.armed = True
+    source.update()
+
+
+def leave_at(source: Signal[list[int]], hook: FailingUpdatedHook) -> None:
+    with source.at([1, 2]):
+        hook.armed = True
+
+
+@pytest.mark.parametrize("change", [assign, update_in_place, leave_at])
+def test_failing_updated_hook_still_notifies_dependents(monkeypatch, change) -> None:
+    hook = FailingUpdatedHook()
+    monkeypatch.setattr(_core.config, "hooks", hook)
+    source = Signal([1])
+    size = Computed(lambda: len(source.value))
+    seen: list[int] = []
+    watcher = Effect(lambda: seen.append(size.value))
+
+    with pytest.raises(RuntimeError, match="updated hook failed"):
+        change(source, hook)
+
+    assert size.value == len(source.value)
+    assert seen[-1] == len(source.value)
+    watcher.dispose()
+
+
+def test_effect_error_after_a_failing_updated_hook_keeps_the_hook_error_as_context(monkeypatch) -> None:
+    hook = FailingUpdatedHook()
+    monkeypatch.setattr(_core.config, "hooks", hook)
+    source = Signal(1)
+
+    def fail_after_change() -> None:
+        if source.value > 1:
+            raise ValueError("effect failed")
+
+    watcher = Effect(fail_after_change)
+    hook.armed = True
+    with pytest.raises(ValueError, match="effect failed") as raised:
+        source.value = 2
+    assert isinstance(raised.value.__context__, RuntimeError)
+    watcher.dispose()
