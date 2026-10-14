@@ -196,6 +196,16 @@ def test_invalidating_a_computed_under_the_sampled_value_updates_the_sample():
     assert held.value == 90
 
 
+def test_a_custom_equal_has_no_earlier_value_to_keep_under_a_sample():
+    s = Signal(0)
+    near = Computed(lambda: s.value, equal=lambda old, new: abs(old - new) < 10)
+    assert near.value == 0
+    assert sample(near, s, 1).value == 1
+    s.value = 15
+    assert near.value == 15
+    assert sample(near, s, 1).value == 1
+
+
 def test_samples_of_samples():
     frame = Signal(0)
     position = computed(lambda f: f * 10)(frame)

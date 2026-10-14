@@ -89,6 +89,12 @@ def sample[T, S](value: HasValue[T], signal: Signal[S], at: HasValue[S]) -> Comp
     Values that do not depend on `signal` are read as they are; values that
     do are calculated again for `at`, and the result keeps them.
 
+    Those values are calculated as on a first read, so a computed's custom
+    `equal` has no earlier value to keep. Where `Signal.at()` would keep a
+    cached value because `equal` accepts the new one, `sample` gives the new
+    one, which that `equal` calls equal to it. This also means the result does
+    not depend on what the live graph cached when it was read.
+
     A [Computed][signified.Computed] cannot change signals, including with
     [Signal.at][signified.Signal.at]; use `sample` to read a value at another
     value of a signal.
