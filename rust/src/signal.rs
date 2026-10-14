@@ -213,7 +213,11 @@ pub(crate) fn read_signal<'py>(
 ) -> PyResult<Bound<'py, PyAny>> {
     // The hook runs first and may write this signal; the value and the
     // version the read registers are both taken after it.
-    hooks::call(py, Hook::Read, handle)?;
+    if hooks::read_is_special() {
+        if let Some(value) = hooks::special_read(py, node, handle)? {
+            return Ok(value);
+        }
+    }
     let value = match node.value.borrow().as_ref() {
         Some(value) => value.bind(py).clone(),
         None => return Err(uninitialized()),

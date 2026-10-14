@@ -77,6 +77,51 @@ def computed[R](func: Callable[..., R]) -> Callable[..., Computed[R]]:
     return wrapper
 
 
+def sample[T, S](value: HasValue[T], signal: Signal[S], at: HasValue[S]) -> Computed[T]:
+    """Return a [Computed][signified.Computed] holding `value` as if `signal` held `at`.
+
+    Reading the result gives what reading `value` inside `with signal.at(at):`
+    would give, without changing `signal` or any cached value. `at` may be
+    reactive; it is read with `signal`'s real value, then substituted.
+
+    The result recalculates when `at` changes, or when something `value` read
+    other than `signal` changes. Changing only `signal` leaves it cached.
+    Values that do not depend on `signal` are read as they are; values that
+    do are calculated again for `at`, and the result keeps them.
+
+    A [Computed][signified.Computed] cannot change signals, including with
+    [Signal.at][signified.Signal.at]; use `sample` to read a value at another
+    value of a signal.
+
+    Args:
+        value: The value to read.
+        signal: The [Signal][signified.Signal] to give another value.
+        at: The value `signal` holds while `value` is read.
+
+    Returns:
+        A [Computed][signified.Computed] of `value` as if `signal` held `at`.
+
+    Raises:
+        TypeError: If `signal` is not a [Signal][signified.Signal].
+
+    Example:
+        ```py
+        >>> frame = Signal(0)
+        >>> position = computed(lambda f: f * 10)(frame)
+        >>> held = sample(position, frame, 3)
+        >>> until = sample(position, frame, computed(lambda f: min(f, 3))(frame))
+        >>> frame.value = 2
+        >>> held.value, until.value
+        (30, 20)
+        >>> frame.value = 5
+        >>> held.value, until.value, position.value
+        (30, 30, 50)
+
+        ```
+    """
+    return _core.sample_call(Computed, value, signal, at)
+
+
 def effect(func: Callable[..., None]) -> Callable[..., Effect]:
     """Make a function start an [Effect][signified.Effect] each time it is called.
 

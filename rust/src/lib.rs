@@ -44,6 +44,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(contexts::is_tracking, m)?)?;
     m.add_function(wrap_pyfunction!(values::has_changed, m)?)?;
     m.add_function(wrap_pyfunction!(computed::computed_call, m)?)?;
+    m.add_function(wrap_pyfunction!(computed::sample_call, m)?)?;
     m.add_function(wrap_pyfunction!(values::unref, m)?)?;
     m.add_function(wrap_pyfunction!(values::is_reactive, m)?)?;
     native::add_capsule(m)?;

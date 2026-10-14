@@ -44,6 +44,13 @@ pub(crate) enum Compute {
         kernel: NativeKernel,
         args: Vec<Py<PyAny>>,
     },
+    /// `value` as if `signal` held `at`'s value (see `sampling`).
+    Sample {
+        value: Py<PyAny>,
+        signal: Py<PyAny>,
+        signal_node: Rc<Node>,
+        at: Py<PyAny>,
+    },
 }
 
 impl Compute {
@@ -63,6 +70,13 @@ impl Compute {
                     visit.call(arg)?;
                 }
                 Ok(())
+            }
+            Compute::Sample {
+                value, signal, at, ..
+            } => {
+                visit.call(value)?;
+                visit.call(signal)?;
+                visit.call(at)
             }
         }
     }

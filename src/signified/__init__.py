@@ -12,6 +12,7 @@ Classes:
 Functions:
     unref: Dereference a potentially reactive value.
     computed: Decorator to create a reactive value from a function.
+    sample: A value as if a signal held another value.
     as_rx: Convert a value to a reactive value if it's not already reactive.
     has_value: Type guard to check if an object has a value of a specific type.
     is_reactive: Type guard to check if an object is a reactive wrapper.
@@ -28,7 +29,7 @@ Attributes:
 # Import _mixin first to initialize _ReactiveMixIn before runtime classes.
 from . import _mixin
 from ._fields import tracked_fields
-from ._functions import as_rx, computed, effect, has_value, unref
+from ._functions import as_rx, computed, effect, has_value, sample, unref
 from ._reactive import Binding, Computed, Effect, Signal, Variable, is_reactive, untracked
 from ._resolve import ResolveContext, deep_unref
 from ._scheduler import batch
@@ -44,6 +45,7 @@ __all__ = [
     "Effect",
     "computed",
     "effect",
+    "sample",
     "unref",
     "as_rx",
     "HasValue",

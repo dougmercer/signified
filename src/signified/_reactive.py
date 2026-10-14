@@ -387,6 +387,11 @@ class Signal[T](_core.Signal[T], Variable[T]):
         the signal is written again inside the context, exit falls back to an
         ordinary assignment.
 
+        A [Computed][signified.Computed] cannot change signals, so inside one
+        `at()` raises `RuntimeError` unless `value` is the value the signal
+        already holds. To read a value as if the signal held another value,
+        use [sample][signified.sample].
+
         Args:
             value: The temporary value to set.
 

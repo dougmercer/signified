@@ -4,6 +4,7 @@ use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::engine::node::Node;
+use crate::engine::sampling::Substitutions;
 use crate::engine::scheduler::Queue;
 use crate::engine::tracking::Frames;
 
@@ -17,6 +18,7 @@ pub(crate) struct Runtime {
     pub(crate) wave_depth: Cell<u32>,
     pub(crate) frames: Frames,
     pub(crate) queue: Queue,
+    pub(crate) substitutions: Substitutions,
 }
 
 thread_local! {
@@ -26,6 +28,7 @@ thread_local! {
             wave_depth: Cell::new(0),
             frames: Frames::new(),
             queue: Queue::new(),
+            substitutions: Substitutions::new(),
         }
     };
 }

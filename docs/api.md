@@ -131,6 +131,7 @@ value return a [Computed][signified.Computed] that follows its operands. The
 ::: signified.as_rx
 ::: signified.batch
 ::: signified.untracked
+::: signified.sample
 ::: signified.tracked_fields
 
 ## Nested values

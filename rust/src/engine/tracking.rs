@@ -137,7 +137,8 @@ fn computed_is_evaluating() -> bool {
 pub(crate) fn check_change_allowed() -> PyResult<()> {
     if computed_is_evaluating() {
         return Err(PyRuntimeError::new_err(
-            "cannot change a reactive value while a Computed is being evaluated",
+            "cannot change a reactive value while a Computed is being evaluated; to read a \
+             value as if a Signal held another value, use signified.sample()",
         ));
     }
     Ok(())
@@ -181,6 +182,14 @@ pub(crate) fn track_read(node: &Rc<Node>, handle: &Bound<'_, PyAny>) {
             }
         }
     })
+}
+
+/// Register a read of `node` by `reader`, which is running but need not be
+/// the innermost frame.
+pub(crate) fn track_read_by(reader: &Rc<Node>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) {
+    if !Rc::ptr_eq(reader, node) {
+        register_dependency(reader, node, handle);
+    }
 }
 
 /// Stamp `dep`'s link with the current run, adding the link if needed. While

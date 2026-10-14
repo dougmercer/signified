@@ -3,7 +3,8 @@
 A change made while a computed is being evaluated reaches dependents that
 are halfway through their own evaluation or not yet subscribed, and left
 some of them stuck on an old value. It raises instead, and the error is
-cached like any other error from the function.
+cached like any other error from the function. `signified.sample()` reads a
+value as if a signal held another value without changing anything.
 """
 
 from dataclasses import dataclass
