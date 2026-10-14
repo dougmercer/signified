@@ -9,7 +9,7 @@ use pyo3::types::PyWeakrefReference;
 
 use crate::engine::node::{ComputedState, Node, Role, State};
 use crate::engine::observer_list::Observer;
-use crate::engine::runtime::with_rt;
+use crate::engine::runtime::{bump_clock, with_rt};
 use crate::engine::scheduler;
 
 /// Mark stale and return whether observers still need to hear about it.
@@ -73,7 +73,8 @@ pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
 /// that computed it for themselves evaluate again. Those samples do not
 /// observe it, so that a change to the signal they replace leaves them
 /// alone, and they hear about every explicit invalidation whatever the
-/// computed's own notification state.
+/// computed's own notification state. The clock advances with them, so
+/// their readers cannot take the unchanged-graph shortcut.
 pub(crate) fn notify_explicitly(
     py: Python<'_>,
     computed: &Rc<Node>,
@@ -86,6 +87,9 @@ pub(crate) fn notify_explicitly(
         .iter()
         .filter_map(Weak::upgrade)
         .collect();
+    if !samples.is_empty() {
+        bump_clock();
+    }
     let outermost = with_rt(|rt| {
         let walking = Walking::enter(&rt.wave_depth);
         if tell_observers {

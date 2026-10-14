@@ -2,7 +2,7 @@
 
 import pytest
 
-from signified import Binding, Computed, Signal, batch, computed, sample, untracked
+from signified import Binding, Computed, Effect, Signal, batch, computed, sample, untracked
 from signified._core import _native_test_sum
 
 
@@ -155,6 +155,24 @@ def test_every_invalidation_of_a_sampled_computed_reaches_the_sample():
         total.invalidate()
         seen.append(held.value)
     assert seen == [8, 9, 10]
+
+
+def test_repeated_invalidations_reach_readers_and_effects_of_a_sample():
+    s = Signal(1)
+    external = [1]
+    total = Computed(lambda: s.value + external[0])
+    held = sample(total, s, 7)
+    reader = Computed(lambda: held.value * 10)
+    seen = []
+    effect = Effect(lambda: seen.append(reader.value))
+    values = [reader.value]
+    for value in (2, 3, 4):
+        external[0] = value
+        total.invalidate()
+        values.append(reader.value)
+    assert values == [80, 90, 100, 110]
+    assert seen == [80, 90, 100, 110]
+    effect.dispose()
 
 
 def test_sampling_computeds_that_read_each_other_raises_the_cycle_error():
