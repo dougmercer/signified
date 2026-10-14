@@ -6,18 +6,9 @@ This page summarizes notable changes across releases.
 
 ### Fixes
 
-- A plugin's `updated` hook that raises no longer leaves dependents stale. The
-  change is still sent, and effects still run, before the hook's error
-  propagates. Previously, when the hook raised during an assignment,
-  `Signal.update()`, or the end of a `Signal.at()` block, the signal kept its
-  new value but the calculations that read it kept their old results. If an
-  effect also raises, its error propagates with the hook's error as its
-  `__context__`.
+- A plugin's `updated` hook that raises no longer leaves dependents stale.
 - `copy.copy()` of a `tracked_fields` instance that keeps its fields in the
-  instance dict now holds the values it was copied with. Previously, once a
-  calculation had read a field of the original, the copy could pick up later
-  assignments to the original. For such classes, `tracked_fields` now wraps
-  `__getstate__` so the state it returns holds plain values.
+  instance dict now holds the values it was copied with.
 - A `Computed` with `equal=` no longer calls `equal` for a new result that the
   built-in rules already count as unchanged, such as a newly created `int`
   equal to the previous one. `Signal` already worked this way, as described
