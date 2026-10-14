@@ -1865,6 +1865,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#signified.sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;sample
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified.tracked_fields" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3195,6 +3206,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#signified.sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;sample
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#signified.tracked_fields" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3484,6 +3506,10 @@ dependent that was not read inside the context is not left needing a
 recompute. Dependents read inside the context recompute as usual. If
 the signal is written again inside the context, exit falls back to an
 ordinary assignment.</p>
+<p>A <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> cannot change signals, so inside one
+<code>at()</code> raises <code>RuntimeError</code> unless <code>value</code> is the value the signal
+already holds. To read a value as if the signal held another value,
+use <a class="autorefs autorefs-internal" href="#signified.sample">sample</a>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10095,6 +10121,165 @@ body and flush failures are grouped together.</p>
 current values and retain normal hooks and errors. Applies only to the
 thread that enters it; this context must not span await.</p>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="signified.sample" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">signified.sample</span>
+
+
+<a href="#signified.sample" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">sample</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">at</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Return a <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> holding <code>value</code> as if <code>signal</code> held <code>at</code>.</p>
+<p>Reading the result gives what reading <code>value</code> inside <code>with signal.at(at):</code>
+would give, without changing <code>signal</code> or any cached value. <code>at</code> may be
+reactive; it is read with <code>signal</code>'s real value, then substituted.</p>
+<p>The result recalculates when <code>at</code> changes, or when something <code>value</code> read
+other than <code>signal</code> changes. Changing only <code>signal</code> leaves it cached.
+Values that do not depend on <code>signal</code> are read as they are; values that
+do are calculated again for <code>at</code>, and the result keeps them.</p>
+<p>Those values are calculated as on a first read, so a computed's custom
+<code>equal</code> has no earlier value to keep. Where <code>Signal.at()</code> would keep a
+cached value because <code>equal</code> accepts the new one, <code>sample</code> gives the new
+one, which that <code>equal</code> calls equal to it. This also means the result does
+not depend on what the live graph cached when it was read.</p>
+<p>A <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> cannot change signals, including with
+<a class="autorefs autorefs-internal" href="#signified.Signal.at">Signal.at</a>; use <code>sample</code> to read a value at another
+value of a signal.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>value</code>
+            </td>
+            <td>
+                  <code><span title="signified._types.HasValue">HasValue</span>[<span title="signified._functions.sample[T]">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value to read.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>signal</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a>[<span title="signified._functions.sample[S]">S</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The <a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a> to give another value.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>at</code>
+            </td>
+            <td>
+                  <code><span title="signified._types.HasValue">HasValue</span>[<span title="signified._functions.sample[S]">S</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The value <code>signal</code> holds while <code>value</code> is read.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a>[<span title="signified._functions.sample[T]">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A <a class="autorefs autorefs-internal" href="#signified.Computed">Computed</a> of <code>value</code> as if <code>signal</code> held <code>at</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="TypeError">TypeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>signal</code> is not a <a class="autorefs autorefs-internal" href="#signified.Signal">Signal</a>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">position</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)(</span><span class="n">frame</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">held</span> <span class="o">=</span> <span class="n">sample</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">until</span> <span class="o">=</span> <span class="n">sample</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">computed</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">3</span><span class="p">))(</span><span class="n">frame</span><span class="p">))</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">frame</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">held</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">until</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">frame</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">5</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">held</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">until</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">position</span><span class="o">.</span><span class="n">value</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+</span></code></pre></div>
+</details>
 
     </div>
 
