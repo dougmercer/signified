@@ -144,6 +144,19 @@ def test_invalidating_a_sampled_computed_updates_the_sample_and_its_readers():
     assert total.value == 3
 
 
+def test_every_invalidation_of_a_sampled_computed_reaches_the_sample():
+    s = Signal(1)
+    external = [1]
+    total = Computed(lambda: s.value + external[0])
+    held = sample(total, s, 7)
+    seen = [held.value]
+    for value in (2, 3):
+        external[0] = value
+        total.invalidate()
+        seen.append(held.value)
+    assert seen == [8, 9, 10]
+
+
 def test_sampling_computeds_that_read_each_other_raises_the_cycle_error():
     a = Computed(lambda: b.value)
     b = Computed(lambda: a.value)

@@ -52,22 +52,13 @@ impl Drop for Walking<'_> {
 /// depth-first, and queue dependent effects and `_subscribe()` observers.
 /// No Python code runs during the walk. Queued work runs once the outermost
 /// walk ends, unless a batch or flush is in progress.
-///
-/// A computed is a start only when invalidated explicitly, and then the
-/// samples that computed it for themselves must evaluate again too.
 pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
-    let samplers = samplers_of(start);
-    if start.observers.is_empty() && samplers.is_empty() {
+    if start.observers.is_empty() {
         return Ok(());
     }
     let outermost = with_rt(|rt| {
         let walking = Walking::enter(&rt.wave_depth);
         walk(py, start);
-        for sampler in &samplers {
-            if invalidate(sampler.computed_state(), true) && !sampler.observers.is_empty() {
-                walk(py, sampler);
-            }
-        }
         drop(walking);
         rt.wave_depth.get() == 0
     });
@@ -77,17 +68,41 @@ pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
     Ok(())
 }
 
-/// The live samples that computed `node` for themselves.
-fn samplers_of(node: &Node) -> Vec<Rc<Node>> {
-    match &node.role {
-        Role::Computed(computed) => computed
-            .samplers
-            .borrow()
-            .iter()
-            .filter_map(Weak::upgrade)
-            .collect(),
-        _ => Vec::new(),
+/// An explicit invalidation of a computed (`update()`, `invalidate()`,
+/// `_notify()`): tell its observers if `tell_observers`, and make the samples
+/// that computed it for themselves evaluate again. Those samples do not
+/// observe it, so that a change to the signal they replace leaves them
+/// alone, and they hear about every explicit invalidation whatever the
+/// computed's own notification state.
+pub(crate) fn notify_explicitly(
+    py: Python<'_>,
+    computed: &Rc<Node>,
+    tell_observers: bool,
+) -> PyResult<()> {
+    let samples: Vec<Rc<Node>> = computed
+        .computed_state()
+        .samplers
+        .borrow()
+        .iter()
+        .filter_map(Weak::upgrade)
+        .collect();
+    let outermost = with_rt(|rt| {
+        let walking = Walking::enter(&rt.wave_depth);
+        if tell_observers {
+            walk(py, computed);
+        }
+        for sample in &samples {
+            if invalidate(sample.computed_state(), true) {
+                walk(py, sample);
+            }
+        }
+        drop(walking);
+        rt.wave_depth.get() == 0
+    });
+    if outermost {
+        scheduler::flush(py)?;
     }
+    Ok(())
 }
 
 enum Step {
