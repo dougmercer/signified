@@ -3,7 +3,7 @@
 
 use std::rc::Rc;
 
-use pyo3::exceptions::PyAttributeError;
+use pyo3::exceptions::{PyAttributeError, PyTypeError};
 use pyo3::gc::PyVisit;
 use pyo3::intern;
 use pyo3::prelude::*;
@@ -15,6 +15,7 @@ use crate::engine::node::{Compute, Node, RestorePoint, Role, State};
 use crate::engine::{invalidation, refresh, runtime, tracking};
 use crate::hooks::{self, Hook};
 use crate::shared::Shared;
+use crate::signal::SignalCore;
 use crate::subscribe;
 use crate::values;
 
@@ -134,25 +135,26 @@ impl ComputedCore {
 
     /// Mark this computed stale and notify its observers.
     fn update(&self, py: Python<'_>) -> PyResult<()> {
-        if invalidation::invalidate(self.node.computed_state(), false) {
-            invalidation::notify(py, &self.node)?;
-        }
-        Ok(())
+        tracking::check_change_allowed()?;
+        let tell = invalidation::invalidate(self.node.computed_state(), false);
+        invalidation::notify_explicitly(py, &self.node, tell)
     }
 
     /// Force a full recomputation on the next read, even if dependency
     /// versions look unchanged.
     fn _invalidate(&self, py: Python<'_>) -> PyResult<()> {
-        if !invalidation::invalidate(self.node.computed_state(), true) {
-            return Ok(());
+        tracking::check_change_allowed()?;
+        let tell = invalidation::invalidate(self.node.computed_state(), true);
+        if tell {
+            runtime::bump_clock();
         }
-        runtime::bump_clock();
-        invalidation::notify(py, &self.node)
+        invalidation::notify_explicitly(py, &self.node, tell)
     }
 
     /// Notify all observers without marking a change.
     fn _notify(&self, py: Python<'_>) -> PyResult<()> {
-        invalidation::notify(py, &self.node)
+        tracking::check_change_allowed()?;
+        invalidation::notify_explicitly(py, &self.node, true)
     }
 
     /// Subscribe an observer after evaluating, so the observer sees every
@@ -239,7 +241,11 @@ pub(crate) fn read_computed<'py>(
     node: &Rc<Node>,
     handle: &Bound<'py, PyAny>,
 ) -> PyResult<Bound<'py, PyAny>> {
-    hooks::call(py, Hook::Read, handle)?;
+    if hooks::read_is_special() {
+        if let Some(value) = hooks::special_read(py, node, handle)? {
+            return Ok(value);
+        }
+    }
     let refreshed = refresh::ensure_uptodate(py, node, handle);
     // Register the read even when the refresh raises, so the reader retries.
     tracking::track_read(node, handle);
@@ -257,4 +263,32 @@ pub(crate) fn read_computed<'py>(
         return Err(PyErr::from_value(exception));
     }
     Ok(node.raw_value(py))
+}
+
+/// A new `cls` (a `Computed` class) holding `value` as if `signal` held
+/// `at`'s value; see `engine::sampling`.
+#[pyfunction]
+pub fn sample_call<'py>(
+    cls: &Bound<'py, PyType>,
+    value: Py<PyAny>,
+    signal: &Bound<'py, PyAny>,
+    at: Py<PyAny>,
+) -> PyResult<Bound<'py, PyAny>> {
+    let Ok(core) = signal.cast::<SignalCore>() else {
+        return Err(PyTypeError::new_err(format!(
+            "sample() replaces the value of a Signal, not a {}",
+            signal.get_type().name()?
+        )));
+    };
+    let signal_node = Rc::clone(&core.get().node);
+    let obj = cls.call_method1(intern!(cls.py(), "__new__"), (cls,))?;
+    let compute = Compute::Sample {
+        value,
+        signal: signal.clone().unbind(),
+        signal_node,
+        at,
+    };
+    let node = &obj.cast::<ComputedCore>()?.get().node;
+    init_computed(&obj, node, compute, None)?;
+    Ok(obj)
 }

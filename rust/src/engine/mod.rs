@@ -1,5 +1,6 @@
 //! The reactive graph: push invalidation, pull refresh with version checks,
-//! mark-and-sweep dependency tracking, and the queue that runs effects.
+//! mark-and-sweep dependency tracking, the queue that runs effects, and
+//! sampled evaluations.
 //!
 //! The engine contains no `unsafe` code; the compiler enforces it below. It
 //! uses only pyo3's safe API, and the modules outside it hold what cannot be
@@ -24,5 +25,6 @@ pub(crate) mod node;
 pub(crate) mod observer_list;
 pub(crate) mod refresh;
 pub(crate) mod runtime;
+pub(crate) mod sampling;
 pub(crate) mod scheduler;
 pub(crate) mod tracking;

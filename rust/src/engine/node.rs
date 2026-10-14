@@ -3,7 +3,7 @@
 
 use std::cell::{Cell, RefCell};
 use std::num::NonZeroU64;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use pyo3::gc::PyVisit;
 use pyo3::prelude::*;
@@ -44,6 +44,13 @@ pub(crate) enum Compute {
         kernel: NativeKernel,
         args: Vec<Py<PyAny>>,
     },
+    /// `value` as if `signal` held `at`'s value (see `sampling`).
+    Sample {
+        value: Py<PyAny>,
+        signal: Py<PyAny>,
+        signal_node: Rc<Node>,
+        at: Py<PyAny>,
+    },
 }
 
 impl Compute {
@@ -63,6 +70,13 @@ impl Compute {
                     visit.call(arg)?;
                 }
                 Ok(())
+            }
+            Compute::Sample {
+                value, signal, at, ..
+            } => {
+                visit.call(value)?;
+                visit.call(signal)?;
+                visit.call(at)
             }
         }
     }
@@ -157,6 +171,8 @@ pub(crate) struct ComputedState {
     pub(crate) clock_seen: Cell<u64>,
     pub(crate) error: RefCell<Option<CachedError>>,
     pub(crate) restore: RefCell<Option<RestorePoint>>,
+    /// Samples that computed this node for themselves (see `sampling`).
+    pub(crate) samplers: RefCell<Vec<Weak<Node>>>,
 }
 
 /// A computed starts uninitialized.
@@ -171,6 +187,7 @@ impl Default for ComputedState {
             clock_seen: Cell::new(NEVER),
             error: RefCell::new(None),
             restore: RefCell::new(None),
+            samplers: RefCell::new(Vec::new()),
         }
     }
 }

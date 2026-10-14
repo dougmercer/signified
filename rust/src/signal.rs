@@ -14,7 +14,7 @@ use crate::class_getitem;
 use crate::engine::invalidation;
 use crate::engine::node::{Node, Role};
 use crate::engine::runtime::{bump_clock, bump_version};
-use crate::engine::tracking::track_read;
+use crate::engine::tracking::{self, track_read};
 use crate::hooks::{self, Hook};
 use crate::shared::Shared;
 use crate::subscribe;
@@ -119,6 +119,7 @@ impl SignalCore {
 
     /// Notify all observers without marking a change.
     fn _notify(&self, py: Python<'_>) -> PyResult<()> {
+        tracking::check_change_allowed()?;
         invalidation::notify(py, &self.node)
     }
 
@@ -161,6 +162,7 @@ impl SignalCore {
                 text
             )));
         }
+        tracking::check_change_allowed()?;
         wrapped.setattr(name, value)?;
         update_signal(py, node, slf.as_any())
     }
@@ -212,7 +214,11 @@ pub(crate) fn read_signal<'py>(
 ) -> PyResult<Bound<'py, PyAny>> {
     // The hook runs first and may write this signal; the value and the
     // version the read registers are both taken after it.
-    hooks::call(py, Hook::Read, handle)?;
+    if hooks::read_is_special() {
+        if let Some(value) = hooks::special_read(py, node, handle)? {
+            return Ok(value);
+        }
+    }
     let value = match node.value.borrow().as_ref() {
         Some(value) => value.bind(py).clone(),
         None => return Err(uninitialized()),
@@ -245,6 +251,7 @@ pub(crate) fn write_signal(
             return Ok(());
         }
     }
+    tracking::check_change_allowed()?;
     let previous = node.value.replace(Some(value.unbind()));
     bump_version(node);
     drop(previous);
@@ -254,6 +261,7 @@ pub(crate) fn write_signal(
 
 /// Notify a signal's observers unconditionally (after an in-place mutation).
 fn update_signal(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
+    tracking::check_change_allowed()?;
     bump_version(node);
     announce_update(py, node, handle)
 }

@@ -274,7 +274,7 @@ def test_created_hook_can_read_an_operator_result(monkeypatch) -> None:
     assert total.value == 7
 
 
-def test_read_hook_that_writes_the_signal_leaves_readers_current(monkeypatch) -> None:
+def test_read_hook_cannot_write_the_signal_a_computed_is_reading(monkeypatch) -> None:
     source = Signal(1)
 
     class BumpsOnFirstRead(RecordingHook):
@@ -287,7 +287,26 @@ def test_read_hook_that_writes_the_signal_leaves_readers_current(monkeypatch) ->
 
     monkeypatch.setattr(_core.config, "hooks", BumpsOnFirstRead())
     scaled = Computed(lambda: source.value * 10)
-    assert scaled.value == 20
+    with pytest.raises(RuntimeError, match="while a Computed is being evaluated"):
+        scaled.value
+    assert source.value == 1
+
+
+def test_read_hook_may_write_the_signal_on_a_read_outside_computeds(monkeypatch) -> None:
+    source = Signal(1)
+    scaled = Computed(lambda: source.value * 10)
+    assert scaled.value == 10
+
+    class BumpsOnFirstRead(RecordingHook):
+        done = False
+
+        def read(self, *, value: Variable[Any]) -> None:
+            if value is source and not self.done:
+                self.done = True
+                source.value = 2
+
+    monkeypatch.setattr(_core.config, "hooks", BumpsOnFirstRead())
+    assert source.value == 2
     assert scaled.value == 20
 
 

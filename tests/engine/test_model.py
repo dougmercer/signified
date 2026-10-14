@@ -5,13 +5,17 @@ their dependencies change) and some through a sign (so changes often stop
 there). After every step, each value read must match a direct evaluation,
 a repeated read must evaluate nothing, and an effect watching one computed
 must have run exactly when that computed's value changed.
+
+With samples, some nodes are `sample(node, signal, at)` with a plain or
+reactive `at`, which later nodes may read, and some reads happen inside
+`Signal.at()` blocks.
 """
 
 import random
 
 import pytest
 
-from signified import Computed, Effect, Signal, batch
+from signified import Computed, Effect, Signal, batch, sample
 
 
 def evaluate(formula, value):
@@ -35,7 +39,7 @@ def random_formula(rng, index):
     return kind, [rng.randrange(index)]
 
 
-def run(seed):
+def run(seed, samples=False):
     rng = random.Random(seed)
     signals = rng.randint(2, 7)
     computeds = rng.randint(1, 40)
@@ -46,6 +50,14 @@ def run(seed):
     evaluations = [0]
 
     for index in range(signals, signals + computeds):
+        if samples and rng.random() < 0.2:
+            # A sample of an earlier node, at a plain value or at an earlier node's value.
+            node, signal = rng.randrange(index), rng.randrange(signals)
+            at = ("plain", rng.randint(-2, 2)) if rng.random() < 0.5 else ("node", rng.randrange(index))
+            formulas.append(("sample", (node, signal, at)))
+            at_value = at[1] if at[0] == "plain" else nodes[at[1]]
+            nodes.append(sample(nodes[node], sources[signal], at_value))
+            continue
         formula = random_formula(rng, index)
         formulas.append(formula)
 
@@ -55,11 +67,21 @@ def run(seed):
 
         nodes.append(Computed(compute))
 
-    def model():
-        everything = list(values)
-        for formula in formulas:
-            everything.append(evaluate(formula, everything.__getitem__))
+    def model_of(world, upto):
+        """Every node's value up to `upto` when the signals hold `world`."""
+        everything = list(world)
+        for formula in formulas[: max(0, upto + 1 - signals)]:
+            if formula[0] == "sample":
+                node, signal, (kind, at) = formula[1]
+                substituted = list(world)
+                substituted[signal] = at if kind == "plain" else everything[at]
+                everything.append(model_of(substituted, node)[node])
+            else:
+                everything.append(evaluate(formula, everything.__getitem__))
         return everything
+
+    def model():
+        return model_of(values, len(nodes) - 1)
 
     watched = signals + rng.randrange(computeds)
     seen = []
@@ -71,13 +93,23 @@ def run(seed):
         sources[signal].value = values[signal]
 
     for step in range(200):
-        action = rng.randrange(4)
+        action = rng.randrange(5 if samples else 4)
         if action < 2:
             write()
         elif action == 2:
             with batch():
                 for _ in range(3):
                     write()
+        elif action == 4:
+            # A read inside `Signal.at()`, which writes at the top level.
+            signal = rng.randrange(signals)
+            held = rng.randint(-2, 2)
+            world = list(values)
+            world[signal] = held
+            index = rng.randrange(len(nodes))
+            with sources[signal].at(held):
+                got = nodes[index].value
+            assert got == model_of(world, index)[index], f"seed {seed}, step {step}, node {index} inside at()"
         else:
             expected = model()
             index = rng.randrange(len(nodes))
@@ -98,3 +130,9 @@ def run(seed):
 def test_random_graphs_match_recomputing_from_scratch(block):
     for seed in range(block * 50, (block + 1) * 50):
         run(seed)
+
+
+@pytest.mark.parametrize("block", range(10))
+def test_random_graphs_with_samples_match_recomputing_from_scratch(block):
+    for seed in range(block * 50, (block + 1) * 50):
+        run(seed, samples=True)

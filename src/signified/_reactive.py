@@ -341,6 +341,7 @@ class Signal[T](_core.Signal[T], Variable[T]):
         wrapped = self._value
         if not isinstance(wrapped, (list, dict)):
             raise TypeError(f"'{type(wrapped).__name__}' object does not support item assignment")
+        _core.check_change_allowed()
         wrapped[key] = value
         self.update()
 
@@ -372,6 +373,7 @@ class Signal[T](_core.Signal[T], Variable[T]):
         wrapped = self._value
         if not isinstance(wrapped, (list, dict)):
             raise TypeError(f"'{type(wrapped).__name__}' object does not support item deletion")
+        _core.check_change_allowed()
         del wrapped[key]
         self.update()
 
@@ -386,6 +388,11 @@ class Signal[T](_core.Signal[T], Variable[T]):
         recompute. Dependents read inside the context recompute as usual. If
         the signal is written again inside the context, exit falls back to an
         ordinary assignment.
+
+        A [Computed][signified.Computed] cannot change signals, so inside one
+        `at()` raises `RuntimeError` unless `value` is the value the signal
+        already holds. To read a value as if the signal held another value,
+        use [sample][signified.sample].
 
         Args:
             value: The temporary value to set.

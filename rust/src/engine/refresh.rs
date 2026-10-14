@@ -10,8 +10,9 @@ use pyo3::types::PyTuple;
 
 use crate::engine::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
 use crate::engine::runtime::{bump_version, clock};
+use crate::engine::sampling;
 use crate::engine::tracking::{
-    commit_refresh, end_frame, is_evaluating, push_frame, start_refresh,
+    as_refresh_callback, commit_refresh, end_frame, is_evaluating, push_frame, start_refresh,
 };
 use crate::hooks::{self, Hook};
 use crate::native;
@@ -102,6 +103,7 @@ pub(crate) fn invalidated_since_read(node: &Node) -> bool {
 #[inline(never)]
 fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
     let computed = node.computed_state();
+    let _live = sampling::live_refresh();
     let restore_point = computed.restore.take();
     if computed.computing.get() {
         // On this thread it is a cycle; otherwise another thread is running it.
@@ -135,7 +137,7 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
     computed.computing.set(true);
     start_refresh(node);
     let depth = push_frame(Some(node.clone()));
-    let mut result = run_compute(py, &compute, current.as_ref());
+    let mut result = run_compute(py, &compute, current.as_ref(), node);
     if let Err(error) = end_frame(depth) {
         result = Err(error);
     }
@@ -176,7 +178,9 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
             .as_ref()
             .map(|equal| equal.clone_ref(py));
         if let (Some(equal), Some(previous), Some(next)) = (&equal, &previous, &next_value) {
-            match call_equal(equal.bind(py), previous.bind(py), next.bind(py)) {
+            match as_refresh_callback(|| {
+                call_equal(equal.bind(py), previous.bind(py), next.bind(py))
+            }) {
                 Ok(true) => changed = false,
                 Ok(false) => {}
                 Err(error) if error.is_instance_of::<PyException>(py) => {
@@ -208,8 +212,8 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
         computed.clock_seen.set(clock());
     }
     drop((old_value, old_error, previous));
-    if changed || forced {
-        hooks::call(py, Hook::Updated, handle)?;
+    if (changed || forced) && hooks::is_on(Hook::Updated) {
+        as_refresh_callback(|| hooks::call(py, Hook::Updated, handle))?;
     }
 
     // 5) A binding read inside `at()` returns to its pre-context value and
@@ -252,11 +256,13 @@ fn restore(py: Python<'_>, node: &Node, point: &RestorePoint) -> PyResult<()> {
 }
 
 /// Inlined into `refresh` to keep nested refreshes shallow; see there.
+/// `reader` is the computed whose dependencies a sample's reads become.
 #[inline(always)]
-fn run_compute(
+pub(crate) fn run_compute(
     py: Python<'_>,
     compute: &Compute,
     current: Option<&Py<PyAny>>,
+    reader: &Rc<Node>,
 ) -> PyResult<Py<PyAny>> {
     match compute {
         Compute::Native { kernel, args } => native::run(py, kernel, args, current),
@@ -281,5 +287,11 @@ fn run_compute(
             let source = unref(py, holder.bind(py))?;
             Ok(unref(py, &source)?.unbind())
         }
+        Compute::Sample {
+            value,
+            signal,
+            signal_node,
+            at,
+        } => sampling::evaluate(py, reader, value, signal_node, signal, at),
     }
 }

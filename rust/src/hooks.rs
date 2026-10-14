@@ -2,10 +2,14 @@
 //! hooks, which are set through `signified._core.config`.
 
 use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyString};
+
+use crate::engine::node::Node;
+use crate::engine::sampling;
 
 /// A plugin hook the engine calls.
 #[derive(Clone, Copy)]
@@ -39,9 +43,15 @@ struct Hooks {
     /// The plugin manager's `hook` object, when hooks are on.
     manager_hook: RefCell<Option<Py<PyAny>>>,
     callers: RefCell<Callers>,
-    /// One bit per hook in `callers`.
+    /// One bit per hook in `callers`, and `SAMPLING`.
     on: Cell<u8>,
+    /// Substitutions active on all threads (see `engine::sampling`).
+    substitutions: Cell<u32>,
 }
+
+/// Set in `on` while any thread evaluates a sample, so a read checks for a
+/// substitution with the same load that checks for a read hook.
+const SAMPLING: u8 = 1 << 7;
 
 // SAFETY: only touched while attached to an interpreter that holds the GIL,
 // which serializes access; see `Shared` in `shared`.
@@ -51,6 +61,7 @@ static HOOKS: Hooks = Hooks {
     manager_hook: RefCell::new(None),
     callers: RefCell::new([None, None, None]),
     on: Cell::new(0),
+    substitutions: Cell::new(0),
 };
 
 fn hooks() -> &'static Hooks {
@@ -93,7 +104,7 @@ impl Config {
         }
         let manager_hook = if hooks.is_none(py) { None } else { Some(hooks) };
         let state = self::hooks();
-        state.on.set(on);
+        state.on.set(on | (state.on.get() & SAMPLING));
         let old = (
             state.manager_hook.replace(manager_hook),
             state.callers.replace(callers),
@@ -101,6 +112,57 @@ impl Config {
         drop(old);
         Ok(())
     }
+}
+
+/// A substitution became active on some thread.
+pub(crate) fn begin_sampling() {
+    let state = hooks();
+    state.substitutions.set(state.substitutions.get() + 1);
+    state.on.set(state.on.get() | SAMPLING);
+}
+
+/// A substitution ended.
+pub(crate) fn end_sampling() {
+    let state = hooks();
+    let active = state.substitutions.get() - 1;
+    state.substitutions.set(active);
+    if active == 0 {
+        state.on.set(state.on.get() & !SAMPLING);
+    }
+}
+
+/// Whether a substitution is active on any thread.
+#[inline(always)]
+pub(crate) fn sampling_active() -> bool {
+    hooks().on.get() & SAMPLING != 0
+}
+
+/// Whether a read must take `special_read`: a read hook is on, or a sample is
+/// being evaluated.
+#[inline(always)]
+pub(crate) fn read_is_special() -> bool {
+    hooks().on.get() & (Hook::Read.bit() | SAMPLING) != 0
+}
+
+/// A read's slow path: call the read hook, then let an active substitution
+/// answer the read. `None` means read the live graph as usual.
+#[cold]
+#[inline(never)]
+pub(crate) fn special_read<'py>(
+    py: Python<'py>,
+    node: &Rc<Node>,
+    handle: &Bound<'py, PyAny>,
+) -> PyResult<Option<Bound<'py, PyAny>>> {
+    call(py, Hook::Read, handle)?;
+    if sampling_active() {
+        return sampling::read(py, node);
+    }
+    Ok(None)
+}
+
+/// Whether a plugin implements `hook`.
+pub(crate) fn is_on(hook: Hook) -> bool {
+    hooks().on.get() & hook.bit() != 0
 }
 
 /// Call `hook` with `value=value`, if a plugin implements it.

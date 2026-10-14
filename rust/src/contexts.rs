@@ -14,6 +14,13 @@ pub fn is_tracking() -> bool {
     tracking::is_tracking()
 }
 
+/// Raise `RuntimeError` if a Computed is being evaluated, before a signal's
+/// wrapped object is changed in place.
+#[pyfunction]
+pub fn check_change_allowed() -> PyResult<()> {
+    tracking::check_change_allowed()
+}
+
 /// `with untracked():` reads inside do not subscribe the enclosing
 /// computation or effect.
 #[pyclass(frozen, module = "signified._core", name = "Untracked")]

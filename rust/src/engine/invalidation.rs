@@ -2,14 +2,14 @@
 //! and queue the effects and `_subscribe()` observers that depend on it.
 
 use std::cell::Cell;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
 use crate::engine::node::{ComputedState, Node, Role, State};
 use crate::engine::observer_list::Observer;
-use crate::engine::runtime::with_rt;
+use crate::engine::runtime::{bump_clock, with_rt};
 use crate::engine::scheduler;
 
 /// Mark stale and return whether observers still need to hear about it.
@@ -59,6 +59,47 @@ pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
     let outermost = with_rt(|rt| {
         let walking = Walking::enter(&rt.wave_depth);
         walk(py, start);
+        drop(walking);
+        rt.wave_depth.get() == 0
+    });
+    if outermost {
+        scheduler::flush(py)?;
+    }
+    Ok(())
+}
+
+/// An explicit invalidation of a computed (`update()`, `invalidate()`,
+/// `_notify()`): tell its observers if `tell_observers`, and make the samples
+/// that computed it for themselves evaluate again. Those samples do not
+/// observe it, so that a change to the signal they replace leaves them
+/// alone, and they hear about every explicit invalidation whatever the
+/// computed's own notification state. The clock advances with them, so
+/// their readers cannot take the unchanged-graph shortcut.
+pub(crate) fn notify_explicitly(
+    py: Python<'_>,
+    computed: &Rc<Node>,
+    tell_observers: bool,
+) -> PyResult<()> {
+    let samples: Vec<Rc<Node>> = computed
+        .computed_state()
+        .samplers
+        .borrow()
+        .iter()
+        .filter_map(Weak::upgrade)
+        .collect();
+    if !samples.is_empty() {
+        bump_clock();
+    }
+    let outermost = with_rt(|rt| {
+        let walking = Walking::enter(&rt.wave_depth);
+        if tell_observers {
+            walk(py, computed);
+        }
+        for sample in &samples {
+            if invalidate(sample.computed_state(), true) {
+                walk(py, sample);
+            }
+        }
         drop(walking);
         rt.wave_depth.get() == 0
     });
