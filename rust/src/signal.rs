@@ -14,7 +14,7 @@ use crate::class_getitem;
 use crate::engine::invalidation;
 use crate::engine::node::{Node, Role};
 use crate::engine::runtime::{bump_clock, bump_version};
-use crate::engine::tracking::track_read;
+use crate::engine::tracking::{self, track_read};
 use crate::hooks::{self, Hook};
 use crate::shared::Shared;
 use crate::subscribe;
@@ -119,6 +119,7 @@ impl SignalCore {
 
     /// Notify all observers without marking a change.
     fn _notify(&self, py: Python<'_>) -> PyResult<()> {
+        tracking::check_change_allowed()?;
         invalidation::notify(py, &self.node)
     }
 
@@ -245,6 +246,7 @@ pub(crate) fn write_signal(
             return Ok(());
         }
     }
+    tracking::check_change_allowed()?;
     let previous = node.value.replace(Some(value.unbind()));
     bump_version(node);
     drop(previous);
@@ -254,6 +256,7 @@ pub(crate) fn write_signal(
 
 /// Notify a signal's observers unconditionally (after an in-place mutation).
 fn update_signal(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
+    tracking::check_change_allowed()?;
     bump_version(node);
     announce_update(py, node, handle)
 }

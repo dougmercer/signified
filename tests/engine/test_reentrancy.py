@@ -62,22 +62,6 @@ def test_observer_reads_during_notify():
     assert seen == [6]
 
 
-def test_compute_may_write_an_unrelated_signal():
-    log = Signal(0)
-    s = Signal(1)
-
-    def compute():
-        log.value = log.value + 1
-        return s.value * 2
-
-    c = Computed(compute)
-    assert c.value == 2
-    s.value = 3
-    assert c.value == 6
-    with untracked():
-        assert log.value == 2
-
-
 def test_failed_compute_keeps_dependencies_read_before_failure():
     gate = Signal(False)
     s = Signal(1)

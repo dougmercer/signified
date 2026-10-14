@@ -103,6 +103,11 @@ impl Config {
     }
 }
 
+/// Whether a plugin implements `hook`.
+pub(crate) fn is_on(hook: Hook) -> bool {
+    hooks().on.get() & hook.bit() != 0
+}
+
 /// Call `hook` with `value=value`, if a plugin implements it.
 pub(crate) fn call(py: Python<'_>, hook: Hook, value: &Bound<'_, PyAny>) -> PyResult<()> {
     let hooks = hooks();

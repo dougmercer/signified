@@ -11,7 +11,7 @@ use pyo3::types::PyTuple;
 use crate::engine::node::{CachedError, Compute, ComputedState, Node, RestorePoint, Role, State};
 use crate::engine::runtime::{bump_version, clock};
 use crate::engine::tracking::{
-    commit_refresh, end_frame, is_evaluating, push_frame, start_refresh,
+    as_refresh_callback, commit_refresh, end_frame, is_evaluating, push_frame, start_refresh,
 };
 use crate::hooks::{self, Hook};
 use crate::native;
@@ -176,7 +176,9 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
             .as_ref()
             .map(|equal| equal.clone_ref(py));
         if let (Some(equal), Some(previous), Some(next)) = (&equal, &previous, &next_value) {
-            match call_equal(equal.bind(py), previous.bind(py), next.bind(py)) {
+            match as_refresh_callback(|| {
+                call_equal(equal.bind(py), previous.bind(py), next.bind(py))
+            }) {
                 Ok(true) => changed = false,
                 Ok(false) => {}
                 Err(error) if error.is_instance_of::<PyException>(py) => {
@@ -208,8 +210,8 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
         computed.clock_seen.set(clock());
     }
     drop((old_value, old_error, previous));
-    if changed || forced {
-        hooks::call(py, Hook::Updated, handle)?;
+    if (changed || forced) && hooks::is_on(Hook::Updated) {
+        as_refresh_callback(|| hooks::call(py, Hook::Updated, handle))?;
     }
 
     // 5) A binding read inside `at()` returns to its pre-context value and

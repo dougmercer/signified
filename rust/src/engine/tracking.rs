@@ -15,7 +15,7 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyTuple;
 
-use crate::engine::node::{DepLink, Node, ReaderLink, NEVER, NO_SLOT};
+use crate::engine::node::{DepLink, Node, ReaderLink, Role, NEVER, NO_SLOT};
 use crate::engine::runtime::with_rt;
 
 // ---------------------------------------------------------------------------
@@ -26,16 +26,24 @@ type FrameStack = RefCell<Vec<Option<Rc<Node>>>>;
 
 /// The consumers this thread is evaluating, innermost last; `None` marks an
 /// untracked block. Part of the runtime.
-pub(crate) struct Frames(FrameStack);
+pub(crate) struct Frames {
+    stack: FrameStack,
+    /// Nesting of the Python code a refresh runs outside a computed's
+    /// function: a custom equality or an `updated` hook.
+    refresh_callbacks: Cell<u32>,
+}
 
 impl Frames {
     pub(crate) const fn new() -> Frames {
-        Frames(RefCell::new(Vec::new()))
+        Frames {
+            stack: RefCell::new(Vec::new()),
+            refresh_callbacks: Cell::new(0),
+        }
     }
 }
 
 fn with_frames<R>(f: impl FnOnce(&FrameStack) -> R) -> R {
-    with_rt(|rt| f(&rt.frames.0))
+    with_rt(|rt| f(&rt.frames.stack))
 }
 
 /// Push a tracking frame and return the depth to pass to `end_frame`.
@@ -103,6 +111,60 @@ pub(crate) fn is_evaluating(node: &Rc<Node>) -> bool {
 /// Whether a reactive read right now would register a dependency.
 pub(crate) fn is_tracking() -> bool {
     with_frames(|frames| matches!(frames.borrow().last(), Some(Some(_))))
+}
+
+// ---------------------------------------------------------------------------
+// Changes during an evaluation
+// ---------------------------------------------------------------------------
+
+/// Whether a computed is being evaluated on this thread: its function is
+/// running, or a refresh is running one of its callbacks.
+fn computed_is_evaluating() -> bool {
+    with_rt(|rt| {
+        rt.frames.refresh_callbacks.get() > 0
+            || rt.frames.stack.borrow().iter().any(|frame| {
+                frame
+                    .as_ref()
+                    .is_some_and(|node| matches!(node.role, Role::Computed(_)))
+            })
+    })
+}
+
+/// Fail if a computed is being evaluated on this thread. A change then could
+/// reach dependents halfway through their own refresh, or not yet subscribed,
+/// and leave them stuck on an old value; so computeds cannot change signals
+/// or notify observers, and effects and code outside the graph can.
+pub(crate) fn check_change_allowed() -> PyResult<()> {
+    if computed_is_evaluating() {
+        return Err(PyRuntimeError::new_err(
+            "cannot change a reactive value while a Computed is being evaluated",
+        ));
+    }
+    Ok(())
+}
+
+/// Counts one refresh callback while it lives, so a panic that unwinds
+/// through it cannot leave the count raised.
+struct InCallback;
+
+impl Drop for InCallback {
+    fn drop(&mut self) {
+        with_rt(|rt| {
+            let count = &rt.frames.refresh_callbacks;
+            count.set(count.get() - 1);
+        });
+    }
+}
+
+/// Run Python code that a refresh calls outside the computed's function,
+/// with changes forbidden as they are inside it.
+pub(crate) fn as_refresh_callback<R>(f: impl FnOnce() -> R) -> R {
+    with_rt(|rt| {
+        let count = &rt.frames.refresh_callbacks;
+        count.set(count.get() + 1);
+    });
+    let _in_callback = InCallback;
+    f()
 }
 
 // ---------------------------------------------------------------------------

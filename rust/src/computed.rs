@@ -134,6 +134,7 @@ impl ComputedCore {
 
     /// Mark this computed stale and notify its observers.
     fn update(&self, py: Python<'_>) -> PyResult<()> {
+        tracking::check_change_allowed()?;
         if invalidation::invalidate(self.node.computed_state(), false) {
             invalidation::notify(py, &self.node)?;
         }
@@ -143,6 +144,7 @@ impl ComputedCore {
     /// Force a full recomputation on the next read, even if dependency
     /// versions look unchanged.
     fn _invalidate(&self, py: Python<'_>) -> PyResult<()> {
+        tracking::check_change_allowed()?;
         if !invalidation::invalidate(self.node.computed_state(), true) {
             return Ok(());
         }
@@ -152,6 +154,7 @@ impl ComputedCore {
 
     /// Notify all observers without marking a change.
     fn _notify(&self, py: Python<'_>) -> PyResult<()> {
+        tracking::check_change_allowed()?;
         invalidation::notify(py, &self.node)
     }
 
