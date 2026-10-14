@@ -1,0 +1,369 @@
+/* The Playground is a docs code block you can run: the editor and output use
+   the same surface, font, and syntax colors as the code blocks on every page. */
+
+.signified-playground {
+  --playground-rule: var(--md-default-fg-color--lightest);
+  --playground-surface: var(--md-code-bg-color);
+  --playground-chrome: var(--md-default-bg-color);
+  --playground-muted: var(--md-default-fg-color--light);
+  --playground-signal: var(--md-accent-fg-color);
+  --playground-error: #c62828;
+  --playground-pane-height: clamp(16rem, 45vh, 28rem);
+  --playground-code-size: 0.7rem;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto var(--playground-pane-height);
+  grid-template-areas:
+    "toolbar toolbar"
+    "editor  output";
+  margin: 1.5em 0;
+  border: 1px solid var(--playground-rule);
+  border-radius: 0.2rem;
+  overflow: hidden;
+  background: var(--playground-surface);
+}
+
+[data-md-color-scheme="slate"] .signified-playground {
+  --playground-error: #ff8a80;
+}
+
+.signified-playground[hidden] {
+  display: none;
+}
+
+/* Toolbar */
+
+.signified-playground-toolbar {
+  grid-area: toolbar;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--playground-rule);
+  background: var(--playground-chrome);
+}
+
+.signified-playground-toolbar select {
+  min-width: 0;
+  max-width: 16rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--playground-rule);
+  border-radius: 0.1rem;
+  font: inherit;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color);
+  background: var(--playground-chrome);
+  cursor: pointer;
+}
+
+.signified-playground-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.65rem;
+  color: var(--playground-muted);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signified-playground[data-state="failed"] .signified-playground-status {
+  color: var(--playground-error);
+}
+
+.signified-playground-toolbar button {
+  flex: none;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 0.1rem;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--playground-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.signified-playground-toolbar button:hover {
+  color: var(--md-default-fg-color);
+}
+
+.signified-playground-toolbar select:focus-visible,
+.signified-playground-toolbar button:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 1px;
+}
+
+.signified-playground-toolbar .signified-playground-run {
+  min-width: 4.5rem;
+  color: var(--md-primary-bg-color);
+  background: var(--md-primary-fg-color--dark);
+}
+
+.signified-playground-toolbar .signified-playground-run:hover {
+  color: var(--md-primary-bg-color);
+  background: var(--md-primary-fg-color);
+}
+
+.signified-playground-toolbar .signified-playground-run:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.signified-playground-toolbar .signified-playground-run[data-action="stop"] {
+  border-color: var(--playground-error);
+  color: var(--playground-error);
+  background: transparent;
+}
+
+/* The toolbar's bottom rule carries a signal across while Python is busy. */
+.signified-playground-toolbar::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(
+      90deg,
+      transparent,
+      var(--playground-signal) 30%,
+      var(--playground-signal) 70%,
+      transparent
+    )
+    no-repeat;
+  background-size: 40% 100%;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.signified-playground:is([data-state="loading"], [data-state="running"]) .signified-playground-toolbar::after {
+  opacity: 1;
+  animation: signified-playground-signal 1.4s ease-in-out infinite;
+}
+
+@keyframes signified-playground-signal {
+  from {
+    background-position: -70% 0;
+  }
+  to {
+    background-position: 170% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signified-playground:is([data-state="loading"], [data-state="running"]) .signified-playground-toolbar::after {
+    animation: none;
+    background: var(--playground-signal);
+  }
+}
+
+/* Editor and output */
+
+.signified-playground-editor {
+  grid-area: editor;
+  min-height: 0;
+}
+
+.signified-playground-editor textarea,
+.signified-playground-output {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 0;
+  font-family: var(--md-code-font-family);
+  font-size: var(--playground-code-size);
+  line-height: 1.6;
+  color: var(--md-code-fg-color);
+  background: transparent;
+}
+
+.signified-playground-editor textarea {
+  display: block;
+  resize: none;
+  tab-size: 4;
+}
+
+.signified-playground-editor textarea:focus {
+  outline: none;
+}
+
+.signified-playground-output {
+  grid-area: output;
+  min-height: 0;
+  overflow: auto;
+  border-left: 1px solid var(--playground-rule);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.signified-playground-output:empty::before {
+  content: attr(data-placeholder);
+  font-family: var(--md-text-font-family);
+  color: var(--playground-muted);
+}
+
+.signified-playground-output [data-stream="stderr"] {
+  color: var(--playground-error);
+}
+
+.signified-playground-output [data-stream="notice"] {
+  font-family: var(--md-text-font-family);
+  color: var(--playground-muted);
+}
+
+.signified-playground-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* CodeMirror, themed with Material's code colors so it follows light and dark mode. */
+
+.signified-playground .CodeMirror {
+  height: 100%;
+  font-family: var(--md-code-font-family);
+  font-size: var(--playground-code-size);
+  line-height: 1.6;
+  color: var(--md-code-fg-color);
+  background: transparent;
+}
+
+.signified-playground .CodeMirror-lines {
+  padding: 0.8rem 0;
+}
+
+.signified-playground .CodeMirror pre.CodeMirror-line {
+  padding: 0 1rem 0 0.4rem;
+}
+
+.signified-playground .CodeMirror-gutters {
+  border-right: 0;
+  background: transparent;
+}
+
+.signified-playground .CodeMirror-linenumber {
+  padding: 0 0.4rem 0 0.8rem;
+  color: var(--md-default-fg-color--lighter);
+}
+
+.signified-playground .CodeMirror-cursor {
+  border-left-color: var(--md-code-fg-color);
+}
+
+.signified-playground .CodeMirror-selected,
+.signified-playground .CodeMirror-focused .CodeMirror-selected,
+.signified-playground .CodeMirror-line::selection,
+.signified-playground .CodeMirror-line > span::selection,
+.signified-playground .CodeMirror-line > span > span::selection {
+  background: var(--md-accent-fg-color--transparent);
+}
+
+.signified-playground .cm-s-signified .cm-keyword,
+.signified-playground .cm-s-signified .cm-meta {
+  color: var(--md-code-hl-keyword-color);
+}
+
+.signified-playground .cm-s-signified .cm-builtin {
+  color: var(--md-code-hl-constant-color);
+}
+
+.signified-playground .cm-s-signified .cm-def {
+  color: var(--md-code-hl-function-color);
+}
+
+.signified-playground .cm-s-signified .cm-string,
+.signified-playground .cm-s-signified .cm-string-2 {
+  color: var(--md-code-hl-string-color);
+}
+
+.signified-playground .cm-s-signified .cm-number {
+  color: var(--md-code-hl-number-color);
+}
+
+.signified-playground .cm-s-signified .cm-comment {
+  color: var(--md-code-hl-comment-color);
+}
+
+.signified-playground .cm-s-signified .cm-operator {
+  color: var(--md-code-hl-operator-color);
+}
+
+.signified-playground .cm-s-signified .cm-punctuation {
+  color: var(--md-code-hl-punctuation-color);
+}
+
+.signified-playground .cm-s-signified .cm-variable,
+.signified-playground .cm-s-signified .cm-variable-2,
+.signified-playground .cm-s-signified .cm-property {
+  color: var(--md-code-hl-name-color);
+}
+
+.signified-playground .cm-s-signified .cm-error {
+  color: var(--playground-error);
+}
+
+/* Phones: stack the panes and run edge to edge, like Material's code blocks. */
+
+@media screen and (max-width: 44.9375em) {
+  .signified-playground {
+    --playground-pane-height: 16rem;
+
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto var(--playground-pane-height) 12rem;
+    grid-template-areas:
+      "toolbar"
+      "editor"
+      "output";
+    margin-right: -0.8rem;
+    margin-left: -0.8rem;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  /* Two rows: the example and Run, then the status and the other actions. */
+  .signified-playground-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "example example run"
+      "status  reset   share";
+    padding: 0.5rem 0.8rem;
+  }
+
+  .signified-playground-toolbar select {
+    grid-area: example;
+    max-width: none;
+  }
+
+  .signified-playground-status {
+    grid-area: status;
+    text-align: left;
+  }
+
+  .signified-playground-toolbar [data-playground-reset] {
+    grid-area: reset;
+  }
+
+  .signified-playground-toolbar [data-playground-share] {
+    grid-area: share;
+  }
+
+  .signified-playground-toolbar .signified-playground-run {
+    grid-area: run;
+  }
+
+  .signified-playground-output {
+    border-top: 1px solid var(--playground-rule);
+    border-left: 0;
+  }
+}
