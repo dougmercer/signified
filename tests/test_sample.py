@@ -132,6 +132,30 @@ def test_a_live_value_that_starts_depending_on_the_signal_is_noticed():
     assert held.value == 45
 
 
+def test_invalidating_a_sampled_computed_updates_the_sample_and_its_readers():
+    s = Signal(1)
+    external = [1]
+    total = Computed(lambda: s.value + external[0])
+    reader = computed(lambda v: v)(sample(total, s, 7))
+    assert reader.value == 8
+    external[0] = 2
+    total.invalidate()
+    assert reader.value == 9
+    assert total.value == 3
+
+
+def test_invalidating_a_computed_under_the_sampled_value_updates_the_sample():
+    s = Signal(1)
+    external = [1]
+    total = Computed(lambda: s.value + external[0])
+    scaled = computed(lambda v: v * 10)(total)
+    held = sample(scaled, s, 7)
+    assert held.value == 80
+    external[0] = 2
+    total.invalidate()
+    assert held.value == 90
+
+
 def test_samples_of_samples():
     frame = Signal(0)
     position = computed(lambda f: f * 10)(frame)

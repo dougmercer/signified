@@ -2,7 +2,7 @@
 //! and queue the effects and `_subscribe()` observers that depend on it.
 
 use std::cell::Cell;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
@@ -52,13 +52,22 @@ impl Drop for Walking<'_> {
 /// depth-first, and queue dependent effects and `_subscribe()` observers.
 /// No Python code runs during the walk. Queued work runs once the outermost
 /// walk ends, unless a batch or flush is in progress.
+///
+/// A computed is a start only when invalidated explicitly, and then the
+/// samples that computed it for themselves must evaluate again too.
 pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
-    if start.observers.is_empty() {
+    let samplers = samplers_of(start);
+    if start.observers.is_empty() && samplers.is_empty() {
         return Ok(());
     }
     let outermost = with_rt(|rt| {
         let walking = Walking::enter(&rt.wave_depth);
         walk(py, start);
+        for sampler in &samplers {
+            if invalidate(sampler.computed_state(), true) && !sampler.observers.is_empty() {
+                walk(py, sampler);
+            }
+        }
         drop(walking);
         rt.wave_depth.get() == 0
     });
@@ -66,6 +75,19 @@ pub(crate) fn notify(py: Python<'_>, start: &Rc<Node>) -> PyResult<()> {
         scheduler::flush(py)?;
     }
     Ok(())
+}
+
+/// The live samples that computed `node` for themselves.
+fn samplers_of(node: &Node) -> Vec<Rc<Node>> {
+    match &node.role {
+        Role::Computed(computed) => computed
+            .samplers
+            .borrow()
+            .iter()
+            .filter_map(Weak::upgrade)
+            .collect(),
+        _ => Vec::new(),
+    }
 }
 
 enum Step {

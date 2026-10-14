@@ -284,6 +284,7 @@ fn evaluate_under<'py>(
             outcome: Outcome::Computing,
         },
     );
+    add_sampler(node, &substitution.reader);
     // Reads are tracked for the sample, even inside an `untracked()` block
     // that led here: in the live graph this computed would track them itself.
     let depth = push_frame(Some(substitution.reader.clone()));
@@ -316,6 +317,22 @@ fn evaluate_under<'py>(
     };
     drop(replaced);
     result.map(|value| value.into_bound(py))
+}
+
+/// Record that `sample` computed `node` for itself. The sample does not
+/// observe `node`, since a change to the signal it replaces must not reach
+/// it, but an explicit invalidation of `node` must (see `invalidation`). An
+/// entry stays after a later evaluation stops computing `node`, which costs
+/// at most one extra evaluation.
+fn add_sampler(node: &Node, sample: &Rc<Node>) {
+    let mut samplers = node.computed_state().samplers.borrow_mut();
+    samplers.retain(|sampler| sampler.strong_count() > 0);
+    if !samplers
+        .iter()
+        .any(|sampler| sampler.as_ptr() == Rc::as_ptr(sample))
+    {
+        samplers.push(Rc::downgrade(sample));
+    }
 }
 
 /// `Compute::Sample`: `value` as if `signal` held `at`'s value. `at` is read
