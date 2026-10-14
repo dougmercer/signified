@@ -42,6 +42,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<fields::TrackedField>()?;
     m.add("config", Bound::new(m.py(), hooks::Config)?)?;
     m.add_function(wrap_pyfunction!(contexts::is_tracking, m)?)?;
+    m.add_function(wrap_pyfunction!(contexts::check_change_allowed, m)?)?;
     m.add_function(wrap_pyfunction!(values::has_changed, m)?)?;
     m.add_function(wrap_pyfunction!(computed::computed_call, m)?)?;
     m.add_function(wrap_pyfunction!(computed::sample_call, m)?)?;

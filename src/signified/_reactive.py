@@ -341,6 +341,7 @@ class Signal[T](_core.Signal[T], Variable[T]):
         wrapped = self._value
         if not isinstance(wrapped, (list, dict)):
             raise TypeError(f"'{type(wrapped).__name__}' object does not support item assignment")
+        _core.check_change_allowed()
         wrapped[key] = value
         self.update()
 
@@ -372,6 +373,7 @@ class Signal[T](_core.Signal[T], Variable[T]):
         wrapped = self._value
         if not isinstance(wrapped, (list, dict)):
             raise TypeError(f"'{type(wrapped).__name__}' object does not support item deletion")
+        _core.check_change_allowed()
         del wrapped[key]
         self.update()
 

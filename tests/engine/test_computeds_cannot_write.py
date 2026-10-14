@@ -148,6 +148,45 @@ def test_notifying_a_signals_observers_in_a_compute_raises(change):
 
 @pytest.mark.parametrize(
     "change",
+    [lambda s: s.__setitem__(0, 9), lambda s: s.__delitem__(0)],
+    ids=["item assignment", "item deletion"],
+)
+def test_a_rejected_item_change_leaves_the_list_and_its_readers_alone(change):
+    s = Signal([1, 2])
+    total = computed(sum)(s)
+    assert total.value == 3
+
+    def compute():
+        change(s)
+        return 0
+
+    with pytest.raises(RuntimeError, match=CANNOT_WRITE):
+        Computed(compute).value
+    assert s.value == [1, 2]
+    assert total.value == 3
+
+
+def test_a_rejected_attribute_write_leaves_the_wrapped_object_alone():
+    class Counter:
+        def __init__(self):
+            self.count = 0
+
+    s = Signal(Counter())
+    count = computed(lambda counter: counter.count)(s)
+    assert count.value == 0
+
+    def compute():
+        s.count = 5
+        return 0
+
+    with pytest.raises(RuntimeError, match=CANNOT_WRITE):
+        Computed(compute).value
+    assert s.value.count == 0
+    assert count.value == 0
+
+
+@pytest.mark.parametrize(
+    "change",
     [lambda c: c.update(), lambda c: c._invalidate(), lambda c: c._notify()],
     ids=["update", "invalidate", "notify"],
 )

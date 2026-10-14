@@ -162,6 +162,7 @@ impl SignalCore {
                 text
             )));
         }
+        tracking::check_change_allowed()?;
         wrapped.setattr(name, value)?;
         update_signal(py, node, slf.as_any())
     }
