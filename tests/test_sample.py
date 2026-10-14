@@ -144,6 +144,15 @@ def test_invalidating_a_sampled_computed_updates_the_sample_and_its_readers():
     assert total.value == 3
 
 
+def test_sampling_computeds_that_read_each_other_raises_the_cycle_error():
+    a = Computed(lambda: b.value)
+    b = Computed(lambda: a.value)
+    with pytest.raises(RuntimeError, match="Cycle"):
+        a.value
+    with pytest.raises(RuntimeError, match="Cycle"):
+        sample(a, Signal(0), 1).value
+
+
 def test_invalidating_a_computed_under_the_sampled_value_updates_the_sample():
     s = Signal(1)
     external = [1]

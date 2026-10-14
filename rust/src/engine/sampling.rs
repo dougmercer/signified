@@ -15,7 +15,7 @@
 //! changes.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use pyo3::exceptions::{PyException, PyRuntimeError};
@@ -179,6 +179,10 @@ pub(crate) fn read<'py>(py: Python<'py>, node: &Rc<Node>) -> PyResult<Option<Bou
 /// Every other signal found becomes a dependency of the sample. A change to
 /// one can make the computed read a substituted signal while its own value
 /// stays the same, so the sample must look again.
+///
+/// Computeds that read each other are fresh once they cache the cycle error.
+/// Coming back to one still on the path counts as depending, so it is
+/// evaluated under the substitution and raises that error again.
 fn depends_on_substitution(py: Python<'_>, substitution: &Substitution, start: &Rc<Node>) -> bool {
     if let Some(&known) = substitution.depends.borrow().get(&key(start)) {
         return known;
@@ -186,6 +190,7 @@ fn depends_on_substitution(py: Python<'_>, substitution: &Substitution, start: &
     let signals = substituted_signals();
     // Depth-first, with an explicit stack so long chains cannot overflow.
     let mut path: Vec<(Rc<Node>, usize)> = vec![(start.clone(), 0)];
+    let mut on_path: HashSet<usize> = HashSet::from([key(start)]);
     let found = loop {
         let Some((node, index)) = path.last_mut() else {
             break false;
@@ -199,6 +204,7 @@ fn depends_on_substitution(py: Python<'_>, substitution: &Substitution, start: &
         *index += 1;
         let Some((dep, handle)) = next else {
             if let Some((node, _)) = path.pop() {
+                on_path.remove(&key(&node));
                 substitution.depends.borrow_mut().insert(key(&node), false);
             }
             continue;
@@ -216,6 +222,7 @@ fn depends_on_substitution(py: Python<'_>, substitution: &Substitution, start: &
                     Some(true) => break true,
                     Some(false) => {}
                     None if computed.state.get() != State::Fresh => break true,
+                    None if !on_path.insert(key(&dep)) => break true,
                     None => path.push((dep, 0)),
                 }
             }
