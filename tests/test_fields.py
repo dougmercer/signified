@@ -25,6 +25,7 @@ class DictMaterial:
 
 
 materials = pytest.mark.parametrize("cls", [SlotMaterial, DictMaterial])
+duplicates = pytest.mark.parametrize("duplicate", [copy.copy, copy.deepcopy, lambda m: pickle.loads(pickle.dumps(m))])
 
 
 def _counting(read):
@@ -88,7 +89,7 @@ def test_effect_tracks_reassignment(cls):
 
 
 @materials
-@pytest.mark.parametrize("duplicate", [copy.copy, copy.deepcopy, lambda m: pickle.loads(pickle.dumps(m))])
+@duplicates
 def test_copies_are_independent_after_tracked_reads(cls, duplicate):
     m = cls()
     original = Computed(lambda: unref(m.roughness))
@@ -101,6 +102,20 @@ def test_copies_are_independent_after_tracked_reads(cls, duplicate):
     assert (m.roughness, original.value, cloned.value) == (0.5, 0.5, 0.9)
     m.roughness = 0.7
     assert (clone.roughness, original.value, cloned.value) == (0.9, 0.7, 0.9)
+
+
+@materials
+@duplicates
+def test_copies_keep_the_values_they_were_copied_with(cls, duplicate):
+    m = cls()
+    original = Computed(lambda: unref(m.roughness))
+    assert original.value == 0.5
+
+    clone = duplicate(m)
+    m.roughness = 0.7
+    assert clone.roughness == 0.5
+    assert Computed(lambda: unref(clone.roughness)).value == 0.5
+    assert original.value == 0.7
 
 
 @materials

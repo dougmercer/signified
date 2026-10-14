@@ -150,37 +150,15 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
         Err(error) => return Err(escalate(computed, error)),
     };
 
-    // 3) A custom equality can declare a new value unchanged, which keeps the
-    // previous object. Its reads are untracked and its errors are cached.
+    // 3) Decide whether the outcome changed. Every failed evaluation is a new
+    // outcome, and recovery is a change even if the value equals the last
+    // successful one.
     let previous = node
         .value
         .borrow()
         .as_ref()
         .map(|value| value.clone_ref(py));
-    if had_outcome && !had_error {
-        let equal = node
-            .equal
-            .borrow()
-            .as_ref()
-            .map(|equal| equal.clone_ref(py));
-        if let (Some(equal), Some(previous), Some(next)) = (&equal, &previous, &next_value) {
-            if !previous.is(next) {
-                match call_equal(equal.bind(py), previous.bind(py), next.bind(py)) {
-                    Ok(true) => next_value = Some(previous.clone_ref(py)),
-                    Ok(false) => {}
-                    Err(error) if error.is_instance_of::<PyException>(py) => {
-                        next_value = None;
-                        next_error = Some(error);
-                    }
-                    Err(error) => return Err(escalate(computed, error)),
-                }
-            }
-        }
-    }
-
-    // 4) Cache the outcome. Every failed evaluation is a new outcome, and
-    // recovery is a change even if the value equals the last successful one.
-    let changed = if !had_outcome || had_error || next_error.is_some() {
+    let mut changed = if !had_outcome || had_error || next_error.is_some() {
         true
     } else {
         match (&previous, &next_value) {
@@ -188,6 +166,29 @@ fn refresh(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResu
             _ => true,
         }
     };
+    // A custom equality, like a signal's, sees only values the built-in rule
+    // calls changed, and can declare them unchanged, which keeps the previous
+    // object. Its reads are untracked and its errors are cached.
+    if changed && had_outcome && !had_error {
+        let equal = node
+            .equal
+            .borrow()
+            .as_ref()
+            .map(|equal| equal.clone_ref(py));
+        if let (Some(equal), Some(previous), Some(next)) = (&equal, &previous, &next_value) {
+            match call_equal(equal.bind(py), previous.bind(py), next.bind(py)) {
+                Ok(true) => changed = false,
+                Ok(false) => {}
+                Err(error) if error.is_instance_of::<PyException>(py) => {
+                    next_value = None;
+                    next_error = Some(error);
+                }
+                Err(error) => return Err(escalate(computed, error)),
+            }
+        }
+    }
+
+    // 4) Cache the outcome.
     let cached = next_error.map(|error| CachedError {
         traceback: error
             .traceback(py)

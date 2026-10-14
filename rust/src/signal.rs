@@ -249,15 +249,36 @@ pub(crate) fn write_signal(
     bump_version(node);
     drop(previous);
     drop(old);
-    hooks::call(py, Hook::Updated, handle)?;
-    invalidation::notify(py, node)
+    announce_update(py, node, handle)
 }
 
 /// Notify a signal's observers unconditionally (after an in-place mutation).
 fn update_signal(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
     bump_version(node);
-    hooks::call(py, Hook::Updated, handle)?;
-    invalidation::notify(py, node)
+    announce_update(py, node, handle)
+}
+
+/// Call the `updated` hook, then notify the observers of a signal that just
+/// changed. They are notified even if the hook raises, as in a `finally`
+/// block, so a failing plugin cannot leave dependents stale.
+fn announce_update(py: Python<'_>, node: &Rc<Node>, handle: &Bound<'_, PyAny>) -> PyResult<()> {
+    let hooked = hooks::call(py, Hook::Updated, handle);
+    let notified = invalidation::notify(py, node);
+    match (hooked, notified) {
+        (Err(error), Ok(())) => Err(error),
+        (Err(error), Err(later)) => Err(raised_during(py, later, error)),
+        (Ok(()), notified) => notified,
+    }
+}
+
+/// `error`, raised while `earlier` propagated, with `earlier` as its
+/// `__context__`, as Python links an error raised in a `finally` block.
+fn raised_during(py: Python<'_>, error: PyErr, earlier: PyErr) -> PyErr {
+    let context = earlier.into_value(py);
+    match error.value(py).setattr(intern!(py, "__context__"), context) {
+        Ok(()) => error,
+        Err(failed) => failed,
+    }
 }
 
 /// Return a signal to an earlier value and version (the end of `Signal.at`).
@@ -274,8 +295,7 @@ fn restore_signal(
     node.version.set(version);
     bump_clock();
     drop(previous);
-    hooks::call(py, Hook::Updated, handle)?;
-    invalidation::notify(py, node)
+    announce_update(py, node, handle)
 }
 
 /// The state of a `Signal.at()` context: the signal, the temporary value,
@@ -318,13 +338,7 @@ impl SignalAt {
             }
             return match signal.setattr(intern!(py, "value"), before) {
                 Ok(()) => Err(error),
-                Err(restore_error) => {
-                    let context = error.into_value(py);
-                    restore_error
-                        .value(py)
-                        .setattr(intern!(py, "__context__"), context)?;
-                    Err(restore_error)
-                }
+                Err(restore_error) => Err(raised_during(py, restore_error, error)),
             };
         }
         let entered_version = node.version.get();
