@@ -2,6 +2,56 @@
 
 This page summarizes notable changes across releases.
 
+## 0.7.2
+
+### `sample()`
+
+`sample(value, signal, at)` returns a [Computed][signified.Computed] holding
+`value` as if `signal` held `at`. Nothing else changes: not the signal, and not
+any cached value.
+
+```py
+frame = Signal(0)
+position = computed(lambda f: f * 10)(frame)
+
+held = sample(position, frame, 3)  # position at frame 3, on every frame
+until = sample(position, frame, computed(lambda f: min(f, 3))(frame))  # live, then held from frame 3
+```
+
+- The result recalculates when `at` changes, or when something `value` reads
+  other than `signal` changes. Changing only `signal` leaves it cached.
+- `at` may be reactive. It is read with the signal's real value, then
+  substituted.
+- It works inside computeds, through branches, `untracked()`, `Binding` and
+  native nodes, and samples can be nested.
+- Values are calculated as on a first read, so a computed's custom `equal` has
+  no earlier value to keep. Where `Signal.at()` would keep a cached value that
+  `equal` accepts, `sample()` gives the new one.
+- Reads cost nothing extra in a program that never calls `sample()`.
+
+Use `Signal.at()` to run code as if a signal held another value, and
+`sample()` to keep a value from another value of a signal.
+
+### Breaking changes
+
+- **Breaking:** A `Computed` can no longer change a signal while it is being
+  evaluated. Doing so raises `RuntimeError`, which is cached like any other
+  error from the function. Previously such a change could leave dependents
+  stuck on an old value for good; for example, `with frame.at(f):` inside a
+  computed froze everything downstream. The rule covers:
+
+    - assigning `.value` or a `tracked_fields` attribute;
+    - `Signal.at()` with a value other than the current one;
+    - `update()`, `invalidate()`, item assignment, item deletion and attribute
+      assignment on a `Signal`;
+    - `invalidate()` on a `Computed`.
+
+    It applies inside `untracked()` too, and in a custom `equal` or a plugin's
+    `updated` hook while a computed is refreshing. Assigning the value a signal
+    already holds is still allowed, as are writes from effects and from code
+    outside computeds. Use `sample()` in place of `Signal.at()` inside a
+    computed.
+
 ## 0.7.1
 
 ### Fixes
