@@ -1036,6 +1036,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#072" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.7.2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.7.2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sample()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#071" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1087,7 +1126,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
+  <a href="#breaking-changes_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Breaking changes
@@ -1137,7 +1176,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#breaking-changes_1" class="md-nav__link">
+  <a href="#breaking-changes_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Breaking changes
@@ -1649,6 +1688,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#072" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.7.2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.7.2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sample" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sample()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breaking changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#071" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1700,7 +1778,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#breaking-changes" class="md-nav__link">
+  <a href="#breaking-changes_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Breaking changes
@@ -1750,7 +1828,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#breaking-changes_1" class="md-nav__link">
+  <a href="#breaking-changes_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Breaking changes
@@ -2224,6 +2302,53 @@
 
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <p>This page summarizes notable changes across releases.</p>
+<h2 id="072">0.7.2<a class="headerlink" href="#072" title="Permanent link">&para;</a></h2>
+<h3 id="sample"><code>sample()</code><a class="headerlink" href="#sample" title="Permanent link">&para;</a></h3>
+<p><code>sample(value, signal, at)</code> returns a <a class="autorefs autorefs-internal" href="../api/#signified.Computed">Computed</a> holding
+<code>value</code> as if <code>signal</code> held <code>at</code>. Nothing else changes: not the signal, and not
+any cached value.</p>
+<div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">frame</span> <span class="o">=</span> <span class="n">Signal</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">position</span> <span class="o">=</span> <span class="n">computed</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span> <span class="o">*</span> <span class="mi">10</span><span class="p">)(</span><span class="n">frame</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">held</span> <span class="o">=</span> <span class="n">sample</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>  <span class="c1"># position at frame 3, on every frame</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">until</span> <span class="o">=</span> <span class="n">sample</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">computed</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">3</span><span class="p">))(</span><span class="n">frame</span><span class="p">))</span>  <span class="c1"># live, then held from frame 3</span>
+</span></code></pre></div>
+<ul>
+<li>The result recalculates when <code>at</code> changes, or when something <code>value</code> reads
+  other than <code>signal</code> changes. Changing only <code>signal</code> leaves it cached.</li>
+<li><code>at</code> may be reactive. It is read with the signal's real value, then
+  substituted.</li>
+<li>It works inside computeds, through branches, <code>untracked()</code>, <code>Binding</code> and
+  native nodes, and samples can be nested.</li>
+<li>Values are calculated as on a first read, so a computed's custom <code>equal</code> has
+  no earlier value to keep. Where <code>Signal.at()</code> would keep a cached value that
+  <code>equal</code> accepts, <code>sample()</code> gives the new one.</li>
+<li>Reads cost nothing extra in a program that never calls <code>sample()</code>.</li>
+</ul>
+<p>Use <code>Signal.at()</code> to run code as if a signal held another value, and
+<code>sample()</code> to keep a value from another value of a signal.</p>
+<h3 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><strong>Breaking:</strong> A <code>Computed</code> can no longer change a signal while it is being
+  evaluated. Doing so raises <code>RuntimeError</code>, which is cached like any other
+  error from the function. Previously such a change could leave dependents
+  stuck on an old value for good; for example, <code>with frame.at(f):</code> inside a
+  computed froze everything downstream. The rule covers:</p>
+<ul>
+<li>assigning <code>.value</code> or a <code>tracked_fields</code> attribute;</li>
+<li><code>Signal.at()</code> with a value other than the current one;</li>
+<li><code>update()</code>, <code>invalidate()</code>, item assignment, item deletion and attribute
+  assignment on a <code>Signal</code>;</li>
+<li><code>invalidate()</code> on a <code>Computed</code>.</li>
+</ul>
+<p>It applies inside <code>untracked()</code> too, and in a custom <code>equal</code> or a plugin's
+<code>updated</code> hook while a computed is refreshing. Assigning the value a signal
+already holds is still allowed, as are writes from effects and from code
+outside computeds. Use <code>sample()</code> in place of <code>Signal.at()</code> inside a
+computed.</p>
+</li>
+</ul>
 <h2 id="071">0.7.1<a class="headerlink" href="#071" title="Permanent link">&para;</a></h2>
 <h3 id="fixes">Fixes<a class="headerlink" href="#fixes" title="Permanent link">&para;</a></h3>
 <ul>
@@ -2245,7 +2370,7 @@
   refresh.</li>
 </ul>
 <h2 id="070">0.7.0<a class="headerlink" href="#070" title="Permanent link">&para;</a></h2>
-<h3 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
+<h3 id="breaking-changes_1">Breaking changes<a class="headerlink" href="#breaking-changes_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p><strong>Breaking:</strong> Signified's reactive engine is now a compiled extension written
@@ -2302,7 +2427,7 @@
 <li>Removed the <code>ipython</code> extra. Notebook display works the same without it.</li>
 </ul>
 <h2 id="061">0.6.1<a class="headerlink" href="#061" title="Permanent link">&para;</a></h2>
-<h3 id="breaking-changes_1">Breaking changes<a class="headerlink" href="#breaking-changes_1" title="Permanent link">&para;</a></h3>
+<h3 id="breaking-changes_2">Breaking changes<a class="headerlink" href="#breaking-changes_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Breaking:</strong> Reactive objects no longer overload <code>!=</code>. Comparisons between
   reactive objects use identity and return a plain <code>bool</code>, matching <code>==</code>.
@@ -2425,11 +2550,11 @@ below.</p>
 <h2 id="040">0.4.0<a class="headerlink" href="#040" title="Permanent link">&para;</a></h2>
 <h3 id="effect-decorator"><code>@effect</code> decorator<a class="headerlink" href="#effect-decorator" title="Permanent link">&para;</a></h3>
 <p>A new <code>@effect</code> decorator mirrors <code>@computed</code>, making it easy to define reactive side effects as plain functions:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@effect</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">e</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">some_signal</span><span class="p">)</span>  <span class="c1"># runs immediately, re-runs on change</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@effect</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">e</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">some_signal</span><span class="p">)</span>  <span class="c1"># runs immediately, re-runs on change</span>
 </span></code></pre></div>
 <p>Like <code>@computed</code>, arguments are automatically unwrapped, so the function always receives plain Python values. The effect stays active as long as you hold a reference to the returned <code>Effect</code>.</p>
 <h3 id="performance-improvements">Performance improvements<a class="headerlink" href="#performance-improvements" title="Permanent link">&para;</a></h3>
@@ -2447,11 +2572,11 @@ below.</p>
 <h2 id="031">0.3.1<a class="headerlink" href="#031" title="Permanent link">&para;</a></h2>
 <h3 id="effect-rework">Effect rework<a class="headerlink" href="#effect-rework" title="Permanent link">&para;</a></h3>
 <p><code>Effect</code> now auto-tracks its dependencies the same way <code>Computed</code> does. The constructor signature has changed: instead of taking a reactive source and a callback, it now takes a single zero-argument callable. Every reactive value read via <code>.value</code> or <code>unref()</code> inside that callable is automatically registered as a dependency.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Before (0.3.0)</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># After (0.3.1)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Before (0.3.0)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># After (0.3.1)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">e</span> <span class="o">=</span> <span class="n">Effect</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
 </span></code></pre></div>
 <p>Conditional branches are handled correctly — only the signals actually read during the most recent run are tracked, and the dependency set updates automatically when branches change.</p>
 <h3 id="unref-now-participates-in-dependency-tracking"><code>unref()</code> now participates in dependency tracking<a class="headerlink" href="#unref-now-participates-in-dependency-tracking" title="Permanent link">&para;</a></h3>
