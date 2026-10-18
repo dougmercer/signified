@@ -366,7 +366,7 @@ pub(crate) fn evaluate(
             return Ok(unref(py, value.bind(py))?.unbind());
         }
         if innermost().is_none() {
-            if let Some(result) = read_held(py, reader, value, signal)? {
+            if let Some(result) = read_held(py, reader, value, signal, signal_handle)? {
                 return Ok(result);
             }
         }
@@ -396,11 +396,14 @@ pub(crate) fn evaluate(
 /// computeds that do not depend on `signal`, and samples the computeds that
 /// do. `None`, with nothing tracked, when that cannot be relied on; the
 /// caller then reads `value` as it is and tracks `signal`.
+/// A failed live read tracks both nodes and propagates the error without
+/// retrying, so control-flow exceptions abort and later reads can recover.
 fn read_held(
     py: Python<'_>,
     reader: &Rc<Node>,
     value: &Py<PyAny>,
     signal: &Rc<Node>,
+    signal_handle: &Py<PyAny>,
 ) -> PyResult<Option<Py<PyAny>>> {
     let value = value.bind(py);
     let Ok(node) = node_of(value) else {
@@ -411,8 +414,13 @@ fn read_held(
     if let Err(error) = end_frame(depth) {
         result = Err(error);
     }
-    let Ok(result) = result else {
-        return Ok(None);
+    let result = match result {
+        Ok(result) => result,
+        Err(error) => {
+            track_read_by(reader, signal, signal_handle.bind(py));
+            track_read_by(reader, &node, value);
+            return Err(error);
+        }
     };
     let Some(held) = plan_held(py, signal, &node, value) else {
         return Ok(None);

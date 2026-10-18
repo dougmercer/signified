@@ -105,6 +105,48 @@ def test_a_sample_at_the_current_value_is_evaluated_once():
     assert calls == [(5,)]
 
 
+@pytest.mark.parametrize("error_type", [KeyboardInterrupt, SystemExit, GeneratorExit])
+def test_a_sample_at_the_current_value_propagates_control_flow_exceptions(error_type):
+    frame = Signal(5)
+    calls = []
+    error = error_type()
+
+    def compute():
+        calls.append(frame.value)
+        if len(calls) == 1:
+            raise error
+        return frame.value
+
+    held = sample(Computed(compute), frame, 5)
+    with pytest.raises(error_type) as caught:
+        _ = held.value
+    assert caught.value is error
+    assert calls == [5]
+    assert held.value == 5
+    assert calls == [5, 5]
+
+
+def test_a_failed_sample_at_the_current_value_tracks_its_live_source():
+    frame = Signal(5)
+    divisor = Signal(0)
+    calls = []
+
+    def compute():
+        calls.append(frame.value)
+        return frame.value / divisor.value
+
+    held = sample(Computed(compute), frame, 5)
+    with pytest.raises(ZeroDivisionError):
+        _ = held.value
+    assert calls == [5]
+    divisor.value = 1
+    assert held.value == 5
+    assert calls == [5, 5]
+    frame.value = 6
+    assert held.value == 5
+    assert calls == [5, 5]
+
+
 def test_a_trail_of_samples_taken_at_each_frame_evaluates_each_frame_once():
     frame = Signal(0)
     calls = []
