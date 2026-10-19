@@ -28,7 +28,7 @@ use crate::engine::runtime::with_rt;
 use crate::engine::tracking::{end_frame, push_frame, track_read_by};
 use crate::hooks;
 use crate::stack::RecursionGuard;
-use crate::values::{call_equal, has_changed, unref};
+use crate::values::{call_equal, has_changed, node_of, unref};
 
 type Stack = RefCell<Vec<Option<Rc<Substitution>>>>;
 
@@ -360,13 +360,20 @@ pub(crate) fn evaluate(
         None => signal.raw_value(py),
     };
     // At the signal's own value, `value` is read as it is, as `Signal.at()`
-    // would be a no-op. The signal is then a dependency too: once it moves
-    // off `at`, the result must be found again, even if `value`'s own value
-    // happens not to change.
+    // would be a no-op.
     if !differs(py, signal, &current, &at)? {
-        if substituted.is_none() {
-            track_read_by(reader, signal, signal_handle.bind(py));
+        if substituted.is_some() {
+            return Ok(unref(py, value.bind(py))?.unbind());
         }
+        if innermost().is_none() {
+            if let Some(result) = read_held(py, reader, value, signal, signal_handle)? {
+                return Ok(result);
+            }
+        }
+        // The signal is then a dependency too: once it moves off `at`, the
+        // result must be found again, even if `value`'s own value happens
+        // not to change.
+        track_read_by(reader, signal, signal_handle.bind(py));
         return Ok(unref(py, value.bind(py))?.unbind());
     }
     let substitution = Rc::new(Substitution {
@@ -380,6 +387,132 @@ pub(crate) fn evaluate(
     let result = unref(py, value.bind(py)).map(Bound::unbind);
     drop(pushed);
     result
+}
+
+/// Read `value` live for a sample at `signal`'s own value, so that the result
+/// stays cached once `signal` moves on. A fresh live value is the value at
+/// `at`, and stays so while its other inputs are unchanged: the sample then
+/// depends on the signals the live value read other than `signal`, and on the
+/// computeds that do not depend on `signal`, and samples the computeds that
+/// do. `None`, with nothing tracked, when that cannot be relied on; the
+/// caller then reads `value` as it is and tracks `signal`.
+/// A failed live read tracks both nodes and propagates the error without
+/// retrying, so control-flow exceptions abort and later reads can recover.
+fn read_held(
+    py: Python<'_>,
+    reader: &Rc<Node>,
+    value: &Py<PyAny>,
+    signal: &Rc<Node>,
+    signal_handle: &Py<PyAny>,
+) -> PyResult<Option<Py<PyAny>>> {
+    let value = value.bind(py);
+    let Ok(node) = node_of(value) else {
+        return Ok(Some(unref(py, value)?.unbind()));
+    };
+    let depth = push_frame(None);
+    let mut result = unref(py, value);
+    if let Err(error) = end_frame(depth) {
+        result = Err(error);
+    }
+    let result = match result {
+        Ok(result) => result,
+        Err(error) => {
+            track_read_by(reader, signal, signal_handle.bind(py));
+            track_read_by(reader, &node, value);
+            return Err(error);
+        }
+    };
+    let Some(held) = plan_held(py, signal, &node, value) else {
+        return Ok(None);
+    };
+    for (dep, handle) in &held.tracked {
+        track_read_by(reader, dep, handle.bind(py));
+    }
+    for computed in &held.sampled {
+        add_sampler(computed, reader);
+    }
+    Ok(Some(result.unbind()))
+}
+
+/// What a sample of a fresh live value at `signal`'s own value depends on.
+#[derive(Default)]
+struct Held {
+    tracked: Vec<(Rc<Node>, Py<PyAny>)>,
+    sampled: Vec<Rc<Node>>,
+}
+
+/// What `start` depends on besides `signal`: every other signal under it,
+/// since a change to one can make a computed read `signal` while its own
+/// value stays the same; each computed that does not depend on `signal`;
+/// and, to be sampled, each computed that does. `None` if some computed
+/// under it is not fresh, reads itself, or has a custom `equal` and depends
+/// on `signal`, as its live value may then not be its value at `at`.
+fn plan_held(
+    py: Python<'_>,
+    signal: &Rc<Node>,
+    start: &Rc<Node>,
+    handle: &Bound<'_, PyAny>,
+) -> Option<Held> {
+    let mut held = Held::default();
+    match &start.role {
+        Role::Computed(computed) if computed.state.get() == State::Fresh => {}
+        Role::Signal if Rc::ptr_eq(start, signal) => return Some(held),
+        Role::Signal => {
+            held.tracked.push((start.clone(), handle.clone().unbind()));
+            return Some(held);
+        }
+        _ => return None,
+    }
+    let mut depends: HashMap<usize, bool> = HashMap::new();
+    let mut signals: HashSet<usize> = HashSet::new();
+    // Depth-first, with an explicit stack so long chains cannot overflow:
+    // each computed, its handle, the next dependency to look at, and whether
+    // it depends on `signal`.
+    let mut path: Vec<(Rc<Node>, Py<PyAny>, usize, bool)> =
+        vec![(start.clone(), handle.clone().unbind(), 0, false)];
+    let mut on_path: HashSet<usize> = HashSet::from([key(start)]);
+    while let Some((node, _, index, found)) = path.last_mut() {
+        let next = node
+            .reader_state()
+            .deps
+            .borrow()
+            .get(*index)
+            .map(|link| (link.node.clone(), link.handle.clone_ref(py)));
+        *index += 1;
+        let Some((dep, dep_handle)) = next else {
+            let (node, node_handle, _, found) = path.pop()?;
+            on_path.remove(&key(&node));
+            depends.insert(key(&node), found);
+            if found {
+                if node.equal.borrow().is_some() {
+                    return None;
+                }
+                held.sampled.push(node);
+                if let Some(parent) = path.last_mut() {
+                    parent.3 = true;
+                }
+            } else {
+                held.tracked.push((node, node_handle));
+            }
+            continue;
+        };
+        match &dep.role {
+            Role::Signal if Rc::ptr_eq(&dep, signal) => *found = true,
+            Role::Signal => {
+                if signals.insert(key(&dep)) {
+                    held.tracked.push((dep, dep_handle));
+                }
+            }
+            Role::Computed(computed) => match depends.get(&key(&dep)).copied() {
+                Some(known) => *found |= known,
+                None if computed.state.get() != State::Fresh => return None,
+                None if !on_path.insert(key(&dep)) => return None,
+                None => path.push((dep, dep_handle, 0, false)),
+            },
+            Role::Effect(_) => {}
+        }
+    }
+    Some(held)
 }
 
 /// Whether assigning `at` to `signal` would change it, by the rule

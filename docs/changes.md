@@ -2,6 +2,12 @@
 
 This page summarizes notable changes across releases.
 
+## Unreleased
+
+- `sample(value, signal, at)` taken at the signal's current value shares the
+  live result and keeps it once `signal` moves on, instead of calculating it
+  again for `at`.
+
 ## 0.7.2
 
 ### `sample()`

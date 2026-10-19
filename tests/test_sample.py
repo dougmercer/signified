@@ -92,6 +92,113 @@ def test_live_and_sampled_reads_run_each_live_function_once_per_frame():
         assert len(calls) <= 2
 
 
+def test_a_sample_at_the_current_value_is_evaluated_once():
+    frame = Signal(5)
+    calls = []
+    position = computed(counting(lambda f: f * 10, calls))(frame)
+    held = sample(position, frame, 5)
+    assert held.value == 50
+    assert calls == [(5,)]
+    for f in (6, 7, 5, 8):
+        frame.value = f
+        assert held.value == 50
+    assert calls == [(5,)]
+
+
+@pytest.mark.parametrize("error_type", [KeyboardInterrupt, SystemExit, GeneratorExit])
+def test_a_sample_at_the_current_value_propagates_control_flow_exceptions(error_type):
+    frame = Signal(5)
+    calls = []
+    error = error_type()
+
+    def compute():
+        calls.append(frame.value)
+        if len(calls) == 1:
+            raise error
+        return frame.value
+
+    held = sample(Computed(compute), frame, 5)
+    with pytest.raises(error_type) as caught:
+        _ = held.value
+    assert caught.value is error
+    assert calls == [5]
+    assert held.value == 5
+    assert calls == [5, 5]
+
+
+def test_a_failed_sample_at_the_current_value_tracks_its_live_source():
+    frame = Signal(5)
+    divisor = Signal(0)
+    calls = []
+
+    def compute():
+        calls.append(frame.value)
+        return frame.value / divisor.value
+
+    held = sample(Computed(compute), frame, 5)
+    with pytest.raises(ZeroDivisionError):
+        _ = held.value
+    assert calls == [5]
+    divisor.value = 1
+    assert held.value == 5
+    assert calls == [5, 5]
+    frame.value = 6
+    assert held.value == 5
+    assert calls == [5, 5]
+
+
+def test_a_trail_of_samples_taken_at_each_frame_evaluates_each_frame_once():
+    frame = Signal(0)
+    calls = []
+    position = computed(counting(lambda f: f * 10, calls))(frame)
+    trail = []
+    for f in range(6):
+        frame.value = f
+        assert position.value == f * 10
+        trail.append(sample(position, frame, f))
+        assert [point.value for point in trail] == [k * 10 for k in range(f + 1)]
+    assert calls == [(f,) for f in range(6)]
+
+
+def test_a_sample_at_the_current_value_follows_other_inputs():
+    frame = Signal(1)
+    shift = Signal(0)
+    total = computed(lambda f, s: f + s)(frame, shift)
+    held = sample(total, frame, 1)
+    assert held.value == 1
+    frame.value = 2
+    shift.value = 10
+    assert held.value == 11
+
+
+def test_a_value_that_starts_reading_the_signal_with_the_same_live_value_is_noticed():
+    branch = Signal(False)
+    frame = Signal(0)
+    other = Signal(7)
+    pick = Computed(lambda: frame.value if branch.value else other.value)
+    held = sample(pick, frame, 0)
+    assert held.value == 7
+    frame.value = 7
+    assert held.value == 7
+    branch.value = True
+    assert pick.value == 7
+    assert held.value == 0
+
+
+def test_invalidating_a_computed_under_a_sample_at_the_current_value_updates_it():
+    s = Signal(1)
+    external = [1]
+    total = Computed(lambda: s.value + external[0])
+    scaled = computed(lambda v: v * 10)(total)
+    held = sample(scaled, s, 1)
+    assert held.value == 20
+    s.value = 2
+    assert held.value == 20
+    external[0] = 2
+    total.invalidate()
+    assert held.value == 30
+
+
 def test_leaving_the_sampled_value_is_noticed_even_if_the_live_value_is_unchanged():
     frame = Signal(45)
     other = Signal(0)
