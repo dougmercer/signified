@@ -2,7 +2,7 @@
 
 This page summarizes notable changes across releases.
 
-## Unreleased
+## 0.7.3
 
 - `Watcher` reports which of many reactive values changed since you last
   asked: `watch(value, key)`, then `changed()` once per step of your own (a
