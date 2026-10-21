@@ -3,8 +3,12 @@
 Computeds read signals and earlier computeds, some through a branch (so
 their dependencies change) and some through a sign (so changes often stop
 there). After every step, each value read must match a direct evaluation,
-a repeated read must evaluate nothing, and an effect watching one computed
-must have run exactly when that computed's value changed.
+a repeated read must evaluate nothing, an effect watching one computed
+must have run exactly when that computed's value changed, and a `Watcher` of
+some nodes must report each node whose value changed since it last asked.
+Without samples, reads inside `Signal.at()` or batches (which may write a
+signal and write it back), a node is calculated for one state of the signals
+per step, so the watcher reports exactly those nodes.
 
 With samples, some nodes are `sample(node, signal, at)` with a plain or
 reactive `at`, which later nodes may read, and some reads happen inside
@@ -15,7 +19,7 @@ import random
 
 import pytest
 
-from signified import Computed, Effect, Signal, batch, sample
+from signified import Computed, Effect, Signal, Watcher, batch, sample
 
 
 def evaluate(formula, value):
@@ -86,6 +90,11 @@ def run(seed, samples=False):
     watched = signals + rng.randrange(computeds)
     seen = []
     effect = Effect(lambda: seen.append(nodes[watched].value))
+    watcher = Watcher()
+    reported = {}
+    for index in rng.sample(range(len(nodes)), min(6, len(nodes))):
+        watcher.watch(nodes[index], index)
+        reported[index] = model()[index]
 
     def write():
         signal = rng.randrange(signals)
@@ -119,6 +128,14 @@ def run(seed, samples=False):
             assert evaluations[0] == before, f"seed {seed}, step {step}: a repeat read evaluated"
         assert seen[-1] == model()[watched], f"seed {seed}, step {step}: the effect is stale"
         assert all(a != b for a, b in zip(seen, seen[1:])), f"seed {seed}: the effect ran without a change: {seen}"
+        current = model()
+        keys = watcher.changed()
+        moved = {index for index, value in reported.items() if current[index] != value}
+        assert len(keys) == len(set(keys)), f"seed {seed}, step {step}: a key was reported twice: {keys}"
+        assert moved <= set(keys), f"seed {seed}, step {step}: changes not reported: {moved - set(keys)}"
+        if not samples and action != 2:
+            assert set(keys) == moved, f"seed {seed}, step {step}: reported without a change: {set(keys) - moved}"
+        reported = {index: current[index] for index in reported}
 
     expected = model()
     for index, node in enumerate(nodes):

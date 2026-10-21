@@ -64,6 +64,15 @@ class Computed(Generic[T]):
     def _init_source(self, holder: Signal[Any]) -> None: ...
     def _arm_restore(self, value: Any, version: int, holder: Signal[Any], source: Any, source_version: int) -> None: ...
 
+class Watcher:
+    def watch(self, value: Any, key: Any = None) -> None:
+        """Watch `value` and report `key` (by default the value itself) when it changes."""
+    def unwatch(self, key: Any) -> None:
+        """Stop every watch reported as `key`."""
+    def changed(self) -> list[Any]:
+        """The keys of watched values with a new version since the last call, each once."""
+    def __len__(self) -> int: ...
+
 class Effect:
     def __init__(self, fn: Callable[[], None]) -> None: ...
     def update(self) -> None:

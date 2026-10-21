@@ -115,6 +115,7 @@ pub(crate) fn live_observer_count(py: Python<'_>, node: &Node) -> usize {
             Some(Observer::Python { reference, .. }) => {
                 Some(reference.bind(py).upgrade().is_some())
             }
+            Some(Observer::Watch { watching, .. }) => Some(watching.strong_count() > 0),
         };
         match alive {
             Some(true) => count += 1,

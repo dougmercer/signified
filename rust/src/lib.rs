@@ -24,6 +24,7 @@ mod signal;
 mod stack;
 mod subscribe;
 mod values;
+mod watcher;
 
 use pyo3::intern;
 use pyo3::prelude::*;
@@ -34,6 +35,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<signal::SignalCore>()?;
     m.add_class::<computed::ComputedCore>()?;
     m.add_class::<effect::EffectCore>()?;
+    m.add_class::<watcher::WatcherCore>()?;
     m.add_class::<hooks::Config>()?;
     m.add_class::<contexts::Untracked>()?;
     m.add_class::<contexts::Batch>()?;

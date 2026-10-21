@@ -5,6 +5,7 @@
 use std::rc::{Rc, Weak};
 
 use crate::engine::node::{Node, Role};
+use crate::engine::watching::Watching;
 
 /// `Rc<Node>` made `Send` and `Sync` so a Python object can own one.
 ///
@@ -35,6 +36,12 @@ impl std::ops::Deref for Shared {
         &self.0
     }
 }
+
+/// `Rc<Watching>` made `Send` and `Sync`, for the same reason as `Shared`.
+pub(crate) struct SharedWatching(pub(crate) Rc<Watching>);
+
+unsafe impl Send for SharedWatching {}
+unsafe impl Sync for SharedWatching {}
 
 /// `Weak<Node>` made `Send` and `Sync`, for the same reason as `Shared`.
 pub(crate) struct WeakShared(pub(crate) Weak<Node>);

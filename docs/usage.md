@@ -98,6 +98,39 @@ Use `untracked()` when a read inside an effect or calculation should not make
 it run again when that value changes. See [How updates work](compute-contract.md)
 for an example, effect timing, and error handling.
 
+## Ask which values changed {#watchers}
+
+An effect runs as soon as a value changes. Code that works in steps of its own,
+such as a renderer drawing frames or a game loop, often wants the opposite: to
+ask, once per step, which of many values changed, and redo the work for those
+only. A `Watcher` answers that without reading every value:
+
+```python
+from signified import Signal, Watcher, computed
+
+frame = Signal(0)
+speeds = {"still": 0.0, "moving": 2.0}
+positions = {name: computed(lambda f, speed=speed: speed * f)(frame) for name, speed in speeds.items()}
+
+watcher = Watcher()
+for name, position in positions.items():
+    watcher.watch(position, name)
+
+frame.value = 1
+print(watcher.changed())  # ['moving']: "still" recalculated to the same 0.0
+print(watcher.changed())  # []
+```
+
+- A change only marks the watch; no code runs. `changed()` then brings the
+  marked calculations up to date and reports those whose result changed, each
+  key once, in the order they changed. Calculations nothing changed are not
+  read.
+- Several values can share a key; it is reported once when any of them changes.
+- A value that changes and changes back between two calls is still reported.
+- A calculation that raises is reported; reading it raises the error.
+- `unwatch(key)` stops the watches reported as that key. Watched values and
+  keys are held until then, or until the watcher is collected.
+
 ## Lists and dictionaries {#collections-and-item-assignment}
 
 Reading an item through a signal creates a calculation. Assigning an item

@@ -623,6 +623,47 @@ class Binding(Computed[T]):
                     self._arm_restore(before, before_version, self._holder, source, source_version)
 
 
+class Watcher(_core.Watcher):
+    """Report which reactive values changed since you last asked.
+
+    For code that reads many values once per step, such as a renderer once per
+    frame: instead of reading every value to find out whether it changed, it
+    asks the watcher. `watch(value, key)` starts watching a `Signal`,
+    `Computed` or `Binding` (a plain value never changes and is ignored).
+    [changed][signified.Watcher.changed] returns the keys of watched values
+    whose version moved since the last call, each key once.
+
+    A change marks the watch without running any code. `changed()` then
+    brings the marked computeds up to date, so one that recalculated to the
+    same result is not reported, and nothing else is evaluated. A computed
+    whose evaluation raises is reported: reading it raises the error.
+
+    Several values can share a key, which is then reported once when any of
+    them changes. Watched values and keys are held strongly until
+    [unwatch][signified.Watcher.unwatch] or until the watcher is collected.
+
+    Example:
+        ```py
+        >>> a, b = Signal(1), Signal(2)
+        >>> total = Computed(lambda: a.value + b.value)
+        >>> parity = Computed(lambda: total.value % 2)
+        >>> w = Watcher()
+        >>> w.watch(total, "total")
+        >>> w.watch(parity, "parity")
+        >>> w.changed()
+        []
+        >>> a.value = 3  # total 5, parity unchanged
+        >>> w.changed()
+        ['total']
+        >>> w.changed()
+        []
+
+        ```
+    """
+
+    __slots__ = ()
+
+
 class Effect(_core.Effect):
     """Run a function now, and again whenever the reactive values it read change.
 

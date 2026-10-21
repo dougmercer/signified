@@ -9,6 +9,8 @@ use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::rc::Weak;
 
+use crate::engine::watching::Watching;
+
 use pyo3::prelude::*;
 use pyo3::types::PyWeakrefReference;
 
@@ -29,6 +31,11 @@ pub(crate) enum Observer {
     Python {
         reference: Py<PyWeakrefReference>,
         id: usize,
+    },
+    /// Watch `index` of a `Watcher`.
+    Watch {
+        watching: Weak<Watching>,
+        index: u32,
     },
 }
 
@@ -82,6 +89,27 @@ impl ObserverList {
             .insert(id, slot);
     }
 
+    /// Add watch `index` of `watching`, and return its slot.
+    pub(crate) fn push_watch(&self, watching: Weak<Watching>, index: u32) -> u32 {
+        let mut slots = self.0.borrow_mut();
+        slots.entries.push(Observer::Watch { watching, index });
+        (slots.entries.len() - 1) as u32
+    }
+
+    /// Remove watch `index` of `owner`, if `slot` still holds it, and return
+    /// the removed entry so the caller drops it with nothing borrowed.
+    pub(crate) fn vacate_watch(&self, slot: u32, owner: *const Watching, index: u32) -> Observer {
+        let owned = matches!(
+            self.0.borrow().entries.get(slot as usize),
+            Some(Observer::Watch { watching, index: i }) if watching.as_ptr() == owner && *i == index
+        );
+        if owned {
+            self.vacate(slot)
+        } else {
+            Observer::Vacant
+        }
+    }
+
     /// The slot recorded for the `_subscribe()` observer at address `id`.
     pub(crate) fn subscriber_slot(&self, id: usize) -> Option<u32> {
         self.0.borrow().subscribers.as_ref()?.get(&id).copied()
@@ -125,7 +153,7 @@ impl ObserverList {
                     }
                 }
             }
-            Observer::Consumer { .. } => {}
+            Observer::Consumer { .. } | Observer::Watch { .. } => {}
         }
         slots.vacant += 1;
         removed
@@ -179,6 +207,11 @@ impl ObserverList {
                             if *slot == read as u32 {
                                 *slot = write as u32;
                             }
+                        }
+                    }
+                    Observer::Watch { watching, index } => {
+                        if let Some(watching) = watching.upgrade() {
+                            watching.moved(*index, write as u32);
                         }
                     }
                     Observer::Vacant => {}
