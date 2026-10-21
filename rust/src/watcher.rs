@@ -55,7 +55,7 @@ impl WatcherCore {
     /// The keys of watched values with a new version since the last call (or
     /// since they were watched), each once.
     fn changed<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
-        PyList::new(py, self.watching.0.changed(py))
+        PyList::new(py, self.watching.0.changed(py)?)
     }
 
     fn __len__(&self) -> usize {

@@ -175,3 +175,95 @@ def test_many_watches_on_one_value_survive_compaction():
     for index in range(1, 40, 2):
         watchers[index].unwatch(index)
     assert s._observer_count() == 0
+
+
+@pytest.mark.parametrize("error", [KeyboardInterrupt, SystemExit])
+def test_control_flow_errors_from_a_refresh_propagate(error):
+    trigger = Signal(False)
+
+    def compute():
+        if trigger.value:
+            raise error("stop")
+        return 1
+
+    w = Watcher()
+    w.watch(Computed(compute), "c")
+    trigger.value = True
+    with pytest.raises(error):
+        w.changed()
+
+
+def test_an_interrupted_changed_loses_no_report():
+    a, trigger = Signal(0), Signal(False)
+
+    def compute():
+        if trigger.value:
+            raise KeyboardInterrupt
+        return 1
+
+    w = Watcher()
+    w.watch(a, "a")
+    w.watch(Computed(compute), "c")
+    a.value = 1
+    trigger.value = True
+    with pytest.raises(KeyboardInterrupt):
+        w.changed()
+    trigger.value = False
+    assert w.changed()[0] == "a"
+
+
+def test_a_watch_replaced_after_its_invalidation_is_not_reported_for_the_old_one():
+    old, first, replacement = Signal(0), Signal(0), Signal(0)
+    w = Watcher()
+    w.watch(old, "old")
+    w.watch(first, "first")
+    old.value = 1
+    first.value = 1
+    w.unwatch("old")
+    w.watch(replacement, "replacement")  # takes the old watch's place
+    assert w.changed() == ["first"]
+    replacement.value = 1
+    assert w.changed() == ["replacement"]
+
+
+def test_keys_keep_their_order_when_a_watch_takes_a_removed_ones_place():
+    old, first, replacement = Signal(0), Signal(0), Signal(0)
+    w = Watcher()
+    w.watch(old, "old")
+    w.watch(first, "first")
+    old.value = 1
+    first.value = 1
+    w.unwatch("old")
+    w.watch(replacement, "replacement")
+    replacement.value = 1
+    assert w.changed() == ["first", "replacement"]
+
+
+def test_a_refresh_that_replaces_its_own_watch_does_not_report_the_replacement():
+    trigger, replacement = Signal(False), Signal(100)
+    w = Watcher()
+
+    def compute():
+        if trigger.value:
+            w.unwatch("old")
+            w.watch(replacement, "new")
+        return trigger.value
+
+    w.watch(Computed(compute), "old")
+    trigger.value = True
+    assert w.changed() == []
+    replacement.value = 101
+    assert w.changed() == ["new"]
+
+
+@pytest.mark.parametrize("every", [1, 4])
+def test_unwatching_many_watches_of_one_value_removes_all_their_observers(every):
+    s = Signal(0)
+    w = Watcher()
+    removed, kept = object(), object()
+    for index in range(40):
+        w.watch(s, kept if every > 1 and index % every == 0 else removed)
+    w.unwatch(removed)
+    assert len(w) == s._observer_count() == (40 // every if every > 1 else 0)
+    s.value = 1
+    assert w.changed() == ([kept] if every > 1 else [])

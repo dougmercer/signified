@@ -96,15 +96,16 @@ impl ObserverList {
         (slots.entries.len() - 1) as u32
     }
 
-    /// Remove watch `index` of `owner`, if `slot` still holds it, and return
-    /// the removed entry so the caller drops it with nothing borrowed.
-    pub(crate) fn vacate_watch(&self, slot: u32, owner: *const Watching, index: u32) -> Observer {
+    /// Remove watch `index` of `owner`, if `slot` still holds it, without
+    /// compacting (see `Watching::forget`), and return the removed entry so the
+    /// caller drops it with nothing borrowed.
+    pub(crate) fn take_watch(&self, slot: u32, owner: *const Watching, index: u32) -> Observer {
         let owned = matches!(
             self.0.borrow().entries.get(slot as usize),
             Some(Observer::Watch { watching, index: i }) if watching.as_ptr() == owner && *i == index
         );
         if owned {
-            self.vacate(slot)
+            self.take(slot)
         } else {
             Observer::Vacant
         }

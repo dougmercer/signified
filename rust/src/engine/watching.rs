@@ -8,6 +8,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashSet;
 use std::rc::Rc;
 
+use pyo3::exceptions::PyException;
 use pyo3::gc::PyVisit;
 use pyo3::prelude::*;
 use pyo3::PyTraverseError;
@@ -21,6 +22,9 @@ struct Watch {
     /// The value's Python object, which refreshing needs.
     handle: Py<PyAny>,
     key: Py<PyAny>,
+    /// Which registration this is: an index is reused after `unwatch`, so a
+    /// pending entry names the registration it was made for.
+    generation: u64,
     /// The version last reported (or seen when watching began).
     version: Cell<u64>,
     /// This watch's slot in `node.observers`.
@@ -28,13 +32,17 @@ struct Watch {
     pending: Cell<bool>,
 }
 
+/// A pending watch: its index and the registration that was invalidated.
+type Pending = (u32, u64);
+
 /// The watches of one `Watcher`, by index; removed ones leave `None`.
 #[derive(Default)]
 pub(crate) struct Watching {
     watches: RefCell<Vec<Option<Watch>>>,
     free: RefCell<Vec<u32>>,
-    /// Indices of watches invalidated since the last `changed`.
-    pending: RefCell<Vec<u32>>,
+    /// Watches invalidated since the last `changed`, in the order they were.
+    pending: RefCell<Vec<Pending>>,
+    generations: Cell<u64>,
 }
 
 impl Watching {
@@ -58,11 +66,14 @@ impl Watching {
                 (watches.len() - 1) as u32
             }
         };
+        let generation = self.generations.get() + 1;
+        self.generations.set(generation);
         let slot = node.observers.push_watch(Rc::downgrade(self), index);
         let watch = Watch {
             node: node.clone(),
             handle: handle.clone().unbind(),
             key,
+            generation,
             version: Cell::new(node.version.get()),
             slot: Cell::new(slot),
             pending: Cell::new(false),
@@ -83,21 +94,38 @@ impl Watching {
                 }
             }
         }
-        let mut free = self.free.borrow_mut();
-        for (index, watch) in &removed {
-            if let Some(watch) = watch {
-                drop(
-                    watch
-                        .node
-                        .observers
-                        .vacate_watch(watch.slot.get(), self, *index),
-                );
-            }
-            free.push(*index);
-        }
-        drop(free);
+        self.free
+            .borrow_mut()
+            .extend(removed.iter().map(|&(index, _)| index));
+        self.forget(
+            removed
+                .iter()
+                .filter_map(|(index, watch)| watch.as_ref().map(|watch| (*index, watch))),
+        );
         // Python objects are dropped with nothing borrowed.
         drop(removed);
+    }
+
+    /// Take removed watches' entries out of their nodes' observer lists, then
+    /// compact those lists. Compacting moves entries, so it waits until every
+    /// entry is out: the slots recorded for the removed watches stay right.
+    fn forget<'a>(&self, removed: impl Iterator<Item = (u32, &'a Watch)> + Clone) {
+        let mut taken = Vec::new();
+        for (index, watch) in removed.clone() {
+            taken.push(
+                watch
+                    .node
+                    .observers
+                    .take_watch(watch.slot.get(), self, index),
+            );
+        }
+        let mut compacted: HashSet<*const Node> = HashSet::new();
+        for (_, watch) in removed {
+            if compacted.insert(Rc::as_ptr(&watch.node)) {
+                watch.node.observers.compact_if_sparse();
+            }
+        }
+        drop(taken);
     }
 
     /// Mark the watch at `index` pending (during a notification walk).
@@ -105,7 +133,7 @@ impl Watching {
         let watches = self.watches.borrow();
         if let Some(Some(watch)) = watches.get(index as usize) {
             if !watch.pending.replace(true) {
-                self.pending.borrow_mut().push(index);
+                self.pending.borrow_mut().push((index, watch.generation));
             }
         }
     }
@@ -117,40 +145,90 @@ impl Watching {
         }
     }
 
+    /// The node and Python object of the watch that `entry` names, if it is
+    /// still registered.
+    fn target(
+        &self,
+        py: Python<'_>,
+        (index, generation): Pending,
+    ) -> Option<(Rc<Node>, Py<PyAny>)> {
+        match self.watches.borrow().get(index as usize) {
+            Some(Some(watch)) if watch.generation == generation => {
+                Some((watch.node.clone(), watch.handle.clone_ref(py)))
+            }
+            _ => None,
+        }
+    }
+
     /// The keys of pending watches whose value has a new version, each once,
     /// in the order their values were invalidated. A computed whose refresh
-    /// raises counts as changed: reading it raises the error.
-    pub(crate) fn changed(&self, py: Python<'_>) -> Vec<Py<PyAny>> {
+    /// raises an `Exception` counts as changed: reading it raises the error.
+    /// Any other error (`KeyboardInterrupt`, `SystemExit`) propagates, and
+    /// every watch this call took stays pending for the next.
+    pub(crate) fn changed(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
         let pending = std::mem::take(&mut *self.pending.borrow_mut());
+        // Bring every pending value up to date first, then compare versions:
+        // nothing is reported or recorded until every refresh has finished.
+        let mut failed = HashSet::new();
+        for &entry in &pending {
+            let Some((node, handle)) = self.target(py, entry) else {
+                continue;
+            };
+            if let Some(Some(watch)) = self.watches.borrow().get(entry.0 as usize) {
+                watch.pending.set(false);
+            }
+            if !matches!(node.role, Role::Computed(_)) {
+                continue;
+            }
+            match refresh::ensure_uptodate(py, &node, handle.bind(py)) {
+                Ok(()) => {}
+                Err(error) if error.is_instance_of::<PyException>(py) => {
+                    failed.insert(entry);
+                }
+                Err(error) => {
+                    self.restore(&pending);
+                    return Err(error);
+                }
+            }
+        }
         let mut keys = Vec::new();
         let mut seen = HashSet::new();
-        for index in pending {
-            let target = {
-                let watches = self.watches.borrow();
-                match watches.get(index as usize) {
-                    Some(Some(watch)) => {
-                        watch.pending.set(false);
-                        Some((watch.node.clone(), watch.handle.clone_ref(py)))
-                    }
-                    _ => None,
-                }
-            };
-            let Some((node, handle)) = target else {
+        let watches = self.watches.borrow();
+        for entry in pending {
+            // A refresh may have replaced the watch: the new one wasn't invalidated.
+            let Some(Some(watch)) = watches.get(entry.0 as usize) else {
                 continue;
             };
-            let failed = matches!(node.role, Role::Computed(_))
-                && refresh::ensure_uptodate(py, &node, handle.bind(py)).is_err();
-            let watches = self.watches.borrow();
-            let Some(Some(watch)) = watches.get(index as usize) else {
+            if watch.generation != entry.1 {
                 continue;
-            };
-            let version = node.version.get();
-            if (failed || version != watch.version.get()) && seen.insert(watch.key.as_ptr()) {
+            }
+            let version = watch.node.version.get();
+            if (failed.contains(&entry) || version != watch.version.get())
+                && seen.insert(watch.key.as_ptr())
+            {
                 keys.push(watch.key.clone_ref(py));
             }
             watch.version.set(version);
         }
-        keys
+        Ok(keys)
+    }
+
+    /// Put `entries` (taken by an interrupted `changed`) back in front of the
+    /// pending watches, still registered ones only, each once.
+    fn restore(&self, entries: &[Pending]) {
+        let watches = self.watches.borrow();
+        let mut pending = self.pending.borrow_mut();
+        let mut restored: Vec<Pending> = Vec::with_capacity(entries.len() + pending.len());
+        for &entry in entries {
+            if let Some(Some(watch)) = watches.get(entry.0 as usize) {
+                if watch.generation == entry.1 && !restored.contains(&entry) {
+                    watch.pending.set(true);
+                    restored.push(entry);
+                }
+            }
+        }
+        restored.extend(pending.iter().filter(|entry| !entries.contains(entry)));
+        *pending = restored;
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -170,16 +248,12 @@ impl Watching {
     /// Stop every watch.
     pub(crate) fn clear(&self) {
         let watches = std::mem::take(&mut *self.watches.borrow_mut());
-        for (index, watch) in watches.iter().enumerate() {
-            if let Some(watch) = watch {
-                drop(
-                    watch
-                        .node
-                        .observers
-                        .vacate_watch(watch.slot.get(), self, index as u32),
-                );
-            }
-        }
+        self.forget(
+            watches
+                .iter()
+                .enumerate()
+                .filter_map(|(index, watch)| watch.as_ref().map(|watch| (index as u32, watch))),
+        );
         self.free.borrow_mut().clear();
         self.pending.borrow_mut().clear();
         drop(watches);
