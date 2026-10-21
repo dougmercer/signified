@@ -16,7 +16,9 @@ permissions:
 jobs:
   codspeed:
     name: Run benchmarks
-    runs-on: ubuntu-latest
+    # CodSpeed's runner for action@v4 doesn't support ubuntu-latest's 26.04
+    # ("Unsupported system"), and a fixed image keeps results comparable over time.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
