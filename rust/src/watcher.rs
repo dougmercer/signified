@@ -37,7 +37,8 @@ impl WatcherCore {
 
     /// Watch `value` (a Signal, Computed or Binding) and report `key` (by
     /// default the value itself) when it changes. A plain value never changes,
-    /// so it is not watched.
+    /// so it is not watched. Keys are compared by identity, never hashed or
+    /// compared for equality. Reuse the key object when unwatching.
     #[pyo3(signature = (value, key = None))]
     fn watch(&self, value: &Bound<'_, PyAny>, key: Option<Py<PyAny>>) -> PyResult<()> {
         let Ok(node) = values::node_of(value) else {
@@ -47,9 +48,9 @@ impl WatcherCore {
         self.watching.0.watch(value.py(), &node, value, key)
     }
 
-    /// Stop every watch reported as `key`.
+    /// Stop every watch reported as this same key object.
     fn unwatch(&self, key: &Bound<'_, PyAny>) {
-        self.watching.0.unwatch(key);
+        self.watching.0.unwatch(key)
     }
 
     /// The keys of watched values with a new version since the last call (or

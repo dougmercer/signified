@@ -66,12 +66,13 @@ class Computed(Generic[T]):
 
 class Watcher:
     def watch(self, value: Any, key: Any = None) -> None:
-        """Watch `value` and report `key` (by default the value itself) when it changes."""
+        """Watch `value` under `key` (None uses the value); keys group by `is`, never `==`."""
     def unwatch(self, key: Any) -> None:
-        """Stop every watch reported as `key`."""
+        """Stop every watch under this same key object; an absent key does nothing."""
     def changed(self) -> list[Any]:
         """The keys of watched values with a new version since the last call, each once."""
-    def __len__(self) -> int: ...
+    def __len__(self) -> int:
+        """The number of registrations, including repeated watches of a value."""
 
 class Effect:
     def __init__(self, fn: Callable[[], None]) -> None: ...

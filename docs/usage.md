@@ -106,30 +106,61 @@ ask, once per step, which of many values changed, and redo the work for those
 only. A `Watcher` answers that without reading every value:
 
 ```python
-from signified import Signal, Watcher, computed
+from dataclasses import dataclass
+
+from signified import Computed, Signal, Watcher, computed
+
+@dataclass
+class Box:
+    name: str
+    position: Computed[float]
 
 frame = Signal(0)
-speeds = {"still": 0.0, "moving": 2.0}
-positions = {name: computed(lambda f, speed=speed: speed * f)(frame) for name, speed in speeds.items()}
+still = Box("still", computed(lambda f: 0.0 * f)(frame))
+moving = Box("moving", computed(lambda f: 2.0 * f)(frame))
 
 watcher = Watcher()
-for name, position in positions.items():
-    watcher.watch(position, name)
+for box in (still, moving):
+    watcher.watch(box.position, key=box)
 
 frame.value = 1
-print(watcher.changed())  # ['moving']: "still" recalculated to the same 0.0
+print([box.name for box in watcher.changed()])  # ['moving']
 print(watcher.changed())  # []
+
+watcher.unwatch(moving)  # Reuse the same box object to stop its watches.
 ```
 
+Keys are compared by **`is`, never `==`**. Reuse the same object when adding
+values to a group or calling `unwatch()`. A newly constructed string, tuple,
+or record can be equal to the original key without being the same object;
+it belongs to a separate group, and unwatching it does not stop the original.
+Keys are never hashed, so unhashable objects such as the `Box` above work too.
+Omitting the key, or passing `None`, uses the watched value itself as the key.
+
+- Several values can share the same key object; it is reported once when any
+  of them changes. More values can be added to that group later.
+- `unwatch(key)` stops **all** watches under that key in this watcher. There
+  is no operation to remove just one value from a group. Removing and
+  re-registering a group starts a new baseline, discarding its pending report.
+  Use separate watchers for components that need independent cancellation or
+  consumption. Watched values and keys are held until unwatched, or until the
+  watcher is collected.
 - A change only marks the watch; no code runs. `changed()` then brings the
   marked calculations up to date and reports those whose result changed, each
-  key once, in the order they changed. Calculations nothing changed are not
-  read.
-- Several values can share a key; it is reported once when any of them changes.
+  key once, in the order they were invalidated. Calculations that were not
+  invalidated are not read. An invalidated calculation that returns the same
+  result still costs a refresh, but saves the consumer's subsequent work.
 - A value that changes and changes back between two calls is still reported.
-- A calculation that raises is reported; reading it raises the error.
-- `unwatch(key)` stops the watches reported as that key. Watched values and
-  keys are held until then, or until the watcher is collected.
+- A calculation that raises an ordinary exception is reported; reading it
+  raises the error. `KeyboardInterrupt` and `SystemExit` propagate from
+  `changed()`, leaving its watches pending for a later call.
+- Registration establishes a baseline; handle initial rendering or saving
+  separately. Registering the same value twice creates two watches;
+  `len(watcher)` counts registrations, not distinct keys.
+- A successful `changed()` call consumes its report. A consumer that may fail,
+  such as an autosave or network sender, should retain the returned keys until
+  its work succeeds. The watcher coalesces changes; use an event queue if every
+  intermediate value must be preserved.
 
 ## Lists and dictionaries {#collections-and-item-assignment}
 
