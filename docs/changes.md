@@ -4,6 +4,12 @@ This page summarizes notable changes across releases.
 
 ## Unreleased
 
+- `Watcher` reports which of many reactive values changed since you last
+  asked: `watch(value, key)`, then `changed()` once per step of your own (a
+  frame, a tick) gives the keys whose values changed. A change only marks the
+  watch, and `changed()` reads only the marked values, so values that didn't
+  change cost nothing; a calculation that recalculated to the same result is
+  not reported. See [Ask which values changed](usage.md#watchers).
 - `sample(value, signal, at)` taken at the signal's current value shares the
   live result and keeps it once `signal` moves on, instead of calculating it
   again for `at`.

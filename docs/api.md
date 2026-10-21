@@ -39,6 +39,13 @@
       members:
         - dispose
 
+::: signified.Watcher
+    options:
+      members:
+        - watch
+        - unwatch
+        - changed
+
 ::: signified.Variable
     options:
       members: false

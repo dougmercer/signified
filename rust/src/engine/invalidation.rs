@@ -11,6 +11,7 @@ use crate::engine::node::{ComputedState, Node, Role, State};
 use crate::engine::observer_list::Observer;
 use crate::engine::runtime::{bump_clock, with_rt};
 use crate::engine::scheduler;
+use crate::engine::watching::Watching;
 
 /// Mark stale and return whether observers still need to hear about it.
 /// `force` upgrades to `MustRefresh`, bypassing the dependency check.
@@ -114,6 +115,7 @@ enum Step {
     Skip,
     Consumer(Rc<Node>),
     Python(Py<PyWeakrefReference>),
+    Watch(Weak<Watching>, u32),
 }
 
 /// Depth-first, with an explicit stack so long chains cannot overflow.
@@ -127,6 +129,7 @@ fn walk(py: Python<'_>, start: &Rc<Node>) {
                 node.upgrade().map_or(Step::Skip, Step::Consumer)
             }
             Some(Observer::Python { reference, .. }) => Step::Python(reference.clone_ref(py)),
+            Some(Observer::Watch { watching, index }) => Step::Watch(watching.clone(), *index),
         };
         *index += 1;
         match step {
@@ -144,6 +147,11 @@ fn walk(py: Python<'_>, start: &Rc<Node>) {
                 Role::Signal => unreachable!("signals do not read other nodes"),
             },
             Step::Python(reference) => scheduler::enqueue_observer(reference),
+            Step::Watch(watching, index) => {
+                if let Some(watching) = watching.upgrade() {
+                    watching.mark(index);
+                }
+            }
         }
     }
 }

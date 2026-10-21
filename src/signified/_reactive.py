@@ -623,6 +623,65 @@ class Binding(Computed[T]):
                     self._arm_restore(before, before_version, self._holder, source, source_version)
 
 
+class Watcher(_core.Watcher):
+    """Report which reactive values changed since you last asked.
+
+    For code that reads many values once per step, such as a renderer once per
+    frame: instead of reading every value to find out whether it changed, it
+    asks the watcher. `watch(value, key)` starts watching a `Signal`,
+    `Computed` or `Binding` (a plain value never changes and is ignored).
+    [changed][signified.Watcher.changed] returns the keys of watched values
+    whose version moved since the last call, each key once.
+
+    A change marks the watch without running any code. `changed()` then
+    brings the marked computeds up to date, so one that recalculated to the
+    same result is not reported, and nothing else is evaluated. This still
+    pays for the refresh, but saves the consumer's work on unchanged results.
+    An ordinary exception during refresh is reported: reading the computed
+    raises it. `KeyboardInterrupt` and `SystemExit` propagate and leave the
+    watches pending for a later call.
+
+    Several values can share a key, which is then reported once when any of
+    them changes. Watched values and keys are held strongly until
+    [unwatch][signified.Watcher.unwatch] or until the watcher is collected.
+    Keys are compared by `is`, never `==`: reuse the same key object when
+    grouping values or unwatching. An equal but distinct key does not match.
+    Keys need not be hashable, and their equality methods are never called.
+    Omitting the key or passing `None` uses the watched value itself.
+    `unwatch(key)` removes the whole group; use separate watchers when
+    components need independent cancellation or consumption. Removing and
+    re-registering a group discards any pending report for that group.
+
+    Registration establishes the baseline; it does not report an initial
+    change. A successful `changed()` call consumes its report, so retain the
+    returned keys yourself until any fallible downstream work succeeds.
+    `len(watcher)` counts registrations, including repeated watches.
+
+    Example:
+        ```py
+        >>> a, b = Signal(1), Signal(2)
+        >>> total = Computed(lambda: a.value + b.value)
+        >>> parity = Computed(lambda: total.value % 2)
+        >>> w = Watcher()
+        >>> w.watch(total)  # The value itself is the key.
+        >>> w.watch(parity)
+        >>> w.changed()
+        []
+        >>> a.value = 3  # total 5, parity unchanged
+        >>> w.changed()[0] is total
+        True
+        >>> w.changed()
+        []
+        >>> w.unwatch(total)
+        >>> len(w)
+        1
+
+        ```
+    """
+
+    __slots__ = ()
+
+
 class Effect(_core.Effect):
     """Run a function now, and again whenever the reactive values it read change.
 

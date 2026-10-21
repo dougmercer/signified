@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from signified import Binding, Computed, Effect, Signal, computed, deep_unref, effect, tracked_fields, unref
+from signified import Binding, Computed, Effect, Signal, Watcher, computed, deep_unref, effect, tracked_fields, unref
 
 pytestmark = pytest.mark.benchmark
 slow_benchmark = pytest.mark.slow_benchmark
@@ -606,3 +606,73 @@ def test_bench_build_diamond_graph_v1(benchmark):
         return sink.value
 
     benchmark(build_diamond)
+
+
+# ---------------------------------------------------------------------------
+# Watcher
+# ---------------------------------------------------------------------------
+
+
+def test_bench_watcher_poll_v1(benchmark):
+    """Benchmark a frame loop asking a watcher which of many records changed."""
+    moving, still = Signal(0), Signal(0)
+    watcher = Watcher()
+    for index in range(192):
+        record = object()
+        if index % 3 == 0:
+            # Two changing values under one key: reported once.
+            watcher.watch(moving + index, record)
+            watcher.watch(moving * index, record)
+        elif index % 3 == 1:
+            # Recalculates every frame to the same result: not reported.
+            watcher.watch(computed(min)(moving, 0), record)
+        else:
+            watcher.watch(still + index, record)
+
+    def poll():
+        checksum = 0
+        for i in range(1, 33):
+            moving.value = i
+            checksum += len(watcher.changed())
+        return checksum
+
+    benchmark(poll)
+
+
+def test_bench_watcher_churn_v1(benchmark):
+    """Benchmark stopping and watching again some keys among many on one source."""
+    source = Signal(0)
+    watcher = Watcher()
+    records = [object() for _ in range(192)]
+    for record in records:
+        watcher.watch(source, record)
+    churned = records[::12]
+
+    def churn():
+        checksum = 0
+        for _ in range(32):
+            for record in churned:
+                watcher.unwatch(record)
+            for record in churned:
+                watcher.watch(source, record)
+            source.value = source.value + 1
+            checksum += len(watcher.changed())
+        return checksum
+
+    benchmark(churn)
+
+
+def test_bench_watcher_build_v1(benchmark):
+    """Benchmark watching many values in a new watcher, two values per key."""
+    source = Signal(0)
+    values = [source + offset for offset in range(256)]
+    _ = [value.value for value in values]
+    records = [object() for _ in range(128)]
+
+    def build():
+        watcher = Watcher()
+        for index, value in enumerate(values):
+            watcher.watch(value, records[index // 2])
+        return len(watcher)
+
+    benchmark(build)

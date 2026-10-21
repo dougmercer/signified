@@ -30,7 +30,7 @@ Attributes:
 from . import _mixin
 from ._fields import tracked_fields
 from ._functions import as_rx, computed, effect, has_value, sample, unref
-from ._reactive import Binding, Computed, Effect, Signal, Variable, is_reactive, untracked
+from ._reactive import Binding, Computed, Effect, Signal, Variable, Watcher, is_reactive, untracked
 from ._resolve import ResolveContext, deep_unref
 from ._scheduler import batch
 from ._types import HasValue, ReactiveValue
@@ -43,6 +43,7 @@ __all__ = [
     "Computed",
     "Binding",
     "Effect",
+    "Watcher",
     "computed",
     "effect",
     "sample",
