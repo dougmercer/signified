@@ -2326,6 +2326,12 @@
 <p>This page summarizes notable changes across releases.</p>
 <h2 id="unreleased">Unreleased<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li><code>Watcher</code> reports which of many reactive values changed since you last
+  asked: <code>watch(value, key)</code>, then <code>changed()</code> once per step of your own (a
+  frame, a tick) gives the keys whose values changed. A change only marks the
+  watch, and <code>changed()</code> reads only the marked values, so values that didn't
+  change cost nothing; a calculation that recalculated to the same result is
+  not reported. See <a href="../usage/#watchers">Ask which values changed</a>.</li>
 <li><code>sample(value, signal, at)</code> taken at the signal's current value shares the
   live result and keeps it once <code>signal</code> moves on, instead of calculating it
   again for <code>at</code>.</li>
